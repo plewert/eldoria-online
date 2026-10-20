@@ -1,0 +1,870 @@
+'use strict';
+/**
+ * Lógica del juego (servidor autoritativo).
+ *  - Un mismo personaje puede ser guerrero, tirador o mago: el estilo lo define el arma equipada.
+ *  - Zonas seguras: solo los monstruos pueden atacarte. Zonas PvP: puedes pelear con otros jugadores
+ *    y quedarte con el botín de quien caiga.
+ */
+const { CFG, ITEMS, SHOP, START_KIT, MONSTERS, NPC_TIPS } = require('./data');
+const world = require('./world');
+const { W, H, T, zoneAt, ZONES, PORTALS, NPCS, SPAWN_POINT } = world;
+
+const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const kxy = (x, y) => y * W + x;
+const cheb = (ax, ay, bx, by) => Math.max(Math.abs(ax - bx), Math.abs(ay - by));
+const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
+const clampDir = (v) => (v > 0 ? 1 : v < 0 ? -1 : 0);
+
+const levelFromXp = (xp) => 1 + Math.floor(Math.sqrt(xp / 50));
+const xpForLevel = (l) => 50 * (l - 1) * (l - 1);
+const skillFromXp = (xp) => 1 + Math.floor(Math.sqrt(xp / 20));
+const skillXpFor = (l) => 20 * (l - 1) * (l - 1);
+
+const FISTS = { name: 'Puños', style: 'melee', atk: 3, cd: 1500, range: 1 };
+const SKILL_NAMES = { melee: 'combate cuerpo a cuerpo', ranged: 'combate a distancia', magic: 'magia' };
+const SLOTS = ['weapon', 'head', 'body', 'shield'];
+const DIRS8 = [[0, -1], [1, 0], [0, 1], [-1, 0], [1, -1], [1, 1], [-1, 1], [-1, -1]];
+const NAME_RE = /^[A-Za-z0-9_]{3,14}$/;
+const npcTiles = new Set(NPCS.map((n) => kxy(n.x, n.y)));
+
+class Game {
+  constructor(store) {
+    this.store = store;
+    this.now = Date.now();
+    this.tickN = 0;
+    this.nextId = 1;
+    this.nextGid = 1;
+    this.ents = new Map();      // id -> jugador o monstruo
+    this.players = new Map();   // clave de cuenta -> jugador
+    this.monsters = [];
+    this.ground = new Map();    // gid -> objeto en el suelo
+    this.gtile = new Map();     // casilla -> [objetos]
+    this.mgrid = new Map();     // casilla -> monstruo vivo
+    this.pgrid = new Map();     // casilla -> jugador
+    this.fx = [];
+    this.lastSave = Date.now();
+    for (const s of world.monsterSpawns) this.spawnMonster(s.type, s.x, s.y);
+  }
+
+  /* ============================ MONSTRUOS ============================ */
+  spawnMonster(type, x, y) {
+    const def = MONSTERS[type];
+    const m = {
+      kind: 'mo', id: this.nextId++, type, def, x, y, sx: x, sy: y,
+      hp: def.hp, maxHp: def.hp, target: null,
+      nextMove: 0, nextAtk: 0, nextScan: 0, dmgBy: new Map(), dead: false, respawnAt: 0,
+    };
+    this.ents.set(m.id, m);
+    this.mgrid.set(kxy(x, y), m);
+    this.monsters.push(m);
+    return m;
+  }
+
+  monsterCanStep(m, x, y) {
+    if (!world.isWalkable(x, y)) return false;
+    const k = kxy(x, y);
+    if (this.mgrid.has(k) || this.pgrid.has(k)) return false;
+    if (world.tiles[k] === T.PORTAL) return false;
+    if (zoneAt(x, y).kind === 'town') return false;       // los monstruos nunca entran a la ciudad
+    return true;
+  }
+
+  updateMonster(m, now) {
+    const def = m.def;
+    if (m.dead) {
+      if (now >= m.respawnAt) {
+        const k = kxy(m.sx, m.sy);
+        if (this.mgrid.has(k) || this.pgrid.has(k)) { m.respawnAt = now + 3000; return; }
+        m.dead = false; m.hp = m.maxHp; m.x = m.sx; m.y = m.sy; m.target = null; m.dmgBy.clear();
+        this.mgrid.set(k, m);
+      }
+      return;
+    }
+    let t = m.target ? this.ents.get(m.target) : null;
+    if (t && (t.kind !== 'pl' || t.hp <= 0 || cheb(m.x, m.y, t.x, t.y) > def.aggro + 9 || cheb(t.x, t.y, m.sx, m.sy) > 20)) { m.target = null; t = null; }
+    if (!t && def.aggro > 0 && now >= m.nextScan) {
+      m.nextScan = now + 400;
+      let best = null, bd = 1e9;
+      for (const p of this.players.values()) {
+        if (p.hp <= 0) continue;
+        const d = cheb(m.x, m.y, p.x, p.y);
+        if (d <= def.aggro && d < bd) { bd = d; best = p; }
+      }
+      if (best) { m.target = best.id; t = best; }
+    }
+    if (t) {
+      const range = def.range || 1;
+      const d = range === 1 ? cheb(m.x, m.y, t.x, t.y) : dist(m.x, m.y, t.x, t.y);
+      const inRange = d <= (range === 1 ? 1 : range + 0.2);
+      if (inRange && now >= m.nextAtk) {
+        m.nextAtk = now + def.atkCd;
+        const raw = rnd(def.dmg[0], def.dmg[1]);
+        if (range > 1) this.fx.push({ k: 'p', x1: m.x, y1: m.y, x2: t.x, y2: t.y, s: def.proj || 'fire' });
+        else this.fx.push({ k: 's', x: t.x, y: t.y });
+        this.hurtPlayer(t, raw, m, now, def.name);
+      }
+      if (!inRange && now >= m.nextMove) {
+        m.nextMove = now + def.move;
+        const goal = range === 1 ? (x, y) => cheb(x, y, t.x, t.y) <= 1 : (x, y) => dist(x, y, t.x, t.y) <= range - 0.3;
+        this.moveToward(m, t.x, t.y, goal, (x, y) => this.monsterCanStep(m, x, y));
+      }
+    } else if (now >= m.nextMove) {
+      m.nextMove = now + def.move * 2.5;
+      const far = cheb(m.x, m.y, m.sx, m.sy) > 6;
+      if (far) {
+        this.moveToward(m, m.sx, m.sy, (x, y) => x === m.sx && y === m.sy, (x, y) => this.monsterCanStep(m, x, y));
+        if (m.hp < m.maxHp) m.hp = Math.min(m.maxHp, m.hp + Math.ceil(m.maxHp * 0.05));
+      } else if (def.aggro >= 0 && Math.random() < 0.3) {
+        const [dx, dy] = DIRS8[rnd(0, 3)];
+        const nx = m.x + dx, ny = m.y + dy;
+        if (cheb(nx, ny, m.sx, m.sy) <= 4 && this.monsterCanStep(m, nx, ny)) this.relocate(m, nx, ny);
+      }
+    }
+  }
+
+  relocate(m, nx, ny) {
+    this.mgrid.delete(kxy(m.x, m.y));
+    m.x = nx; m.y = ny;
+    this.mgrid.set(kxy(nx, ny), m);
+  }
+
+  /** Avanza un paso hacia (tx,ty): BFS local y, si no hay camino cercano, paso voraz. */
+  moveToward(m, tx, ty, goalFn, pass) {
+    const step = this.bfsStep(m.x, m.y, goalFn, pass, 260) || this.greedyStep(m.x, m.y, tx, ty, pass);
+    if (!step) return false;
+    this.relocate(m, m.x + step.dx, m.y + step.dy);
+    return true;
+  }
+
+  bfsStep(sx, sy, goalFn, pass, maxNodes) {
+    const start = kxy(sx, sy);
+    const prev = new Map([[start, -1]]);
+    const q = [start];
+    for (let qi = 0; qi < q.length && q.length < maxNodes; qi++) {
+      const k = q[qi], x = k % W, y = (k / W) | 0;
+      if (k !== start && goalFn(x, y)) {
+        let c = k;
+        while (prev.get(c) !== start) c = prev.get(c);
+        return { dx: (c % W) - sx, dy: ((c / W) | 0) - sy };
+      }
+      for (let i = 0; i < 8; i++) {
+        const nx = x + DIRS8[i][0], ny = y + DIRS8[i][1];
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+        const nk = kxy(nx, ny);
+        if (prev.has(nk) || !pass(nx, ny)) continue;
+        prev.set(nk, k); q.push(nk);
+      }
+    }
+    return null;
+  }
+
+  greedyStep(sx, sy, tx, ty, pass) {
+    let best = null, bd = dist(sx, sy, tx, ty);
+    for (const [dx, dy] of DIRS8) {
+      const nx = sx + dx, ny = sy + dy;
+      if (!pass(nx, ny)) continue;
+      const d = dist(nx, ny, tx, ty);
+      if (d < bd) { bd = d; best = { dx, dy }; }
+    }
+    return best;
+  }
+
+  /* ============================ SUELO / BOTÍN ============================ */
+  addGround(item, qty, x, y, opts = {}) {
+    const g = { gid: this.nextGid++, item, qty, x, y, exp: this.now + CFG.GROUND_TTL, prot: opts.prot || 0, owner: opts.owner || 0 };
+    this.ground.set(g.gid, g);
+    const k = kxy(x, y);
+    const arr = this.gtile.get(k);
+    if (arr) arr.push(g); else this.gtile.set(k, [g]);
+    return g;
+  }
+
+  removeGround(g) {
+    this.ground.delete(g.gid);
+    const k = kxy(g.x, g.y);
+    const arr = this.gtile.get(k);
+    if (!arr) return;
+    const i = arr.indexOf(g);
+    if (i >= 0) arr.splice(i, 1);
+    if (!arr.length) this.gtile.delete(k);
+  }
+
+  pickup(p, silent) {
+    const arr = this.gtile.get(kxy(p.x, p.y));
+    if (!arr || !arr.length) return;
+    const now = this.now;
+    let invDirty = false, blocked = false, full = false;
+    for (const g of arr.slice()) {
+      if (g.prot > now && g.owner !== p.id) { blocked = true; continue; }
+      if (g.item === 'gold') {
+        p.gold += g.qty; this.removeGround(g); invDirty = true;
+        this.fx.push({ k: 'd', x: p.x, y: p.y, v: '+' + g.qty + '💰', c: 'x' });
+        if (!silent) this.msg(p, `Recoges ${g.qty} monedas de oro.`, 's');
+        continue;
+      }
+      const before = g.qty;
+      const left = this.giveItem(p, g.item, g.qty);
+      if (left < before) {
+        invDirty = true;
+        if (!silent) this.msg(p, `Recoges ${before - left}x ${ITEMS[g.item].name}.`, 's');
+      }
+      if (left <= 0) this.removeGround(g); else { g.qty = left; full = true; }
+    }
+    if (invDirty) { p.dirty.inv = true; p.dirty.stats = true; }
+    if (full) this.msgThrottle(p, 'full', 'Tu inventario está lleno.');
+    if (blocked) this.msgThrottle(p, 'prot', 'Ese botín pertenece a otro jugador durante unos segundos.');
+  }
+
+  /* ============================ INVENTARIO ============================ */
+  /** Devuelve la cantidad que NO cupo. */
+  giveItem(p, id, qty) {
+    const def = ITEMS[id];
+    if (!def) return qty;
+    if (def.stack) {
+      for (const s of p.inv) {
+        if (qty <= 0) break;
+        if (s && s.id === id && s.qty < CFG.STACK_MAX) {
+          const add = Math.min(qty, CFG.STACK_MAX - s.qty);
+          s.qty += add; qty -= add;
+        }
+      }
+      while (qty > 0) {
+        const i = p.inv.indexOf(null);
+        if (i < 0) break;
+        const add = Math.min(qty, CFG.STACK_MAX);
+        p.inv[i] = { id, qty: add }; qty -= add;
+      }
+      return qty;
+    }
+    while (qty > 0) {
+      const i = p.inv.indexOf(null);
+      if (i < 0) break;
+      p.inv[i] = { id, qty: 1 }; qty--;
+    }
+    return qty;
+  }
+
+  equip(p, slot) {
+    const it = p.inv[slot];
+    if (!it) return;
+    const def = ITEMS[it.id];
+    if (!def || !SLOTS.includes(def.type)) return;
+    if ((def.minLevel || 1) > p.level) { this.msg(p, `Necesitas nivel ${def.minLevel} para usar ${def.name}.`, 's'); return; }
+    const old = p.eq[def.type];
+    p.eq[def.type] = it.id;
+    p.inv[slot] = old ? { id: old, qty: 1 } : null;
+    p.dirty.inv = true;
+  }
+
+  unequip(p, slotName) {
+    if (!SLOTS.includes(slotName) || !p.eq[slotName]) return;
+    const i = p.inv.indexOf(null);
+    if (i < 0) { this.msg(p, 'Tu inventario está lleno.', 's'); return; }
+    p.inv[i] = { id: p.eq[slotName], qty: 1 };
+    p.eq[slotName] = null;
+    p.dirty.inv = true;
+  }
+
+  use(p, slot) {
+    const it = p.inv[slot];
+    if (!it) return;
+    const def = ITEMS[it.id];
+    if (!def) return;
+    if (def.type === 'weapon' || def.type === 'head' || def.type === 'body' || def.type === 'shield') { this.equip(p, slot); return; }
+    if (def.type !== 'consumable') return;
+    const now = this.now;
+    if (now < p.nextPotion) return;
+    if ((def.minLevel || 1) > p.level) { this.msg(p, `Necesitas nivel ${def.minLevel} para usar ${def.name}.`, 's'); return; }
+    if (def.heal) {
+      if (p.hp >= p.maxHp) return;
+      const h = Math.min(def.heal, p.maxHp - p.hp);
+      p.hp += h; this.fx.push({ k: 'd', x: p.x, y: p.y, v: '+' + h, c: 'g' });
+    } else if (def.restore) {
+      if (p.mana >= p.maxMana) return;
+      const r = Math.min(def.restore, p.maxMana - p.mana);
+      p.mana += r; this.fx.push({ k: 'd', x: p.x, y: p.y, v: '+' + r, c: 'm' });
+    }
+    p.nextPotion = now + 1000;
+    it.qty--; if (it.qty <= 0) p.inv[slot] = null;
+    p.dirty.inv = true;
+  }
+
+  useBest(p, kind) {
+    // Usa la mejor poción disponible de ese tipo (la más pequeña que no desperdicie demasiado)
+    let bestSlot = -1, bestVal = 1e9;
+    for (let i = 0; i < p.inv.length; i++) {
+      const it = p.inv[i];
+      if (!it) continue;
+      const d = ITEMS[it.id];
+      if (!d || d.type !== 'consumable' || !d[kind] || (d.minLevel || 1) > p.level) continue;
+      if (d[kind] < bestVal) { bestVal = d[kind]; bestSlot = i; }
+    }
+    if (bestSlot >= 0) this.use(p, bestSlot);
+    else this.msgThrottle(p, 'nopot', kind === 'heal' ? 'No tienes pociones de vida.' : 'No tienes pociones de maná.');
+  }
+
+  drop(p, slot, qty) {
+    const it = p.inv[slot];
+    if (!it) return;
+    qty = Math.max(1, Math.min(it.qty, qty | 0 || 1));
+    it.qty -= qty; if (it.qty <= 0) p.inv[slot] = null;
+    this.addGround(it.id, qty, p.x, p.y);
+    p.dirty.inv = true;
+  }
+
+  /** Cambia al mejor arma del estilo pedido (de tu inventario o la ya equipada). */
+  switchStyle(p, style) {
+    let bestSlot = -1, bestAtk = -1;
+    for (let i = 0; i < p.inv.length; i++) {
+      const it = p.inv[i];
+      if (!it) continue;
+      const d = ITEMS[it.id];
+      if (d && d.type === 'weapon' && d.style === style && (d.minLevel || 1) <= p.level && d.atk > bestAtk) { bestAtk = d.atk; bestSlot = i; }
+    }
+    const cur = ITEMS[p.eq.weapon];
+    if (cur && cur.style === style && cur.atk >= bestAtk) { this.msgThrottle(p, 'sw', 'Ya usas un arma de ese estilo.'); return; }
+    if (bestSlot >= 0) { this.equip(p, bestSlot); this.msg(p, `Cambias a ${ITEMS[p.eq.weapon].name}.`, 's'); }
+    else this.msgThrottle(p, 'sw', 'No tienes ningún arma utilizable de ese estilo.');
+  }
+
+  /* ============================ JUGADORES ============================ */
+  recalc(p) {
+    p.level = levelFromXp(p.xp);
+    p.maxHp = 100 + 20 * (p.level - 1);
+    p.maxMana = 40 + 12 * (p.level - 1);
+    if (p.hp > p.maxHp) p.hp = p.maxHp;
+    if (p.mana > p.maxMana) p.mana = p.maxMana;
+  }
+
+  defOf(p) {
+    let d = 0;
+    for (const s of ['head', 'body', 'shield']) { const it = ITEMS[p.eq[s]]; if (it) d += it.def || 0; }
+    return d;
+  }
+
+  weaponOf(p) { return ITEMS[p.eq.weapon] || FISTS; }
+
+  styleOf(p) { return this.weaponOf(p).style; }
+
+  createPlayer(acc) {
+    const d = acc.data || null;
+    const p = {
+      kind: 'pl', id: this.nextId++, key: acc.key, name: acc.name, color: acc.color || '#4aa3ff',
+      ws: null, x: SPAWN_POINT.x, y: SPAWN_POINT.y, dir: 2,
+      hp: 0, mana: 0, xp: 0, sxp: { melee: 0, ranged: 0, magic: 0 }, gold: 0,
+      inv: new Array(CFG.INV_SIZE).fill(null), eq: { weapon: null, head: null, body: null, shield: null },
+      target: null, nextMove: 0, nextAtk: 0, nextPotion: 0, nextSpell: 0, nextRegen: 0, pend: null,
+      pvpLock: 0, offlineUntil: 0, tpSeq: 0, lastChat: 0, throttle: {}, dirty: { inv: true, stats: true },
+    };
+    if (d) {
+      p.xp = d.xp | 0; p.gold = d.gold | 0;
+      p.sxp = { melee: d.sxp.melee | 0, ranged: d.sxp.ranged | 0, magic: d.sxp.magic | 0 };
+      d.inv.forEach((it, i) => { if (it && ITEMS[it.id] && i < CFG.INV_SIZE) p.inv[i] = { id: it.id, qty: Math.max(1, it.qty | 0) }; });
+      for (const s of SLOTS) p.eq[s] = d.eq && ITEMS[d.eq[s]] && ITEMS[d.eq[s]].type === s ? d.eq[s] : null;
+      if (world.isWalkable(d.x, d.y) && zoneAt(d.x, d.y).kind !== 'dungeon') { p.x = d.x; p.y = d.y; }
+      this.recalc(p);
+      p.hp = Math.max(1, Math.min(p.maxHp, d.hp | 0)); p.mana = Math.max(0, Math.min(p.maxMana, d.mana | 0));
+    } else {
+      p.gold = START_KIT.gold;
+      for (const s of SLOTS) p.eq[s] = START_KIT.eq[s];
+      for (const [id, q] of START_KIT.inv) this.giveItem(p, id, q);
+      this.recalc(p);
+      p.hp = p.maxHp; p.mana = p.maxMana;
+    }
+    this.players.set(p.key, p);
+    this.ents.set(p.id, p);
+    return p;
+  }
+
+  serialize(p) {
+    return {
+      x: p.x, y: p.y, hp: p.hp, mana: p.mana, xp: p.xp, sxp: p.sxp, gold: p.gold,
+      inv: p.inv.map((it) => (it ? { id: it.id, qty: it.qty } : null)), eq: p.eq,
+    };
+  }
+
+  savePlayer(p) { this.store.saveData(p.key, this.serialize(p)); }
+
+  /** Conecta una cuenta autenticada a la partida. */
+  attach(acc, ws) {
+    let p = this.players.get(acc.key);
+    if (p) {
+      if (p.ws && p.ws !== ws) {
+        const old = p.ws;
+        old.p = null;
+        try { old.send(JSON.stringify({ t: 'err', msg: 'Has iniciado sesión desde otro lugar.' })); old.close(); } catch (e) { /* nada */ }
+      }
+      p.offlineUntil = 0;
+    } else {
+      p = this.createPlayer(acc);
+    }
+    p.ws = ws; ws.p = p;
+    p.dirty = { inv: true, stats: true };
+    this.sendWelcome(p);
+    this.msg(p, `¡Bienvenido a Eldoria, ${p.name}! Habla con Orin el Sabio en la ciudad para recibir consejos.`, 's');
+    this.broadcastChat(`${p.name} se ha conectado.`, 's');
+    return p;
+  }
+
+  onClose(ws) {
+    const p = ws.p;
+    if (!p || p.ws !== ws) return;
+    p.ws = null; ws.p = null;
+    if (this.now < p.pvpLock) {
+      p.offlineUntil = this.now + CFG.GHOST_MS;   // sigue en el mundo y es vulnerable
+      p.pend = null;
+    } else {
+      this.removePlayer(p);
+    }
+  }
+
+  removePlayer(p) {
+    this.savePlayer(p);
+    this.players.delete(p.key);
+    this.ents.delete(p.id);
+    this.pgrid.delete(kxy(p.x, p.y));
+    this.broadcastChat(`${p.name} se ha desconectado.`, 's');
+  }
+
+  /* ============================ ENVÍO ============================ */
+  send(p, obj) {
+    if (p.ws && p.ws.open) p.ws.send(JSON.stringify(obj));
+  }
+
+  msg(p, text, kind = 's') { this.send(p, { t: 'chat', n: '', m: text, k: kind }); }
+
+  msgThrottle(p, key, text) {
+    if (this.now < (p.throttle[key] || 0)) return;
+    p.throttle[key] = this.now + 2500;
+    this.msg(p, text, 's');
+  }
+
+  broadcastChat(text, kind, from = '') {
+    for (const p of this.players.values()) this.send(p, { t: 'chat', n: from, m: text, k: kind });
+  }
+
+  sendWelcome(p) {
+    const monsDefs = {};
+    for (const [k, d] of Object.entries(MONSTERS)) monsDefs[k] = { name: d.name, icon: d.icon, boss: !!d.boss, range: d.range || 1 };
+    this.send(p, {
+      t: 'welcome', id: p.id, w: W, h: H, rows: world.rows,
+      zones: ZONES.map((z) => ({ id: z.id, name: z.name, pvp: z.pvp, kind: z.kind, rect: z.rect })),
+      portals: PORTALS.map((q) => ({ x: q.x, y: q.y, label: q.label })),
+      npcs: NPCS, items: ITEMS, mons: monsDefs,
+      cfg: { pvpMin: CFG.PVP_MIN_LEVEL, step: CFG.STEP_MS, invSize: CFG.INV_SIZE },
+    });
+    this.sendInv(p); this.sendStats(p);
+    this.sendSnapshot(p);
+  }
+
+  sendInv(p) {
+    this.send(p, { t: 'inv', inv: p.inv.map((it) => (it ? [it.id, it.qty] : null)), eq: p.eq, gold: p.gold });
+  }
+
+  sendStats(p) {
+    const sk = {};
+    for (const s of ['melee', 'ranged', 'magic']) {
+      const l = skillFromXp(p.sxp[s]);
+      sk[s] = [l, p.sxp[s], skillXpFor(l), skillXpFor(l + 1)];
+    }
+    const w = this.weaponOf(p);
+    this.send(p, {
+      t: 'stats', lv: p.level, xp: p.xp, xpLo: xpForLevel(p.level), xpHi: xpForLevel(p.level + 1),
+      maxHp: p.maxHp, maxMana: p.maxMana, gold: p.gold, sk, style: w.style, def: this.defOf(p), weapon: w.name,
+    });
+  }
+
+  sendSnapshot(p) {
+    if (!p.ws || !p.ws.open) return;
+    const now = this.now, vx = CFG.VIEW_X, vy = CFG.VIEW_Y;
+    const inView = (x, y) => Math.abs(x - p.x) <= vx && Math.abs(y - p.y) <= vy;
+    const pl = [], mo = [], gi = [], fx = [];
+    for (const q of this.players.values()) {
+      if (!inView(q.x, q.y)) continue;
+      pl.push({ i: q.id, n: q.name, x: q.x, y: q.y, h: q.hp, H: q.maxHp, l: q.level, c: q.color, s: this.styleOf(q), d: q.dir, k: now < q.pvpLock ? 1 : 0, o: q.ws ? 0 : 1 });
+    }
+    for (const m of this.monsters) {
+      if (m.dead || !inView(m.x, m.y)) continue;
+      mo.push({ i: m.id, t: m.type, x: m.x, y: m.y, h: m.hp, H: m.maxHp });
+    }
+    for (const [k, arr] of this.gtile) {
+      const x = k % W, y = (k / W) | 0;
+      if (!inView(x, y)) continue;
+      gi.push({ x, y, it: arr.slice(0, 4).map((g) => [g.item, g.qty, g.prot > now && g.owner !== p.id ? 1 : 0]), n: arr.length });
+    }
+    for (const f of this.fx) {
+      const fx0 = f.x !== undefined ? f.x : f.x1, fy0 = f.y !== undefined ? f.y : f.y1;
+      if (Math.abs(fx0 - p.x) <= vx + 3 && Math.abs(fy0 - p.y) <= vy + 3) fx.push(f);
+    }
+    this.send(p, { t: 's', me: { x: p.x, y: p.y, h: p.hp, m: p.mana, tg: p.target, tp: p.tpSeq, lk: p.pvpLock > now ? Math.ceil((p.pvpLock - now) / 1000) : 0 }, pl, mo, gi, fx });
+  }
+
+  /* ============================ ENTRADAS DEL CLIENTE ============================ */
+  handle(p, msg) {
+    const now = Date.now();
+    switch (msg.t) {
+      case 'move': {
+        const dx = clampDir(msg.dx), dy = clampDir(msg.dy);
+        if (!dx && !dy) { p.pend = null; break; }
+        p.pend = { dx, dy, exp: now + (msg.once ? 350 : 130) };
+        break;
+      }
+      case 'target': {
+        if (msg.id == null) { p.target = null; break; }
+        const t = this.ents.get(msg.id | 0);
+        if (!t || t === p || (t.kind === 'mo' && t.dead)) { p.target = null; break; }
+        if (cheb(p.x, p.y, t.x, t.y) > CFG.VIEW_X) break;
+        if (t.kind === 'pl' && !this.canPvp(p, t)) { p.target = null; this.explainNoPvp(p, t); break; }
+        p.target = t.id;
+        break;
+      }
+      case 'equip': this.equip(p, msg.s | 0); break;
+      case 'unequip': this.unequip(p, String(msg.slot)); p.dirty.stats = true; break;
+      case 'use': this.use(p, msg.s | 0); break;
+      case 'drop': this.drop(p, msg.s | 0, msg.q | 0); break;
+      case 'pickup': this.pickup(p, false); break;
+      case 'style': if (['melee', 'ranged', 'magic'].includes(msg.s)) this.switchStyle(p, msg.s); break;
+      case 'potion': this.useBest(p, msg.k === 'mana' ? 'restore' : 'heal'); break;
+      case 'spell': this.castHeal(p); break;
+      case 'chat': this.chat(p, String(msg.text || '')); break;
+      case 'npc': this.npcClick(p, msg.id); break;
+      case 'buy': this.buy(p, String(msg.id), msg.q | 0); break;
+      case 'sell': this.sell(p, msg.s | 0, msg.q | 0); break;
+      default: break;
+    }
+    if (p.dirty.inv) { p.dirty.inv = false; this.sendInv(p); p.dirty.stats = true; }
+    if (p.dirty.stats) { p.dirty.stats = false; this.sendStats(p); }
+  }
+
+  chat(p, text) {
+    text = text.replace(/[\u0000-\u001f]/g, '').trim().slice(0, 120);
+    if (!text) return;
+    const now = Date.now();
+    if (now - p.lastChat < 600) return;
+    p.lastChat = now;
+    if (text === '/pos') { const z = zoneAt(p.x, p.y); this.msg(p, `Estás en ${z.name} (${p.x}, ${p.y}). ${z.pvp ? 'Zona PvP.' : 'Zona segura.'}`, 's'); return; }
+    if (text === '/top') {
+      const list = [...this.players.values()].sort((a, b) => b.xp - a.xp).slice(0, 5).map((q) => `${q.name} (nv ${q.level})`).join(', ');
+      this.msg(p, 'Jugadores conectados más fuertes: ' + list, 's'); return;
+    }
+    if (text === '/ayuda') { this.msg(p, 'Comandos: /g mensaje (chat global), /pos, /top. Teclas: WASD mover, Z/X/C arma, H/J pociones, V curar, E recoger.', 's'); return; }
+    if (text.startsWith('/g ')) { this.broadcastChat(text.slice(3), 'g', p.name); return; }
+    if (text.startsWith('/')) { this.msg(p, 'Comando desconocido. Escribe /ayuda.', 's'); return; }
+    for (const q of this.players.values()) {
+      if (cheb(q.x, q.y, p.x, p.y) <= 14) this.send(q, { t: 'chat', n: p.name, m: text, k: 'l' });
+    }
+    this.fx.push({ k: 'c', x: p.x, y: p.y, v: text.slice(0, 40), i: p.id });
+  }
+
+  npcClick(p, id) {
+    const n = NPCS.find((q) => q.id === id);
+    if (!n) return;
+    if (cheb(p.x, p.y, n.x, n.y) > 4) { this.msg(p, `Acércate más a ${n.name}.`, 's'); return; }
+    if (n.type === 'shop') {
+      this.send(p, { t: 'shop', npc: n.name, stock: SHOP });
+      this.msg(p, `${n.name}: ¡Bienvenido! Compro tus trofeos y vendo equipo de calidad.`, 'n');
+    } else {
+      this.msg(p, `${n.name}: ${NPC_TIPS[rnd(0, NPC_TIPS.length - 1)]}`, 'n');
+    }
+  }
+
+  nearShop(p) { const n = NPCS.find((q) => q.type === 'shop'); return n && cheb(p.x, p.y, n.x, n.y) <= 4; }
+
+  buy(p, id, qty) {
+    if (!SHOP.includes(id)) return;
+    if (!this.nearShop(p)) { this.msg(p, 'Estás demasiado lejos del mercader.', 's'); return; }
+    const def = ITEMS[id];
+    qty = Math.max(1, Math.min(def.stack ? 100 : 1, qty || 1));
+    const total = def.price * qty;
+    if (p.gold < total) { this.msg(p, 'No tienes suficiente oro.', 's'); return; }
+    const left = this.giveItem(p, id, qty);
+    const bought = qty - left;
+    if (bought <= 0) { this.msg(p, 'Tu inventario está lleno.', 's'); return; }
+    p.gold -= def.price * bought;
+    this.msg(p, `Compras ${bought}x ${def.name} por ${def.price * bought} de oro.`, 's');
+    p.dirty.inv = true;
+  }
+
+  sell(p, slot, qty) {
+    const it = p.inv[slot];
+    if (!it) return;
+    if (!this.nearShop(p)) { this.msg(p, 'Estás demasiado lejos del mercader.', 's'); return; }
+    const def = ITEMS[it.id];
+    if (!def || !def.sell) { this.msg(p, 'El mercader no quiere eso.', 's'); return; }
+    qty = Math.max(1, Math.min(it.qty, qty || 1));
+    it.qty -= qty; if (it.qty <= 0) p.inv[slot] = null;
+    const gain = def.sell * qty;
+    p.gold += gain;
+    this.msg(p, `Vendes ${qty}x ${def.name} por ${gain} de oro.`, 's');
+    p.dirty.inv = true;
+  }
+
+  castHeal(p) {
+    const now = this.now;
+    if (now < p.nextSpell) return;
+    const cost = 25;
+    if (p.mana < cost) { this.msgThrottle(p, 'mana', 'No tienes suficiente maná.'); return; }
+    if (p.hp >= p.maxHp) return;
+    const ml = skillFromXp(p.sxp.magic);
+    const h = Math.min(p.maxHp - p.hp, 40 + 8 * ml + Math.floor(p.level * 2));
+    p.mana -= cost; p.hp += h; p.nextSpell = now + 1200;
+    this.fx.push({ k: 'd', x: p.x, y: p.y, v: '+' + h, c: 'g' });
+    this.fx.push({ k: 'h', x: p.x, y: p.y });
+    this.addSkillXp(p, 'magic', 8);
+  }
+
+  /* ============================ COMBATE ============================ */
+  canPvp(a, b) {
+    return zoneAt(a.x, a.y).pvp && zoneAt(b.x, b.y).pvp && a.level >= CFG.PVP_MIN_LEVEL && b.level >= CFG.PVP_MIN_LEVEL;
+  }
+
+  explainNoPvp(p, t) {
+    if (!zoneAt(p.x, p.y).pvp || !zoneAt(t.x, t.y).pvp) this.msgThrottle(p, 'pvp', 'Zona segura: aquí no se puede atacar a otros jugadores.');
+    else this.msgThrottle(p, 'pvp', `Protección de novato: el PvP solo funciona entre jugadores de nivel ${CFG.PVP_MIN_LEVEL} o más.`);
+  }
+
+  addSkillXp(p, style, amt) {
+    const before = skillFromXp(p.sxp[style]);
+    p.sxp[style] += amt;
+    const after = skillFromXp(p.sxp[style]);
+    if (after > before) this.msg(p, `¡Tu habilidad de ${SKILL_NAMES[style]} sube al nivel ${after}!`, 's');
+    p.dirty.stats = true;
+  }
+
+  gainXp(p, xp) {
+    const before = p.level;
+    p.xp += xp;
+    this.recalc(p);
+    this.fx.push({ k: 'd', x: p.x, y: p.y, v: '+' + xp + ' xp', c: 'x' });
+    if (p.level > before) {
+      p.hp = p.maxHp; p.mana = p.maxMana;
+      this.fx.push({ k: 'l', x: p.x, y: p.y });
+      this.msg(p, `¡Has subido al nivel ${p.level}! Tu vida y maná se han restaurado.`, 's');
+    }
+    p.dirty.stats = true;
+  }
+
+  hurtPlayer(p, raw, src, now, srcName) {
+    const def = this.defOf(p);
+    const dmg = Math.max(1, raw - Math.floor(Math.random() * (def + 1)));
+    p.hp -= dmg;
+    this.fx.push({ k: 'd', x: p.x, y: p.y, v: dmg, c: 'p' });
+    if (p.hp <= 0) this.killPlayer(p, src, srcName, now);
+    return dmg;
+  }
+
+  hurtMonster(m, dmg, p, now) {
+    m.hp -= dmg;
+    this.fx.push({ k: 'd', x: m.x, y: m.y, v: dmg, c: 'h' });
+    const e = m.dmgBy.get(p.id);
+    if (e) { e.dmg += dmg; e.t = now; } else m.dmgBy.set(p.id, { dmg, t: now });
+    if (!m.target) m.target = p.id;
+    if (m.hp <= 0) this.killMonster(m, now);
+  }
+
+  killMonster(m, now) {
+    const def = m.def;
+    m.dead = true; m.hp = 0; m.target = null;
+    this.mgrid.delete(kxy(m.x, m.y));
+    m.respawnAt = now + def.respawn * (0.8 + Math.random() * 0.4);
+    let total = 0, top = null, topDmg = -1;
+    const parts = [];
+    for (const [pid, e] of m.dmgBy) {
+      if (now - e.t > 120000) continue;
+      const pl = this.ents.get(pid);
+      if (!pl || pl.kind !== 'pl') continue;
+      parts.push([pl, e.dmg]); total += e.dmg;
+      if (e.dmg > topDmg) { topDmg = e.dmg; top = pl; }
+    }
+    for (const [pl, dmg] of parts) {
+      const xp = Math.max(1, Math.round(def.exp * CFG.XP_RATE * dmg / total));
+      this.gainXp(pl, xp);
+    }
+    // botín
+    const zone = zoneAt(m.x, m.y);
+    const opts = !zone.pvp && top ? { prot: now + CFG.LOOT_PROTECT_MS, owner: top.id } : {};
+    const gold = rnd(def.gold[0], def.gold[1]);
+    if (gold > 0) this.addGround('gold', gold, m.x, m.y, opts);
+    for (const [id, chance, a, b] of def.loot) {
+      if (Math.random() < chance) this.addGround(id, rnd(a, b), m.x, m.y, opts);
+    }
+    this.fx.push({ k: 'x', x: m.x, y: m.y });
+    if (def.boss && top) this.broadcastChat(`¡${top.name} ha derrotado a ${def.name}!`, 'k');
+    m.dmgBy.clear();
+  }
+
+  killPlayer(p, src, srcName, now) {
+    const z = zoneAt(p.x, p.y);
+    const lost = [];
+    p.target = null; p.pend = null;
+    if (z.pvp) {
+      p.inv.forEach((it, i) => {
+        if (it && Math.random() < CFG.DEATH_ITEM_DROP) {
+          this.addGround(it.id, it.qty, p.x, p.y);
+          lost.push(`${it.qty > 1 ? it.qty + 'x ' : ''}${ITEMS[it.id].name}`);
+          p.inv[i] = null;
+        }
+      });
+      for (const s of SLOTS) {
+        if (p.eq[s] && Math.random() < CFG.DEATH_EQUIP_DROP) {
+          this.addGround(p.eq[s], 1, p.x, p.y);
+          lost.push(ITEMS[p.eq[s]].name);
+          p.eq[s] = null;
+        }
+      }
+      const g = Math.floor(p.gold * CFG.DEATH_GOLD_DROP);
+      if (g > 0) { p.gold -= g; this.addGround('gold', g, p.x, p.y); lost.push(g + ' de oro'); }
+      const floor = xpForLevel(p.level);
+      p.xp = Math.max(floor, p.xp - Math.floor((p.xp) * CFG.DEATH_XP_LOSS));
+    }
+    if (src && src.kind === 'pl') {
+      this.broadcastChat(`⚔️ ${src.name} ha derrotado a ${p.name} en ${z.name}.`, 'k');
+      src.target = null;
+    }
+    this.fx.push({ k: 'x', x: p.x, y: p.y });
+    p.x = SPAWN_POINT.x; p.y = SPAWN_POINT.y; p.tpSeq++;
+    this.recalc(p);
+    p.hp = Math.ceil(p.maxHp * 0.5); p.mana = Math.ceil(p.maxMana * 0.5);
+    p.pvpLock = 0;
+    this.send(p, { t: 'dead', by: srcName || 'algo', pvp: z.pvp, lost });
+    p.dirty.inv = true; p.dirty.stats = true;
+    if (p.ws) { this.sendInv(p); this.sendStats(p); p.dirty.inv = false; p.dirty.stats = false; }
+  }
+
+  doAttack(p, t, now) {
+    const w = this.weaponOf(p);
+    if (w.style === 'magic') {
+      if (p.mana < w.mana) { p.nextAtk = now + 800; this.msgThrottle(p, 'mana', 'No tienes suficiente maná.'); return; }
+      p.mana -= w.mana;
+    }
+    const skill = skillFromXp(p.sxp[w.style]);
+    let dmg = Math.round(w.atk * (0.55 + Math.random() * 0.45) * (1 + 0.05 * (skill - 1)) * (1 + 0.015 * (p.level - 1)));
+    dmg = Math.max(1, dmg);
+    if (t.kind === 'pl') {
+      if (!this.canPvp(p, t)) { p.target = null; this.explainNoPvp(p, t); return; }
+      dmg = Math.max(1, Math.round(dmg * CFG.PVP_DMG_MULT));
+      p.pvpLock = now + CFG.PVP_LOCK_MS;
+      t.pvpLock = now + CFG.PVP_LOCK_MS;
+    }
+    p.nextAtk = now + w.cd;
+    if (w.style === 'melee') this.fx.push({ k: 's', x: t.x, y: t.y });
+    else this.fx.push({ k: 'p', x1: p.x, y1: p.y, x2: t.x, y2: t.y, s: w.style });
+    this.addSkillXp(p, w.style, 1 + Math.floor(dmg / 3));
+    p.dir = Math.abs(t.x - p.x) >= Math.abs(t.y - p.y) ? (t.x > p.x ? 1 : 3) : (t.y > p.y ? 2 : 0);
+    if (t.kind === 'pl') this.hurtPlayer(t, dmg, p, now, p.name);
+    else this.hurtMonster(t, dmg, p, now);
+  }
+
+  /* ============================ MOVIMIENTO DE JUGADORES ============================ */
+  playerCanStep(p, x, y, now) {
+    if (!world.isWalkable(x, y)) return false;
+    if (this.mgrid.has(kxy(x, y)) || npcTiles.has(kxy(x, y))) return false;
+    const zf = zoneAt(p.x, p.y), zt = zoneAt(x, y);
+    if (zf.pvp && !zt.pvp && now < p.pvpLock) return false;
+    return true;
+  }
+
+  tryStep(p, dx, dy, now) {
+    let nx = p.x + dx, ny = p.y + dy;
+    if (!this.playerCanStep(p, nx, ny, now)) {
+      let ok = false;
+      if (dx && dy) {   // deslizar por el eje libre
+        if (this.playerCanStep(p, p.x + dx, p.y, now)) { nx = p.x + dx; ny = p.y; ok = true; }
+        else if (this.playerCanStep(p, p.x, p.y + dy, now)) { nx = p.x; ny = p.y + dy; ok = true; }
+      }
+      if (!ok) {
+        const zf = zoneAt(p.x, p.y), zt = zoneAt(nx, ny);
+        if (zf.pvp && !zt.pvp && now < p.pvpLock && world.isWalkable(nx, ny)) this.msgThrottle(p, 'lock', '¡Estás en combate! No puedes entrar a una zona segura todavía.');
+        return false;
+      }
+    }
+    const sdx = nx - p.x, sdy = ny - p.y;
+    p.x = nx; p.y = ny;
+    p.dir = sdx > 0 ? 1 : sdx < 0 ? 3 : sdy > 0 ? 2 : 0;
+    p.nextMove = now + CFG.STEP_MS * (sdx && sdy ? 1.35 : 1);
+    this.pgrid.set(kxy(nx, ny), p);
+    const portal = world.portalAt(nx, ny);
+    if (portal) {
+      if (now < p.pvpLock) { this.msgThrottle(p, 'lock', '¡Estás en combate! No puedes usar el portal todavía.'); }
+      else {
+        p.x = portal.tx; p.y = portal.ty; p.tpSeq++; p.target = null; p.pend = null;
+        this.msg(p, `Cruzas el portal: ${zoneAt(p.x, p.y).name}.`, 's');
+      }
+    }
+    this.pickup(p, false);
+    return true;
+  }
+
+  chaseTarget(p, t, now) {
+    const w = this.weaponOf(p);
+    const range = w.range || 1;
+    const goal = range === 1 ? (x, y) => cheb(x, y, t.x, t.y) <= 1 : (x, y) => dist(x, y, t.x, t.y) <= range - 0.4;
+    const pass = (x, y) => this.playerCanStep(p, x, y, now) && world.tiles[kxy(x, y)] !== T.PORTAL;
+    const step = this.bfsStep(p.x, p.y, goal, pass, 260) || this.greedyStep(p.x, p.y, t.x, t.y, pass);
+    if (step) this.tryStep(p, step.dx, step.dy, now);
+  }
+
+  updatePlayer(p, now) {
+    if (!p.ws && p.offlineUntil && now >= p.offlineUntil) { this.removePlayer(p); return; }
+    // regeneración
+    if (now >= p.nextRegen) {
+      p.nextRegen = now + 1000;
+      const town = zoneAt(p.x, p.y).kind === 'town';
+      const mult = town ? 4 : 1;
+      if (p.hp > 0 && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + Math.round((1 + p.level * 0.3) * mult));
+      const ml = skillFromXp(p.sxp.magic);
+      if (p.mana < p.maxMana) p.mana = Math.min(p.maxMana, p.mana + Math.round((1 + p.level * 0.25 + ml * 0.25) * mult));
+    }
+    // movimiento manual
+    let moved = false;
+    if (p.pend) {
+      if (now > p.pend.exp) p.pend = null;
+      else if (now >= p.nextMove) {
+        const { dx, dy } = p.pend;
+        if (p.pend.exp - now > 0) { moved = this.tryStep(p, dx, dy, now); }
+        p.pend = null;   // cada orden es un paso; el cliente reenvía mientras la tecla siga pulsada
+      }
+    }
+    // combate
+    if (p.target) {
+      const t = this.ents.get(p.target);
+      if (!t || (t.kind === 'mo' && t.dead) || (t.kind === 'pl' && !t.ws && !t.offlineUntil) || cheb(p.x, p.y, t.x, t.y) > CFG.VIEW_X) { p.target = null; return; }
+      if (t.kind === 'pl' && !this.canPvp(p, t)) { p.target = null; this.explainNoPvp(p, t); return; }
+      const w = this.weaponOf(p);
+      const range = w.range || 1;
+      const d = range === 1 ? cheb(p.x, p.y, t.x, t.y) : dist(p.x, p.y, t.x, t.y);
+      const inRange = d <= (range === 1 ? 1 : range + 0.2);
+      if (inRange) { if (now >= p.nextAtk) this.doAttack(p, t, now); }
+      else if (!moved && !p.pend && now >= p.nextMove) this.chaseTarget(p, t, now);
+    }
+  }
+
+  /* ============================ BUCLE PRINCIPAL ============================ */
+  tick(now = Date.now()) {
+    this.now = now; this.tickN++;
+    this.pgrid.clear();
+    for (const p of this.players.values()) this.pgrid.set(kxy(p.x, p.y), p);
+    for (const p of [...this.players.values()]) this.updatePlayer(p, now);
+    for (const m of this.monsters) this.updateMonster(m, now);
+    if (this.tickN % 40 === 0) {
+      for (const g of [...this.ground.values()]) if (now >= g.exp) this.removeGround(g);
+    }
+    // desconectados en combate: ya no hay nadie que reciba su cambio de inventario
+    for (const p of this.players.values()) {
+      if (p.dirty.inv && p.ws) { p.dirty.inv = false; this.sendInv(p); p.dirty.stats = true; }
+      if (p.dirty.stats && p.ws) { p.dirty.stats = false; this.sendStats(p); }
+    }
+    if (this.tickN % CFG.SNAP_EVERY === 0) {
+      for (const p of this.players.values()) this.sendSnapshot(p);
+      this.fx.length = 0;
+    }
+    if (now - this.lastSave > CFG.AUTOSAVE_MS) {
+      this.lastSave = now;
+      for (const p of this.players.values()) this.savePlayer(p);
+    }
+  }
+
+  saveAll() { for (const p of this.players.values()) this.savePlayer(p); this.store.flush(); }
+}
+
+module.exports = { Game, NAME_RE, levelFromXp, xpForLevel, skillFromXp };

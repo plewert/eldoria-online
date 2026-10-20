@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eldoria Online</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Ccircle cx=%278%27 cy=%278%27 r=%277%27 fill=%27%23c9a24b%27/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============ Pantalla de acceso ============ -->
+<section id="login" aria-labelledby="loginTitle">
+  <svg class="horizon" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <circle cx="1210" cy="230" r="62" fill="#c9a24b" opacity=".92"/>
+    <circle cx="1210" cy="230" r="120" fill="#c9a24b" opacity=".07"/>
+    <polygon points="0,640 180,470 300,560 470,380 640,560 760,500 960,650 1120,520 1330,640 1600,470 1600,900 0,900" fill="#1a232e"/>
+    <polygon points="0,740 220,610 380,700 600,560 800,720 1010,640 1240,760 1420,650 1600,730 1600,900 0,900" fill="#121921"/>
+    <polygon points="0,830 260,760 520,820 780,770 1060,835 1320,780 1600,830 1600,900 0,900" fill="#0b1015"/>
+  </svg>
+
+  <form id="loginForm" autocomplete="on">
+    <h1 id="loginTitle">Eldoria Online</h1>
+    <p class="lede">Un solo héroe: con espada eres guerrero, con arco tirador y con vara mago. Tú decides cómo pelear.</p>
+
+    <label for="lname">Nombre del personaje</label>
+    <input id="lname" name="username" type="text" maxlength="14" autocomplete="username" spellcheck="false" required>
+
+    <label for="lpass">Contraseña</label>
+    <input id="lpass" name="password" type="password" maxlength="64" autocomplete="current-password" required>
+
+    <fieldset>
+      <legend>Color de tu capa</legend>
+      <div id="swatches"></div>
+    </fieldset>
+
+    <p id="loginErr" role="alert"></p>
+
+    <div class="row">
+      <button type="submit" class="primary" data-mode="login">Entrar</button>
+      <button type="submit" class="ghost" data-mode="register">Crear personaje</button>
+    </div>
+    <p id="online" class="fine"></p>
+  </form>
+</section>
+
+<!-- ============ Juego ============ -->
+<main id="game" hidden>
+  <div id="stage">
+    <canvas id="view" aria-label="Mapa del juego"></canvas>
+
+    <div id="zone" class="safe" aria-live="polite">
+      <span class="ward" aria-hidden="true"></span>
+      <span class="zname" id="zname"></span>
+      <span class="zrule" id="zrule"></span>
+    </div>
+
+    <div id="target" hidden>
+      <div class="tname" id="tname"></div>
+      <div class="bar hp"><i id="thp"></i></div>
+    </div>
+
+    <div id="hotbar">
+      <button data-style="melee" title="Cuerpo a cuerpo (Z)"><b>⚔️</b><small>Z</small></button>
+      <button data-style="ranged" title="Distancia (X)"><b>🏹</b><small>X</small></button>
+      <button data-style="magic" title="Magia (C)"><b>🔮</b><small>C</small></button>
+      <span class="gap"></span>
+      <button data-pot="heal" title="Poción de vida (H)"><b>🧪</b><small>H</small><em id="nHeal">0</em></button>
+      <button data-pot="mana" title="Poción de maná (J)"><b>💧</b><small>J</small><em id="nMana">0</em></button>
+      <button data-spell="1" title="Hechizo de curación, 25 de maná (V)"><b>✨</b><small>V</small></button>
+    </div>
+
+    <div id="chat">
+      <div id="log" role="log" aria-live="polite"></div>
+      <input id="chatIn" type="text" maxlength="120" placeholder="Enter para hablar · /g mensaje para todos · /ayuda" autocomplete="off">
+    </div>
+  </div>
+
+  <aside id="side">
+    <section>
+      <canvas id="mini" width="240" height="180" aria-label="Minimapa"></canvas>
+    </section>
+
+    <section id="char">
+      <h2><span id="cname"></span> <span class="lv">nivel <b id="clv">1</b></span></h2>
+      <div class="meter"><label>Vida</label><div class="bar hp"><i id="bhp"></i></div><span id="thpTxt"></span></div>
+      <div class="meter"><label>Maná</label><div class="bar mp"><i id="bmp"></i></div><span id="tmpTxt"></span></div>
+      <div class="meter"><label>Exp.</label><div class="bar xp"><i id="bxp"></i></div><span id="txpTxt"></span></div>
+      <ul id="skills">
+        <li data-sk="melee"><span>⚔️ Cuerpo a cuerpo</span><b></b><div class="bar mini"><i></i></div></li>
+        <li data-sk="ranged"><span>🏹 Distancia</span><b></b><div class="bar mini"><i></i></div></li>
+        <li data-sk="magic"><span>🔮 Magia</span><b></b><div class="bar mini"><i></i></div></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Equipo <span class="fine" id="defTxt"></span></h2>
+      <div id="equip">
+        <div class="slot-wrap s-head"><div class="slot" data-eq="head"></div></div>
+        <div class="slot-wrap s-weapon"><div class="slot" data-eq="weapon"></div></div>
+        <div class="slot-wrap s-body"><div class="slot" data-eq="body"></div></div>
+        <div class="slot-wrap s-shield"><div class="slot" data-eq="shield"></div></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Mochila <span class="gold">💰 <b id="gold">0</b></span></h2>
+      <div id="inv"></div>
+      <p class="fine">Clic: usar o equipar · Mayús+clic: soltar · Botón derecho: soltar 1</p>
+    </section>
+  </aside>
+</main>
+
+<!-- ============ Tienda ============ -->
+<div id="shop" class="modal" hidden>
+  <div class="sheet" role="dialog" aria-labelledby="shopTitle">
+    <header><h2 id="shopTitle">Tienda</h2><span class="gold">💰 <b id="shopGold">0</b></span><button id="shopClose" aria-label="Cerrar tienda">✕</button></header>
+    <div class="cols">
+      <div><h3>Comprar</h3><div id="buyList" class="list"></div></div>
+      <div><h3>Vender</h3><div id="sellList" class="list"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Muerte / desconexión ============ -->
+<div id="dead" class="modal" hidden>
+  <div class="sheet narrow" role="alertdialog" aria-labelledby="deadTitle">
+    <h2 id="deadTitle">Has caído</h2>
+    <p id="deadTxt"></p>
+    <ul id="deadLost"></ul>
+    <button id="deadOk" class="primary">Volver a la ciudad</button>
+  </div>
+</div>
+
+<div id="offline" class="modal" hidden>
+  <div class="sheet narrow" role="alertdialog" aria-labelledby="offTitle">
+    <h2 id="offTitle">Conexión perdida</h2>
+    <p id="offTxt">Se cortó la conexión con el servidor.</p>
+    <button id="offOk" class="primary">Volver a conectar</button>
+  </div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>
