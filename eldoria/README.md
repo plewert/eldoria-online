@@ -69,3 +69,9 @@ Render gratis borra los archivos al reiniciar. Eldoria guarda cuentas y estadís
 2. En la base, pestaña **REST API**: copia `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`.
 3. En Render → tu servicio → **Environment** → añade esas dos variables con esos nombres → Save (redespliega).
 En el registro de Render verás `Base remota conectada: N cuentas cargadas.` Se guarda cada 30 s, al desconectarte y al apagarse el servidor.
+
+## Equipo de mago (láminas de pixel-art)
+- 13 túnicas, 15 sombreros/coronas/capuchas, 19 báculos, 10 cintos, 6 guantes y 8 libros/orbes (mano libre). Cada pieza es más fuerte que la anterior (ver `game/mage.js`).
+- Nuevas casillas: **cinto** y **guantes**. Túnicas, sombreros, báculos, cinto, guantes y libros se ven puestos en el personaje.
+- Orin el Sabio vende las piezas de nivel bajo; las demás caen de monstruos según su nivel.
+- Los dibujos están en `public/gear.png` y `public/gear.json`.

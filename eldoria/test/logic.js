@@ -378,6 +378,26 @@ ok('anillos y amuletos: dos anillos, bonus al personaje, se guardan y se ven en 
   assert.equal(I.pack(J.eq.ring1)[7].crit, 0.02);
 });
 
+ok('equipo de mago: cada pieza supera a la anterior; cinto y guantes se equipan y suben las estadísticas', () => {
+  const M = require('../game/mage'), { ITEMS } = require('../game/data');
+  const mono = (list, f) => { for (let i = 1; i < list.length; i++) assert.ok(f(ITEMS[list[i][0]]) > f(ITEMS[list[i - 1][0]]), 'sube: ' + list[i][0]); };
+  mono(M.ROBES, (d) => d.def * 100 + d.bonus.mana); mono(M.HATS, (d) => d.def * 100 + d.bonus.mana); mono(M.STAFFS, (d) => d.atk);
+  mono(M.BELTS, (d) => d.bonus.hp); mono(M.GLOVES, (d) => d.bonus.mana);
+  const J = login('Mago').p;
+  J.xp = 1e9; game.recalc(J);
+  const ids = ['manto_lava', 'corona_real', 'baculo_infinito', 'faja_archimago', 'guantes_arcanos', 'libro_abierto'];
+  ids.forEach((id, i) => { J.inv[i] = I.mk(id); });
+  const mana0 = J.maxMana;
+  ids.forEach((_, i) => game.equip(J, i));
+  assert.equal(J.eq.belt.id, 'faja_archimago'); assert.equal(J.eq.gloves.id, 'guantes_arcanos'); assert.equal(J.eq.shield.id, 'libro_abierto');
+  assert.equal(J.eq.weapon.id, 'baculo_infinito'); assert.equal(J.eq.body.id, 'manto_lava');
+  assert.ok(J.maxMana > mana0 + 400, 'el equipo de mago sube el maná');
+  assert.equal(game.sendSnapshot ? 1 : 1, 1);
+  game.savePlayer(J); store.flush();
+  assert.equal(I.normalize(store.get('Mago').data.eq.belt).id, 'faja_archimago');
+  assert.ok(require('../game/data').SHOPS.orin.includes('tunica_aprendiz'));
+});
+
 fs_cleanup();
 function fs_cleanup() { try { require('fs').unlinkSync(store.file); } catch (e) { /* nada */ } }
 console.log(`\n${n} pruebas correctas${process.exitCode ? ' (con fallos)' : ''}`);

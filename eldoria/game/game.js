@@ -610,6 +610,7 @@ class Game {
       p.shopNpc = n.id;
       this.send(p, { t: 'shop', npc: n.name, stock: SHOPS[n.shop] || [] });
       this.msg(p, `${n.name}: ¡Bienvenido! Compro tus trofeos y vendo equipo de calidad.`, 'n');
+      if (n.id === 'orin') this.msg(p, `${n.name}: ${NPC_TIPS[rnd(0, NPC_TIPS.length - 1)]}`, 'n');
     } else if (n.type === 'bank') {
       this.sendBank(p);
       this.msg(p, `${n.name}: Guardo tu oro y tus objetos a salvo. Lo que está en el banco no se pierde si te matan.`, 'n');

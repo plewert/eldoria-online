@@ -442,5 +442,6 @@ const EXTRA_LOOT = [
   ['caballero_hielo', 'amuleto_sol', 0.01], ['maestro_forjador', 'anillo_plata', 0.2], ['maestro_forjador', 'lanza_guerra', 0.15],
 ];
 for (const [m, id, ch] of EXTRA_LOOT) if (MONSTERS[m]) MONSTERS[m].loot.push([id, ch, 1, 1]);
+require('./mage').build(ITEMS, SHOPS, MONSTERS);
 
 module.exports = { CFG, ITEMS, GEMS, RAR, SHOP, SHOPS, START_KIT, MONSTERS, SPAWN_PLAN, NPC_TIPS };

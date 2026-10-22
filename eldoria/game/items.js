@@ -9,8 +9,8 @@
 const { ITEMS, GEMS, CFG, RAR } = require('./data');
 
 const CORE = ['weapon', 'head', 'body', 'shield'];
-const SLOTS = [...CORE, 'amulet', 'ring1', 'ring2'];
-const GEAR_TYPES = new Set([...CORE, 'amulet', 'ring']);
+const SLOTS = [...CORE, 'amulet', 'ring1', 'ring2', 'belt', 'gloves'];
+const GEAR_TYPES = new Set([...CORE, 'amulet', 'ring', 'belt', 'gloves']);
 /** ¿Un objeto de este tipo cabe en esa casilla? (los anillos van en cualquiera de las dos) */
 const fits = (slot, type) => slot === type || (type === 'ring' && (slot === 'ring1' || slot === 'ring2'));
 /** Casilla donde se equipa un objeto (anillo: la primera libre, si no la primera). */

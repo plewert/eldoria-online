@@ -248,7 +248,7 @@ for (const p of PORTALS) tiles[idx(p.x, p.y)] = T.PORTAL;
 /* 6) PNJ */
 const NPCS = [
   { id: 'boris', name: 'Boris el Mercader',  icon: '🧑‍🌾', x: 85,  y: 62,  type: 'shop', shop: 'boris' },
-  { id: 'orin',  name: 'Orin el Sabio',      icon: '🧙‍♂️', x: 95,  y: 62,  type: 'sage' },
+  { id: 'orin',  name: 'Orin el Sabio',      icon: '🧙‍♂️', x: 95,  y: 62,  type: 'shop', shop: 'orin' },
   { id: 'gerda', name: 'Gerda la Banquera',  icon: '👩‍💼', x: 95,  y: 68,  type: 'bank' },
   { id: 'brisa', name: 'Capitán Brisa',      icon: '🧑‍✈️', x: 94,  y: 124, type: 'shop', shop: 'brisa' },
   { id: 'marta', name: 'Marta la Banquera',  icon: '💁‍♀️', x: 104, y: 124, type: 'bank' },

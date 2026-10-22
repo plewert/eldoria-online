@@ -265,3 +265,6 @@ button.mini:hover { background: rgba(201, 162, 75, .14); }
 #hotbar { border-radius: 6px; box-shadow: 0 4px 16px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .06); }
 
 .s-amulet { grid-column: 1; grid-row: 1; } .s-ring1 { grid-column: 1; grid-row: 3; } .s-ring2 { grid-column: 3; grid-row: 3; }
+
+.s-gloves { grid-column: 3; grid-row: 1; } .s-belt { grid-column: 2; grid-row: 3; }
+.slot canvas.gico, .item .ico canvas.gico { width: 30px; height: 30px; object-fit: contain; image-rendering: auto; display: block; margin: auto; position: relative; top: 1px; }
