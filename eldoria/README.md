@@ -30,6 +30,9 @@ Casco, armadura, escudo y arma se ven puestos en tu personaje (y en los demás j
 Casillas: arma, casco, armadura, escudo, **amuleto** y **2 anillos**. Anillos y amuletos dan bonus (ataque, defensa, vida, maná, crítico, robo de vida), escalan con +N/Ancient y pueden llevar gemas.
 Se compran en las tiendas (los básicos) o caen de monstruos y jefes (los poderosos).
 
+## Sprites
+Los monstruos y PNJ con sprite de píxel-art salen de `public/sprites.png` + `sprites.json` (atlas hecho con tus láminas). Los que no tienen sprite siguen con emoji y extremidades animadas. Para cambiar uno, edita el atlas o quita su clave de `sprites.json`.
+
 ## Banco y comercio
 - **Banco** (Gerda en la ciudad, Marta en el puerto): guarda objetos y oro; lo guardado no se pierde al morir en PvP.
 - **Comercio** entre jugadores (clic derecho → Comerciar, a ≤4 casillas): ofertas con objetos y oro, los dos confirman, intercambio atómico; cualquier cambio anula las confirmaciones.

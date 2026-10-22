@@ -1134,6 +1134,28 @@
     c.restore();
   }
 
+  /* ---------- sprites de píxel-art (monstruos y PNJ) ---------- */
+  const SPR = {};
+  const sprImg = new Image();
+  sprImg.src = 'sprites.png';
+  fetch('sprites.json').then((r) => r.json()).then((j) => Object.assign(SPR, j)).catch(() => { /* sin sprites: se usan emojis */ });
+  const sprReady = () => sprImg.complete && sprImg.naturalWidth > 0;
+  /** Dibuja el fotograma `fi` del sprite `key` con los pies en (cx, feetY). */
+  function drawSprite(c, key, fi, cx, feetY, flip, squash = 1) {
+    const s = SPR[key], f = s.f[fi % s.f.length], w = f[2], h = f[3] * squash;
+    c.save(); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+    c.translate(Math.round(cx), Math.round(feetY));
+    if (flip) c.scale(-1, 1);
+    c.drawImage(sprImg, f[0], f[1], f[2], f[3], -w / 2, -h, w, h);
+    c.restore();
+  }
+  const sprFrame = (e, s) => {
+    const n = s.f.length;
+    if (n < 2 || (e.amp || 0) < 0.3) return 0;
+    const u = (((e.phase || 0) / (Math.PI * 2)) % 1 + 1) % 1;
+    return Math.min(n - 1, Math.floor(u * n));
+  };
+
   /* Monstruos: el emoji es el cuerpo y se le dibujan piernas y brazos con ciclo de paso real. */
   const RIG = (() => {
     const m = {}, set = (kind, col, list) => list.split(' ').forEach((k) => { m[k] = { kind, col }; });
@@ -1163,6 +1185,18 @@
     const rig = RIG[e.t] || { kind: 'bi', col: '#8a7a66' };
     const k = d.boss ? 1.55 : 1, cx = sx + TS / 2, ground = sy + TS - 4;
     const amp = e.amp || 0, ph = e.phase || 0, sw = Math.sin(ph), cs = Math.cos(ph);
+    const spr = sprReady() && SPR[e.t];
+    if (spr) {                                                                  // sprite de píxel-art con ciclo de paso
+      const wide = spr.f[0][2];
+      c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.ellipse(cx, ground + 1, Math.min(22, 6 + wide * 0.28), 3.6 + (d.boss ? 1.5 : 0), 0, 0, 7); c.fill();
+      if (d.boss) { c.fillStyle = 'rgba(212,80,59,.14)'; c.beginPath(); c.arc(cx, ground - spr.h * 0.4, spr.h * 0.5 + Math.sin(now / 300) * 2, 0, 7); c.fill(); }
+      const moving = amp > 0.3, flying = e.t === 'murcielago' || /espectro|reina_hielo|elemental|golem_lava|sirena/.test(e.t);
+      const hop = moving ? (spr.f.length < 2 ? Math.abs(Math.sin(ph)) * 3 : Math.abs(Math.sin(ph * spr.f.length / 2)) * 1.5) : 0;
+      const float = flying ? 6 + Math.sin(now / 300 + e.id) * 2.2 : 0;
+      const sq = 1 + (moving ? 0 : Math.sin(now / 520 + e.id) * 0.018);
+      drawSprite(c, e.t, sprFrame(e, spr), cx, ground + 2 - Math.round(hop) - Math.round(float), (e.face || 1) < 0, sq);
+      return;
+    }
     const idle = Math.sin(now / 520 + e.id) * 0.8 * (1 - amp);
     const size = d.boss ? 46 : 28;
     c.save();
@@ -1356,6 +1390,7 @@
         const st = Math.min(d, sp * dt);
         e.rx += (dx / d) * st; e.ry += (dy / d) * st;
         e.phase = (e.phase || 0) + st * (Math.PI * 2 / (e.kind === 'pl' ? 3.0 : 2.2)); e.moveT = now;
+        if (Math.abs(dx) > 0.02) e.face = dx < 0 ? -1 : 1;
       } else { e.rx = e.x; e.ry = e.y; }
       const moving = now - (e.moveT || 0) < 260;
       e.amp = (e.amp || 0) + ((moving ? 1 : 0) - (e.amp || 0)) * (1 - Math.exp(-dt * (moving ? 12 : 10)));
@@ -1430,9 +1465,15 @@
       if (n.x < x0 || n.x > x1 || n.y < y0 || n.y > y1) continue;
       const cx = sxOf(n.x) + TS / 2, cy = syOf(n.y) + TS / 2;
       c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.ellipse(cx, cy + 12, 11, 4, 0, 0, 7); c.fill();
-      c.font = '28px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#fff';
-      c.fillText(n.icon, cx, cy - 1);
-      outlined(c, n.name, cx, cy - 26, '#c9a24b');
+      const ns = sprReady() && SPR['npc_' + n.id];
+      if (ns) {
+        drawSprite(c, 'npc_' + n.id, 0, cx, cy + 14, false, 1 + Math.sin(now / 600 + n.x) * 0.015);
+        outlined(c, n.name, cx, cy + 14 - ns.h - 8, '#c9a24b');
+      } else {
+        c.font = '28px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#fff';
+        c.fillText(n.icon, cx, cy - 1);
+        outlined(c, n.name, cx, cy - 26, '#c9a24b');
+      }
     }
     // entidades ordenadas por fila
     const list = [...G.ents.values()].sort((a, b) => a.ry - b.ry);
@@ -1451,7 +1492,8 @@
         hpBar(c, cx, top, 28, e.h / e.H);
         outlined(c, `${e.n} [${e.l}]${e.k ? ' ⚔' : ''}${e.tr ? ' 🤝' : ''}${e.o ? ' (ausente)' : ''}`, cx, top - 8, e.id === G.id ? '#c9a24b' : '#e8e2d0');
       } else {
-        const d = G.mons[e.t] || {}; const top = sy - (d.boss ? 18 : 6);
+        const d = G.mons[e.t] || {}; const sp0 = sprReady() && SPR[e.t];
+        const top = sp0 ? sy + TS - 4 - sp0.h - 8 : sy - (d.boss ? 18 : 6);
         hpBar(c, cx, top, d.boss ? 40 : 28, e.h / e.H);
         outlined(c, d.name || '?', cx, top - 8, d.boss ? '#ff9c80' : '#d8d2c0');
       }
