@@ -156,3 +156,71 @@ button.ghost:hover { background: rgba(201, 162, 75, .12); }
   #zone .zrule { display: none; }
   #hotbar { bottom: 176px; }
 }
+
+/* ============ Rareza de objetos ============ */
+.slot.r-plus { border-color: #3e8f48; box-shadow: inset 0 0 0 1px rgba(95, 209, 106, .35), inset 0 2px 5px rgba(0, 0, 0, .6); }
+.slot.r-ancient { border-color: #4aa8ff; box-shadow: inset 0 0 0 1px rgba(74, 168, 255, .55), 0 0 9px rgba(74, 168, 255, .45), inset 0 2px 5px rgba(0, 0, 0, .6); }
+.slot.r-gem { border-color: #55506a; }
+.slot .up { position: absolute; right: 2px; top: 0; font-size: 10.5px; font-weight: 700; text-shadow: 0 1px 2px #000; }
+.slot .pips { position: absolute; left: 3px; bottom: 3px; display: flex; gap: 2px; }
+.slot .pip { width: 5px; height: 5px; border-radius: 50%; border: 1px solid #8c97a6; background: transparent; }
+.slot .pip.on { border-color: rgba(0, 0, 0, .6); }
+.rc-normal { color: #9aa3ad; } .rc-plus { color: #5fd16a; } .rc-ancient { color: #4aa8ff; text-shadow: 0 0 8px rgba(74, 168, 255, .55); }
+#log .i { font-weight: 600; }
+
+/* ============ Ventanas grandes, rejillas, campos ============ */
+.sheet.wide { width: min(940px, 100%); }
+.cols.three { grid-template-columns: 1fr 1fr 1fr; }
+@media (max-width: 860px) { .cols.three { grid-template-columns: 1fr; } }
+.grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+.grid .slot { width: auto; aspect-ratio: 1; }
+#bankBox { max-height: 40vh; overflow-y: auto; scrollbar-width: thin; }
+.goldrow { display: flex; align-items: center; gap: 8px; margin: 10px 0 2px; font-size: 13px; }
+.goldrow span { flex: 1; }
+.goldrow input, #tradeGold { width: 96px; padding: 5px 7px; background: #0a0e13; border: 1px solid var(--edge); border-radius: 3px; }
+.goldrow input:focus { border-color: var(--brass); outline: none; }
+button.mini { padding: 5px 10px; background: transparent; border: 1px solid var(--brass-dim); color: var(--brass); cursor: pointer; font-size: 12.5px; }
+button.mini:hover { background: rgba(201, 162, 75, .14); }
+.list.short { min-height: 140px; max-height: 34vh; }
+.tfoot { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+.tfoot #tradeState { flex: 1; color: var(--muted); }
+.item .nm.rc-normal, .item .nm.rc-plus, .item .nm.rc-ancient { font-weight: 600; }
+.item .nm small { color: var(--muted); text-shadow: none; font-weight: 400; }
+.item .x { padding: 2px 7px; }
+
+/* ============ Ficha de monstruo ============ */
+#drops .sheet header { gap: 10px; }
+#drops .big { font-size: 34px; line-height: 1; }
+.badge { padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--edge); color: var(--muted); }
+.badge.boss { border-color: var(--blood); color: #f0b3a6; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 6px; margin-bottom: 14px; }
+.stats div { padding: 6px 8px; background: #10161d; border: 1px solid #263140; }
+.stats small { display: block; color: var(--muted); font-size: 11px; }
+.stats b { font-variant-numeric: tabular-nums; }
+.drow { display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 8px; padding: 4px 6px; border: 1px solid #263140; background: #10161d; }
+.drow .ico { font-size: 21px; text-align: center; }
+.drow .nm small { display: block; color: var(--muted); font-size: 11.5px; font-weight: 400; text-shadow: none; }
+.drow .pc { font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; }
+.drow .pc small { display: block; color: var(--muted); font-weight: 400; font-size: 11px; }
+.drow.rare { border-color: #2d5a8a; background: #0f1a28; }
+
+/* ============ Menú contextual, tooltip y avisos ============ */
+#ctx { position: fixed; z-index: 40; min-width: 190px; max-width: 320px; padding: 4px; background: #121922; border: 1px solid var(--edge); box-shadow: 0 10px 30px rgba(0, 0, 0, .6); }
+#ctx button { display: flex; gap: 8px; align-items: center; width: 100%; padding: 6px 9px; background: none; border: 0; text-align: left; cursor: pointer; font-size: 13px; }
+#ctx button:hover:not(:disabled), #ctx button:focus-visible { background: rgba(201, 162, 75, .15); outline: none; }
+#ctx button:disabled { opacity: .4; cursor: default; }
+#ctx hr { border: 0; border-top: 1px solid var(--edge); margin: 3px 0; }
+#ctx .hdr { padding: 4px 9px; color: var(--muted); font-size: 11.5px; }
+#tip { position: fixed; z-index: 50; max-width: 270px; padding: 8px 10px; background: rgba(10, 14, 19, .97); border: 1px solid var(--edge); box-shadow: 0 8px 24px rgba(0, 0, 0, .6); pointer-events: none; font-size: 12.5px; line-height: 1.45; }
+#tip .tn { font: 700 14px var(--serif); }
+#tip .ts { color: var(--muted); }
+#tip .tl { margin-top: 4px; }
+#tip .bad { color: #ff7a66; }
+#tip .gm { display: flex; gap: 6px; }
+#tip .free { color: var(--muted); }
+#tip .tsep { border-top: 1px solid var(--edge); margin: 6px 0 4px; }
+#toasts { position: fixed; right: 330px; top: 12px; z-index: 45; display: grid; gap: 8px; width: min(320px, calc(100vw - 24px)); }
+.toast { padding: 10px 12px; background: #121922; border: 1px solid var(--brass-dim); box-shadow: 0 8px 24px rgba(0, 0, 0, .5); }
+.toast .row2 { display: flex; gap: 8px; margin-top: 8px; }
+@media (max-width: 900px) { #toasts { right: 12px; top: 64px; } }
+#gemSum { margin: 8px 0 0; line-height: 1.5; }

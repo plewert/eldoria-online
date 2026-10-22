@@ -1,26 +1,41 @@
 'use strict';
 /**
- * Mundo de Eldoria: se genera de forma determinista (siempre el mismo mapa).
+ * Mundo de Eldoria (180 x 140): se genera de forma determinista (siempre el mismo mapa).
  *
- *   y  0..32   Bosque Maldito      (PvP)   bosque con orcos, lobos y osos
- *   y 33..88   Prado de Novatos    (seguro) alrededor de la ciudad
- *   centro     Ciudad Aldea Real   (seguro) tienda, templo y punto de reaparición
- *   oeste      Catacumbas          (seguro) mazmorra, jefe: Rey Esqueleto
- *   este       Abismo Carmesí      (PvP)    mazmorra, jefe: Demonio Supremo
+ *   norte    Bosque Maldito (PvP) · Cumbres Heladas (PvP) -> Fortaleza de Hielo (mazmorra PvP)
+ *   centro   Ciudad de Aldea Real (segura) · Prado de los Novatos (seguro)
+ *   oeste    Catacumbas Silenciosas (mazmorra segura)
+ *   este     Abismo Carmesí (mazmorra PvP) · Dunas Ardientes (PvP) -> Pirámide Olvidada (mazmorra PvP)
+ *   sur      Colinas Doradas (segura) -> Minas Enanas (mazmorra segura) · Pantano Venenoso (PvP)
+ *   costa    Playa de Cristal (segura) con el Puerto Marea (ciudad segura)
  */
 const { SPAWN_PLAN } = require('./data');
 
-const W = 120, H = 90;
-const T = { GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10 };
-const BLOCKED = new Uint8Array(16);
-[T.WATER, T.TREE, T.WALL, T.ROCK].forEach((t) => { BLOCKED[t] = 1; });
+const W = 180, H = 140;
+const T = {
+  GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10,
+  SAND: 11, SNOW: 12, SWAMP: 13, DUNE: 14, PALM: 15, PINE: 16, DEADTREE: 17, CACTUS: 18, ICEBLOCK: 19,
+  MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24,
+};
+const BLOCKED = new Uint8Array(32);
+[T.WATER, T.TREE, T.WALL, T.ROCK, T.PALM, T.PINE, T.DEADTREE, T.CACTUS, T.ICEBLOCK, T.BOG].forEach((t) => { BLOCKED[t] = 1; });
 
+// El orden importa: gana la primera zona cuyo rectángulo contiene la casilla.
 const ZONES = [
-  { id: 'ciudad',     name: 'Ciudad de Aldea Real',   pvp: false, kind: 'town',    rect: [48, 38, 72, 54] },
-  { id: 'catacumbas', name: 'Catacumbas Silenciosas', pvp: false, kind: 'dungeon', rect: [3, 36, 30, 87] },
-  { id: 'abismo',     name: 'Abismo Carmesí',         pvp: true,  kind: 'dungeon', rect: [90, 36, 117, 70] },
-  { id: 'bosque',     name: 'Bosque Maldito',         pvp: true,  kind: 'wild',    rect: [0, 0, 119, 32] },
-  { id: 'prado',      name: 'Prado de los Novatos',   pvp: false, kind: 'field',   rect: [0, 0, 119, 89] },
+  { id: 'ciudad',     name: 'Ciudad de Aldea Real',   pvp: false, kind: 'town',    rect: [78, 58, 102, 74] },
+  { id: 'puerto',     name: 'Puerto Marea',           pvp: false, kind: 'town',    rect: [90, 120, 108, 131] },
+  { id: 'catacumbas', name: 'Catacumbas Silenciosas', pvp: false, kind: 'dungeon', rect: [3, 40, 30, 91] },
+  { id: 'minas',      name: 'Minas Enanas',           pvp: false, kind: 'dungeon', rect: [3, 96, 28, 136] },
+  { id: 'abismo',     name: 'Abismo Carmesí',         pvp: true,  kind: 'dungeon', rect: [112, 40, 139, 74] },
+  { id: 'piramide',   name: 'Pirámide Olvidada',      pvp: true,  kind: 'dungeon', rect: [148, 100, 175, 136] },
+  { id: 'fortaleza',  name: 'Fortaleza de Hielo',     pvp: true,  kind: 'dungeon', rect: [148, 3, 175, 30] },
+  { id: 'bosque',     name: 'Bosque Maldito',         pvp: true,  kind: 'wild',    rect: [0, 0, 99, 34] },
+  { id: 'cumbres',    name: 'Cumbres Heladas',        pvp: true,  kind: 'wild',    rect: [100, 0, 179, 34], tint: 'rgba(120,170,255,.10)' },
+  { id: 'dunas',      name: 'Dunas Ardientes',        pvp: true,  kind: 'wild',    rect: [140, 35, 179, 139], tint: 'rgba(255,170,60,.10)' },
+  { id: 'pantano',    name: 'Pantano Venenoso',       pvp: true,  kind: 'wild',    rect: [0, 96, 59, 139], tint: 'rgba(80,140,60,.13)' },
+  { id: 'colinas',    name: 'Colinas Doradas',        pvp: false, kind: 'field',   rect: [60, 96, 139, 119] },
+  { id: 'playa',      name: 'Playa de Cristal',       pvp: false, kind: 'field',   rect: [60, 120, 139, 139] },
+  { id: 'prado',      name: 'Prado de los Novatos',   pvp: false, kind: 'field',   rect: [0, 0, 179, 139] },
 ];
 const zoneGrid = new Uint8Array(W * H);
 for (let y = 0; y < H; y++) {
@@ -39,7 +54,7 @@ function zoneAt(x, y) {
 }
 function zoneById(id) { return ZONES.find((z) => z.id === id); }
 
-/* ---------- utilidades de aleatoriedad determinista ---------- */
+/* ---------- aleatoriedad determinista ---------- */
 function mulberry32(a) {
   return function () {
     a |= 0; a = (a + 0x6D2B79F5) | 0;
@@ -61,36 +76,51 @@ function makeNoise(seed) {
   };
 }
 
-/* ---------- construcción del mapa ---------- */
 const tiles = new Uint8Array(W * H);
-const rng = mulberry32(20261019);
+const rng = mulberry32(20261021);
 const n1 = makeNoise(11), n2 = makeNoise(77), n3 = makeNoise(5);
 const idx = (x, y) => y * W + x;
 const inb = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
-const isTown = (x, y) => zoneAt(x, y).id === 'ciudad';
+const SPAWN_POINT = { x: 90, y: 66 };
 
-const SPAWN_POINT = { x: 60, y: 48 };
-
-// 1) Terreno exterior
+/* 1) Terreno exterior por zona */
 for (let y = 0; y < H; y++) {
   for (let x = 0; x < W; x++) {
-    const wild = y <= 32;
-    let t = T.GRASS;
+    const z = zoneAt(x, y).id;
     const a = n1(x / 6, y / 6), b = n2(x / 9, y / 9);
-    if (wild) {
-      if (a > 0.58 || rng() < 0.06) t = T.TREE;
-      else if (b > 0.74) t = T.WATER;
-      else if (rng() < 0.012) t = T.ROCK;
-    } else {
-      if (a > 0.80 || rng() < 0.025) t = T.TREE;
-      else if (b > 0.80) t = T.WATER;
-      else if (rng() < 0.006) t = T.ROCK;
+    let t = T.GRASS;
+    switch (z) {
+      case 'bosque':
+        if (a > 0.58 || rng() < 0.06) t = T.TREE; else if (b > 0.74) t = T.WATER; else if (rng() < 0.012) t = T.ROCK;
+        break;
+      case 'cumbres':
+        t = T.SNOW;
+        if (a > 0.64 || rng() < 0.05) t = T.PINE; else if (b > 0.80) t = T.WATER; else if (rng() < 0.02) t = T.ICEBLOCK;
+        break;
+      case 'dunas':
+        t = T.DUNE;
+        if (b > 0.86) t = T.WATER; else if (rng() < 0.016) t = T.CACTUS; else if (rng() < 0.01) t = T.ROCK; else if (rng() < 0.006) t = T.PALM;
+        break;
+      case 'pantano':
+        t = T.SWAMP;
+        if (b > 0.64) t = T.BOG; else if (a > 0.66 || rng() < 0.05) t = T.DEADTREE; else if (rng() < 0.012) t = T.ROCK;
+        break;
+      case 'colinas':
+        t = T.HILL;
+        if (a > 0.84 || rng() < 0.02) t = T.TREE; else if (b > 0.84) t = T.WATER; else if (rng() < 0.008) t = T.ROCK; else if (rng() < 0.05) t = T.FLOWER;
+        break;
+      case 'playa':
+        t = T.SAND;
+        if (y >= 133 + Math.floor(n3(x / 4, y / 4) * 3)) t = T.WATER; else if (rng() < 0.014) t = T.PALM; else if (rng() < 0.008) t = T.ROCK;
+        break;
+      default:
+        if (a > 0.80 || rng() < 0.025) t = T.TREE; else if (b > 0.80) t = T.WATER; else if (rng() < 0.006) t = T.ROCK;
+        if (t === T.GRASS && rng() < 0.035) t = T.FLOWER;
     }
-    if (t === T.GRASS && rng() < 0.035) t = T.FLOWER;
     tiles[idx(x, y)] = t;
   }
 }
-// costa de agua
+// costa de agua alrededor del mapa
 for (let y = 0; y < H; y++) {
   for (let x = 0; x < W; x++) {
     const d = Math.min(x, y, W - 1 - x, H - 1 - y);
@@ -98,28 +128,32 @@ for (let y = 0; y < H; y++) {
   }
 }
 
-// 2) Ciudad
-(function buildTown() {
-  const [x0, y0, x1, y1] = ZONES[0].rect;
+/* 2) Ciudades */
+function house(ax, ay, bx, by, doorX) {
+  for (let y = ay; y <= by; y++) for (let x = ax; x <= bx; x++) tiles[idx(x, y)] = T.WALL;
+  for (let y = ay + 1; y < by; y++) for (let x = ax + 1; x < bx; x++) tiles[idx(x, y)] = T.SHOP;
+  tiles[idx(doorX, by)] = T.SHOP;
+}
+function buildTown(zoneId, gatesX, gatesY, flowers, houses) {
+  const [x0, y0, x1, y1] = zoneById(zoneId).rect;
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) tiles[idx(x, y)] = T.ROAD;
   for (let x = x0; x <= x1; x++) { tiles[idx(x, y0)] = T.WALL; tiles[idx(x, y1)] = T.WALL; }
   for (let y = y0; y <= y1; y++) { tiles[idx(x0, y)] = T.WALL; tiles[idx(x1, y)] = T.WALL; }
-  for (let x = 59; x <= 61; x++) { tiles[idx(x, y0)] = T.ROAD; tiles[idx(x, y1)] = T.ROAD; }   // puertas N y S
-  for (let y = 45; y <= 47; y++) { tiles[idx(x0, y)] = T.ROAD; tiles[idx(x1, y)] = T.ROAD; }   // puertas O y E
-  // parterres
-  for (const [fx, fy] of [[51, 50], [52, 50], [51, 51], [68, 50], [69, 50], [69, 51], [51, 41], [69, 41]]) tiles[idx(fx, fy)] = T.FLOWER;
-  const house = (ax, ay, bx, by, doorX) => {
-    for (let y = ay; y <= by; y++) for (let x = ax; x <= bx; x++) tiles[idx(x, y)] = T.WALL;
-    for (let y = ay + 1; y < by; y++) for (let x = ax + 1; x < bx; x++) tiles[idx(x, y)] = T.SHOP;
-    tiles[idx(doorX, by)] = T.SHOP;
-  };
-  house(52, 40, 60, 44, 56);   // tienda de Boris
-  house(63, 40, 70, 44, 66);   // templo del sabio Orin
-})();
+  for (const x of gatesX) { tiles[idx(x, y0)] = T.ROAD; tiles[idx(x, y1)] = T.ROAD; }
+  for (const y of gatesY) { tiles[idx(x0, y)] = T.ROAD; tiles[idx(x1, y)] = T.ROAD; }
+  for (const [fx, fy] of flowers) tiles[idx(fx, fy)] = T.FLOWER;
+  for (const h of houses) house(...h);
+}
+buildTown('ciudad', [89, 90, 91], [65, 66, 67],
+  [[81, 70], [82, 70], [81, 71], [100, 71], [101, 71], [101, 72], [80, 60], [101, 60]],
+  [[81, 60, 89, 64, 85], [92, 60, 99, 64, 95], [92, 66, 99, 70, 95]]);
+buildTown('puerto', [99, 100, 101], [125, 126, 127],
+  [[92, 129], [93, 129], [106, 129], [107, 129]],
+  [[92, 122, 97, 126, 94], [102, 122, 107, 126, 104]]);
 
-// 3) Mazmorras: habitaciones en cuadrícula conectadas con pasillos
-function carveDungeon(rect, cols, rows, floor) {
-  const [x0, y0, x1, y1] = rect;
+/* 3) Mazmorras: habitaciones en cuadrícula conectadas con pasillos */
+function carveDungeon(zoneId, cols, rows, floor) {
+  const [x0, y0, x1, y1] = zoneById(zoneId).rect;
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) tiles[idx(x, y)] = T.WALL;
   const cw = Math.floor((x1 - x0 + 1) / cols), ch = Math.floor((y1 - y0 + 1) / rows);
   const rooms = [];
@@ -151,71 +185,81 @@ function carveDungeon(rect, cols, rows, floor) {
       }
     }
   }
-  // pilares decorativos en habitaciones grandes (en esquinas, sin bloquear pasillos)
-  for (const r of rooms) {
-    if (r.rw >= 6 && r.rh >= 6) {
-      tiles[idx(r.rx, r.ry)] = T.WALL;
-      tiles[idx(r.rx + r.rw - 1, r.ry + r.rh - 1)] = T.WALL;
-    }
+  for (const r of rooms) {   // pilares decorativos
+    if (r.rw >= 6 && r.rh >= 6) { tiles[idx(r.rx, r.ry)] = T.WALL; tiles[idx(r.rx + r.rw - 1, r.ry + r.rh - 1)] = T.WALL; }
   }
   return rooms;
 }
-const catRooms = carveDungeon(ZONES[1].rect, 3, 5, T.DFLOOR);
-const abyRooms = carveDungeon(ZONES[2].rect, 3, 3, T.AFLOOR);
+const catRooms = carveDungeon('catacumbas', 3, 5, T.DFLOOR);
+const minRooms = carveDungeon('minas', 3, 4, T.MFLOOR);
+const abyRooms = carveDungeon('abismo', 3, 3, T.AFLOOR);
+const pirRooms = carveDungeon('piramide', 3, 4, T.PFLOOR);
+const forRooms = carveDungeon('fortaleza', 3, 3, T.IFLOOR);
 
-// 4) Portales
-const PORTALS = [];
-function addPortal(x, y, tx, ty, label) {
-  tiles[idx(x, y)] = T.PORTAL;
-  PORTALS.push({ x, y, tx, ty, label });
-}
-const catEntry = catRooms[0], abyEntry = abyRooms[0];
-addPortal(40, 60, catEntry.cx + 1, catEntry.cy, 'Catacumbas Silenciosas (zona segura)');
-addPortal(catEntry.cx, catEntry.cy, 41, 60, 'Salir al Prado');
-addPortal(100, 31, abyEntry.cx + 1, abyEntry.cy, 'Abismo Carmesí (¡PvP!)');
-addPortal(abyEntry.cx, abyEntry.cy, 100, 29, 'Salir al Bosque');
-
-// 5) Caminos que garantizan conexión (despejan árboles, agua y rocas)
+/* 4) Caminos (despejan árboles, agua y rocas del trazado) */
 function carvePath(x0, y0, x1, y1) {
   const put = (x, y) => { if (inb(x, y) && tiles[idx(x, y)] !== T.PORTAL && tiles[idx(x, y)] !== T.WALL) tiles[idx(x, y)] = T.ROAD; };
   for (let x = Math.min(x0, x1); x <= Math.max(x0, x1); x++) put(x, y0);
   for (let y = Math.min(y0, y1); y <= Math.max(y0, y1); y++) put(x1, y);
 }
+carvePath(90, 57, 90, 31);      // puerta norte -> bosque
+carvePath(90, 31, 130, 31);     // camino del norte (bosque y cumbres)
+carvePath(96, 31, 96, 29);      // ramal al portal del Abismo
+carvePath(130, 31, 130, 21);    // ramal al portal de la Fortaleza de Hielo
+carvePath(77, 66, 41, 66);      // puerta oeste -> Catacumbas
+carvePath(103, 66, 103, 78);    // puerta este
+carvePath(103, 78, 150, 78);    // camino al desierto
+carvePath(150, 78, 150, 89);    // ramal al portal de la Pirámide
+carvePath(90, 75, 90, 100);     // puerta sur -> colinas
+carvePath(90, 100, 67, 100);    // ramal al portal de las Minas
+carvePath(90, 100, 100, 119);   // camino al Puerto Marea
+carvePath(67, 102, 30, 102);    // calle del pantano
+carvePath(30, 102, 30, 118);
+
+/* 5) Portales */
+const PORTALS = [];
+function addPortal(x, y, tx, ty, label) { tiles[idx(x, y)] = T.PORTAL; PORTALS.push({ x, y, tx, ty, label }); }
+function link(ox, oy, rooms, exitX, exitY, labelIn, labelOut) {
+  const e = rooms[0];
+  addPortal(ox, oy, e.cx + 1, e.cy, labelIn);
+  addPortal(e.cx, e.cy, exitX, exitY, labelOut);
+}
+link(40, 66, catRooms, 41, 66, 'Catacumbas Silenciosas (zona segura)', 'Salir al Prado');
+link(66, 100, minRooms, 67, 100, 'Minas Enanas (zona segura)', 'Salir a las Colinas');
+link(96, 28, abyRooms, 96, 30, 'Abismo Carmesí (¡PvP!)', 'Salir al Bosque');
+link(150, 90, pirRooms, 150, 89, 'Pirámide Olvidada (¡PvP!)', 'Salir al Desierto');
+link(130, 20, forRooms, 130, 22, 'Fortaleza de Hielo (¡PvP!)', 'Salir a las Cumbres');
+
 function clearAround(cx, cy, r) {
   for (let y = cy - r; y <= cy + r; y++) {
     for (let x = cx - r; x <= cx + r; x++) {
       if (!inb(x, y)) continue;
       const t = tiles[idx(x, y)];
-      if (t === T.TREE || t === T.WATER || t === T.ROCK) tiles[idx(x, y)] = T.GRASS;
+      if (BLOCKED[t] && t !== T.WALL) tiles[idx(x, y)] = zoneAt(x, y).id === 'dunas' ? T.DUNE : zoneAt(x, y).id === 'cumbres' ? T.SNOW : T.GRASS;
     }
   }
 }
-carvePath(60, 37, 60, 31);       // puerta norte -> bosque
-carvePath(60, 31, 100, 31);      // bosque, camino al portal del Abismo
-carvePath(60, 55, 60, 60);       // puerta sur -> prado
-carvePath(60, 60, 41, 60);       // prado, camino al portal de las Catacumbas
-carvePath(73, 46, 88, 46);       // puerta este
-carvePath(47, 46, 34, 46);       // puerta oeste
-for (const p of PORTALS) if (!(p.x >= 3 && p.x <= 30) && !(p.x >= 90 && p.x <= 117 && p.y >= 36 && p.y <= 70)) clearAround(p.x, p.y, 2);
-clearAround(100, 29, 2);
-clearAround(41, 60, 1);
-// el tile de cada portal exterior debe seguir siendo portal tras despejar
+for (const p of PORTALS) {
+  const z = zoneAt(p.x, p.y);
+  if (z.kind !== 'dungeon') clearAround(p.x, p.y, 2);
+}
 for (const p of PORTALS) tiles[idx(p.x, p.y)] = T.PORTAL;
 
-// 6) NPCs
+/* 6) PNJ */
 const NPCS = [
-  { id: 'boris', name: 'Boris el Mercader', icon: '🧑‍🌾', x: 56, y: 42, type: 'shop' },
-  { id: 'orin',  name: 'Orin el Sabio',     icon: '🧙‍♂️', x: 66, y: 42, type: 'sage' },
+  { id: 'boris', name: 'Boris el Mercader',  icon: '🧑‍🌾', x: 85,  y: 62,  type: 'shop', shop: 'boris' },
+  { id: 'orin',  name: 'Orin el Sabio',      icon: '🧙‍♂️', x: 95,  y: 62,  type: 'sage' },
+  { id: 'gerda', name: 'Gerda la Banquera',  icon: '👩‍💼', x: 95,  y: 68,  type: 'bank' },
+  { id: 'brisa', name: 'Capitán Brisa',      icon: '🧑‍✈️', x: 94,  y: 124, type: 'shop', shop: 'brisa' },
+  { id: 'marta', name: 'Marta la Banquera',  icon: '💁‍♀️', x: 104, y: 124, type: 'bank' },
 ];
 
 /* ---------- accesibilidad ---------- */
 function isWalkable(x, y) { return inb(x, y) && !BLOCKED[tiles[idx(x, y)]]; }
-
 const portalAtMap = new Map();
 for (const p of PORTALS) portalAtMap.set(idx(p.x, p.y), p);
 function portalAt(x, y) { return portalAtMap.get(idx(x, y)) || null; }
 
-// Zona alcanzable desde el punto de reaparición (incluye los portales)
 const reach = new Uint8Array(W * H);
 (function bfs() {
   const q = [idx(SPAWN_POINT.x, SPAWN_POINT.y)];
@@ -242,20 +286,19 @@ function farFromPortals(x, y, d) {
 const monsterSpawns = [];
 (function plan() {
   const r = mulberry32(424242);
-  const taken = new Set();
   const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const cache = {};
-  const candidates = (zoneId, minY) => {
-    const key = zoneId + ':' + (minY || 0);
+  const candidates = (zoneId, box) => {
+    const key = zoneId + ':' + (box || '');
     if (cache[key]) return cache[key];
     const out = [];
-    for (let y = minY || 0; y < H; y++) {
+    for (let y = 0; y < H; y++) {
       for (let x = 0; x < W; x++) {
         if (!reach[idx(x, y)] || zoneAt(x, y).id !== zoneId) continue;
+        if (box && (x < box[0] || y < box[1] || x > box[2] || y > box[3])) continue;
         const t = tiles[idx(x, y)];
-        if (t === T.PORTAL || t === T.ROAD && zoneId !== 'prado' && zoneId !== 'bosque') continue;
+        if (t === T.PORTAL || (t === T.ROAD && zoneId !== 'prado' && zoneId !== 'bosque')) continue;
         if (!farFromPortals(x, y, 7)) continue;
-        if (zoneId === 'prado' && (isTown(x, y) || y < 33)) continue;
         if (zoneId === 'bosque' && y < 3) continue;
         out.push([x, y]);
       }
@@ -264,33 +307,39 @@ const monsterSpawns = [];
     return cache[key];
   };
   for (const s of SPAWN_PLAN) {
-    const list = candidates(s.zone, s.minY);
     let placed = 0;
-    for (const [x, y] of list) {
+    for (const [x, y] of candidates(s.zone, s.box)) {
       if (placed >= s.n) break;
-      // separación mínima de 3 casillas entre apariciones
-      let ok = true;
+      let ok = true;   // separación mínima de 3 casillas entre apariciones
       for (const m of monsterSpawns) { if (Math.abs(m.x - x) < 3 && Math.abs(m.y - y) < 3) { ok = false; break; } }
       if (!ok) continue;
-      monsterSpawns.push({ type: s.type, x, y }); taken.add(idx(x, y)); placed++;
+      monsterSpawns.push({ type: s.type, x, y }); placed++;
     }
   }
-  // Jefes en la última habitación de cada mazmorra y en el rincón del bosque
-  const lastCat = catRooms[catRooms.length - 1], lastAby = abyRooms[abyRooms.length - 1];
-  monsterSpawns.push({ type: 'rey_esqueleto', x: lastCat.cx, y: lastCat.cy });
-  monsterSpawns.push({ type: 'demonio_supremo', x: lastAby.cx, y: lastAby.cy });
-  // Señor Orco: tile alcanzable más cercano a (20,10)
-  let best = null, bd = 1e9;
-  for (let y = 4; y < 30; y++) for (let x = 4; x < W - 4; x++) {
-    if (!reach[idx(x, y)] || zoneAt(x, y).id !== 'bosque') continue;
-    const d = Math.hypot(x - 20, y - 10);
-    if (d < bd) { bd = d; best = [x, y]; }
+  // Jefes: última habitación de cada mazmorra, o el tile alcanzable más cercano a un punto
+  const last = (rooms) => rooms[rooms.length - 1];
+  monsterSpawns.push({ type: 'rey_esqueleto', x: last(catRooms).cx, y: last(catRooms).cy });
+  monsterSpawns.push({ type: 'maestro_forjador', x: last(minRooms).cx, y: last(minRooms).cy });
+  monsterSpawns.push({ type: 'demonio_supremo', x: last(abyRooms).cx, y: last(abyRooms).cy });
+  monsterSpawns.push({ type: 'faraon', x: last(pirRooms).cx, y: last(pirRooms).cy });
+  monsterSpawns.push({ type: 'reina_hielo', x: last(forRooms).cx, y: last(forRooms).cy });
+  const nearest = (zoneId, px, py) => {
+    let best = null, bd = 1e9;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (!reach[idx(x, y)] || zoneAt(x, y).id !== zoneId || tiles[idx(x, y)] === T.PORTAL || tiles[idx(x, y)] === T.ROAD) continue;
+      const d = Math.hypot(x - px, y - py);
+      if (d < bd) { bd = d; best = [x, y]; }
+    }
+    return best;
+  };
+  for (const [type, zone, px, py] of [['senor_orco', 'bosque', 20, 10], ['hidra', 'pantano', 40, 125], ['rey_escorpion', 'dunas', 160, 60], ['cangrejo_colosal', 'playa', 125, 128]]) {
+    const b = nearest(zone, px, py);
+    monsterSpawns.push({ type, x: b[0], y: b[1] });
   }
-  monsterSpawns.push({ type: 'senor_orco', x: best[0], y: best[1] });
 })();
 
-// Versión compacta del mapa para enviar al cliente (un carácter por casilla)
-const CH = '0123456789a';
+// Versión compacta del mapa para el cliente (un carácter por casilla)
+const CH = '0123456789abcdefghijklmno';
 const rows = [];
 for (let y = 0; y < H; y++) {
   let s = '';
@@ -300,5 +349,5 @@ for (let y = 0; y < H; y++) {
 
 module.exports = {
   W, H, T, BLOCKED, tiles, ZONES, zoneAt, zoneById, PORTALS, portalAt, NPCS, SPAWN_POINT,
-  isWalkable, reach, monsterSpawns, rows, catRooms, abyRooms,
+  isWalkable, reach, monsterSpawns, rows, catRooms, abyRooms, minRooms, pirRooms, forRooms,
 };

@@ -13,12 +13,48 @@ class Store {
     this.file = file;
     this.accounts = {};
     this.timer = null;
+    this.dirty = new Set();
+    this.remote = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+      ? { url: process.env.UPSTASH_REDIS_REST_URL.replace(/\/$/, ''), token: process.env.UPSTASH_REDIS_REST_TOKEN } : null;
     fs.mkdirSync(path.dirname(file), { recursive: true });
     try {
       this.accounts = JSON.parse(fs.readFileSync(file, 'utf8'));
     } catch (e) {
       if (e.code !== 'ENOENT') console.error('No se pudo leer', file, e.message);
     }
+  }
+
+  /** Llama a Upstash Redis (REST). Las cuentas viven en un hash: un campo por cuenta. */
+  async cmd(args) {
+    const r = await fetch(this.remote.url, {
+      method: 'POST', headers: { Authorization: 'Bearer ' + this.remote.token, 'Content-Type': 'application/json' }, body: JSON.stringify(args),
+    });
+    const j = await r.json();
+    if (!r.ok || j.error) throw new Error(j.error || 'HTTP ' + r.status);
+    return j.result;
+  }
+
+  /** Carga las cuentas guardadas en la base remota (si está configurada). */
+  async init() {
+    if (!this.remote) return;
+    const flat = await this.cmd(['HGETALL', 'eldoria:accounts']);
+    let n = 0;
+    for (let i = 0; i < (flat || []).length; i += 2) {
+      try { this.accounts[flat[i]] = JSON.parse(flat[i + 1]); n++; } catch (e) { console.error('Cuenta dañada', flat[i]); }
+    }
+    // cuentas que solo existían en el archivo local y aún no están en la base
+    for (const k of Object.keys(this.accounts)) if (!(flat || []).includes(k)) this.dirty.add(k);
+    console.log(`Base remota conectada: ${n} cuentas cargadas.`);
+    if (this.dirty.size) await this.flushRemote();
+  }
+
+  async flushRemote() {
+    if (!this.remote || !this.dirty.size) return;
+    const keys = [...this.dirty]; this.dirty.clear();
+    const args = ['HSET', 'eldoria:accounts'];
+    for (const k of keys) if (this.accounts[k]) args.push(k, JSON.stringify(this.accounts[k]));
+    if (args.length === 2) return;
+    try { await this.cmd(args); } catch (e) { keys.forEach((k) => this.dirty.add(k)); console.error('Error guardando en la base remota:', e.message); }
   }
 
   static keyOf(name) { return String(name).toLowerCase(); }
@@ -31,6 +67,7 @@ class Store {
     const hash = crypto.scryptSync(password, salt, 32).toString('hex');
     const acc = { key, name, salt, hash, color, created: Date.now(), data: null };
     this.accounts[key] = acc;
+    this.dirty.add(key);
     this.touch();
     return acc;
   }
@@ -45,6 +82,7 @@ class Store {
     const acc = this.accounts[key];
     if (!acc) return;
     acc.data = data;
+    this.dirty.add(key);
     this.touch();
   }
 
@@ -63,6 +101,7 @@ class Store {
     } catch (e) {
       console.error('Error guardando cuentas:', e.message);
     }
+    return this.flushRemote();
   }
 }
 

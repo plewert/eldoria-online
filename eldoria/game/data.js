@@ -24,6 +24,17 @@ const CFG = {
   DEATH_EQUIP_DROP: 0.15,       // probabilidad de soltar cada pieza equipada al morir en PvP
   DEATH_GOLD_DROP: 0.25,        // fracción de oro que se suelta al morir en PvP
   AUTOSAVE_MS: 30000,
+  BANK_SIZE: 48,                // casillas del banco
+  TRADE_RANGE: 4,               // distancia máxima para comerciar
+  TRADE_MAX_ITEMS: 8,
+  TRADE_INVITE_MS: 20000,
+  UP_STAT: 0.1,                 // cada +1 sube un 10% el ataque/defensa base
+  ANC_MULT: 1.5,                // los Ancient valen x1.5
+  PLUS_CHANCE: 0.22,            // prob. de que un arma/armadura soltada venga con +N
+  ANCIENT_CHANCE: 0.015,        // prob. de que un equipo soltado sea Ancient (x4 en jefes)
+  BOSS_RARE_MULT: 4,
+  MAX_SOCKETS: 3,
+  GEM_REMOVE_COST: 250,         // oro por sacar una gema de una ranura
 };
 
 /* ------------------------------ OBJETOS ------------------------------ */
@@ -93,17 +104,104 @@ const ITEMS = {
   corona_esqueleto:{ name: 'Corona del Rey Esqueleto', icon: '👑', type: 'misc', stack: true, sell: 900 },
   corazon_orco:    { name: 'Corazón del Señor Orco',   icon: '🫀', type: 'misc', stack: true, sell: 1100 },
   alma_demonio:    { name: 'Alma del Demonio Supremo', icon: '💎', type: 'misc', stack: true, sell: 3500 },
+  // ---- Armas nuevas ----
+  espada_dorada:   { name: 'Espada Dorada',      icon: '⚔️', type: 'weapon', style: 'melee', atk: 27, cd: 1100, range: 1, minLevel: 16, price: 1400, sell: 560 },
+  maza_enana:      { name: 'Maza Enana',         icon: '🔨', type: 'weapon', style: 'melee', atk: 31, cd: 1250, range: 1, minLevel: 20, sell: 900 },
+  cimitarra_desierto:{ name: 'Cimitarra del Desierto', icon: '🗡️', type: 'weapon', style: 'melee', atk: 41, cd: 1100, range: 1, minLevel: 28, sell: 2400 },
+  colmillo_hidra:  { name: 'Colmillo de la Hidra', icon: '🐍', type: 'weapon', style: 'melee', atk: 45, cd: 1150, range: 1, minLevel: 32, sell: 3000 },
+  hacha_hielo:     { name: 'Hacha de Escarcha',  icon: '🪓', type: 'weapon', style: 'melee', atk: 57, cd: 1200, range: 1, minLevel: 40, sell: 6200 },
+  hoja_faraon:     { name: 'Hoja del Faraón',    icon: '⚔️', type: 'weapon', style: 'melee', atk: 67, cd: 1150, range: 1, minLevel: 48, sell: 9000 },
+  espada_reina:    { name: 'Espada de la Reina de Hielo', icon: '🗡️', type: 'weapon', style: 'melee', atk: 82, cd: 1200, range: 1, minLevel: 55, sell: 14000 },
+  arco_cazador:    { name: 'Arco de Cazador',    icon: '🏹', type: 'weapon', style: 'ranged', atk: 27, cd: 1200, range: 6, minLevel: 16, price: 1450, sell: 580 },
+  ballesta_enana:  { name: 'Ballesta Enana',     icon: '🎯', type: 'weapon', style: 'ranged', atk: 32, cd: 1300, range: 6, minLevel: 20, sell: 900 },
+  arco_marfil:     { name: 'Arco de Marfil',     icon: '🏹', type: 'weapon', style: 'ranged', atk: 42, cd: 1200, range: 7, minLevel: 28, sell: 2500 },
+  arco_glacial:    { name: 'Arco Glacial',       icon: '🏹', type: 'weapon', style: 'ranged', atk: 57, cd: 1250, range: 7, minLevel: 40, sell: 6400 },
+  arco_sol:        { name: 'Arco del Sol',       icon: '🏹', type: 'weapon', style: 'ranged', atk: 68, cd: 1250, range: 7, minLevel: 48, sell: 9200 },
+  arco_reina:      { name: 'Arco de la Reina',   icon: '🏹', type: 'weapon', style: 'ranged', atk: 83, cd: 1300, range: 8, minLevel: 55, sell: 14500 },
+  baston_tormenta: { name: 'Bastón de Tormenta', icon: '⚡', type: 'weapon', style: 'magic', atk: 28, cd: 1300, range: 5, mana: 12, minLevel: 16, price: 1500, sell: 600 },
+  baston_cristal:  { name: 'Vara de Cristal',    icon: '🔮', type: 'weapon', style: 'magic', atk: 34, cd: 1300, range: 5, mana: 14, minLevel: 22, sell: 1200 },
+  baston_pantano:  { name: 'Bastón del Pantano', icon: '🌿', type: 'weapon', style: 'magic', atk: 42, cd: 1350, range: 5, mana: 18, minLevel: 28, sell: 2600 },
+  baston_escarcha: { name: 'Bastón de Escarcha', icon: '❄️', type: 'weapon', style: 'magic', atk: 58, cd: 1350, range: 6, mana: 24, minLevel: 40, sell: 6500 },
+  cetro_faraon:    { name: 'Cetro del Faraón',   icon: '🔱', type: 'weapon', style: 'magic', atk: 69, cd: 1400, range: 6, mana: 28, minLevel: 48, sell: 9400 },
+  baculo_reina:    { name: 'Báculo de la Reina de Hielo', icon: '🌀', type: 'weapon', style: 'magic', atk: 84, cd: 1400, range: 6, mana: 34, minLevel: 55, sell: 15000 },
+  // ---- Cascos nuevos ----
+  casco_bronce:    { name: 'Casco de Bronce',    icon: '🪖', type: 'head', def: 9,  minLevel: 16, price: 900, sell: 360 },
+  casco_escamas:   { name: 'Casco de Escamas',   icon: '⛑️', type: 'head', def: 13, minLevel: 28, sell: 2000 },
+  casco_hielo:     { name: 'Yelmo de Escarcha',  icon: '🪖', type: 'head', def: 18, minLevel: 40, sell: 5200 },
+  casco_faraon:    { name: 'Máscara del Faraón', icon: '👑', type: 'head', def: 23, minLevel: 50, sell: 8800 },
+  // ---- Armaduras nuevas ----
+  armadura_bronce: { name: 'Armadura de Bronce', icon: '🛡️', type: 'body', def: 13, minLevel: 16, price: 1800, sell: 720 },
+  armadura_escamas:{ name: 'Armadura de Escamas',icon: '🦺', type: 'body', def: 19, minLevel: 28, sell: 3000 },
+  armadura_hielo:  { name: 'Armadura de Escarcha', icon: '🥶', type: 'body', def: 26, minLevel: 40, sell: 7400 },
+  armadura_faraon: { name: 'Armadura del Faraón',icon: '🏺', type: 'body', def: 33, minLevel: 50, sell: 12000 },
+  // ---- Escudos nuevos ----
+  escudo_bronce:   { name: 'Escudo de Bronce',   icon: '🔰', type: 'shield', def: 9,  minLevel: 16, price: 1100, sell: 440 },
+  escudo_escamas:  { name: 'Escudo de Escamas',  icon: '🛡️', type: 'shield', def: 13, minLevel: 28, sell: 2300 },
+  escudo_hielo:    { name: 'Escudo de Escarcha', icon: '🧊', type: 'shield', def: 19, minLevel: 40, sell: 5800 },
+  escudo_faraon:   { name: 'Escudo del Faraón',  icon: '☀️', type: 'shield', def: 24, minLevel: 50, sell: 9500 },
+  // ---- Trofeos nuevos ----
+  colmillo_jabali: { name: 'Colmillo de Jabalí', icon: '🐗', type: 'misc', stack: true, sell: 45 },
+  diente_goblin:   { name: 'Diente de Goblin',   icon: '🦷', type: 'misc', stack: true, sell: 50 },
+  bolsa_bandido:   { name: 'Bolsa Robada',       icon: '👛', type: 'misc', stack: true, sell: 95 },
+  pinza_cangrejo:  { name: 'Pinza de Cangrejo',  icon: '🦀', type: 'misc', stack: true, sell: 90 },
+  perla:           { name: 'Perla del Mar',      icon: '⚪', type: 'misc', stack: true, sell: 160 },
+  escama_sirena:   { name: 'Escama de Sirena',   icon: '🐚', type: 'misc', stack: true, sell: 140 },
+  caparazon:       { name: 'Caparazón de Tortuga', icon: '🐢', type: 'misc', stack: true, sell: 210 },
+  corona_cangrejo: { name: 'Corona del Cangrejo Colosal', icon: '👑', type: 'misc', stack: true, sell: 1400 },
+  mineral_hierro:  { name: 'Mineral de Hierro',  icon: '⛏️', type: 'misc', stack: true, sell: 130 },
+  barba_enano:     { name: 'Barba de Enano',     icon: '🧔', type: 'misc', stack: true, sell: 110 },
+  engranaje:       { name: 'Engranaje Rúnico',   icon: '⚙️', type: 'misc', stack: true, sell: 300 },
+  yunque:          { name: 'Yunque de Mithril',  icon: '⚒️', type: 'misc', stack: true, sell: 1800 },
+  piel_sapo:       { name: 'Piel de Sapo',       icon: '🐸', type: 'misc', stack: true, sell: 120 },
+  lengua_lagarto:  { name: 'Lengua de Lagarto',  icon: '🦎', type: 'misc', stack: true, sell: 180 },
+  sombrero_bruja:  { name: 'Sombrero de Bruja',  icon: '🎩', type: 'misc', stack: true, sell: 260 },
+  cabeza_hidra:    { name: 'Cabeza de Hidra',    icon: '🐲', type: 'misc', stack: true, sell: 2600 },
+  piel_yeti:       { name: 'Piel de Yeti',       icon: '🧤', type: 'misc', stack: true, sell: 330 },
+  cristal_hielo:   { name: 'Cristal de Hielo',   icon: '🧊', type: 'misc', stack: true, sell: 380 },
+  colmillo_mamut:  { name: 'Colmillo de Mamut',  icon: '🦣', type: 'misc', stack: true, sell: 520 },
+  esencia_helada:  { name: 'Esencia Helada',     icon: '🫧', type: 'misc', stack: true, sell: 450 },
+  corazon_hielo:   { name: 'Corazón de Hielo Eterno', icon: '💙', type: 'misc', stack: true, sell: 4500 },
+  aguijon:         { name: 'Aguijón de Escorpión', icon: '🦂', type: 'misc', stack: true, sell: 260 },
+  venda:           { name: 'Venda Antigua',      icon: '🩹', type: 'misc', stack: true, sell: 280 },
+  escarabajo:      { name: 'Escarabajo Dorado',  icon: '🪲', type: 'misc', stack: true, sell: 420 },
+  amuleto_momia:   { name: 'Amuleto de Escarabajo', icon: '📿', type: 'misc', stack: true, sell: 700 },
+  ankh:            { name: 'Ankh del Faraón',    icon: '☥', type: 'misc', stack: true, sell: 5200 },
+  polvo_oro:       { name: 'Polvo Dorado',       icon: '✨', type: 'misc', stack: true, sell: 350 },
   gold:            { name: 'Monedas de Oro',     icon: '💰', type: 'gold' },
 };
 
-// Lo que vende el mercader Boris
-const SHOP = [
-  'pocion_vida', 'pocion_vida_g', 'pocion_mana', 'pocion_mana_g',
-  'espada_hierro', 'hacha_acero', 'arco_largo', 'ballesta', 'baston_fuego', 'baston_hielo',
-  'casco_cuero', 'casco_hierro', 'casco_acero',
-  'armadura_cuero', 'cota_malla', 'armadura_placas',
-  'escudo_madera', 'escudo_hierro', 'escudo_torre',
-];
+// ------------------------------ GEMAS ------------------------------
+// Se engarzan en las ranuras del equipo. Los efectos de todas las gemas equipadas se suman.
+const GEMS = {
+  rubi:      { name: 'Rubí',      icon: '🔴', col: '#e0503b', sell: 300,  desc: '+3 de ataque',                     fx: { atk: 3 } },
+  zafiro:    { name: 'Zafiro',    icon: '🔵', col: '#4f95cf', sell: 300,  desc: '+30 de maná máximo',               fx: { mana: 30 } },
+  esmeralda: { name: 'Esmeralda', icon: '🟢', col: '#4cc26a', sell: 300,  desc: '+35 de vida máxima',               fx: { hp: 35 } },
+  topacio:   { name: 'Topacio',   icon: '🟡', col: '#e8c04a', sell: 280,  desc: '+3 de defensa',                    fx: { def: 3 } },
+  amatista:  { name: 'Amatista',  icon: '🟣', col: '#b07cff', sell: 800,  desc: '+4% de golpe crítico (x1.8)',      fx: { crit: 0.04 } },
+  opalo:     { name: 'Ópalo',     icon: '🟠', col: '#f09a5a', sell: 2000, desc: 'Roba el 3% del daño como vida',    fx: { steal: 0.03 } },
+  diamante:  { name: 'Diamante',  icon: '💎', col: '#bfe9ff', sell: 1500, desc: 'Brillo +1: tu set resplandece (+1 ataque)', fx: { glow: 1, atk: 1 } },
+};
+for (const [id, g] of Object.entries(GEMS)) ITEMS[id] = { name: g.name, icon: g.icon, type: 'gem', stack: true, sell: g.sell, col: g.col, desc: g.desc };
+
+// Colores de rareza de los nombres de equipo
+const RAR = { normal: '#9aa3ad', plus: '#5fd16a', ancient: '#4aa8ff', none: '#e8e2d0' };
+
+// Lo que vende cada mercader
+const SHOPS = {
+  boris: [
+    'pocion_vida', 'pocion_vida_g', 'pocion_mana', 'pocion_mana_g',
+    'espada_hierro', 'hacha_acero', 'arco_largo', 'ballesta', 'baston_fuego', 'baston_hielo',
+    'casco_cuero', 'casco_hierro', 'casco_acero',
+    'armadura_cuero', 'cota_malla', 'armadura_placas',
+    'escudo_madera', 'escudo_hierro', 'escudo_torre',
+  ],
+  brisa: [
+    'pocion_vida_g', 'pocion_mana_g',
+    'espada_dorada', 'arco_cazador', 'baston_tormenta',
+    'casco_bronce', 'armadura_bronce', 'escudo_bronce',
+  ],
+};
+const SHOP = SHOPS.boris;
 
 // Equipo inicial de un personaje nuevo: el mismo héroe puede ser guerrero, arquero o mago
 const START_KIT = {
@@ -159,14 +257,91 @@ const MONSTERS = {
               gold: [150, 400], loot: [['escama_dragon', 0.7, 1, 2], ['armadura_dragon', 0.1, 1, 1], ['casco_demonio', 0.08, 1, 1], ['arco_dragon', 0.06, 1, 1], ['baston_arcano', 0.05, 1, 1], ['martillo_titan', 0.01, 1, 1], ['pocion_vida_g', 0.4, 2, 4], ['pocion_mana_g', 0.4, 2, 4]] },
   demonio_supremo:{ name: 'Demonio Supremo', icon: '👿', hp: 4500, dmg: [80, 150], exp: 5000, move: 550, atkCd: 2000, aggro: 10, range: 3, proj: 'fire', respawn: 15 * 60000, boss: true,
               gold: [800, 2000], loot: [['alma_demonio', 1, 1, 1], ['martillo_titan', 0.25, 1, 1], ['arco_celestial', 0.25, 1, 1], ['baston_abismo', 0.25, 1, 1], ['casco_dragon', 0.3, 1, 1], ['armadura_abismo', 0.3, 1, 1], ['escudo_titan', 0.3, 1, 1], ['pocion_vida_g', 1, 5, 10], ['pocion_mana_g', 1, 5, 10]] },
+  // ---- Colinas Doradas (segura) ----
+  jabali:   { name: 'Jabalí', icon: '🐗', hp: 260, dmg: [16, 30], exp: 130, move: 430, atkCd: 1700, aggro: 5, respawn: 40000,
+              gold: [8, 30], loot: [['colmillo_jabali', 0.55, 1, 1], ['pocion_vida', 0.12, 1, 2], ['casco_hierro', 0.04, 1, 1], ['espada_dorada', 0.012, 1, 1]] },
+  goblin:   { name: 'Goblin', icon: '🦹', hp: 230, dmg: [14, 26], exp: 115, move: 450, atkCd: 1500, aggro: 6, respawn: 40000,
+              gold: [10, 40], loot: [['diente_goblin', 0.55, 1, 1], ['espada_dorada', 0.015, 1, 1], ['arco_cazador', 0.015, 1, 1], ['pocion_mana', 0.1, 1, 2]] },
+  arquero_goblin:{ name: 'Goblin Arquero', icon: '🥷', hp: 200, dmg: [13, 24], exp: 110, move: 650, atkCd: 2000, aggro: 7, range: 5, proj: 'arrow', respawn: 40000,
+              gold: [10, 35], loot: [['diente_goblin', 0.4, 1, 1], ['arco_cazador', 0.03, 1, 1], ['pocion_vida', 0.12, 1, 2]] },
+  bandido:  { name: 'Bandido', icon: '🕵️', hp: 320, dmg: [18, 34], exp: 170, move: 600, atkCd: 1700, aggro: 6, respawn: 45000,
+              gold: [30, 90], loot: [['bolsa_bandido', 0.5, 1, 1], ['armadura_bronce', 0.02, 1, 1], ['casco_bronce', 0.03, 1, 1], ['escudo_bronce', 0.03, 1, 1], ['pocion_vida_g', 0.08, 1, 1]] },
+  // ---- Playa de Cristal (segura) ----
+  cangrejo: { name: 'Cangrejo Gigante', icon: '🦀', hp: 380, dmg: [20, 36], exp: 190, move: 520, atkCd: 1800, aggro: 4, respawn: 45000,
+              gold: [20, 60], loot: [['pinza_cangrejo', 0.55, 1, 1], ['pocion_mana_g', 0.08, 1, 1], ['escudo_bronce', 0.03, 1, 1]] },
+  sirena:   { name: 'Sirena', icon: '🧜‍♀️', hp: 330, dmg: [18, 34], exp: 210, move: 700, atkCd: 2000, aggro: 7, range: 5, proj: 'ice', respawn: 50000,
+              gold: [30, 80], loot: [['escama_sirena', 0.5, 1, 1], ['perla', 0.2, 1, 1], ['baston_tormenta', 0.03, 1, 1], ['pocion_mana_g', 0.15, 1, 2]] },
+  tortuga:  { name: 'Tortuga Gigante', icon: '🐢', hp: 700, dmg: [22, 38], exp: 260, move: 900, atkCd: 2200, aggro: 3, respawn: 55000,
+              gold: [30, 100], loot: [['caparazon', 0.5, 1, 1], ['perla', 0.15, 1, 1], ['armadura_bronce', 0.04, 1, 1]] },
+  cangrejo_colosal:{ name: 'Cangrejo Colosal', icon: '🦞', hp: 2600, dmg: [38, 64], exp: 1700, move: 650, atkCd: 1700, aggro: 8, respawn: 8 * 60000, boss: true,
+              gold: [300, 700], loot: [['corona_cangrejo', 1, 1, 1], ['espada_dorada', 0.2, 1, 1], ['arco_cazador', 0.2, 1, 1], ['baston_tormenta', 0.2, 1, 1], ['armadura_bronce', 0.3, 1, 1], ['perla', 1, 2, 4], ['pocion_vida_g', 0.9, 2, 4]] },
+  // ---- Minas Enanas (mazmorra segura) ----
+  kobold:   { name: 'Kobold', icon: '🦊', hp: 300, dmg: [20, 36], exp: 180, move: 480, atkCd: 1500, aggro: 7, respawn: 40000,
+              gold: [15, 50], loot: [['mineral_hierro', 0.55, 1, 2], ['maza_enana', 0.02, 1, 1], ['pocion_vida_g', 0.08, 1, 1]] },
+  enano_renegado:{ name: 'Enano Renegado', icon: '🧔', hp: 480, dmg: [26, 44], exp: 260, move: 650, atkCd: 1800, aggro: 6, respawn: 45000,
+              gold: [40, 110], loot: [['barba_enano', 0.5, 1, 1], ['maza_enana', 0.03, 1, 1], ['casco_escamas', 0.02, 1, 1], ['escudo_escamas', 0.02, 1, 1], ['pocion_vida_g', 0.15, 1, 2]] },
+  golem_hierro:{ name: 'Gólem de Hierro', icon: '🤖', hp: 900, dmg: [34, 56], exp: 420, move: 850, atkCd: 2100, aggro: 5, respawn: 60000,
+              gold: [60, 140], loot: [['engranaje', 0.5, 1, 1], ['mineral_hierro', 0.6, 1, 3], ['armadura_escamas', 0.03, 1, 1], ['casco_escamas', 0.03, 1, 1], ['baston_cristal', 0.03, 1, 1], ['ballesta_enana', 0.03, 1, 1]] },
+  arana_cueva:{ name: 'Araña de Cueva', icon: '🕷️', hp: 420, dmg: [24, 42], exp: 240, move: 500, atkCd: 1500, aggro: 7, respawn: 45000,
+              gold: [20, 70], loot: [['seda_arana', 0.6, 1, 3], ['veneno_serpiente', 0.4, 1, 2], ['pocion_mana_g', 0.1, 1, 1]] },
+  maestro_forjador:{ name: 'Maestro Forjador', icon: '⚒️', hp: 3600, dmg: [48, 80], exp: 2600, move: 600, atkCd: 1700, aggro: 9, respawn: 9 * 60000, boss: true,
+              gold: [400, 900], loot: [['yunque', 1, 1, 1], ['maza_enana', 0.25, 1, 1], ['ballesta_enana', 0.25, 1, 1], ['armadura_escamas', 0.2, 1, 1], ['casco_escamas', 0.2, 1, 1], ['escudo_escamas', 0.2, 1, 1], ['baston_cristal', 0.25, 1, 1], ['pocion_vida_g', 1, 3, 6]] },
+  // ---- Pantano Venenoso (PvP) ----
+  sapo:     { name: 'Sapo Gigante', icon: '🐸', hp: 520, dmg: [26, 44], exp: 300, move: 420, atkCd: 1600, aggro: 5, respawn: 40000,
+              gold: [20, 70], loot: [['piel_sapo', 0.6, 1, 2], ['pocion_vida_g', 0.1, 1, 2]] },
+  lagarto:  { name: 'Lagarto del Pantano', icon: '🦎', hp: 680, dmg: [32, 54], exp: 380, move: 520, atkCd: 1700, aggro: 6, respawn: 45000,
+              gold: [40, 110], loot: [['lengua_lagarto', 0.5, 1, 1], ['casco_escamas', 0.03, 1, 1], ['armadura_escamas', 0.025, 1, 1], ['cimitarra_desierto', 0.01, 1, 1]] },
+  bruja:    { name: 'Bruja del Pantano', icon: '🧙‍♀️', hp: 560, dmg: [30, 52], exp: 420, move: 700, atkCd: 2000, aggro: 8, range: 5, proj: 'poison', respawn: 50000,
+              gold: [50, 130], loot: [['sombrero_bruja', 0.5, 1, 1], ['baston_pantano', 0.03, 1, 1], ['pocion_mana_g', 0.2, 1, 3], ['escudo_escamas', 0.03, 1, 1]] },
+  hidra:    { name: 'Hidra de Tres Cabezas', icon: '🐲', hp: 5200, dmg: [62, 104], exp: 3400, move: 600, atkCd: 1900, aggro: 9, range: 3, proj: 'poison', respawn: 12 * 60000, boss: true,
+              gold: [500, 1200], loot: [['cabeza_hidra', 1, 1, 1], ['colmillo_hidra', 0.25, 1, 1], ['baston_pantano', 0.25, 1, 1], ['cimitarra_desierto', 0.2, 1, 1], ['armadura_escamas', 0.3, 1, 1], ['pocion_vida_g', 1, 3, 7], ['pocion_mana_g', 1, 3, 6]] },
+  // ---- Dunas Ardientes (PvP) ----
+  escorpion:{ name: 'Escorpión Gigante', icon: '🦂', hp: 620, dmg: [34, 56], exp: 380, move: 480, atkCd: 1600, aggro: 6, respawn: 40000,
+              gold: [30, 90], loot: [['aguijon', 0.55, 1, 1], ['cimitarra_desierto', 0.015, 1, 1], ['pocion_vida_g', 0.1, 1, 2]] },
+  cobra:    { name: 'Cobra Real', icon: '🐍', hp: 520, dmg: [38, 62], exp: 400, move: 350, atkCd: 1400, aggro: 7, respawn: 40000,
+              gold: [30, 90], loot: [['veneno_serpiente', 0.6, 1, 2], ['arco_marfil', 0.02, 1, 1]] },
+  momia:    { name: 'Momia', icon: '🩹', hp: 820, dmg: [40, 66], exp: 500, move: 750, atkCd: 1900, aggro: 6, respawn: 50000,
+              gold: [40, 120], loot: [['venda', 0.55, 1, 2], ['casco_escamas', 0.04, 1, 1], ['cimitarra_desierto', 0.02, 1, 1], ['arco_marfil', 0.02, 1, 1], ['pocion_mana_g', 0.12, 1, 2]] },
+  gusano_arena:{ name: 'Gusano de Arena', icon: '🪱', hp: 1400, dmg: [52, 88], exp: 760, move: 800, atkCd: 2200, aggro: 4, respawn: 70000,
+              gold: [60, 160], loot: [['polvo_oro', 0.6, 1, 2], ['armadura_escamas', 0.04, 1, 1], ['escudo_escamas', 0.04, 1, 1], ['arco_marfil', 0.03, 1, 1]] },
+  rey_escorpion:{ name: 'Rey Escorpión', icon: '🦂', hp: 5600, dmg: [64, 108], exp: 4200, move: 550, atkCd: 1700, aggro: 9, respawn: 12 * 60000, boss: true,
+              gold: [600, 1400], loot: [['aguijon', 1, 2, 4], ['cimitarra_desierto', 0.3, 1, 1], ['arco_marfil', 0.3, 1, 1], ['casco_escamas', 0.3, 1, 1], ['escudo_escamas', 0.3, 1, 1], ['pocion_vida_g', 1, 4, 8]] },
+  // ---- Pirámide Olvidada (mazmorra PvP) ----
+  escarabajo_gigante:{ name: 'Escarabajo Gigante', icon: '🪲', hp: 1100, dmg: [56, 92], exp: 800, move: 500, atkCd: 1500, aggro: 7, respawn: 55000,
+              gold: [60, 150], loot: [['escarabajo', 0.5, 1, 1], ['amuleto_momia', 0.1, 1, 1], ['casco_faraon', 0.01, 1, 1]] },
+  sacerdote_momia:{ name: 'Sacerdote Momia', icon: '🧞', hp: 1000, dmg: [60, 98], exp: 950, move: 700, atkCd: 2000, aggro: 8, range: 5, proj: 'fire', respawn: 60000,
+              gold: [80, 180], loot: [['amuleto_momia', 0.3, 1, 1], ['cetro_faraon', 0.02, 1, 1], ['pocion_mana_g', 0.3, 1, 3], ['escudo_faraon', 0.02, 1, 1]] },
+  momia_real:{ name: 'Momia Real', icon: '👳', hp: 1700, dmg: [68, 112], exp: 1250, move: 700, atkCd: 1900, aggro: 7, respawn: 70000,
+              gold: [100, 220], loot: [['venda', 0.7, 1, 2], ['armadura_faraon', 0.03, 1, 1], ['hoja_faraon', 0.015, 1, 1], ['casco_faraon', 0.03, 1, 1], ['escudo_faraon', 0.03, 1, 1]] },
+  faraon:   { name: 'Faraón Eterno', icon: '🏺', hp: 9500, dmg: [95, 160], exp: 9000, move: 520, atkCd: 1800, aggro: 10, range: 4, proj: 'fire', respawn: 15 * 60000, boss: true,
+              gold: [1000, 2400], loot: [['ankh', 1, 1, 1], ['hoja_faraon', 0.3, 1, 1], ['cetro_faraon', 0.3, 1, 1], ['arco_sol', 0.3, 1, 1], ['casco_faraon', 0.4, 1, 1], ['armadura_faraon', 0.4, 1, 1], ['escudo_faraon', 0.4, 1, 1], ['pocion_vida_g', 1, 6, 10], ['pocion_mana_g', 1, 6, 10]] },
+  // ---- Cumbres Heladas (PvP) ----
+  lobo_hielo:{ name: 'Lobo de Hielo', icon: '🐺', hp: 780, dmg: [42, 70], exp: 520, move: 330, atkCd: 1400, aggro: 8, respawn: 40000,
+              gold: [30, 100], loot: [['piel_lobo', 0.6, 1, 2], ['cristal_hielo', 0.1, 1, 1], ['hacha_hielo', 0.01, 1, 1]] },
+  yeti:     { name: 'Yeti', icon: '🦍', hp: 1300, dmg: [56, 92], exp: 780, move: 650, atkCd: 1900, aggro: 6, respawn: 55000,
+              gold: [50, 140], loot: [['piel_yeti', 0.55, 1, 1], ['casco_hielo', 0.03, 1, 1], ['armadura_hielo', 0.025, 1, 1], ['hacha_hielo', 0.02, 1, 1]] },
+  elemental_hielo:{ name: 'Elemental de Hielo', icon: '🧊', hp: 900, dmg: [50, 84], exp: 700, move: 700, atkCd: 2000, aggro: 7, range: 4, proj: 'ice', respawn: 55000,
+              gold: [50, 140], loot: [['cristal_hielo', 0.55, 1, 1], ['baston_escarcha', 0.025, 1, 1], ['pocion_mana_g', 0.2, 1, 3], ['escudo_hielo', 0.03, 1, 1]] },
+  mamut:    { name: 'Mamut', icon: '🦣', hp: 2200, dmg: [70, 116], exp: 1100, move: 850, atkCd: 2200, aggro: 4, respawn: 75000,
+              gold: [80, 200], loot: [['colmillo_mamut', 0.6, 1, 1], ['armadura_hielo', 0.04, 1, 1], ['escudo_hielo', 0.04, 1, 1], ['arco_glacial', 0.02, 1, 1], ['pocion_vida_g', 0.3, 1, 3]] },
+  // ---- Fortaleza de Hielo (mazmorra PvP) ----
+  caballero_hielo:{ name: 'Caballero de Hielo', icon: '🤺', hp: 1800, dmg: [78, 128], exp: 1500, move: 650, atkCd: 1800, aggro: 7, respawn: 65000,
+              gold: [100, 240], loot: [['esencia_helada', 0.5, 1, 1], ['hacha_hielo', 0.03, 1, 1], ['casco_hielo', 0.04, 1, 1], ['escudo_hielo', 0.04, 1, 1]] },
+  espectro_helado:{ name: 'Espectro Helado', icon: '👻', hp: 1400, dmg: [74, 120], exp: 1700, move: 550, atkCd: 2000, aggro: 9, range: 5, proj: 'ice', respawn: 65000,
+              gold: [100, 240], loot: [['esencia_helada', 0.6, 1, 2], ['baston_escarcha', 0.035, 1, 1], ['arco_glacial', 0.03, 1, 1], ['pocion_mana_g', 0.3, 1, 3]] },
+  golem_hielo:{ name: 'Gólem de Hielo', icon: '⛄', hp: 3200, dmg: [96, 150], exp: 2100, move: 900, atkCd: 2300, aggro: 5, respawn: 80000,
+              gold: [150, 320], loot: [['cristal_hielo', 0.8, 1, 3], ['armadura_hielo', 0.06, 1, 1], ['hacha_hielo', 0.04, 1, 1], ['espada_reina', 0.003, 1, 1]] },
+  reina_hielo:{ name: 'Reina de Hielo', icon: '👸', hp: 12000, dmg: [110, 180], exp: 12000, move: 550, atkCd: 1800, aggro: 10, range: 5, proj: 'ice', respawn: 18 * 60000, boss: true,
+              gold: [1200, 3000], loot: [['corazon_hielo', 1, 1, 1], ['espada_reina', 0.25, 1, 1], ['arco_reina', 0.25, 1, 1], ['baculo_reina', 0.25, 1, 1], ['casco_hielo', 0.5, 1, 1], ['armadura_hielo', 0.5, 1, 1], ['escudo_hielo', 0.5, 1, 1], ['pocion_vida_g', 1, 8, 12], ['pocion_mana_g', 1, 8, 12]] },
 };
 
 // Dónde nace cada monstruo
 const SPAWN_PLAN = [
-  { zone: 'prado',      type: 'conejo',          n: 16, minY: 57 },
-  { zone: 'prado',      type: 'rata',            n: 22, minY: 57 },
-  { zone: 'prado',      type: 'serpiente',       n: 14, minY: 62 },
-  { zone: 'prado',      type: 'arana',           n: 12, minY: 66 },
+  // box: [x0,y0,x1,y1] limita dónde puede nacer dentro de la zona
+  { zone: 'prado',      type: 'conejo',          n: 16, box: [31, 60, 111, 95] },
+  { zone: 'prado',      type: 'rata',            n: 22, box: [31, 60, 111, 95] },
+  { zone: 'prado',      type: 'serpiente',       n: 14, box: [31, 72, 111, 95] },
+  { zone: 'prado',      type: 'arana',           n: 12, box: [31, 80, 111, 95] },
   { zone: 'catacumbas', type: 'murcielago',      n: 14 },
   { zone: 'catacumbas', type: 'esqueleto',       n: 18 },
   { zone: 'catacumbas', type: 'esqueleto_arquero', n: 10 },
@@ -179,16 +354,46 @@ const SPAWN_PLAN = [
   { zone: 'abismo',     type: 'demonio_menor',   n: 8 },
   { zone: 'abismo',     type: 'golem_lava',      n: 8 },
   { zone: 'abismo',     type: 'dragon',          n: 4 },
+  { zone: 'colinas',    type: 'jabali',          n: 18 },
+  { zone: 'colinas',    type: 'goblin',          n: 18 },
+  { zone: 'colinas',    type: 'arquero_goblin',  n: 12 },
+  { zone: 'colinas',    type: 'bandido',         n: 12 },
+  { zone: 'playa',      type: 'cangrejo',        n: 18 },
+  { zone: 'playa',      type: 'sirena',          n: 10 },
+  { zone: 'playa',      type: 'tortuga',         n: 8 },
+  { zone: 'minas',      type: 'kobold',          n: 16 },
+  { zone: 'minas',      type: 'enano_renegado',  n: 14 },
+  { zone: 'minas',      type: 'golem_hierro',    n: 8 },
+  { zone: 'minas',      type: 'arana_cueva',     n: 10 },
+  { zone: 'pantano',    type: 'sapo',            n: 20 },
+  { zone: 'pantano',    type: 'lagarto',         n: 16 },
+  { zone: 'pantano',    type: 'bruja',           n: 12 },
+  { zone: 'dunas',      type: 'escorpion',       n: 22, box: [140, 35, 179, 99] },
+  { zone: 'dunas',      type: 'cobra',           n: 16, box: [140, 35, 179, 99] },
+  { zone: 'dunas',      type: 'momia',           n: 14, box: [140, 35, 179, 99] },
+  { zone: 'dunas',      type: 'gusano_arena',    n: 8,  box: [140, 35, 179, 99] },
+  { zone: 'piramide',   type: 'escarabajo_gigante', n: 16 },
+  { zone: 'piramide',   type: 'sacerdote_momia', n: 12 },
+  { zone: 'piramide',   type: 'momia_real',      n: 12 },
+  { zone: 'cumbres',    type: 'lobo_hielo',      n: 20 },
+  { zone: 'cumbres',    type: 'yeti',            n: 14 },
+  { zone: 'cumbres',    type: 'elemental_hielo', n: 12 },
+  { zone: 'cumbres',    type: 'mamut',           n: 8 },
+  { zone: 'fortaleza',  type: 'caballero_hielo', n: 14 },
+  { zone: 'fortaleza',  type: 'espectro_helado', n: 10 },
+  { zone: 'fortaleza',  type: 'golem_hielo',     n: 8 },
 ];
 
 const NPC_TIPS = [
   '¡Bienvenido, aventurero! Con una espada eres guerrero, con un arco tirador y con una vara mago. Cambia de arma cuando quieras: Z, X y C.',
   'Las zonas verdes son seguras: nadie puede atacarte allí salvo los monstruos. Las zonas rojas son PvP: ¡puedes perder tu botín!',
   'Tus habilidades de combate cuerpo a cuerpo, distancia y magia suben por separado. Entrena la que más uses.',
-  'En el Bosque Maldito y el Abismo Carmesí el botín es mejor... pero cualquiera puede arrebatártelo si caes.',
-  'Si te atacan otros jugadores no podrás refugiarte en una zona segura durante unos segundos. ¡Pelea o huye al otro lado!',
-  'Las Catacumbas (portal al sur) son seguras y tienen un jefe poderoso: el Rey Esqueleto. Ve en grupo.',
+  'El nombre del equipo te dice su valor: gris es normal, verde es excelente (+1 a +6) y azul es Ancient, ¡rarísimo!',
+  'Las gemas se engarzan en las ranuras del equipo (clic derecho en el objeto, solo en zona segura). Rubí ataque, Esmeralda vida, Diamante brillo...',
+  'Guarda tus gemas y objetos valiosos en el banco con Gerda. Lo que está en el banco no se pierde si te matan.',
+  'Clic derecho en un jugador para comerciar con él. Clic derecho en un monstruo para ver qué botín suelta.',
+  'Hay un puerto al sur, Puerto Marea, con otro mercader y otro banco. Las Minas Enanas son seguras; la Pirámide y la Fortaleza de Hielo no.',
   'La poción de vida es la tecla H, la de maná la J, y el hechizo de curación la V.',
 ];
 
-module.exports = { CFG, ITEMS, SHOP, START_KIT, MONSTERS, SPAWN_PLAN, NPC_TIPS };
+module.exports = { CFG, ITEMS, GEMS, RAR, SHOP, SHOPS, START_KIT, MONSTERS, SPAWN_PLAN, NPC_TIPS };

@@ -91,6 +91,7 @@
         <li data-sk="ranged"><span>🏹 Distancia</span><b></b><div class="bar mini"><i></i></div></li>
         <li data-sk="magic"><span>🔮 Magia</span><b></b><div class="bar mini"><i></i></div></li>
       </ul>
+      <p class="fine" id="gemSum"></p>
     </section>
 
     <section>
@@ -106,7 +107,7 @@
     <section>
       <h2>Mochila <span class="gold">💰 <b id="gold">0</b></span></h2>
       <div id="inv"></div>
-      <p class="fine">Clic: usar o equipar · Mayús+clic: soltar · Botón derecho: soltar 1</p>
+      <p class="fine">Clic: usar o equipar · Mayús+clic: soltar · Botón derecho: más opciones (gemas, banco, comercio) · Pasa el ratón para ver el objeto</p>
     </section>
   </aside>
 </main>
@@ -139,6 +140,72 @@
     <button id="offOk" class="primary">Volver a conectar</button>
   </div>
 </div>
+
+<!-- ============ Banco ============ -->
+<div id="bank" class="modal" hidden>
+  <div class="sheet wide" role="dialog" aria-labelledby="bankTitle">
+    <header><h2 id="bankTitle">Banco</h2><button id="bankClose" aria-label="Cerrar banco">✕</button></header>
+    <div class="cols">
+      <div>
+        <h3>Tu mochila <span class="fine">clic: guardar · Mayús: toda la pila</span></h3>
+        <div id="bankInv" class="grid"></div>
+        <div class="goldrow"><span>💰 <b id="bankHand">0</b> en mano</span>
+          <input id="bankAmt" type="number" min="1" inputmode="numeric" placeholder="cantidad" aria-label="Cantidad de oro">
+          <button id="bankDep" class="mini">Depositar</button></div>
+      </div>
+      <div>
+        <h3>Tu caja fuerte <span class="fine">clic: sacar · Mayús: toda la pila</span></h3>
+        <div id="bankBox" class="grid"></div>
+        <div class="goldrow"><span>🏦 <b id="bankGold">0</b> guardados</span>
+          <button id="bankWd" class="mini">Retirar</button></div>
+      </div>
+    </div>
+    <p class="fine">Lo que guardas aquí está a salvo: no se pierde si te matan en una zona PvP.</p>
+  </div>
+</div>
+
+<!-- ============ Comercio entre jugadores ============ -->
+<div id="trade" class="modal" hidden>
+  <div class="sheet wide" role="dialog" aria-labelledby="tradeTitle">
+    <header><h2 id="tradeTitle">Comercio</h2><button id="tradeClose" aria-label="Cancelar comercio">✕</button></header>
+    <div class="cols three">
+      <div>
+        <h3>Tu oferta</h3>
+        <div id="tradeMine" class="list short"></div>
+        <div class="goldrow"><span>💰</span>
+          <input id="tradeGold" type="number" min="0" inputmode="numeric" placeholder="oro" aria-label="Oro que ofreces">
+          <button id="tradeGoldSet" class="mini">Poner</button></div>
+      </div>
+      <div>
+        <h3 id="tradeTheirsTitle">Su oferta</h3>
+        <div id="tradeTheirs" class="list short"></div>
+        <p class="fine">Oro que ofrece: <b id="tradeTheirGold">0</b></p>
+      </div>
+      <div>
+        <h3>Tu mochila <span class="fine">clic: ofrecer</span></h3>
+        <div id="tradeInv" class="grid"></div>
+      </div>
+    </div>
+    <div class="tfoot"><span id="tradeState" aria-live="polite"></span>
+      <button id="tradeOk" class="primary">Confirmar</button><button id="tradeNo" class="ghost">Cancelar</button></div>
+    <p class="fine">Si cualquiera cambia la oferta, las confirmaciones se anulan. El intercambio es instantáneo y los dos deben tener espacio.</p>
+  </div>
+</div>
+
+<!-- ============ Ficha de monstruo (clic derecho) ============ -->
+<div id="drops" class="modal" hidden>
+  <div class="sheet" role="dialog" aria-labelledby="dropTitle">
+    <header><span id="dropIcon" class="big" aria-hidden="true"></span><h2 id="dropTitle"></h2><span id="dropBadge" class="badge"></span><button id="dropClose" aria-label="Cerrar">✕</button></header>
+    <div id="dropStats" class="stats"></div>
+    <h3>Botín</h3>
+    <div id="dropList" class="list"></div>
+    <p id="dropNote" class="fine"></p>
+  </div>
+</div>
+
+<div id="ctx" role="menu" hidden></div>
+<div id="tip" role="tooltip" hidden></div>
+<div id="toasts" aria-live="polite"></div>
 
 <script src="game.js"></script>
 </body>

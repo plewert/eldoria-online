@@ -102,15 +102,15 @@ const loop = setInterval(() => {
   try { game.tick(Date.now()); } catch (e) { console.error('Error en tick:', e); }
 }, CFG.TICK_MS);
 
-function shutdown() {
+async function shutdown() {
   clearInterval(loop);
-  try { game.saveAll(); } catch (e) { console.error(e); }
+  try { game.saveAll(); await Promise.race([store.flush(), new Promise((r) => setTimeout(r, 4000))]); } catch (e) { console.error(e); }
   process.exit(0);
 }
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
-server.listen(PORT, () => {
+store.init().catch((e) => { console.error('No se pudo conectar con la base remota:', e.message); if (store.remote) process.exit(1); }).then(() => server.listen(PORT, () => {
   console.log(`Eldoria Online escuchando en http://localhost:${PORT}`);
   console.log(`Monstruos: ${game.monsters.length} · Cuentas: ${Object.keys(store.accounts).length}`);
-});
+}));

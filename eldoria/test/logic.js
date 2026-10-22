@@ -10,6 +10,7 @@ const Store = require('../game/store');
 const { Game } = require('../game/game');
 const world = require('../game/world');
 const { CFG, ITEMS } = require('../game/data');
+const I = require('../game/items');
 
 const store = new Store(path.join(os.tmpdir(), 'eldoria-test-' + process.pid + '.json'));
 const game = new Game(store);
@@ -50,17 +51,19 @@ ok('todas las apariciones están en casillas alcanzables', () => {
 });
 ok('portales con destino válido', () => { for (const p of world.PORTALS) assert(world.isWalkable(p.tx, p.ty)); });
 ok('zonas: ciudad/prado/catacumbas seguras, bosque/abismo PvP', () => {
-  assert.equal(world.zoneAt(60, 48).pvp, false);
-  assert.equal(world.zoneAt(60, 70).id, 'prado');
+  assert.equal(world.zoneAt(world.SPAWN_POINT.x, world.SPAWN_POINT.y).id, 'ciudad');
+  assert.equal(world.zoneAt(world.SPAWN_POINT.x, world.SPAWN_POINT.y).pvp, false);
+  assert.equal(world.zoneAt(90, 90).id, 'prado');
   assert.equal(world.zoneAt(10, 60).id, 'catacumbas');
-  assert.equal(world.zoneAt(60, 10).pvp, true);
-  assert.equal(world.zoneAt(100, 50).id, 'abismo');
+  assert.equal(world.zoneAt(50, 10).pvp, true);
+  assert.equal(world.zoneAt(125, 55).id, 'abismo');
+  for (const id of ['dunas', 'pantano', 'cumbres', 'puerto', 'minas', 'piramide', 'fortaleza', 'colinas', 'playa']) assert(world.zoneById(id), 'falta la zona ' + id);
 });
 
 console.log('Personajes');
 const A = login('Aria'), B = login('Borin'), C = login('Ciri');
 ok('personaje nuevo: arma de melee, arco y vara en el inventario (mismo héroe, 3 estilos)', () => {
-  assert.equal(A.p.eq.weapon, 'espada_madera');
+  assert.equal(A.p.eq.weapon.id, 'espada_madera');
   const ids = A.p.inv.filter(Boolean).map((i) => i.id);
   assert(ids.includes('arco_corto') && ids.includes('vara_novato'));
 });
@@ -141,7 +144,7 @@ ok('en zona PvP sí se puede, el combate bloquea huir a zona segura', () => {
 });
 ok('el jugador caído en PvP suelta botín que el ganador puede robar', () => {
   B.p.hp = 3; B.p.gold = 1000;
-  A.p.eq.weapon = 'hacha_acero';   // con la espada de madera no vence la regeneración de un nivel 21
+  A.p.eq.weapon = I.mk('hacha_acero'); A.p.vis = null;   // con la espada de madera no vence la regeneración de un nivel 21
   for (let i = 0; i < B.p.inv.length; i++) B.p.inv[i] = { id: 'pocion_vida', qty: 5 };
   place(A.p, wx, wy); place(B.p, wx + 1, wy);
   const bx = B.p.x, by = B.p.y;
@@ -175,9 +178,10 @@ ok('morir en zona segura NO suelta objetos', () => {
 
 console.log('Tienda e inventario');
 ok('comprar y vender junto a Boris', () => {
-  const boris = world.NPCS[0];
+  const boris = world.NPCS.find((n) => n.id === 'boris');
   place(C.p, boris.x, boris.y + 2);
   C.p.gold = 1000;
+  game.handle(C.p, { t: 'npc', id: 'boris' });
   game.handle(C.p, { t: 'buy', id: 'espada_hierro', q: 1 });
   assert.equal(C.p.gold, 1000 - ITEMS.espada_hierro.price);
   assert(C.p.inv.some((i) => i && i.id === 'espada_hierro'));
@@ -186,14 +190,14 @@ ok('comprar y vender junto a Boris', () => {
   assert.equal(C.p.gold, 1000 - ITEMS.espada_hierro.price + ITEMS.espada_hierro.sell);
 });
 ok('no se puede comprar lejos del mercader', () => {
-  place(C.p, 60, 50); C.p.gold = 1000;
+  place(C.p, world.SPAWN_POINT.x, world.SPAWN_POINT.y + 20); C.p.gold = 1000;
   game.handle(C.p, { t: 'buy', id: 'pocion_vida', q: 1 });
   assert.equal(C.p.gold, 1000);
 });
 ok('requisito de nivel al equipar', () => {
-  C.p.inv[0] = { id: 'martillo_titan', qty: 1 };
+  C.p.inv[0] = I.mk('martillo_titan');
   game.handle(C.p, { t: 'equip', s: 0 });
-  assert.notEqual(C.p.eq.weapon, 'martillo_titan');
+  assert.notEqual(C.p.eq.weapon && C.p.eq.weapon.id, 'martillo_titan');
 });
 ok('pociones curan y se consumen', () => {
   C.p.hp = 10; C.p.nextPotion = 0;
@@ -204,9 +208,10 @@ ok('pociones curan y se consumen', () => {
 
 console.log('Portales y persistencia');
 ok('el portal teletransporta a la mazmorra y se bloquea en combate', () => {
-  const portal = world.PORTALS[0];
-  place(C.p, portal.x - 1, portal.y); C.p.nextMove = 0; C.p.pvpLock = 0;
-  game.handle(C.p, { t: 'move', dx: 1, dy: 0, once: true });
+  const portal = world.PORTALS.find((q) => world.zoneAt(q.tx, q.ty).id === 'catacumbas' && world.zoneAt(q.x, q.y).id !== 'catacumbas');
+  const [ddx, ddy] = [[1, 0], [-1, 0], [0, 1], [0, -1]].find(([a, b]) => world.isWalkable(portal.x - a, portal.y - b) && world.tiles[(portal.y - b) * world.W + portal.x - a] !== world.T.PORTAL);
+  place(C.p, portal.x - ddx, portal.y - ddy); C.p.nextMove = 0; C.p.pvpLock = 0;
+  game.handle(C.p, { t: 'move', dx: ddx, dy: ddy, once: true });
   advance(300);
   assert.equal(world.zoneAt(C.p.x, C.p.y).id, 'catacumbas');
 });
@@ -222,6 +227,135 @@ ok('desconexión en combate deja el personaje 20 s en el mundo (anti combat-log)
   assert(game.players.has(A.p.key), 'sigue en el mundo');
   advance(CFG.GHOST_MS + 2000);
   assert(!game.players.has(A.p.key), 'desaparece tras el tiempo de gracia');
+});
+
+
+console.log('Rareza, gemas, banco y comercio');
+const { RAR, MONSTERS } = require('../game/data');
+const D = login('Dara'), E = login('Eli');
+const gerda = world.NPCS.find((n) => n.id === 'gerda');
+const home = world.SPAWN_POINT;
+function resetPair() {
+  for (const q of [D, E]) { q.p.inv.fill(null); q.p.gold = 0; q.p.pvpLock = 0; q.p.trade = null; q.p.hp = q.p.maxHp; }
+  place(D.p, home.x, home.y + 2); place(E.p, home.x + 1, home.y + 2);
+}
+ok('nombres por rareza: normal gris, +N verde, Ancient azul', () => {
+  const n = I.mk('espada_hierro'), u = I.mk('espada_hierro', 1, { up: 3 }), a = I.mk('espada_hierro', 1, { an: 1 });
+  assert.equal(I.colorOf(n), RAR.normal); assert.equal(I.colorOf(u), RAR.plus); assert.equal(I.colorOf(a), RAR.ancient);
+  assert.equal(I.nameOf(n), 'Espada de Hierro'); assert.equal(I.nameOf(u), 'Espada de Hierro +3'); assert(I.nameOf(a).startsWith('Ancient '));
+  assert(I.baseStat(u) > I.baseStat(n) && I.baseStat(a) > I.baseStat(u));
+  assert.equal(RAR.normal, '#9aa3ad');
+});
+ok('Ancient es muy raro, +N es poco común, y los jefes sueltan más', () => {
+  const N = 40000; let anc = 0, plus = 0, ancB = 0;
+  for (let i = 0; i < N; i++) { const g = I.rollGear('espada_hierro', false); if (g.an) anc++; else if (g.up > 0) plus++; if (I.rollGear('espada_hierro', true).an) ancB++; }
+  assert(anc > 0 && anc / N < 0.04, 'ancient ' + anc / N);
+  assert(plus / N > 0.1 && plus / N < 0.35, 'plus ' + plus / N);
+  assert(ancB > anc, 'jefes más ancient');
+});
+ok('el botín de un monstruo trae equipo con su propia rareza (instancia)', () => {
+  const m = game.spawnMonster('esqueleto', home.x, home.y - 30);
+  m.def = Object.assign({}, m.def, { loot: [['espada_hierro', 1, 1, 1]], gold: [0, 0] });
+  game.killMonster(m, game.now);
+  const g = [...game.ground.values()].find((q) => q.x === m.x && q.y === m.y && q.item === 'espada_hierro');
+  assert(g && g.inst && Array.isArray(g.inst.gm), 'instancia con ranuras');
+});
+ok('gemas: se engarzan en zona segura, dan bonus y se pueden sacar pagando', () => {
+  resetPair();
+  D.p.eq.weapon = I.mk('espada_hierro', 1, { ns: 2 }); D.p.vis = null; game.recalc(D.p);
+  D.p.inv[0] = { id: 'rubi', qty: 2 }; D.p.inv[1] = { id: 'diamante', qty: 1 }; D.p.gold = 1000;
+  const atk0 = game.weaponOf(D.p).atk, glow0 = game.visOf(D.p).g;
+  game.handle(D.p, { t: 'socket', gem: 0, from: 'eq', at: 'weapon' });
+  assert.equal(game.weaponOf(D.p).atk, atk0 + 3, 'rubí: +3 ataque');
+  game.handle(D.p, { t: 'socket', gem: 1, from: 'eq', at: 'weapon' });
+  assert(game.visOf(D.p).g > glow0, 'diamante: más brillo');
+  game.handle(D.p, { t: 'socket', gem: 0, from: 'eq', at: 'weapon' });
+  assert.equal(D.p.inv[0].qty, 1, 'sin ranuras libres: no consume la gema');
+  game.handle(D.p, { t: 'unsocket', from: 'eq', at: 'weapon', hole: 0 });
+  assert.equal(D.p.gold, 1000 - CFG.GEM_REMOVE_COST);
+  assert.equal(D.p.eq.weapon.gm[0], null);
+  assert.equal(game.weaponOf(D.p).atk, atk0 + 1, 'queda solo el +1 del diamante');
+});
+ok('no se puede engarzar en zona PvP', () => {
+  const g0 = JSON.stringify(D.p.eq.weapon.gm);
+  place(D.p, wx, wy); D.p.inv[2] = { id: 'rubi', qty: 1 };
+  game.handle(D.p, { t: 'socket', gem: 2, from: 'eq', at: 'weapon' });
+  assert.equal(JSON.stringify(D.p.eq.weapon.gm), g0); assert.equal(D.p.inv[2].qty, 1);
+});
+ok('banco: guardar y sacar objetos, gemas y oro; lejos de la banquera no funciona', () => {
+  resetPair();
+  place(D.p, gerda.x, gerda.y + 2);
+  D.p.inv[0] = I.mk('espada_hierro', 1, { up: 4, ns: 1 }); D.p.inv[1] = { id: 'rubi', qty: 5 }; D.p.gold = 900;
+  game.handle(D.p, { t: 'bdep', s: 0, q: 1 }); game.handle(D.p, { t: 'bdep', s: 1, q: 3 }); game.handle(D.p, { t: 'bgold', d: 'dep', q: 600 });
+  assert.equal(D.p.inv[0], null); assert.equal(D.p.inv[1].qty, 2); assert.equal(D.p.gold, 300); assert.equal(D.p.bankGold, 600);
+  assert(D.p.bank.some((i) => i && i.id === 'espada_hierro' && i.up === 4), 'el +4 conserva su rareza');
+  place(D.p, home.x, home.y + 15);
+  game.handle(D.p, { t: 'bgold', d: 'wd', q: 100 }); assert.equal(D.p.bankGold, 600);
+  place(D.p, gerda.x, gerda.y + 2);
+  const bs = D.p.bank.findIndex((i) => i && i.id === 'espada_hierro');
+  game.handle(D.p, { t: 'bwd', s: bs, q: 1 }); game.handle(D.p, { t: 'bgold', d: 'wd', q: 100 });
+  assert(D.p.inv.some((i) => i && i.id === 'espada_hierro' && i.up === 4)); assert.equal(D.p.gold, 400);
+});
+ok('lo guardado en el banco no se pierde al morir en zona PvP', () => {
+  const bank0 = JSON.stringify(D.p.bank), bg = D.p.bankGold;
+  place(D.p, wx, wy); D.p.hp = 1;
+  game.killPlayer(D.p, { kind: 'mo', def: { name: 'Rata' } }, 'Rata', game.now);
+  assert.equal(JSON.stringify(D.p.bank), bank0); assert.equal(D.p.bankGold, bg);
+});
+ok('comercio: ambos ponen su oferta, confirman y el intercambio es atómico', () => {
+  resetPair();
+  D.p.inv[0] = I.mk('espada_hierro', 1, { up: 5, an: 0, ns: 2 }); D.p.inv[1] = { id: 'rubi', qty: 4 }; E.p.gold = 500;
+  game.handle(D.p, { t: 'trade_req', id: E.p.id });
+  assert(E.ws.got.some((m) => m.t === 'trade_inv'), 'E recibe la invitación');
+  game.handle(E.p, { t: 'trade_acc', id: D.p.id });
+  assert(D.p.trade && E.p.trade);
+  game.handle(D.p, { t: 'trade_add', s: 0, q: 1 }); game.handle(D.p, { t: 'trade_add', s: 1, q: 2 });
+  game.handle(E.p, { t: 'trade_gold', g: 400 });
+  assert.equal(D.p.inv[0], null); assert.equal(D.p.inv[1].qty, 2); assert.equal(E.p.gold, 100);
+  game.handle(D.p, { t: 'trade_ok' });
+  assert(D.p.trade, 'falta la confirmación de E');
+  game.handle(E.p, { t: 'trade_ok' });
+  assert(!D.p.trade && !E.p.trade);
+  assert(E.p.inv.some((i) => i && i.id === 'espada_hierro' && i.up === 5 && i.gm.length === 2), 'E recibe el +5 con sus ranuras');
+  assert.equal(E.p.inv.filter((i) => i && i.id === 'rubi').reduce((a, i) => a + i.qty, 0), 2);
+  assert.equal(D.p.gold, 400); assert.equal(E.p.gold, 100);
+});
+ok('comercio: si alguien cambia la oferta se anulan las confirmaciones; cancelar devuelve todo', () => {
+  resetPair();
+  D.p.inv[0] = { id: 'rubi', qty: 3 }; D.p.gold = 200;
+  game.handle(D.p, { t: 'trade_req', id: E.p.id }); game.handle(E.p, { t: 'trade_acc', id: D.p.id });
+  game.handle(D.p, { t: 'trade_add', s: 0, q: 3 }); game.handle(D.p, { t: 'trade_gold', g: 150 });
+  game.handle(E.p, { t: 'trade_ok' }); game.handle(D.p, { t: 'trade_gold', g: 100 });
+  assert.equal(E.p.trade.ok, false, 'la confirmación de E se anuló');
+  game.handle(E.p, { t: 'trade_no' });
+  assert(!D.p.trade && !E.p.trade);
+  assert.equal(D.p.gold, 200); assert.equal(D.p.inv.filter((i) => i && i.id === 'rubi').reduce((a, i) => a + i.qty, 0), 3);
+});
+ok('comercio: sin espacio se cancela sin perder nada; lejos o en combate no se puede', () => {
+  resetPair();
+  D.p.inv[0] = I.mk('espada_hierro'); E.p.inv.fill({ id: 'pocion_vida', qty: 1 });
+  game.handle(D.p, { t: 'trade_req', id: E.p.id }); game.handle(E.p, { t: 'trade_acc', id: D.p.id });
+  game.handle(D.p, { t: 'trade_add', s: 0, q: 1 }); game.handle(D.p, { t: 'trade_ok' }); game.handle(E.p, { t: 'trade_ok' });
+  assert(!D.p.trade && D.p.inv.some((i) => i && i.id === 'espada_hierro'), 'D recupera su espada');
+  place(E.p, home.x + 20, home.y + 2);
+  game.handle(D.p, { t: 'trade_req', id: E.p.id }); assert(!E.p.tradeInv, 'muy lejos');
+  place(E.p, home.x + 1, home.y + 2); D.p.pvpLock = game.now + 5000;
+  game.handle(D.p, { t: 'trade_req', id: E.p.id }); assert(!E.p.tradeInv, 'en combate');
+  D.p.pvpLock = 0;
+});
+ok('la ficha de cada monstruo incluye su tabla de botín (clic derecho)', () => {
+  const w = D.ws.got.find((m) => m.t === 'welcome');
+  const dr = w.mons.dragon;
+  assert(dr && Array.isArray(dr.loot) && dr.loot.length > 3 && dr.hp === MONSTERS.dragon.hp);
+  assert(dr.loot.some((l) => l[4] === 1), 'marca los equipos'); assert(dr.anc > 0 && dr.plus > 0 && dr.gem > 0);
+  assert(w.mons.demonio_supremo.anc > w.mons.dragon.anc, 'los jefes tienen más prob. de Ancient');
+});
+ok('guardar y cargar conserva +N, Ancient, gemas y banco', () => {
+  D.p.eq.weapon = I.mk('hacha_acero', 1, { up: 6, an: 1, ns: 3 }); D.p.eq.weapon.gm = ['rubi', 'diamante', null];
+  game.savePlayer(D.p); store.flush();
+  const back = I.normalize(JSON.parse(JSON.stringify(store.get('Dara').data.eq.weapon)));
+  assert.deepEqual(back, D.p.eq.weapon);
+  assert.equal(I.normalize('espada_madera').id, 'espada_madera', 'acepta el formato viejo');
 });
 
 fs_cleanup();

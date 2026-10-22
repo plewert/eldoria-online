@@ -1,0 +1,16 @@
+# Blueprint de Render: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: eldoria-online
+    runtime: node
+    plan: free            # con "free" las cuentas se borran al reiniciar; ver README (sección Despliegue)
+    buildCommand: "echo sin dependencias"
+    startCommand: "node server.js"
+    healthCheckPath: /status
+    envVars:
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
+      - key: NODE_VERSION
+        value: "22"

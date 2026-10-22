@@ -16,6 +16,7 @@
     ents: new Map(), ground: [], texts: [], proj: [], flashes: [], bubbles: new Map(),
     cam: { x: 0, y: 0 }, path: [], lastTp: -1, zoneId: '', shopOpen: false, hover: null,
   };
+  if (location.hash === '#debug') window.__eld = G;
   let ws = null, joined = false, wantMode = 'login';
 
   /* ======================================================================
@@ -73,8 +74,12 @@
   function onMsg(m) {
     switch (m.t) {
       case 'welcome': onWelcome(m); break;
-      case 'inv': G.inv = m.inv; G.eq = m.eq; G.gold = m.gold; renderInv(); break;
-      case 'stats': G.stats = m; renderStats(); break;
+      case 'inv': G.inv = m.inv; G.eq = m.eq; G.gold = m.gold; G.bankGold = m.bankGold; renderInv(); break;
+      case 'bank': openBank(m); break;
+      case 'trade': openTrade(m); break;
+      case 'trade_inv': onTradeInvite(m); break;
+      case 'trade_end': closeTrade(m.done); break;
+      case 'stats': G.stats = m; renderStats(); renderGemSum(); break;
       case 's': onSnapshot(m); break;
       case 'chat': addChat(m); break;
       case 'shop': openShop(m); break;
@@ -89,8 +94,8 @@
 
   function onWelcome(m) {
     joined = true;
-    G.id = m.id; G.W = m.w; G.H = m.h; G.zones = m.zones; G.portals = m.portals; G.npcs = m.npcs; G.items = m.items; G.mons = m.mons; G.cfg = m.cfg;
-    const CH = '0123456789a';
+    G.id = m.id; G.W = m.w; G.H = m.h; G.zones = m.zones; G.portals = m.portals; G.npcs = m.npcs; G.items = m.items; G.mons = m.mons; G.cfg = m.cfg; G.rar = m.rar; G.gems = m.gems;
+    const CH = '0123456789abcdefghijklmno';
     G.tiles = new Uint8Array(G.W * G.H);
     m.rows.forEach((row, y) => { for (let x = 0; x < G.W; x++) G.tiles[y * G.W + x] = CH.indexOf(row[x]); });
     G.zoneGrid = new Uint8Array(G.W * G.H);
@@ -109,13 +114,16 @@
 
   const zoneAt = (x, y) => (x < 0 || y < 0 || x >= G.W || y >= G.H ? G.zones[G.zones.length - 1] : G.zones[G.zoneGrid[y * G.W + x]]);
 
+  // velocidad constante: la fija el servidor (un paso cada cfg.step ms / cada def.move ms para monstruos)
+  const speedOf = (e) => (e.kind === 'pl' ? 1000 / (G.cfg.step || 230) : 1000 / ((G.mons[e.t] || {}).move || 600));
+
   function onSnapshot(m) {
     const seen = new Set();
     for (const p of m.pl) {
       seen.add(p.i);
       let e = G.ents.get(p.i);
       if (!e) { e = { kind: 'pl', id: p.i, rx: p.x, ry: p.y }; G.ents.set(p.i, e); }
-      Object.assign(e, { n: p.n, x: p.x, y: p.y, h: p.h, H: p.H, l: p.l, c: p.c, s: p.s, d: p.d, k: p.k, o: p.o });
+      Object.assign(e, { n: p.n, x: p.x, y: p.y, h: p.h, H: p.H, l: p.l, c: p.c, s: p.s, d: p.d, k: p.k, o: p.o, v: p.v || 0, a: p.a || 0, tr: p.t });
     }
     for (const q of m.mo) {
       seen.add(q.i);
@@ -125,6 +133,11 @@
     }
     for (const id of [...G.ents.keys()]) if (!seen.has(id)) G.ents.delete(id);
     G.me = m.me; G.ground = m.gi;
+    if (G.me) {                                            // se cierran solos al alejarte del PNJ
+      const far = (kind) => !G.npcs.some((n) => (kind === 'bank' ? n.type === 'bank' : n.type === 'shop') && Math.max(Math.abs(n.x - G.me.x), Math.abs(n.y - G.me.y)) <= 4);
+      if (G.bankOpen && far('bank')) closeBank();
+      if (G.shopOpen && far('shop')) closeShop();
+    }
     const meEnt = G.ents.get(G.id);
     if (m.me.tp !== G.lastTp) {                         // teletransporte o reaparición: sin deslizamiento
       G.lastTp = m.me.tp; G.path = [];
@@ -166,6 +179,7 @@
       const b = el('b', '', m.k === 'g' ? `[Global] ${m.n}: ` : `${m.n}: `);
       p.append(b, document.createTextNode(m.m));
     } else p.textContent = m.m;
+    if (m.c) p.style.color = m.c;
     log.append(p);
     while (log.children.length > 120) log.firstChild.remove();
     log.scrollTop = log.scrollHeight;
@@ -214,52 +228,171 @@
     updateHud();
   }
 
-  function itemInfo(id) {
-    const d = G.items[id]; if (!d) return id;
-    const L = [d.name];
-    if (d.type === 'weapon') L.push(`${STYLE_NAME[d.style]} · ataque ${d.atk} · alcance ${d.range}${d.mana ? ` · ${d.mana} de maná` : ''}`);
-    else if (['head', 'body', 'shield'].includes(d.type)) L.push(`Defensa ${d.def}`);
-    else if (d.type === 'consumable') L.push(d.heal ? `Cura ${d.heal} de vida` : `Restaura ${d.restore} de maná`);
-    if (d.minLevel > 1) L.push(`Requiere nivel ${d.minLevel}`);
-    if (d.sell) L.push(`Se vende por ${d.sell} de oro`);
-    return L.join('\n');
+  /* ---------- objetos: nombre, color de rareza y tooltip ----------
+   * Objeto empaquetado: [id, qty]  o  equipo [id, 1, +N, ancient, nRanuras, gemas[], poder]  */
+  const GEAR = new Set(['weapon', 'head', 'body', 'shield']);
+  const isGear = (id) => !!G.items[id] && GEAR.has(G.items[id].type);
+  const TYPE_NAME = { weapon: 'Arma', head: 'Casco', body: 'Armadura', shield: 'Escudo', gem: 'Gema', consumable: 'Consumible', misc: 'Trofeo' };
+  const itName = (it) => {
+    const d = G.items[it[0]]; if (!d) return String(it[0]);
+    return isGear(it[0]) ? `${it[3] ? 'Ancient ' : ''}${d.name}${it[2] > 0 ? ' +' + it[2] : ''}` : d.name;
+  };
+  const rarOf = (it) => (isGear(it[0]) ? (it[3] ? 'ancient' : it[2] > 0 ? 'plus' : 'normal') : (G.items[it[0]] && G.items[it[0]].type === 'gem' ? 'gem' : 'none'));
+  const itColor = (it) => { const r = rarOf(it); return r === 'gem' ? G.items[it[0]].col : (G.rar[r] || G.rar.none); };
+  const sellOf = (it) => {
+    const d = G.items[it[0]]; if (!d || !d.sell) return 0;
+    return isGear(it[0]) ? Math.round(d.sell * (1 + 0.35 * (it[2] || 0)) * (it[3] ? 6 : 1)) : d.sell;
+  };
+  const freeSockets = (it) => (it && it[5] ? it[5].filter((g) => !g).length : 0);
+  const secs = (ms) => (ms >= 60000 ? `${Math.round(ms / 60000)} min` : `${Math.round(ms / 1000)} s`);
+
+  const tipEl = $('#tip');
+  function tipNode(it) {
+    const d = G.items[it[0]], box = el('div');
+    const n = el('div', 'tn', itName(it)); n.style.color = itColor(it); box.append(n);
+    const gear = isGear(it[0]);
+    let sub = TYPE_NAME[d.type] || '';
+    if (d.type === 'weapon') sub += ' · ' + STYLE_NAME[d.style];
+    if (gear) sub += it[3] ? ' · Ancient' : it[2] > 0 ? ' · Excelente +' + it[2] : ' · Normal';
+    box.append(el('div', 'ts', sub));
+    if (d.type === 'weapon') box.append(el('div', 'tl', `Ataque ${it[6] != null ? it[6] : d.atk} · alcance ${d.range} · cada ${(d.cd / 1000).toFixed(2)} s${d.mana ? ` · ${d.mana} de maná` : ''}`));
+    else if (gear) box.append(el('div', 'tl', `Defensa ${it[6] != null ? it[6] : d.def}`));
+    else if (d.type === 'consumable') box.append(el('div', 'tl', d.heal ? `Cura ${d.heal} de vida` : `Restaura ${d.restore} de maná`));
+    else if (d.type === 'gem') box.append(el('div', 'tl', d.desc));
+    if (gear) {
+      box.append(el('div', 'tsep'));
+      if (it[4] > 0) {
+        for (let i = 0; i < it[4]; i++) {
+          const g = it[5][i], row = el('div', 'gm');
+          if (g) { const gd = G.items[g], sp = el('span', '', `${gd.icon} ${gd.name}`); sp.style.color = gd.col; row.append(sp, el('span', 'ts', '— ' + gd.desc)); }
+          else row.append(el('span', 'free', '◇ Ranura libre'));
+          box.append(row);
+        }
+      } else box.append(el('div', 'free', 'Sin ranuras'));
+    }
+    if (d.minLevel > 1) box.append(el('div', 'tl' + (G.stats && G.stats.lv < d.minLevel ? ' bad' : ''), `Requiere nivel ${d.minLevel}`));
+    const sv = sellOf(it); if (sv) box.append(el('div', 'ts tl', `Vale ${fmt(sv)} de oro${it[1] > 1 ? ' c/u' : ''}`));
+    return box;
+  }
+  function moveTip(ev) {
+    const w = tipEl.offsetWidth, h = tipEl.offsetHeight;
+    let x = ev.clientX + 14, y = ev.clientY + 14;
+    if (x + w > innerWidth - 8) x = ev.clientX - w - 14;
+    if (y + h > innerHeight - 8) y = innerHeight - h - 8;
+    tipEl.style.left = Math.max(4, x) + 'px'; tipEl.style.top = Math.max(4, y) + 'px';
+  }
+  const hideTip = () => { tipEl.hidden = true; };
+  function withTip(node, getIt) {
+    node.addEventListener('mouseenter', (ev) => { const it = getIt(); if (it) { tipEl.replaceChildren(tipNode(it)); tipEl.hidden = false; moveTip(ev); } });
+    node.addEventListener('mousemove', (ev) => { if (!tipEl.hidden) moveTip(ev); });
+    node.addEventListener('mouseleave', hideTip);
   }
 
-  function fillSlot(node, id, qty) {
+  function fillSlot(node, it) {
     node.replaceChildren();
-    node.classList.toggle('empty', !id);
-    node.classList.remove('locked');
-    if (!id) { node.removeAttribute('title'); return; }
-    const d = G.items[id];
+    node.classList.remove('r-plus', 'r-ancient', 'r-gem', 'locked');
+    node.classList.toggle('empty', !it);
+    node._it = it || null;
+    if (!it) return;
+    const d = G.items[it[0]];
     node.append(el('span', '', d.icon));
-    if (qty > 1) node.append(el('span', 'q', String(qty)));
-    node.title = itemInfo(id);
+    if (it[1] > 1) node.append(el('span', 'q', String(it[1])));
+    const r = rarOf(it);
+    if (r === 'plus' || r === 'ancient' || r === 'gem') node.classList.add('r-' + r);
+    if (isGear(it[0])) {
+      if (it[2] > 0 || it[3]) { const u = el('span', 'up', it[3] ? 'A' + (it[2] > 0 ? '+' + it[2] : '') : '+' + it[2]); u.style.color = itColor(it); node.append(u); }
+      if (it[4] > 0) {
+        const pips = el('span', 'pips');
+        for (let i = 0; i < it[4]; i++) { const p = el('i', 'pip' + (it[5][i] ? ' on' : '')); if (it[5][i]) p.style.background = G.items[it[5][i]].col; pips.append(p); }
+        node.append(pips);
+      }
+    }
     if (G.stats && (d.minLevel || 1) > G.stats.lv) node.classList.add('locked');
   }
+  function mkSlot(it, onClick, onCtx) {
+    const s = el('div', 'slot empty'); fillSlot(s, it);
+    withTip(s, () => s._it);
+    if (onClick) s.addEventListener('click', onClick);
+    if (onCtx) s.addEventListener('contextmenu', (ev) => { ev.preventDefault(); onCtx(ev); });
+    return s;
+  }
 
+  /* ---------- menú contextual ---------- */
+  const ctxEl = $('#ctx');
+  function closeCtx() { ctxEl.hidden = true; ctxEl.replaceChildren(); }
+  function openCtx(ev, rows) {
+    hideTip(); ctxEl.replaceChildren();
+    for (const r of rows) {
+      if (r === '-') { ctxEl.append(el('hr')); continue; }
+      if (r.hdr) { const h = el('div', 'hdr', r.hdr); if (r.color) h.style.color = r.color; ctxEl.append(h); continue; }
+      const b = el('button', '', r.label); b.type = 'button'; b.setAttribute('role', 'menuitem');
+      if (r.color) b.style.color = r.color;
+      if (r.off) b.disabled = true;
+      b.addEventListener('click', () => { closeCtx(); if (r.fn) r.fn(); });
+      ctxEl.append(b);
+    }
+    ctxEl.hidden = false;
+    const w = ctxEl.offsetWidth, h = ctxEl.offsetHeight;
+    ctxEl.style.left = Math.max(4, Math.min(ev.clientX, innerWidth - w - 6)) + 'px';
+    ctxEl.style.top = Math.max(4, Math.min(ev.clientY, innerHeight - h - 6)) + 'px';
+    const f = ctxEl.querySelector('button:not(:disabled)'); if (f) f.focus();
+  }
+  document.addEventListener('mousedown', (ev) => { if (!ctxEl.hidden && !ctxEl.contains(ev.target)) closeCtx(); });
+
+  function gemTargets() {
+    const out = [];
+    for (const s of ['weapon', 'head', 'body', 'shield']) { const it = G.eq[s]; if (it && freeSockets(it)) out.push({ from: 'eq', at: s, it, where: 'equipado' }); }
+    G.inv.forEach((it, i) => { if (it && isGear(it[0]) && freeSockets(it)) out.push({ from: 'inv', at: i, it, where: 'mochila' }); });
+    return out;
+  }
+  const unsocketRows = (it, from, at) => (it[5] || []).map((g, h) => (g ? { label: `Sacar ${G.items[g].icon} ${G.items[g].name} (${G.cfg.gemCost} 💰)`, color: G.items[g].col, fn: () => send({ t: 'unsocket', from, at, hole: h }) } : null)).filter(Boolean);
+
+  function invMenu(ev, i) {
+    const it = G.inv[i], d = G.items[it[0]], rows = [{ hdr: itName(it), color: itColor(it) }];
+    if (isGear(it[0])) { rows.push({ label: 'Equipar', fn: () => send({ t: 'use', s: i }) }, ...unsocketRows(it, 'inv', i)); }
+    else if (d.type === 'consumable') rows.push({ label: 'Usar', fn: () => send({ t: 'use', s: i }) });
+    else if (d.type === 'gem') {
+      const tg = gemTargets();
+      rows.push({ hdr: 'Engarzar en…' });
+      if (!tg.length) rows.push({ label: 'Ningún equipo tiene ranura libre', off: 1 });
+      tg.forEach((t) => rows.push({ label: `${itName(t.it)} (${t.where}) · ${freeSockets(t.it)} libre${freeSockets(t.it) > 1 ? 's' : ''}`, color: itColor(t.it), fn: () => send({ t: 'socket', gem: i, from: t.from, at: t.at }) }));
+    }
+    rows.push('-');
+    if (G.bankOpen) rows.push({ label: 'Guardar en el banco', fn: () => send({ t: 'bdep', s: i, q: it[1] }) });
+    if (G.trade) rows.push({ label: 'Ofrecer en el comercio', fn: () => send({ t: 'trade_add', s: i, q: it[1] }) });
+    if (it[1] > 1) rows.push({ label: 'Soltar 1', fn: () => send({ t: 'drop', s: i, q: 1 }) });
+    rows.push({ label: it[1] > 1 ? 'Soltar todo' : 'Soltar al suelo', fn: () => send({ t: 'drop', s: i, q: it[1] }) });
+    openCtx(ev, rows);
+  }
+  function eqMenu(ev, slot) {
+    const it = G.eq[slot];
+    openCtx(ev, [{ hdr: itName(it), color: itColor(it) }, { label: 'Quitar', fn: () => send({ t: 'unequip', slot }) }, ...unsocketRows(it, 'eq', slot)]);
+  }
+
+  /* ---------- inventario y equipo ---------- */
   const EQ_GLYPH = { head: '⛑', weapon: '⚔', body: '👕', shield: '🛡' };
   function buildInvGrid() {
     const grid = $('#inv'); grid.replaceChildren();
     for (let i = 0; i < G.cfg.invSize; i++) {
       const s = el('div', 'slot empty'); s.dataset.i = i;
-      s.addEventListener('click', (ev) => {
-        const it = G.inv[i]; if (!it) return;
-        if (ev.shiftKey) send({ t: 'drop', s: i, q: it[1] }); else send({ t: 'use', s: i });
-      });
-      s.addEventListener('contextmenu', (ev) => { ev.preventDefault(); if (G.inv[i]) send({ t: 'drop', s: i, q: 1 }); });
+      withTip(s, () => s._it);
+      s.addEventListener('click', (ev) => { const it = G.inv[i]; if (!it) return; if (ev.shiftKey) send({ t: 'drop', s: i, q: it[1] }); else send({ t: 'use', s: i }); });
+      s.addEventListener('contextmenu', (ev) => { ev.preventDefault(); if (G.inv[i]) invMenu(ev, i); });
       grid.append(s);
     }
     document.querySelectorAll('#equip .slot').forEach((s) => {
+      withTip(s, () => s._it);
       s.addEventListener('click', () => { if (G.eq[s.dataset.eq]) send({ t: 'unequip', slot: s.dataset.eq }); });
+      s.addEventListener('contextmenu', (ev) => { ev.preventDefault(); if (G.eq[s.dataset.eq]) eqMenu(ev, s.dataset.eq); });
     });
   }
 
   function renderInv() {
     if (!$('#inv').children.length) buildInvGrid();
-    $('#inv').querySelectorAll('.slot').forEach((s) => { const it = G.inv[+s.dataset.i]; fillSlot(s, it && it[0], it && it[1]); });
+    $('#inv').querySelectorAll('.slot').forEach((s) => { fillSlot(s, G.inv[+s.dataset.i]); });
     document.querySelectorAll('#equip .slot').forEach((s) => {
-      const id = G.eq[s.dataset.eq]; fillSlot(s, id, 1);
-      if (!id) { s.textContent = EQ_GLYPH[s.dataset.eq]; s.title = 'Vacío: ' + { head: 'casco', weapon: 'arma', body: 'armadura', shield: 'escudo' }[s.dataset.eq]; }
+      const it = G.eq[s.dataset.eq]; fillSlot(s, it);
+      if (!it) { s.textContent = EQ_GLYPH[s.dataset.eq]; s.title = 'Vacío: ' + { head: 'casco', weapon: 'arma', body: 'armadura', shield: 'escudo' }[s.dataset.eq]; } else s.removeAttribute('title');
     });
     $('#gold').textContent = fmt(G.gold);
     const count = (key) => G.inv.reduce((n, it) => { const d = it && G.items[it[0]]; return n + (d && d[key] ? it[1] : 0); }, 0);
@@ -268,61 +401,174 @@
     document.querySelector('[data-pot=heal]').classList.toggle('none', !h);
     document.querySelector('[data-pot=mana]').classList.toggle('none', !mn);
     if (G.shopOpen) renderShop();
+    if (G.bankOpen) renderBank();
+    if (G.trade) renderTrade();
   }
 
-  /* ---- tienda ---- */
+  function renderGemSum() {
+    const s = G.stats; if (!s || !s.gb) return;
+    const gb = s.gb, parts = [];
+    if (gb.atk) parts.push(`+${gb.atk} ataque`);
+    if (gb.def) parts.push(`+${gb.def} defensa`);
+    if (gb.hp) parts.push(`+${gb.hp} vida`);
+    if (gb.mana) parts.push(`+${gb.mana} maná`);
+    if (gb.crit) parts.push(`${Math.round(gb.crit * 100)}% crítico`);
+    if (gb.steal) parts.push(`${Math.round(gb.steal * 100)}% robo de vida`);
+    $('#gemSum').textContent = (parts.length ? 'Gemas: ' + parts.join(' · ') : 'Sin bonus de gemas.') + (s.glow ? ` Brillo del set: ${s.glow}.` : '');
+  }
+
+  /* ---------- tienda ---------- */
   let shopStock = [];
   function openShop(m) {
     shopStock = m.stock; G.shopOpen = true;
     $('#shopTitle').textContent = m.npc;
     $('#shop').hidden = false; renderShop(); $('#shopClose').focus();
   }
-  function closeShop() { G.shopOpen = false; $('#shop').hidden = true; }
+  function closeShop() { G.shopOpen = false; $('#shop').hidden = true; hideTip(); }
   $('#shopClose').addEventListener('click', closeShop);
   $('#shop').addEventListener('mousedown', (ev) => { if (ev.target === $('#shop')) closeShop(); });
+
+  function itemRow(it, subText, acts) {
+    const d = G.items[it[0]], row = el('div', 'item');
+    const nm = el('div', 'nm rc-' + (rarOf(it) === 'ancient' ? 'ancient' : rarOf(it) === 'plus' ? 'plus' : rarOf(it) === 'normal' ? 'normal' : ''), itName(it) + (it[1] > 1 ? ' ×' + it[1] : ''));
+    if (rarOf(it) === 'gem') nm.style.color = d.col;
+    nm.append(el('small', '', subText));
+    row.append(el('div', 'ico', d.icon), nm, acts);
+    withTip(row, () => it);
+    return row;
+  }
 
   function renderShop() {
     $('#shopGold').textContent = fmt(G.gold);
     const buy = $('#buyList'); buy.replaceChildren();
     shopStock.forEach((id) => {
-      const d = G.items[id];
-      const row = el('div', 'item');
-      const nm = el('div', 'nm', d.name);
-      const sub = el('small', '', `${d.price} de oro${d.minLevel > 1 ? ` · nivel ${d.minLevel}` : ''}${d.atk ? ` · ataque ${d.atk}` : ''}${d.def ? ` · defensa ${d.def}` : ''}`);
-      nm.append(sub); row.title = itemInfo(id);
+      const d = G.items[id], it = isGear(id) ? [id, 1, 0, 0, 0, [], d.atk || d.def] : [id, 1];
       const acts = el('div', 'acts');
       const b1 = el('button', '', 'Comprar'); b1.disabled = G.gold < d.price;
       b1.addEventListener('click', () => send({ t: 'buy', id, q: 1 }));
       acts.append(b1);
-      if (d.stack) {
-        const b10 = el('button', '', '×10'); b10.disabled = G.gold < d.price * 10;
-        b10.addEventListener('click', () => send({ t: 'buy', id, q: 10 }));
-        acts.append(b10);
-      }
-      row.append(el('div', 'ico', d.icon), nm, acts); buy.append(row);
+      if (d.stack) { const b10 = el('button', '', '×10'); b10.disabled = G.gold < d.price * 10; b10.addEventListener('click', () => send({ t: 'buy', id, q: 10 })); acts.append(b10); }
+      buy.append(itemRow(it, `${fmt(d.price)} de oro${d.minLevel > 1 ? ` · nivel ${d.minLevel}` : ''}${d.atk ? ` · ataque ${d.atk}` : ''}${d.def ? ` · defensa ${d.def}` : ''}`, acts));
     });
     const sell = $('#sellList'); sell.replaceChildren();
     let any = false;
     G.inv.forEach((it, i) => {
-      if (!it) return;
-      const d = G.items[it[0]]; if (!d || !d.sell) return;
+      if (!it || !sellOf(it)) return;
       any = true;
-      const row = el('div', 'item');
-      const nm = el('div', 'nm', `${d.name}${it[1] > 1 ? ' ×' + it[1] : ''}`);
-      nm.append(el('small', '', `${d.sell} de oro cada uno`)); row.title = itemInfo(it[0]);
       const acts = el('div', 'acts');
       const b1 = el('button', '', 'Vender'); b1.addEventListener('click', () => send({ t: 'sell', s: i, q: 1 }));
       acts.append(b1);
       if (it[1] > 1) { const ba = el('button', '', 'Todo'); ba.addEventListener('click', () => send({ t: 'sell', s: i, q: it[1] })); acts.append(ba); }
-      row.append(el('div', 'ico', d.icon), nm, acts); sell.append(row);
+      sell.append(itemRow(it, `${fmt(sellOf(it))} de oro${it[1] > 1 ? ' cada uno' : ''}`, acts));
     });
     if (!any) sell.append(el('p', 'empty-note', 'No llevas nada que el mercader compre.'));
   }
 
+  /* ---------- banco ---------- */
+  G.bank = { bank: [], gold: 0, size: 0 };
+  function openBank(m) { G.bank = m; G.bankOpen = true; $('#bank').hidden = false; renderBank(); $('#bankClose').focus(); }
+  function closeBank() { G.bankOpen = false; $('#bank').hidden = true; hideTip(); }
+  $('#bankClose').addEventListener('click', closeBank);
+  $('#bank').addEventListener('mousedown', (ev) => { if (ev.target === $('#bank')) closeBank(); });
+  function renderBank() {
+    if (!G.bankOpen) return;
+    const inv = $('#bankInv'); inv.replaceChildren();
+    G.inv.forEach((it, i) => inv.append(mkSlot(it, (ev) => { if (it) send({ t: 'bdep', s: i, q: ev.ctrlKey || ev.altKey ? 1 : it[1] }); })));
+    const box = $('#bankBox'); box.replaceChildren();
+    for (let i = 0; i < G.bank.size; i++) { const it = G.bank.bank[i]; box.append(mkSlot(it, (ev) => { if (it) send({ t: 'bwd', s: i, q: ev.ctrlKey || ev.altKey ? 1 : it[1] }); })); }
+    $('#bankHand').textContent = fmt(G.gold); $('#bankGold').textContent = fmt(G.bank.gold);
+  }
+  const amt = () => Math.max(0, Math.floor(Number($('#bankAmt').value) || 0));
+  $('#bankDep').addEventListener('click', () => { send({ t: 'bgold', d: 'dep', q: amt() || G.gold }); $('#bankAmt').value = ''; });
+  $('#bankWd').addEventListener('click', () => { send({ t: 'bgold', d: 'wd', q: amt() || G.bank.gold }); $('#bankAmt').value = ''; });
+
+  /* ---------- comercio entre jugadores ---------- */
+  G.trade = null;
+  function toast(text, buttons, ms) {
+    const t = el('div', 'toast'); t.append(el('div', '', text));
+    if (buttons) {
+      const r = el('div', 'row2');
+      buttons.forEach(([label, fn, cls]) => { const b = el('button', cls || 'mini', label); b.type = 'button'; b.addEventListener('click', () => { t.remove(); fn(); }); r.append(b); });
+      t.append(r);
+    }
+    $('#toasts').append(t); setTimeout(() => t.remove(), ms || 20000);
+    return t;
+  }
+  function onTradeInvite(m) {
+    toast(`${m.name} quiere comerciar contigo.`, [['Aceptar', () => send({ t: 'trade_acc', id: m.from }), 'mini'], ['Rechazar', () => send({ t: 'trade_no' }), 'mini']], 20000);
+  }
+  function openTrade(m) {
+    const first = !G.trade;
+    G.trade = m; $('#trade').hidden = false; renderTrade();
+    if (first) { $('#tradeOk').focus(); closeCtx(); }
+  }
+  function closeTrade(done) {
+    const had = !!G.trade;
+    G.trade = null; $('#trade').hidden = true; hideTip();
+    if (had && done) toast('¡Comercio completado!', null, 3500);
+  }
+  function offerRow(it, onRemove) {
+    const acts = el('div', 'acts');
+    if (onRemove) { const x = el('button', 'x', '✕'); x.setAttribute('aria-label', 'Quitar de la oferta'); x.addEventListener('click', onRemove); acts.append(x); }
+    return itemRow(it, TYPE_NAME[G.items[it[0]].type] || '', acts);
+  }
+  function renderTrade() {
+    const t = G.trade; if (!t) return;
+    $('#tradeTitle').textContent = 'Comercio con ' + t.with.name;
+    $('#tradeTheirsTitle').textContent = 'Oferta de ' + t.with.name;
+    const mine = $('#tradeMine'); mine.replaceChildren();
+    if (!t.me.offer.length) mine.append(el('p', 'empty-note', 'Haz clic en un objeto de tu mochila para ofrecerlo.'));
+    t.me.offer.forEach((it, i) => mine.append(offerRow(it, () => send({ t: 'trade_rem', i }))));
+    const th = $('#tradeTheirs'); th.replaceChildren();
+    if (!t.you.offer.length) th.append(el('p', 'empty-note', 'Todavía no ofrece objetos.'));
+    t.you.offer.forEach((it) => th.append(offerRow(it, null)));
+    $('#tradeTheirGold').textContent = fmt(t.you.gold);
+    if (document.activeElement !== $('#tradeGold')) $('#tradeGold').value = t.me.gold || '';
+    const inv = $('#tradeInv'); inv.replaceChildren();
+    G.inv.forEach((it, i) => inv.append(mkSlot(it, (ev) => { if (it) send({ t: 'trade_add', s: i, q: ev.ctrlKey || ev.altKey ? 1 : it[1] }); })));
+    $('#tradeState').textContent = `Tú: ${t.me.ok ? 'confirmado ✓' : 'sin confirmar'} · ${t.with.name}: ${t.you.ok ? 'confirmó ✓' : 'sin confirmar'}`;
+    $('#tradeOk').disabled = t.me.ok;
+  }
+  $('#tradeGoldSet').addEventListener('click', () => send({ t: 'trade_gold', g: Math.max(0, Math.floor(Number($('#tradeGold').value) || 0)) }));
+  $('#tradeOk').addEventListener('click', () => send({ t: 'trade_ok' }));
+  $('#tradeNo').addEventListener('click', () => send({ t: 'trade_no' }));
+  $('#tradeClose').addEventListener('click', () => send({ t: 'trade_no' }));
+
+  /* ---------- ficha de monstruo y sus drops (clic derecho) ---------- */
+  const pctTxt = (p) => (p >= 0.1 ? Math.round(p * 100) + '%' : p >= 0.01 ? (p * 100).toFixed(1) + '%' : p > 0.00005 ? (p * 100).toFixed(2) + '%' : '<0,01%').replace('.', ',');
+  function showDrops(type) {
+    const d = G.mons[type]; if (!d) return;
+    $('#dropIcon').textContent = d.icon; $('#dropTitle').textContent = d.name;
+    const b = $('#dropBadge'); b.textContent = d.boss ? 'Jefe' : d.aggro > 0 ? 'Agresivo' : 'Pasivo'; b.className = 'badge' + (d.boss ? ' boss' : '');
+    const st = $('#dropStats'); st.replaceChildren();
+    const stat = (k, v) => { const x = el('div'); x.append(el('small', '', k), el('b', '', v)); st.append(x); };
+    stat('Vida', fmt(d.hp)); stat('Daño', `${d.dmg[0]}–${d.dmg[1]}`); stat('Experiencia', fmt(d.exp));
+    stat('Ataque', d.range > 1 ? `a ${d.range} casillas` : 'cuerpo a cuerpo'); stat('Oro', `${d.gold[0]}–${d.gold[1]}`); stat('Reaparece en', secs(d.respawn));
+    const list = $('#dropList'); list.replaceChildren();
+    const addRow = (icon, name, color, sub, p, rare) => {
+      const r = el('div', 'drow' + (rare ? ' rare' : '')), nm = el('div', 'nm');
+      const n1 = el('span', '', name); n1.style.color = color; nm.append(n1);
+      if (sub) nm.append(el('small', '', sub));
+      const pc = el('div', 'pc', pctTxt(p));
+      r.append(el('div', 'ico', icon), nm, pc); list.append(r);
+    };
+    d.loot.slice().sort((a, c) => c[1] - a[1]).forEach(([id, ch, a, c, gear]) => {
+      const it = G.items[id]; if (!it) return;
+      const qty = a === c ? (a > 1 ? ` ×${a}` : '') : ` ×${a}–${c}`;
+      addRow(it.icon, it.name + qty, gear ? G.rar.normal : G.rar.none, gear ? 'Equipo · puede venir +N, Ancient y con ranuras' : TYPE_NAME[it.type] || '', ch, gear && ch < 0.06);
+    });
+    addRow('💎', 'Gema al azar', '#bfe9ff', 'Rubí, zafiro, esmeralda, topacio… (los jefes y monstruos fuertes sueltan las mejores)', d.gem, d.gem < 0.06 && !d.boss);
+    $('#dropNote').textContent = `Por cada muerte: ${pctTxt(d.plus)} de soltar un equipo +N (verde) y ${pctTxt(d.anc)} de soltar uno Ancient (azul). Pasa el ratón por un objeto para ver su detalle.`;
+    $('#drops').hidden = false; $('#dropClose').focus();
+  }
+  const closeDrops = () => { $('#drops').hidden = true; };
+  $('#dropClose').addEventListener('click', closeDrops);
+  $('#drops').addEventListener('mousedown', (ev) => { if (ev.target === $('#drops')) closeDrops(); });
+
   /* ======================================================================
    *  TEXTURAS DEL MAPA (generadas por código, estilo píxel)
    * ==================================================================== */
-  const TILE = { GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10 };
+  const TILE = { GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10, SAND: 11, SNOW: 12, SWAMP: 13, DUNE: 14, PALM: 15, PINE: 16, DEADTREE: 17, CACTUS: 18, ICEBLOCK: 19, MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24 };
   const seeded = (s) => () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
   const mk = (fn) => { const c = document.createElement('canvas'); c.width = c.height = TS; const g = c.getContext('2d'); fn(g); return c; };
   const dot = (g, c, x, y, w = 2, h = 2) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
@@ -382,12 +628,83 @@
     for (let i = 0; i < 8; i++) dot(g, r() < 0.5 ? '#7a553a' : '#5d3f27', (r() * 16 | 0) * 2, (r() * 16 | 0) * 2, 4, 1);
   });
 
+
+  const flat = (base, a, b, seed, n = 22) => (v) => mk((g) => {
+    const r = seeded(seed + v); g.fillStyle = base; g.fillRect(0, 0, TS, TS);
+    for (let i = 0; i < n; i++) dot(g, r() < 0.5 ? a : b, (r() * 16 | 0) * 2, (r() * 16 | 0) * 2);
+  });
+  const sand = flat('#d6c188', '#e3d29c', '#c4ad72', 1300);
+  const snow = flat('#e4ecf3', '#f6fafd', '#c9d8e6', 1400, 18);
+  const dune = (v) => mk((g) => { g.drawImage(sand(v), 0, 0); const r = seeded(1500 + v); g.fillStyle = 'rgba(160,120,60,.35)'; for (let i = 0; i < 3; i++) { const y = 4 + i * 10 + (r() * 3 | 0); g.fillRect(2 + (r() * 6 | 0), y, 20 + (r() * 8 | 0), 2); } });
+  const swamp = (v) => mk((g) => {
+    const r = seeded(1600 + v); g.fillStyle = '#3f5a33'; g.fillRect(0, 0, TS, TS);
+    for (let i = 0; i < 14; i++) dot(g, r() < 0.5 ? '#4c6b3c' : '#2f4727', (r() * 16 | 0) * 2, (r() * 16 | 0) * 2);
+    g.fillStyle = 'rgba(60,90,50,.9)'; g.beginPath(); g.ellipse(8 + (r() * 14 | 0), 10 + (r() * 12 | 0), 6, 3, 0, 0, 7); g.fill();
+    dot(g, '#8fb86a', 6 + (r() * 18 | 0), 4 + (r() * 22 | 0), 3, 2);
+  });
+  const bog = (f) => mk((g) => {
+    g.fillStyle = '#2e4a2a'; g.fillRect(0, 0, TS, TS);
+    const r = seeded(77); for (let i = 0; i < 5; i++) dot(g, '#4f7a3b', ((r() * 12 | 0) * 2 + f * 4) % 28, (r() * 15 | 0) * 2, 6, 2);
+    dot(g, '#9ac46c', 8 + f * 10, 12, 2, 2); dot(g, '#9ac46c', 22 - f * 8, 22, 2, 2);
+  });
+  const hill = (v) => mk((g) => {
+    g.drawImage(grass(v), 0, 0); g.fillStyle = 'rgba(190,170,70,.22)'; g.fillRect(0, 0, TS, TS);
+    const r = seeded(1700 + v); for (let i = 0; i < 6; i++) dot(g, '#c9b14d', (r() * 16 | 0) * 2, (r() * 16 | 0) * 2, 2, 3);
+  });
+  const onTile = (bg, v, fn) => mk((g) => { g.drawImage(bg(v), 0, 0); fn(g); });
+  const palm = (v) => onTile(sand, v, (g) => {
+    dot(g, 'rgba(0,0,0,.2)', 8, 25, 16, 4);
+    g.strokeStyle = '#7a5a30'; g.lineWidth = 3; g.beginPath(); g.moveTo(15, 28); g.quadraticCurveTo(19, 18, 16, 9); g.stroke();
+    g.strokeStyle = '#2f7d3a'; g.lineWidth = 3;
+    [[-11, 3], [-8, -4], [0, -7], [9, -3], [12, 4]].forEach(([dx, dy]) => { g.beginPath(); g.moveTo(16, 9); g.quadraticCurveTo(16 + dx / 2, 4 + dy, 16 + dx, 9 + dy + 4); g.stroke(); });
+    dot(g, '#6b4a1e', 14, 11, 3, 3);
+  });
+  const pine = (v) => onTile(snow, v, (g) => {
+    dot(g, 'rgba(0,0,0,.2)', 8, 26, 16, 4); dot(g, '#4a3220', 14, 21, 4, 8);
+    [[6, 24, 26, '#1f4a35'], [9, 17, 23, '#25573f'], [12, 10, 20, '#2d6a4a']].forEach(([w, y, bw, c]) => { g.fillStyle = c; g.beginPath(); g.moveTo(16, y - 13); g.lineTo(16 + bw / 2 - 1, y); g.lineTo(16 - bw / 2 + 1, y); g.closePath(); g.fill(); });
+    g.fillStyle = '#f2f7fb'; g.fillRect(12, 8, 3, 2); g.fillRect(18, 13, 4, 2); g.fillRect(9, 18, 4, 2);
+  });
+  const dead = (v) => onTile(swamp, v, (g) => {
+    dot(g, 'rgba(0,0,0,.25)', 8, 26, 16, 4);
+    g.strokeStyle = '#3a2d26'; g.lineWidth = 3; g.beginPath(); g.moveTo(16, 29); g.lineTo(16, 13); g.stroke();
+    g.lineWidth = 2; [[16, 20, 8, 12], [16, 16, 25, 9], [16, 13, 11, 5], [16, 11, 21, 4]].forEach(([a, b, c, d]) => { g.beginPath(); g.moveTo(a, b); g.lineTo(c, d); g.stroke(); });
+  });
+  const cactus = (v) => onTile(sand, v, (g) => {
+    dot(g, 'rgba(0,0,0,.2)', 8, 26, 16, 4);
+    g.fillStyle = '#3f8a45'; g.fillRect(13, 6, 6, 22); g.fillRect(6, 13, 4, 8); g.fillRect(6, 19, 8, 3); g.fillRect(22, 10, 4, 8); g.fillRect(18, 16, 8, 3);
+    g.fillStyle = '#5db062'; g.fillRect(14, 6, 2, 22); dot(g, '#e8d9a0', 15, 9, 1, 1); dot(g, '#e8d9a0', 17, 18, 1, 1);
+  });
+  const ice = (v) => onTile(snow, v, (g) => {
+    dot(g, 'rgba(0,0,0,.18)', 6, 25, 20, 4);
+    g.fillStyle = '#8fd0f0'; g.beginPath(); g.moveTo(16, 3); g.lineTo(26, 14); g.lineTo(23, 27); g.lineTo(9, 27); g.lineTo(6, 14); g.closePath(); g.fill();
+    g.fillStyle = '#c8eefc'; g.beginPath(); g.moveTo(16, 3); g.lineTo(11, 15); g.lineTo(16, 24); g.closePath(); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.7)'; g.fillRect(19, 9, 2, 6);
+  });
+  const mfloor = (v) => { const r = seeded(1800 + v); return mk((g) => {
+    g.fillStyle = '#3a342c'; g.fillRect(0, 0, TS, TS);
+    for (let i = 0; i < 14; i++) dot(g, r() < 0.5 ? '#4a4338' : '#2c2721', (r() * 16 | 0) * 2, (r() * 16 | 0) * 2, 2, 2);
+    if (r() < 0.25) dot(g, '#d9b04a', (r() * 14 | 0) * 2 + 2, (r() * 14 | 0) * 2 + 2, 2, 2);
+  }); };
+  const pfloor = (v) => { const r = seeded(1900 + v); return mk((g) => {
+    g.fillStyle = '#b89a5e'; g.fillRect(0, 0, TS, TS); g.fillStyle = '#9a7f48'; g.fillRect(0, 0, TS, 1); g.fillRect(0, 0, 1, TS); g.fillRect(16, 0, 1, TS); g.fillRect(0, 16, TS, 1);
+    for (let i = 0; i < 8; i++) dot(g, r() < 0.5 ? '#c8ad72' : '#a68a52', (r() * 16 | 0) * 2, (r() * 16 | 0) * 2);
+    if (r() < 0.12) { g.fillStyle = '#5a3a1a'; g.fillRect(10, 12, 12, 2); g.fillRect(14, 8, 4, 10); }
+  }); };
+  const ifloor = (v) => { const r = seeded(2000 + v); return mk((g) => {
+    g.fillStyle = '#9fbfd6'; g.fillRect(0, 0, TS, TS); g.fillStyle = '#7fa3bd'; g.fillRect(0, 0, TS, 1); g.fillRect(0, 0, 1, TS); g.fillRect(16, 0, 1, TS); g.fillRect(0, 16, TS, 1);
+    for (let i = 0; i < 9; i++) dot(g, r() < 0.5 ? '#b6d3e6' : '#86aac4', (r() * 16 | 0) * 2, (r() * 16 | 0) * 2);
+    g.strokeStyle = 'rgba(255,255,255,.5)'; g.beginPath(); g.moveTo(4, 28); g.lineTo(14, 18); g.stroke();
+  }); };
+
   const TEX = {
     grass: [0, 1, 2, 3].map(grass), water: [water(0), water(1)],
     tree: [0, 1].map(tree), rock: [0, 1].map(rock),
     flower: [flower(0, '#e86a8a'), flower(1, '#f0d26a'), flower(2, '#b894f0')],
     road: [0, 1, 2].map(road), wall: [0, 1, 2].map(wall),
     dfloor: [0, 1, 2, 3].map(dfloor), afloor: [0, 1, 2, 3].map(afloor), shop: [0, 1].map(shopFloor),
+    sand: [0, 1, 2, 3].map(sand), snow: [0, 1, 2, 3].map(snow), dune: [0, 1, 2, 3].map(dune), swamp: [0, 1, 2, 3].map(swamp), bog: [bog(0), bog(1)], hill: [0, 1, 2, 3].map(hill),
+    palm: [0, 1].map(palm), pine: [0, 1].map(pine), dead: [0, 1].map(dead), cactus: [0, 1].map(cactus), ice: [0, 1].map(ice),
+    mfloor: [0, 1, 2, 3].map(mfloor), pfloor: [0, 1, 2, 3].map(pfloor), ifloor: [0, 1, 2, 3].map(ifloor),
   };
   const hash = (x, y) => { let h = (x * 374761393 + y * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177; return (h ^ (h >>> 16)) >>> 0; };
 
@@ -404,6 +721,20 @@
       case TILE.FLOWER: return TEX.flower[h % 3];
       case TILE.SHOP: return TEX.shop[h % 2];
       case TILE.AFLOOR: return TEX.afloor[h % 4];
+      case TILE.SAND: return TEX.sand[h % 4];
+      case TILE.SNOW: return TEX.snow[h % 4];
+      case TILE.SWAMP: return TEX.swamp[h % 4];
+      case TILE.DUNE: return TEX.dune[h % 4];
+      case TILE.PALM: return TEX.palm[h % 2];
+      case TILE.PINE: return TEX.pine[h % 2];
+      case TILE.DEADTREE: return TEX.dead[h % 2];
+      case TILE.CACTUS: return TEX.cactus[h % 2];
+      case TILE.ICEBLOCK: return TEX.ice[h % 2];
+      case TILE.MFLOOR: return TEX.mfloor[h % 4];
+      case TILE.PFLOOR: return TEX.pfloor[h % 4];
+      case TILE.IFLOOR: return TEX.ifloor[h % 4];
+      case TILE.BOG: return TEX.bog[frame];
+      case TILE.HILL: return TEX.hill[h % 4];
       default: return TEX.grass[0];
     }
   }
@@ -411,7 +742,7 @@
   /* ======================================================================
    *  MINIMAPA
    * ==================================================================== */
-  const MINI_COL = ['#3f6b3a', '#2b5d8a', '#234a2a', '#8a8271', '#59606e', '#3a3948', '#b07cff', '#77797f', '#3f6b3a', '#7a5634', '#4a2a2e'];
+  const MINI_COL = ['#3f6b3a', '#2b5d8a', '#234a2a', '#8a8271', '#59606e', '#3a3948', '#b07cff', '#77797f', '#3f6b3a', '#7a5634', '#4a2a2e', '#d6c188', '#e4ecf3', '#3f5a33', '#d2b878', '#2f7d3a', '#2d6a4a', '#5a4a3a', '#3f8a45', '#8fd0f0', '#3a342c', '#b89a5e', '#9fbfd6', '#2e4a2a', '#8d9a45'];
   let miniBase = null;
   function buildMiniBase() {
     const c = document.createElement('canvas'); c.width = G.W; c.height = G.H;
@@ -463,31 +794,93 @@
     c.fillRect(x - w / 2, y, Math.max(1, w * frac), 3);
   }
 
+  const shadeCache = {};
+  function shade(hex, f) {
+    const key = hex + f; if (shadeCache[key]) return shadeCache[key];
+    const n = parseInt(hex.slice(1), 16);
+    const ch = (v) => Math.max(0, Math.min(255, Math.round(v * f)));
+    return (shadeCache[key] = `rgb(${ch(n >> 16)},${ch((n >> 8) & 255)},${ch(n & 255)})`);
+  }
+
+  function drawWeapon(c, style, hx, hy, dir, now, swing) {
+    c.save(); c.translate(hx, hy); c.rotate(swing * 0.35 * dir);
+    if (style === 'melee') {
+      c.fillStyle = '#cfd6df'; c.fillRect(-1, -15, 3, 14); c.fillStyle = '#eef2f6'; c.fillRect(-1, -15, 1, 14);
+      c.fillStyle = '#c9a24b'; c.fillRect(-4, -2, 9, 3); c.fillStyle = '#6b4a2e'; c.fillRect(-1, 1, 3, 4);
+    } else if (style === 'ranged') {
+      c.strokeStyle = '#8a5a2b'; c.lineWidth = 2; c.beginPath(); c.arc(dir * -3, -3, 10, -1.25, 1.25); c.stroke();
+      c.strokeStyle = '#d8d2c0'; c.lineWidth = 1; c.beginPath(); c.moveTo(dir * -3 + 5.5, -12); c.lineTo(dir * -3 + 5.5, 6); c.stroke();
+    } else if (style === 'magic') {
+      c.fillStyle = '#7a4f26'; c.fillRect(-1, -19, 3, 25);
+      const glow = 3.6 + Math.sin(now / 200) * 0.8;
+      c.fillStyle = 'rgba(134,193,234,.35)'; c.beginPath(); c.arc(0, -21, glow + 3, 0, 7); c.fill();
+      c.fillStyle = '#86c1ea'; c.beginPath(); c.arc(0, -21, glow, 0, 7); c.fill();
+    }
+    c.restore();
+  }
+
+  /* Personaje con ciclo de paso: la fase avanza con la distancia recorrida (ver frame()). */
   function drawPlayer(c, e, sx, sy, now) {
     const cx = sx + TS / 2, base = sy + TS - 3;
-    const moving = Math.hypot(e.x - e.rx, e.y - e.ry) > 0.08;
-    const bob = moving ? Math.sin(now / 80 + e.id) * 1.6 : 0;
-    const side = e.d === 3 ? -1 : 1;
+    const amp = e.amp || 0, ph = e.phase || 0, fd = e.fd == null ? 2 : e.fd;
+    const sw = Math.sin(ph), cs = Math.cos(ph);
+    const idle = Math.sin(now / 450 + e.id) * 0.6 * (1 - amp);              // respiración en reposo
+    const bob = Math.round((-Math.abs(sw) * 1.5 * amp + idle) * 2) / 2;                            // el cuerpo sube a mitad de zancada
+    const side = fd === 1 ? 1 : fd === 3 ? -1 : 0;
+    const lean = side * amp * 1.2;                                            // inclinación al correr
+    const hipY = base - 10, shY = base - 21 + bob;
+    const body = e.c, dark = shade(e.c, 0.62), mid = shade(e.c, 0.82), skin = '#e8c39e', skinD = '#caa07c';
     c.save();
     if (e.o) c.globalAlpha = 0.55;
-    c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.ellipse(cx, base, 10, 4, 0, 0, 7); c.fill();
-    c.fillStyle = '#2a2f3a'; c.fillRect(cx - 5, base - 9, 4, 9 + bob); c.fillRect(cx + 1, base - 9, 4, 9 - bob);   // piernas
-    c.fillStyle = e.c; c.fillRect(cx - 7, base - 21, 14, 13);                                                       // capa/cuerpo
-    c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(cx - 7, base - 10, 14, 2);
-    c.fillStyle = '#e8c39e'; c.beginPath(); c.arc(cx, base - 26, 6, 0, 7); c.fill();                               // cabeza
-    c.fillStyle = '#3a2a1c'; c.beginPath(); c.arc(cx, base - 28, 6, Math.PI, 0); c.fill();
-    if (e.d !== 0) { c.fillStyle = '#111'; c.fillRect(cx + side * 2 - 1, base - 26, 2, 2); }
-    const hx = cx + 9 * side, hy = base - 14;
-    if (e.s === 'melee') {
-      c.fillStyle = '#cfd6df'; c.fillRect(hx - 1, hy - 14, 3, 14); c.fillStyle = '#c9a24b'; c.fillRect(hx - 4, hy - 1, 9, 3); c.fillStyle = '#6b4a2e'; c.fillRect(hx - 1, hy + 2, 3, 4);
-    } else if (e.s === 'ranged') {
-      c.strokeStyle = '#8a5a2b'; c.lineWidth = 2; c.beginPath(); c.arc(hx - side * 5, hy - 2, 10, side > 0 ? -1.2 : Math.PI - 1.2 + 0.0, side > 0 ? 1.2 : Math.PI + 1.2, side < 0); c.stroke();
-      c.strokeStyle = '#d8d2c0'; c.lineWidth = 1; c.beginPath(); c.moveTo(hx - side * 5 + side * 5.5, hy - 11); c.lineTo(hx - side * 5 + side * 5.5, hy + 7); c.stroke();
-    } else if (e.s === 'magic') {
-      c.fillStyle = '#7a4f26'; c.fillRect(hx - 1, hy - 18, 3, 24);
-      const glow = 4 + Math.sin(now / 200) * 0.8;
-      c.fillStyle = 'rgba(134,193,234,.35)'; c.beginPath(); c.arc(hx, hy - 20, glow + 3, 0, 7); c.fill();
-      c.fillStyle = '#86c1ea'; c.beginPath(); c.arc(hx, hy - 20, glow, 0, 7); c.fill();
+    // sombra (se encoge cuando el cuerpo sube)
+    c.fillStyle = 'rgba(0,0,0,.34)'; c.beginPath(); c.ellipse(cx, base + 0.5, 10 - bob * 0.6, 3.6, 0, 0, 7); c.fill();
+
+    const leg = (x, len, col) => { c.fillStyle = col; c.fillRect(Math.round(x - 2), hipY + bob * 0.4, 4, len); c.fillStyle = '#15181f'; c.fillRect(Math.round(x - 2.5), hipY + bob * 0.4 + len - 2, 5 + (side ? 1 : 0), 2.5); };
+    const arm = (x, y, dx, dy, col) => { c.strokeStyle = col; c.lineWidth = 3.4; c.lineCap = 'round'; c.beginPath(); c.moveTo(x, y); c.lineTo(x + dx, y + dy); c.stroke(); c.fillStyle = skin; c.beginPath(); c.arc(x + dx, y + dy, 2, 0, 7); c.fill(); };
+    const cape = (hem, wide) => {
+      c.fillStyle = dark; c.beginPath();
+      c.moveTo(cx - wide + lean, shY + 1); c.lineTo(cx + wide + lean, shY + 1);
+      c.lineTo(cx + wide + 1 + hem, base - 7); c.lineTo(cx - wide - 1 + hem, base - 7); c.closePath(); c.fill();
+    };
+
+    if (side) {
+      // ---------- perfil ----------
+      const swing = sw * amp;
+      const lift1 = Math.max(0, cs) * 2.2 * amp, lift2 = Math.max(0, -cs) * 2.2 * amp;
+      const farArmDx = swing * 3.6 * side, nearArmDx = -swing * 3.6 * side;
+      arm(cx + lean - side * 1, shY + 4, farArmDx, 8, dark);
+      leg(cx - side * swing * 4, 10 - lift2, shade('#2a2f3a', 0.8));
+      cape(-side * (2.5 + amp * 3) + Math.sin(now / 220) * 0.8, 5);
+      c.fillStyle = mid; c.fillRect(Math.round(cx - 5 + lean), shY, 10, 12);
+      c.fillStyle = body; c.fillRect(Math.round(cx - 5 + lean), shY, 10, 3);
+      c.fillStyle = '#6b4a2e'; c.fillRect(Math.round(cx - 5 + lean), shY + 9, 10, 2);
+      leg(cx + side * swing * 4, 10 - lift1, '#2a2f3a');
+      const hx = cx + lean, hy = shY - 5 + bob * 0.3;
+      c.fillStyle = skin; c.beginPath(); c.arc(hx, hy, 6, 0, 7); c.fill();
+      c.fillStyle = '#3a2a1c'; c.beginPath(); c.arc(hx - side * 1.5, hy - 1.5, 6, Math.PI * (side > 0 ? 0.9 : -0.1), Math.PI * (side > 0 ? 2.1 : 1.1)); c.fill();
+      c.fillStyle = skinD; c.fillRect(hx + side * 6 - (side > 0 ? 1 : 0), hy, 2, 2);                        // nariz
+      c.fillStyle = '#111'; c.fillRect(hx + side * 2.5 - 1, hy - 1, 2, 2);                                  // ojo
+      arm(cx + lean + side * 1, shY + 4, nearArmDx, 8, body);
+      drawWeapon(c, e.s, cx + lean + side * 1 + nearArmDx, shY + 12, side, now, -swing);
+    } else {
+      // ---------- frente / espalda ----------
+      const front = fd === 2;
+      const l1 = Math.max(0, cs) * 3.2 * amp, l2 = Math.max(0, -cs) * 3.2 * amp;
+      leg(cx - 3, 10 - l1, '#2a2f3a'); leg(cx + 3, 10 - l2, '#2a2f3a');
+      const sway = Math.sin(ph) * amp;
+      if (!front) cape(sway * 2.5 + Math.sin(now / 240) * 0.6, 7);
+      c.fillStyle = front ? body : mid; c.fillRect(Math.round(cx - 7 + sway * 0.8), shY, 14, 12);
+      if (front) { c.fillStyle = mid; c.fillRect(cx - 7 + sway * 0.8, shY + 9, 14, 3); c.fillStyle = '#c9a24b'; c.fillRect(cx - 1 + sway * 0.8, shY + 3, 2, 8); }
+      else { c.fillStyle = dark; c.fillRect(cx - 7 + sway * 0.8, shY, 14, 3); }
+      arm(cx - 8, shY + 3, -1, 7 - sw * 2.2 * amp, front ? mid : dark);
+      const rdy = 7 + sw * 2.2 * amp;
+      arm(cx + 8, shY + 3, 1, rdy, front ? body : mid);
+      const hx = cx + sway * 0.4, hy = shY - 5;
+      c.fillStyle = skin; c.beginPath(); c.arc(hx, hy, 6, 0, 7); c.fill();
+      c.fillStyle = '#3a2a1c';
+      if (front) { c.beginPath(); c.arc(hx, hy - 1.5, 6, Math.PI, 0); c.fill(); c.fillStyle = '#111'; c.fillRect(hx - 3, hy, 2, 2); c.fillRect(hx + 1, hy, 2, 2); }
+      else { c.beginPath(); c.arc(hx, hy, 6, 0, 7); c.fill(); }
+      drawWeapon(c, e.s, cx + 9, shY + 3 + rdy, 1, now, sw * amp);
     }
     c.restore();
   }
@@ -498,9 +891,21 @@
     const size = d.boss ? 46 : 28;
     c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.ellipse(cx, sy + TS - 4, d.boss ? 17 : 11, 4, 0, 0, 7); c.fill();
     if (d.boss) { c.fillStyle = 'rgba(212,80,59,.16)'; c.beginPath(); c.arc(cx, cy, 24 + Math.sin(now / 300) * 2, 0, 7); c.fill(); }
-    const hop = Math.abs(Math.sin(now / 170 + e.id)) * (Math.hypot(e.x - e.rx, e.y - e.ry) > 0.08 ? 3 : 0.6);
+    const hop = Math.round(Math.abs(Math.sin(now / 240 + e.id)) * (Math.hypot(e.x - e.rx, e.y - e.ry) > 0.08 ? 3 : 0.6));
     c.font = `${size}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillStyle = '#fff'; c.fillText(d.icon, cx, cy - hop - (d.boss ? 6 : 1));
+  }
+
+  // aura de brillo: diamantes, piezas ancient y set mejorado completo
+  const AURA = ['', '255,245,200', '170,220,255', '190,150,255', '255,200,90'];
+  function drawAura(c, e, cx, cy, now) {
+    const lv = Math.min(4, e.v), col = e.a >= 2 ? '120,190,255' : AURA[lv] || AURA[1];
+    const r = 16 + lv * 3 + Math.sin(now / 260 + e.id) * 1.5;
+    const g = c.createRadialGradient(cx, cy, 4, cx, cy, r + 8);
+    g.addColorStop(0, `rgba(${col},${0.12 + lv * 0.06})`); g.addColorStop(1, `rgba(${col},0)`);
+    c.fillStyle = g; c.beginPath(); c.arc(cx, cy, r + 8, 0, 7); c.fill();
+    c.fillStyle = `rgba(${col},.9)`;
+    for (let i = 0; i < 1 + lv; i++) { const a = now / 700 + i * 6.28 / (1 + lv) + e.id; c.fillRect(Math.round(cx + Math.cos(a) * (r - 2)) - 1, Math.round(cy + Math.sin(a) * (r - 6)) - 1, 2, 2); }
   }
 
   function drawFlash(c, f, now) {
@@ -551,14 +956,27 @@
     if (!G.me) return;
     const c = ctx; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.imageSmoothingEnabled = false;
 
-    // interpolación suave de posiciones
-    const k = 1 - Math.exp(-dt * 15);
+    // Movimiento continuo: la velocidad sigue el ritmo real de pasos del servidor (sin arrancar/parar en cada casilla)
     for (const e of G.ents.values()) {
-      if (Math.abs(e.x - e.rx) > 4 || Math.abs(e.y - e.ry) > 4) { e.rx = e.x; e.ry = e.y; } else { e.rx += (e.x - e.rx) * k; e.ry += (e.y - e.ry) * k; }
+      const dx = e.x - e.rx, dy = e.y - e.ry, d = Math.hypot(dx, dy);
+      if (d > 4) { e.rx = e.x; e.ry = e.y; e.amp = 0; continue; }
+      if (d > 0.02) {
+        const v = speedOf(e);
+        const sp = v * (1 + 0.35 * Math.max(0, Math.min(d, 3) - 1));   // velocidad fija; solo acelera un poco si va muy atrasado
+        const st = Math.min(d, sp * dt);
+        e.rx += (dx / d) * st; e.ry += (dy / d) * st;
+        if (e.kind === 'pl') { e.phase = (e.phase || 0) + st * (Math.PI * 2 / 3.0); e.moveT = now; }
+      } else { e.rx = e.x; e.ry = e.y; }
+      if (e.kind === 'pl') {
+        const moving = now - (e.moveT || 0) < 260;
+        e.amp = (e.amp || 0) + ((moving ? 1 : 0) - (e.amp || 0)) * (1 - Math.exp(-dt * (moving ? 12 : 10)));
+        e.fd = e.d;                                          // dirección que manda el servidor: no parpadea en diagonales
+      }
     }
     const me = G.ents.get(G.id);
     const tx = me ? me.rx : G.me.x, ty = me ? me.ry : G.me.y;
-    G.cam.x += (tx - G.cam.x) * (1 - Math.exp(-dt * 20)); G.cam.y += (ty - G.cam.y) * (1 - Math.exp(-dt * 20));
+    G.dbg = { tx, ty, amp: me && me.amp, phase: me && me.phase };
+    G.cam.x = tx; G.cam.y = ty;     // cámara fija al jugador: el paisaje se desplaza al mismo ritmo que el paso
 
     c.fillStyle = '#05070a'; c.fillRect(0, 0, cw, ch);
     const frameW = Math.floor(now / 650) % 2;
@@ -582,6 +1000,12 @@
       if (!zoneAt(x, y - 1).pvp) c.fillRect(sx, sy, TS, 2);
       if (!zoneAt(x, y + 1).pvp) c.fillRect(sx, sy + TS - 2, TS, 2);
     }
+    // tinte de zona (clima)
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      if (x < 0 || y < 0 || x >= G.W || y >= G.H) continue;
+      const tn = zoneAt(x, y).tint; if (!tn) continue;
+      c.fillStyle = tn; c.fillRect(sxOf(x), syOf(y), TS, TS);
+    }
     // portales
     for (const p of G.portals) {
       if (p.x < x0 || p.x > x1 || p.y < y0 || p.y > y1) continue;
@@ -600,7 +1024,14 @@
       c.fillStyle = 'rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(cx, cy + 8, 8, 3, 0, 0, 7); c.fill();
       c.font = '20px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#fff';
       const top = g.it[0], d = G.items[top[0]];
+      const gcol = g.n > 1 ? null : (G.items[top[0]] && G.items[top[0]].type === 'gem') ? G.items[top[0]].col : top[4] ? G.rar.ancient : top[3] > 0 ? G.rar.plus : null;
+      if (gcol) { const gl = c.createRadialGradient(cx, cy, 2, cx, cy, 17); gl.addColorStop(0, gcol + 'cc'); gl.addColorStop(1, gcol + '00'); c.fillStyle = gl; c.beginPath(); c.arc(cx, cy, 17, 0, 7); c.fill(); c.fillStyle = '#fff'; }
+      c.font = '20px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
       c.fillText(g.n > 1 ? '👝' : (d ? d.icon : '?'), cx, cy);
+      if (g.n === 1 && d && Math.abs(g.x - G.cam.x) < 4 && Math.abs(g.y - G.cam.y) < 3 && (top[3] > 0 || top[4] || !gcol)) {
+        const nm = isGear(top[0]) ? itName([top[0], 1, top[3], top[4]]) : d.name;
+        outlined(c, nm, cx, cy - 18, gcol || (isGear(top[0]) ? G.rar.normal : G.rar.none), 'bold 10px "Segoe UI", sans-serif');
+      }
       if (g.n > 1) outlined(c, '×' + g.n, cx + 11, cy + 9, '#f2d27a', 'bold 10px sans-serif');
       else if (top[1] > 1) outlined(c, String(top[1]), cx + 10, cy + 9, '#f2d27a', 'bold 10px sans-serif');
       if (top[2]) c.fillText('🔒', cx - 9, cy - 9);
@@ -623,12 +1054,13 @@
       if (e.id === tgId) {
         c.strokeStyle = `rgba(255,70,50,${0.7 + 0.3 * Math.sin(now / 150)})`; c.lineWidth = 2; c.strokeRect(sx + 1, sy + 1, TS - 2, TS - 2);
       }
+      if (e.kind === 'pl' && e.v > 0) drawAura(c, e, sx + TS / 2, sy + TS / 2, now);
       if (e.kind === 'pl') drawPlayer(c, e, sx, sy, now); else drawMonster(c, e, sx, sy, now);
       const cx = sx + TS / 2;
       if (e.kind === 'pl') {
         const top = sy - 14;
         hpBar(c, cx, top, 28, e.h / e.H);
-        outlined(c, `${e.n} [${e.l}]${e.k ? ' ⚔' : ''}${e.o ? ' (ausente)' : ''}`, cx, top - 8, e.id === G.id ? '#c9a24b' : '#e8e2d0');
+        outlined(c, `${e.n} [${e.l}]${e.k ? ' ⚔' : ''}${e.tr ? ' 🤝' : ''}${e.o ? ' (ausente)' : ''}`, cx, top - 8, e.id === G.id ? '#c9a24b' : '#e8e2d0');
       } else {
         const d = G.mons[e.t] || {}; const top = sy - (d.boss ? 18 : 6);
         hpBar(c, cx, top, d.boss ? 40 : 28, e.h / e.H);
@@ -658,7 +1090,8 @@
     const zk = zoneAt(G.me.x, G.me.y).kind;
     if (zk === 'dungeon') {
       const px = (tx - G.cam.x) * TS + cw / 2, py = (ty - G.cam.y) * TS + ch / 2;
-      const g = c.createRadialGradient(px, py, 70, px, py, Math.max(cw, ch) * 0.62);
+      const lit = 70 + 22 * Math.min(4, G.me.v || 0);
+      const g = c.createRadialGradient(px, py, lit, px, py, Math.max(cw, ch) * 0.62 + lit * 0.4);
       g.addColorStop(0, 'rgba(4,5,9,0)'); g.addColorStop(0.55, 'rgba(4,5,9,.72)'); g.addColorStop(1, 'rgba(4,5,9,.94)');
       c.fillStyle = g; c.fillRect(0, 0, cw, ch);
     }
@@ -683,7 +1116,7 @@
     }
     if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
     if (k === 'enter') { ev.preventDefault(); chatIn.focus(); return; }
-    if (k === 'escape') { if (G.shopOpen) closeShop(); else { send({ t: 'target', id: null }); G.path = []; } return; }
+    if (k === 'escape') { if (!ctxEl.hidden) closeCtx(); else if (!$('#drops').hidden) closeDrops(); else if (G.trade) send({ t: 'trade_no' }); else if (G.bankOpen) closeBank(); else if (G.shopOpen) closeShop(); else { send({ t: 'target', id: null }); G.path = []; } return; }
     if (KEYDIR[k]) { ev.preventDefault(); held.add(k); G.path = []; return; }
     if (k === 'z') send({ t: 'style', s: 'melee' });
     else if (k === 'x') send({ t: 'style', s: 'ranged' });
@@ -722,7 +1155,12 @@
     for (const e of G.ents.values()) if (e.id !== G.id && Math.round(e.x) === t.x && Math.round(e.y) === t.y) best = e;
     return best;
   };
-  cv.addEventListener('contextmenu', (ev) => ev.preventDefault());
+  cv.addEventListener('contextmenu', (ev) => {
+    ev.preventDefault(); if (!G.me) return;
+    const e = entAtTile(tileAt(ev)); if (!e) return;
+    if (e.kind === 'mo') { const d = G.mons[e.t]; if (!d) return; openCtx(ev, [{ hdr: d.name, color: d.boss ? '#ff9c80' : null }, { label: 'Ver botín y datos', fn: () => showDrops(e.t) }, { label: 'Atacar', fn: () => send({ t: 'target', id: e.id }) }]); }
+    else openCtx(ev, [{ hdr: e.n }, { label: 'Comerciar', fn: () => send({ t: 'trade_req', id: e.id }) }, { label: 'Atacar', fn: () => send({ t: 'target', id: e.id }) }]);
+  });
   cv.addEventListener('mousemove', (ev) => {
     if (!G.me) return;
     const t = tileAt(ev);
@@ -740,7 +1178,7 @@
     walkTo(t.x, t.y);
   });
 
-  const BLOCK = new Set([TILE.WATER, TILE.TREE, TILE.WALL, TILE.ROCK]);
+  const BLOCK = new Set([TILE.WATER, TILE.TREE, TILE.WALL, TILE.ROCK, TILE.PALM, TILE.PINE, TILE.DEADTREE, TILE.CACTUS, TILE.ICEBLOCK, TILE.BOG]);
   function walkable(x, y) { return x >= 0 && y >= 0 && x < G.W && y < G.H && !BLOCK.has(G.tiles[y * G.W + x]) && !G.npcTiles.has(y * G.W + x); }
   function walkTo(gx, gy) {
     if (!walkable(gx, gy)) return;

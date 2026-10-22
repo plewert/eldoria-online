@@ -11,24 +11,53 @@ Las cuentas se guardan en `data/players.json` (contraseñas con scrypt).
 
 ## Cómo se juega
 - **Un personaje, tres estilos**: el arma equipada define si eres guerrero (Z), tirador (X) o mago (C).
-  Cada estilo tiene su propia habilidad, que sube al usarlo.
-- **Mover**: WASD o flechas, o clic en el suelo. **Atacar**: clic en un monstruo (o en un jugador en zona PvP).
-- **Pociones** H (vida) y J (maná), **curación** V, **recoger** E, **chat** Enter (`/g` global, `/pos`, `/top`, `/ayuda`).
-- **Tienda**: clic en Boris el Mercader (ciudad). Compra trofeos y vende equipo y pociones.
+- **Mover**: WASD o flechas, o clic en el suelo (velocidad constante). **Atacar**: clic en un monstruo (o jugador en zona PvP).
+- **Clic derecho**: sobre un monstruo → ficha con vida, daño y **tabla de drops con %**; sobre un jugador → Comerciar; sobre un objeto de la mochila → equipar, engarzar gema, guardar en banco, ofrecer, soltar.
+- **Pociones** H/J, **curación** V, **recoger** E, **chat** Enter (`/g` global, `/pos`, `/top`, `/ayuda`).
 
-## Mundo
-| Zona | Tipo | Notas |
-|---|---|---|
-| Ciudad de Aldea Real | segura | tienda, sabio, reaparición |
-| Prado de los Novatos | segura | conejos, ratas, serpientes, arañas |
-| Catacumbas Silenciosas | segura (mazmorra) | jefe: Rey Esqueleto |
-| Bosque Maldito | **PvP** | lobos, osos, orcos; jefe: Señor Orco |
-| Abismo Carmesí | **PvP** (mazmorra) | trolls, demonios, dragones; jefe: Demonio Supremo |
+## Objetos y rareza (el nombre lleva color)
+| Color | Qué es |
+|---|---|
+| Gris | Normal, sin bonus |
+| Verde | Excelente **+1 a +6** (+10 % de poder por nivel) |
+| Azul | **Ancient**: drop rarísimo (más probable en jefes), ×1,5 de poder |
 
-En zonas seguras solo te atacan los monstruos y el botín es de quien más daño hizo (30 s).
-En zonas PvP puedes pelear con otros jugadores y quedarte con lo que suelten al caer.
-Reglas anti-abuso: protección de novato (PvP desde nivel 5), no puedes huir a zona segura ni usar portales
-durante 20 s tras un combate PvP, y si te desconectas en combate tu personaje se queda 20 s en el mundo.
+Cada arma/armadura puede traer hasta 3 **ranuras** para gemas (solo se engarzan en zona segura, fuera de combate; sacarlas cuesta oro).
+Gemas: rubí (+ataque), zafiro (+maná), esmeralda (+vida), topacio (+defensa), amatista (crítico), ópalo (robo de vida) y diamante (**brillo**: aura del personaje; también brillan las piezas Ancient y los sets completos mejorados).
+
+## Banco y comercio
+- **Banco** (Gerda en la ciudad, Marta en el puerto): guarda objetos y oro; lo guardado no se pierde al morir en PvP.
+- **Comercio** entre jugadores (clic derecho → Comerciar, a ≤4 casillas): ofertas con objetos y oro, los dos confirman, intercambio atómico; cualquier cambio anula las confirmaciones.
+
+## Mundo (180×140)
+| Zona | Tipo |
+|---|---|
+| Ciudad de Aldea Real, Puerto Marea | seguras (tiendas y bancos) |
+| Prado de los Novatos, Colinas Doradas, Playa de Cristal | campos seguros |
+| Catacumbas Silenciosas, Minas Enanas | mazmorras seguras |
+| Bosque Maldito, Cumbres Heladas, Dunas Ardientes, Pantano Venenoso | **PvP** |
+| Abismo Carmesí, Pirámide Olvidada, Fortaleza de Hielo | mazmorras **PvP** con jefe |
+
+En zonas seguras solo te atacan los monstruos. En PvP puedes pelear y quedarte con lo que suelten al caer.
+Anti-abuso: protección de novato (PvP desde nivel 5), sin huir a zona segura 20 s tras combate PvP, y si te desconectas en combate tu personaje queda 20 s en el mundo.
 
 ## Ajustes
 Todo el balance (objetos, monstruos, XP, pérdidas al morir) está en `game/data.js`.
+
+## Despliegue (GitHub + Render)
+1. Crea un repositorio vacío en GitHub y sube el código:
+   `git remote add origin https://github.com/TU_USUARIO/eldoria-online.git && git push -u origin main`
+2. En [render.com](https://render.com): **New → Blueprint**, elige el repositorio y confirma. Render lee `render.yaml`,
+   arranca `node server.js` y asigna el puerto solo (el juego usa la variable `PORT`). Los WebSockets funcionan sin configurar nada.
+3. Abre la URL `https://eldoria-online.onrender.com` (o la que te asigne Render) y comparte el enlace.
+
+**Guardado de personajes:** en el plan gratuito el disco de Render se borra en cada reinicio o despliegue, y los personajes se pierden.
+Para conservarlos, usa un plan de pago, añade un disco (por ejemplo montado en `/var/data`) y define la variable `DATA_FILE=/var/data/players.json`.
+El plan gratuito además duerme el servicio tras ~15 min sin visitas; el primer jugador espera unos segundos a que despierte.
+
+## Que las cuentas NO se borren (base de datos gratis)
+Render gratis borra los archivos al reiniciar. Eldoria guarda cuentas y estadísticas en **Upstash Redis** (gratis, sin tarjeta):
+1. Crea cuenta en https://upstash.com → *Create Database* (Redis, región cercana, plan Free).
+2. En la base, pestaña **REST API**: copia `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`.
+3. En Render → tu servicio → **Environment** → añade esas dos variables con esos nombres → Save (redespliega).
+En el registro de Render verás `Base remota conectada: N cuentas cargadas.` Se guarda cada 30 s, al desconectarte y al apagarse el servidor.
