@@ -11,13 +11,7 @@
 
 <!-- ============ Pantalla de acceso ============ -->
 <section id="login" aria-labelledby="loginTitle">
-  <svg class="horizon" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-    <circle cx="1210" cy="230" r="62" fill="#c9a24b" opacity=".92"/>
-    <circle cx="1210" cy="230" r="120" fill="#c9a24b" opacity=".07"/>
-    <polygon points="0,640 180,470 300,560 470,380 640,560 760,500 960,650 1120,520 1330,640 1600,470 1600,900 0,900" fill="#1a232e"/>
-    <polygon points="0,740 220,610 380,700 600,560 800,720 1010,640 1240,760 1420,650 1600,730 1600,900 0,900" fill="#121921"/>
-    <polygon points="0,830 260,760 520,820 780,770 1060,835 1320,780 1600,830 1600,900 0,900" fill="#0b1015"/>
-  </svg>
+  <canvas id="cover" aria-hidden="true"></canvas>
 
   <form id="loginForm" autocomplete="on">
     <h1 id="loginTitle">Eldoria Online</h1>
@@ -71,8 +65,11 @@
     </div>
 
     <div id="chat">
+      <div id="chatBar"><button id="chatToggle" type="button" aria-expanded="true" aria-controls="chatBody" title="Mostrar u ocultar el chat (Tab)"><span class="ci">💬</span> <span id="chatLbl">Chat</span> <em id="chatUnread" hidden>0</em> <span class="cx" aria-hidden="true">▾</span></button></div>
+      <div id="chatBody">
       <div id="log" role="log" aria-live="polite"></div>
       <input id="chatIn" type="text" maxlength="120" placeholder="Enter para hablar · /g mensaje para todos · /ayuda" autocomplete="off">
+      </div>
     </div>
   </div>
 
@@ -207,6 +204,7 @@
 <div id="tip" role="tooltip" hidden></div>
 <div id="toasts" aria-live="polite"></div>
 
+<script src="cover.js"></script>
 <script src="game.js"></script>
 </body>
 </html>

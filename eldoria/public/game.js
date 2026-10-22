@@ -183,6 +183,8 @@
     log.append(p);
     while (log.children.length > 120) log.firstChild.remove();
     log.scrollTop = log.scrollHeight;
+    if (!$('#chat').classList.contains('closed')) return;
+    if (m.n || m.k === 'g') { unread++; const u = $('#chatUnread'); u.textContent = unread > 99 ? '99+' : unread; u.hidden = false; }
   }
 
   const fmt = (n) => Math.round(n).toLocaleString('es');
@@ -885,27 +887,93 @@
     c.restore();
   }
 
-  function drawMonster(c, e, sx, sy, now) {
-    const d = G.mons[e.t] || { icon: '❓', boss: false };
-    const cx = sx + TS / 2, cy = sy + TS / 2;
-    const size = d.boss ? 46 : 28;
-    c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.ellipse(cx, sy + TS - 4, d.boss ? 17 : 11, 4, 0, 0, 7); c.fill();
-    if (d.boss) { c.fillStyle = 'rgba(212,80,59,.16)'; c.beginPath(); c.arc(cx, cy, 24 + Math.sin(now / 300) * 2, 0, 7); c.fill(); }
-    const hop = Math.round(Math.abs(Math.sin(now / 240 + e.id)) * (Math.hypot(e.x - e.rx, e.y - e.ry) > 0.08 ? 3 : 0.6));
-    c.font = `${size}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillStyle = '#fff'; c.fillText(d.icon, cx, cy - hop - (d.boss ? 6 : 1));
+  /* Monstruos: el emoji es el cuerpo y se le dibujan piernas y brazos con ciclo de paso real. */
+  const RIG = (() => {
+    const m = {}, set = (kind, col, list) => list.split(' ').forEach((k) => { m[k] = { kind, col }; });
+    set('bi', '#e8e2d0', 'esqueleto esqueleto_arquero rey_esqueleto');
+    set('bi', '#7a9a5a', 'necrofago zombi');
+    set('bi', '#5a8a3a', 'orco chaman_orco senor_orco goblin arquero_goblin');
+    set('bi', '#6f8f60', 'troll');
+    set('bi', '#a82a2a', 'demonio_menor demonio_supremo');
+    set('bi', '#4a3a2a', 'bandido enano_renegado bruja kobold');
+    set('bi', '#7a7e88', 'golem_lava golem_hierro maestro_forjador golem_hielo');
+    set('bi', '#d8caa0', 'momia sacerdote_momia momia_real faraon');
+    set('bi', '#a8d8f0', 'yeti caballero_hielo reina_hielo');
+    set('quad', '#6b4a2e', 'conejo rata lobo oso jabali tortuga lobo_hielo mamut lagarto sapo dragon hidra');
+    set('bug', '#2a2220', 'arana arana_cueva cangrejo cangrejo_colosal escorpion rey_escorpion escarabajo_gigante');
+    set('float', '#bfc8e0', 'serpiente cobra gusano_arena murcielago espectro_helado elemental_hielo sirena');
+    return m;
+  })();
+  const RIG_HANDS = new Set(['bi']);
+
+  function limb(c, x1, y1, x2, y2, w, col) {
+    c.strokeStyle = 'rgba(0,0,0,.55)'; c.lineWidth = w + 1.5; c.lineCap = 'round'; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+    c.strokeStyle = col; c.lineWidth = w; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
   }
 
-  // aura de brillo: diamantes, piezas ancient y set mejorado completo
-  const AURA = ['', '255,245,200', '170,220,255', '190,150,255', '255,200,90'];
-  function drawAura(c, e, cx, cy, now) {
-    const lv = Math.min(4, e.v), col = e.a >= 2 ? '120,190,255' : AURA[lv] || AURA[1];
-    const r = 16 + lv * 3 + Math.sin(now / 260 + e.id) * 1.5;
-    const g = c.createRadialGradient(cx, cy, 4, cx, cy, r + 8);
-    g.addColorStop(0, `rgba(${col},${0.12 + lv * 0.06})`); g.addColorStop(1, `rgba(${col},0)`);
-    c.fillStyle = g; c.beginPath(); c.arc(cx, cy, r + 8, 0, 7); c.fill();
-    c.fillStyle = `rgba(${col},.9)`;
-    for (let i = 0; i < 1 + lv; i++) { const a = now / 700 + i * 6.28 / (1 + lv) + e.id; c.fillRect(Math.round(cx + Math.cos(a) * (r - 2)) - 1, Math.round(cy + Math.sin(a) * (r - 6)) - 1, 2, 2); }
+  function drawMonster(c, e, sx, sy, now) {
+    const d = G.mons[e.t] || { icon: '❓', boss: false };
+    const rig = RIG[e.t] || { kind: 'bi', col: '#8a7a66' };
+    const k = d.boss ? 1.55 : 1, cx = sx + TS / 2, ground = sy + TS - 4;
+    const amp = e.amp || 0, ph = e.phase || 0, sw = Math.sin(ph), cs = Math.cos(ph);
+    const idle = Math.sin(now / 520 + e.id) * 0.8 * (1 - amp);
+    const size = d.boss ? 46 : 28;
+    c.save();
+    c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.ellipse(cx, ground + 1, (d.boss ? 17 : 11) * (rig.kind === 'quad' ? 1.2 : 1), 4, 0, 0, 7); c.fill();
+    if (d.boss) { c.fillStyle = 'rgba(212,80,59,.16)'; c.beginPath(); c.arc(cx, sy + TS / 2, 24 + Math.sin(now / 300) * 2, 0, 7); c.fill(); }
+    let lift = 0, bodyY, front = rig.kind;
+    const w = 2.6 * k, col = rig.col;
+    if (rig.kind === 'bi') {
+      const hipY = ground - 9 * k, bob = Math.round(-Math.abs(sw) * 2 * amp * k * 2) / 2;
+      bodyY = sy + TS / 2 - 5 * k - 2 + bob + idle;
+      for (const s of [-1, 1]) {                                                    // piernas
+        const a = sw * s, foot = cx + s * 4 * k + a * 6 * k, fy = ground - Math.max(0, cs * s) * 3 * k * amp;
+        limb(c, cx + s * 4 * k, hipY, foot, fy, w + 0.6, shade(col, 0.8));
+        c.fillStyle = '#15181f'; c.fillRect(Math.round(foot - 2.5 * k), Math.round(fy - 1), Math.round(5 * k), 2.5);
+      }
+      c.fillStyle = '#fff'; c.font = `${size}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText(d.icon, cx, bodyY);
+      const shY = bodyY + 6 * k;
+      for (const s of [-1, 1]) {                                                    // brazos (en oposición a las piernas)
+        const a = -sw * s * amp, reach = d.range > 1 ? 7 * k : 0;
+        const hx = cx + s * (12 * k) + a * 2, hy = shY + 8 * k + a * 4 * k - (d.range > 1 && s > 0 ? reach : 0);
+        limb(c, cx + s * 9 * k, shY, hx, hy, w, col);
+        c.fillStyle = col; c.beginPath(); c.arc(hx, hy, 1.9 * k, 0, 7); c.fill();
+      }
+    } else if (rig.kind === 'quad') {
+      const bob = Math.round(-Math.abs(sw) * 1.6 * amp * 2) / 2, hipY = ground - 7 * k;
+      bodyY = sy + TS / 2 - 3 * k + bob + idle;
+      const legs = [[-8, 0], [-3, Math.PI], [4, Math.PI], [9, 0]];                   // andar diagonal de cuadrúpedo
+      for (const [lx, off] of legs) {
+        const a = Math.sin(ph + off), foot = cx + lx * k + a * 5 * k, fy = ground - Math.max(0, Math.cos(ph + off)) * 2.6 * k * amp;
+        limb(c, cx + lx * k, hipY, foot, fy, w, shade(col, lx < 0 ? 0.7 : 0.9));
+      }
+      c.fillStyle = '#fff'; c.font = `${size}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText(d.icon, cx, bodyY - (d.boss ? 2 : 0));
+    } else if (rig.kind === 'bug') {
+      const bob = Math.round(-Math.abs(sw) * 1.2 * amp * 2) / 2;
+      bodyY = sy + TS / 2 - 3 * k + bob + idle * 0.4;
+      for (let i = 0; i < 3; i++) for (const s of [-1, 1]) {                         // seis patas con paso alterno
+        const off = (i % 2 ? Math.PI : 0) + (s > 0 ? Math.PI : 0), a = Math.sin(ph * 1.6 + off), ox = s * (6 + i * 1.5) * k;
+        const kx = cx + ox + s * 4 * k, ky = bodyY + 4 * k - 3 * k - Math.max(0, Math.cos(ph * 1.6 + off)) * 2.5 * k * amp;
+        const fx = cx + ox + s * (8 * k) + a * 2.4 * k, fy = ground - 1;
+        limb(c, cx + s * 4 * k, bodyY + 4 * k, kx, ky - 2 * k, w * 0.7, col); limb(c, kx, ky - 2 * k, fx, fy, w * 0.7, col);
+      }
+      c.fillStyle = '#fff'; c.font = `${size}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText(d.icon, cx, bodyY);
+    } else {                                                                         // flotan o reptan: balanceo
+      const fl = e.t === 'murcielago' || e.t === 'espectro_helado' || e.t === 'elemental_hielo' ? 5 * k : 0;
+      bodyY = sy + TS / 2 - 1 - fl + Math.sin(now / 260 + e.id) * (fl ? 2.2 : 0.8) + idle;
+      const sway = fl ? 0 : Math.sin(ph) * 2 * amp;
+      if (e.t === 'murcielago') {                                                    // alas que baten
+        const f = Math.sin(now / 70 + e.id) * 6;
+        c.fillStyle = '#2a2233';
+        for (const s of [-1, 1]) { c.beginPath(); c.moveTo(cx + s * 4, bodyY); c.lineTo(cx + s * 17, bodyY - 6 - f); c.lineTo(cx + s * 14, bodyY + 3); c.lineTo(cx + s * 9, bodyY + 1); c.closePath(); c.fill(); }
+      }
+      c.fillStyle = '#fff'; c.font = `${size}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText(d.icon, cx + sway, bodyY);
+    }
+    c.restore();
   }
 
   function drawFlash(c, f, now) {
@@ -965,13 +1033,11 @@
         const sp = v * (1 + 0.35 * Math.max(0, Math.min(d, 3) - 1));   // velocidad fija; solo acelera un poco si va muy atrasado
         const st = Math.min(d, sp * dt);
         e.rx += (dx / d) * st; e.ry += (dy / d) * st;
-        if (e.kind === 'pl') { e.phase = (e.phase || 0) + st * (Math.PI * 2 / 3.0); e.moveT = now; }
+        e.phase = (e.phase || 0) + st * (Math.PI * 2 / (e.kind === 'pl' ? 3.0 : 2.2)); e.moveT = now;
       } else { e.rx = e.x; e.ry = e.y; }
-      if (e.kind === 'pl') {
-        const moving = now - (e.moveT || 0) < 260;
-        e.amp = (e.amp || 0) + ((moving ? 1 : 0) - (e.amp || 0)) * (1 - Math.exp(-dt * (moving ? 12 : 10)));
-        e.fd = e.d;                                          // dirección que manda el servidor: no parpadea en diagonales
-      }
+      const moving = now - (e.moveT || 0) < 260;
+      e.amp = (e.amp || 0) + ((moving ? 1 : 0) - (e.amp || 0)) * (1 - Math.exp(-dt * (moving ? 12 : 10)));
+      if (e.kind === 'pl') e.fd = e.d;                       // dirección que manda el servidor: no parpadea en diagonales
     }
     const me = G.ents.get(G.id);
     const tx = me ? me.rx : G.me.x, ty = me ? me.ry : G.me.y;
@@ -1115,7 +1181,8 @@
       return;
     }
     if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
-    if (k === 'enter') { ev.preventDefault(); chatIn.focus(); return; }
+    if (k === 'enter') { ev.preventDefault(); if (!chatOpen()) setChat(true); chatIn.focus(); return; }
+    if (k === 'tab') { ev.preventDefault(); setChat(!chatOpen()); return; }
     if (k === 'escape') { if (!ctxEl.hidden) closeCtx(); else if (!$('#drops').hidden) closeDrops(); else if (G.trade) send({ t: 'trade_no' }); else if (G.bankOpen) closeBank(); else if (G.shopOpen) closeShop(); else { send({ t: 'target', id: null }); G.path = []; } return; }
     if (KEYDIR[k]) { ev.preventDefault(); held.add(k); G.path = []; return; }
     if (k === 'z') send({ t: 'style', s: 'melee' });
@@ -1144,6 +1211,18 @@
     else if (b.dataset.pot) send({ t: 'potion', k: b.dataset.pot });
     else if (b.dataset.spell) send({ t: 'spell' });
   }));
+
+  /* ---- chat plegable ---- */
+  let unread = 0;
+  function setChat(open) {
+    $('#chat').classList.toggle('closed', !open);
+    $('#chatToggle').setAttribute('aria-expanded', String(open));
+    if (open) { unread = 0; $('#chatUnread').hidden = true; const l = $('#log'); l.scrollTop = l.scrollHeight; }
+    store.set('eldoria.chat', open ? '1' : '0');
+  }
+  const chatOpen = () => !$('#chat').classList.contains('closed');
+  $('#chatToggle').addEventListener('click', () => setChat(!chatOpen()));
+  if (store.get('eldoria.chat') === '0') setChat(false);
 
   /* ---- clic en el mapa: atacar, hablar o caminar ---- */
   const tileAt = (ev) => {
