@@ -123,7 +123,7 @@
       seen.add(p.i);
       let e = G.ents.get(p.i);
       if (!e) { e = { kind: 'pl', id: p.i, rx: p.x, ry: p.y }; G.ents.set(p.i, e); }
-      Object.assign(e, { n: p.n, x: p.x, y: p.y, h: p.h, H: p.H, l: p.l, c: p.c, s: p.s, d: p.d, k: p.k, o: p.o, v: p.v || 0, a: p.a || 0, tr: p.t });
+      Object.assign(e, { n: p.n, x: p.x, y: p.y, h: p.h, H: p.H, l: p.l, c: p.c, s: p.s, d: p.d, k: p.k, o: p.o, v: p.v || 0, a: p.a || 0, tr: p.t, q: p.q });
     }
     for (const q of m.mo) {
       seen.add(q.i);
@@ -131,7 +131,7 @@
       if (!e) { e = { kind: 'mo', id: q.i, rx: q.x, ry: q.y }; G.ents.set(q.i, e); }
       Object.assign(e, { t: q.t, x: q.x, y: q.y, h: q.h, H: q.H });
     }
-    for (const id of [...G.ents.keys()]) if (!seen.has(id)) G.ents.delete(id);
+    for (const id of [...G.ents.keys()]) if (!seen.has(id) && !(G.keep && id >= 7000)) G.ents.delete(id);
     G.me = m.me; G.ground = m.gi;
     if (G.me) {                                            // se cierran solos al alejarte del PNJ
       const far = (kind) => !G.npcs.some((n) => (kind === 'bank' ? n.type === 'bank' : n.type === 'shop') && Math.max(Math.abs(n.x - G.me.x), Math.abs(n.y - G.me.y)) <= 4);
@@ -295,9 +295,11 @@
 
   /* ---------- objetos: nombre, color de rareza y tooltip ----------
    * Objeto empaquetado: [id, qty]  o  equipo [id, 1, +N, ancient, nRanuras, gemas[], poder]  */
-  const GEAR = new Set(['weapon', 'head', 'body', 'shield']);
+  const GEAR = new Set(['weapon', 'head', 'body', 'shield', 'amulet', 'ring']);
+  const ALL_SLOTS = ['weapon', 'head', 'body', 'shield', 'amulet', 'ring1', 'ring2'];
+  const bonusTxt = (b) => { const o = []; if (b.atk) o.push(`+${b.atk} ataque`); if (b.def) o.push(`+${b.def} defensa`); if (b.hp) o.push(`+${b.hp} vida`); if (b.mana) o.push(`+${b.mana} maná`); if (b.crit) o.push(`${Math.round(b.crit * 100)}% crítico`); if (b.steal) o.push(`${Math.round(b.steal * 100)}% robo de vida`); return o.join(' · '); };
   const isGear = (id) => !!G.items[id] && GEAR.has(G.items[id].type);
-  const TYPE_NAME = { weapon: 'Arma', head: 'Casco', body: 'Armadura', shield: 'Escudo', gem: 'Gema', consumable: 'Consumible', misc: 'Trofeo' };
+  const TYPE_NAME = { weapon: 'Arma', head: 'Casco', body: 'Armadura', shield: 'Escudo', amulet: 'Amuleto', ring: 'Anillo', gem: 'Gema', consumable: 'Consumible', misc: 'Trofeo' };
   const itName = (it) => {
     const d = G.items[it[0]]; if (!d) return String(it[0]);
     return isGear(it[0]) ? `${it[3] ? 'Ancient ' : ''}${d.name}${it[2] > 0 ? ' +' + it[2] : ''}` : d.name;
@@ -321,6 +323,7 @@
     if (gear) sub += it[3] ? ' · Ancient' : it[2] > 0 ? ' · Excelente +' + it[2] : ' · Normal';
     box.append(el('div', 'ts', sub));
     if (d.type === 'weapon') box.append(el('div', 'tl', `Ataque ${it[6] != null ? it[6] : d.atk} · alcance ${d.range} · cada ${(d.cd / 1000).toFixed(2)} s${d.mana ? ` · ${d.mana} de maná` : ''}`));
+    else if (d.type === 'ring' || d.type === 'amulet') box.append(el('div', 'tl', bonusTxt(it[7] || d.bonus || {})));
     else if (gear) box.append(el('div', 'tl', `Defensa ${it[6] != null ? it[6] : d.def}`));
     else if (d.type === 'consumable') box.append(el('div', 'tl', d.heal ? `Cura ${d.heal} de vida` : `Restaura ${d.restore} de maná`));
     else if (d.type === 'gem') box.append(el('div', 'tl', d.desc));
@@ -406,7 +409,7 @@
 
   function gemTargets() {
     const out = [];
-    for (const s of ['weapon', 'head', 'body', 'shield']) { const it = G.eq[s]; if (it && freeSockets(it)) out.push({ from: 'eq', at: s, it, where: 'equipado' }); }
+    for (const s of ALL_SLOTS) { const it = G.eq[s]; if (it && freeSockets(it)) out.push({ from: 'eq', at: s, it, where: 'equipado' }); }
     G.inv.forEach((it, i) => { if (it && isGear(it[0]) && freeSockets(it)) out.push({ from: 'inv', at: i, it, where: 'mochila' }); });
     return out;
   }
@@ -435,7 +438,8 @@
   }
 
   /* ---------- inventario y equipo ---------- */
-  const EQ_GLYPH = { head: '⛑', weapon: '⚔', body: '👕', shield: '🛡' };
+  const EQ_GLYPH = { head: '⛑', weapon: '⚔', body: '👕', shield: '🛡', amulet: '📿', ring1: '💍', ring2: '💍' };
+  const EQ_NAME = { head: 'casco', weapon: 'arma', body: 'armadura', shield: 'escudo', amulet: 'amuleto', ring1: 'anillo', ring2: 'anillo' };
   function buildInvGrid() {
     const grid = $('#inv'); grid.replaceChildren();
     for (let i = 0; i < G.cfg.invSize; i++) {
@@ -457,7 +461,7 @@
     $('#inv').querySelectorAll('.slot').forEach((s) => { fillSlot(s, G.inv[+s.dataset.i]); });
     document.querySelectorAll('#equip .slot').forEach((s) => {
       const it = G.eq[s.dataset.eq]; fillSlot(s, it);
-      if (!it) { s.textContent = EQ_GLYPH[s.dataset.eq]; s.title = 'Vacío: ' + { head: 'casco', weapon: 'arma', body: 'armadura', shield: 'escudo' }[s.dataset.eq]; } else s.removeAttribute('title');
+      if (!it) { s.textContent = EQ_GLYPH[s.dataset.eq]; s.title = 'Vacío: ' + EQ_NAME[s.dataset.eq]; } else s.removeAttribute('title');
     });
     $('#gold').textContent = fmt(G.gold);
     const count = (key) => G.inv.reduce((n, it) => { const d = it && G.items[it[0]]; return n + (d && d[key] ? it[1] : 0); }, 0);
@@ -507,13 +511,13 @@
     $('#shopGold').textContent = fmt(G.gold);
     const buy = $('#buyList'); buy.replaceChildren();
     shopStock.forEach((id) => {
-      const d = G.items[id], it = isGear(id) ? [id, 1, 0, 0, 0, [], d.atk || d.def] : [id, 1];
+      const d = G.items[id], it = isGear(id) ? [id, 1, 0, 0, 0, [], d.atk || d.def || 0, d.bonus] : [id, 1];
       const acts = el('div', 'acts');
       const b1 = el('button', '', 'Comprar'); b1.disabled = G.gold < d.price;
       b1.addEventListener('click', () => send({ t: 'buy', id, q: 1 }));
       acts.append(b1);
       if (d.stack) { const b10 = el('button', '', '×10'); b10.disabled = G.gold < d.price * 10; b10.addEventListener('click', () => send({ t: 'buy', id, q: 10 })); acts.append(b10); }
-      buy.append(itemRow(it, `${fmt(d.price)} de oro${d.minLevel > 1 ? ` · nivel ${d.minLevel}` : ''}${d.atk ? ` · ataque ${d.atk}` : ''}${d.def ? ` · defensa ${d.def}` : ''}`, acts));
+      buy.append(itemRow(it, `${fmt(d.price)} de oro${d.minLevel > 1 ? ` · nivel ${d.minLevel}` : ''}${d.atk ? ` · ataque ${d.atk}` : ''}${d.def ? ` · defensa ${d.def}` : ''}${d.bonus ? ' · ' + bonusTxt(d.bonus) : ''}`, acts));
     });
     const sell = $('#sellList'); sell.replaceChildren();
     let any = false;
@@ -867,46 +871,212 @@
     return (shadeCache[key] = `rgb(${ch(n >> 16)},${ch((n >> 8) & 255)},${ch(n & 255)})`);
   }
 
-  function drawWeapon(c, style, hx, hy, dir, now, swing) {
+  /* ---------- equipo visible en el personaje ---------- */
+  const MATS = {
+    madera: ['#a8763f', '#6b4524'], cuero: ['#8f5d31', '#5f3c1e'], tela: ['#d8c9a0', '#a89870'],
+    hierro: ['#aab2bd', '#5b6272'], acero: ['#c8d0da', '#6a7384'], placas: ['#c0c8d2', '#667082'], malla: ['#9aa3ad', '#555d6b'],
+    torre: ['#9aa3ad', '#4f5766'], bronce: ['#d99a48', '#8a5a20'], escamas: ['#58b06a', '#2a6a3a'], dragon: ['#d4493a', '#7a1a12'],
+    demonio: ['#a82a3a', '#4a0a14'], abismo: ['#7a3ab0', '#2a1244'], hielo: ['#b4e4fa', '#5aa0d0'], escarcha: ['#b4e4fa', '#5aa0d0'],
+    reina: ['#cfeeff', '#6aa8d8'], faraon: ['#f0c85a', '#a07820'], dorada: ['#f0c85a', '#a07820'], sol: ['#ffd96a', '#c8901e'],
+    titan: ['#9a9da8', '#4d505a'], runico: ['#b6a2ff', '#5a46b0'], llamas: ['#ffb04a', '#c8400f'], sombra: ['#7a7090', '#2a2238'],
+    sombras: ['#7a7090', '#2a2238'], enana: ['#a89070', '#5f4a30'], hueso: ['#ece6d2', '#a89f84'], hidra: ['#7cc45a', '#2f6a2a'],
+    desierto: ['#e0c070', '#a07830'], pantano: ['#7cc45a', '#3f6a2a'], cristal: ['#d6b8ff', '#8a5ad0'], tormenta: ['#ffe14a', '#5a8aff'],
+    fuego: ['#ffb04a', '#c8400f'], arcano: ['#d6b8ff', '#6a3ad8'], abismo2: ['#7a3ab0', '#2a1244'],
+  };
+  const matOf = (id, dflt = 'hierro') => { for (const k of Object.keys(MATS)) if (id.includes(k)) return MATS[k]; return MATS[dflt]; };
+  const itemGear = (e) => {
+    const q = e.q || [], D = (i) => (q[i] && G.items[q[i]]) || null;
+    return { wid: q[0] || '', hid: q[1] || '', bid: q[2] || '', sid: q[3] || '', aid: q[4] || '', r1: q[5] || '', r2: q[6] || '', w: D(0) };
+  };
+  const JEWEL = { hueso: '#ece6d2', jade: '#4cd18a', vigor: '#e0503b', dragon: '#f08a2e', sol: '#ffd96a', abismo: '#9a4aff', faraon: '#4aa8ff', cobre: '#d98a4a', fuerza: '#e86a3a', vida: '#e0503b', mana: '#5aa8ff', plata: '#dfe6ee', rubi: '#ff3a4a', sangre: '#b0102a', hielo: '#9fe4ff' };
+  const jewelCol = (id) => { for (const k of Object.keys(JEWEL)) if (id.includes(k)) return JEWEL[k]; return '#ffd96a'; };
+
+  function wKind(id, d) {
+    if (d.style === 'ranged') return /ballesta/.test(id) ? 'xbow' : 'bow';
+    if (d.style === 'magic') return 'staff';
+    if (/daga/.test(id)) return 'dagger';
+    if (/hacha_doble/.test(id)) return 'daxe';
+    if (/hacha/.test(id)) return 'axe';
+    if (/martillo/.test(id)) return 'hammer';
+    if (/maza/.test(id)) return 'mace';
+    if (/lanza/.test(id)) return 'spear';
+    if (/cimitarra|hoja_faraon|colmillo/.test(id)) return 'scim';
+    if (/mandoble/.test(id)) return 'great';
+    return 'sword';
+  }
+
+  /** Dibuja el arma equipada. (hx,hy) = mano; dir = lado hacia el que mira; swing = balanceo. */
+  function drawWeaponItem(c, id, d, hx, hy, dir, now, swing) {
+    const kind = wKind(id, d), m = matOf(id.replace(/^(espada|hacha|arco|baston|ballesta|cetro|baculo|vara|mandoble|martillo|maza|lanza|daga|hoja|cimitarra|colmillo)_?/, '') || id, d.style === 'melee' ? 'hierro' : 'madera');
+    const el = WEAPON_ELEM[id], pal = el ? ELEM[el] : null, big = d.atk >= 40;
     c.save(); c.translate(hx, hy); c.rotate(swing * 0.35 * dir);
-    if (style === 'melee') {
-      c.fillStyle = '#cfd6df'; c.fillRect(-1, -15, 3, 14); c.fillStyle = '#eef2f6'; c.fillRect(-1, -15, 1, 14);
-      c.fillStyle = '#c9a24b'; c.fillRect(-4, -2, 9, 3); c.fillStyle = '#6b4a2e'; c.fillRect(-1, 1, 3, 4);
-    } else if (style === 'ranged') {
-      c.strokeStyle = '#8a5a2b'; c.lineWidth = 2; c.beginPath(); c.arc(dir * -3, -3, 10, -1.25, 1.25); c.stroke();
-      c.strokeStyle = '#d8d2c0'; c.lineWidth = 1; c.beginPath(); c.moveTo(dir * -3 + 5.5, -12); c.lineTo(dir * -3 + 5.5, 6); c.stroke();
-    } else if (style === 'magic') {
-      c.fillStyle = '#7a4f26'; c.fillRect(-1, -19, 3, 25);
-      const glow = 3.6 + Math.sin(now / 200) * 0.8;
-      c.fillStyle = 'rgba(134,193,234,.35)'; c.beginPath(); c.arc(0, -21, glow + 3, 0, 7); c.fill();
-      c.fillStyle = '#86c1ea'; c.beginPath(); c.arc(0, -21, glow, 0, 7); c.fill();
+    const blade = (len, w, col, edge) => {
+      c.fillStyle = edge || '#eef2f6'; c.fillRect(-w / 2, -len, w, len); c.fillStyle = col; c.fillRect(-w / 2 + (w > 3 ? 1 : 0), -len, Math.max(1, w - 2), len);
+      c.fillStyle = col; c.beginPath(); c.moveTo(-w / 2, -len); c.lineTo(0, -len - 3); c.lineTo(w / 2, -len); c.fill();
+    };
+    const guard = (w, col) => { c.fillStyle = col; c.fillRect(-w / 2, -2, w, 2.4); };
+    const grip = (len) => { c.fillStyle = '#5a3a1e'; c.fillRect(-1, 0, 2.4, len); c.fillStyle = '#c9a24b'; c.fillRect(-1.4, len, 3.2, 1.6); };
+    if (kind === 'sword' || kind === 'great' || kind === 'dagger') {
+      const len = kind === 'dagger' ? 9 : kind === 'great' ? 22 : big ? 18 : 14, w = kind === 'great' ? 4 : kind === 'dagger' ? 2.4 : 3;
+      const col = /madera/.test(id) ? '#b88a4a' : pal ? `rgb(${pal[1]})` : (/dorada|sol/.test(id) ? '#f0c85a' : /hierro|acero/.test(id) || !pal ? '#cfd6df' : m[0]);
+      if (pal) { c.save(); c.globalCompositeOperation = 'lighter'; glow(c, 0, -len / 2, len * 0.9, pal[1], 0.5 + 0.15 * Math.sin(now / 150)); c.restore(); }
+      blade(len, w, col, pal ? `rgb(${pal[0]})` : undefined); guard(kind === 'dagger' ? 6 : 9, '#c9a24b'); grip(kind === 'great' ? 7 : 4);
+    } else if (kind === 'scim') {
+      const col = /faraon|desierto/.test(id) ? '#f0d078' : /colmillo/.test(id) ? '#9ee06a' : '#d8dee6';
+      c.strokeStyle = col; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.moveTo(0, -1); c.quadraticCurveTo(dir * 7, -10, dir * 3, -19); c.stroke();
+      c.strokeStyle = '#fff'; c.lineWidth = 1; c.beginPath(); c.moveTo(0, -2); c.quadraticCurveTo(dir * 6, -10, dir * 3, -18); c.stroke();
+      guard(8, '#c9a24b'); grip(4);
+    } else if (kind === 'axe' || kind === 'daxe') {
+      c.fillStyle = '#6b4a2e'; c.fillRect(-1, -17, 2.6, 22);
+      const head = (sd) => { c.fillStyle = pal ? `rgb(${pal[1]})` : '#aab2bd'; c.beginPath(); c.moveTo(0, -17); c.quadraticCurveTo(sd * 12, -22, sd * 10, -8); c.lineTo(sd * 1, -9); c.closePath(); c.fill(); c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(sd * 7 - 1, -17, 1.5, 6); };
+      head(1); if (kind === 'daxe') head(-1);
+    } else if (kind === 'hammer' || kind === 'mace') {
+      c.fillStyle = '#6b4a2e'; c.fillRect(-1, -15, 2.6, 20);
+      c.fillStyle = kind === 'hammer' ? '#8a8d98' : '#b0b6c0'; c.fillRect(-6, -20, 12, 7); c.fillStyle = 'rgba(255,255,255,.4)'; c.fillRect(-6, -20, 12, 2);
+      if (kind === 'mace') { c.fillStyle = '#d0d6de'; for (const [x, y] of [[-7, -17], [7, -17], [0, -22]]) c.fillRect(x - 1, y - 1, 2.4, 2.4); }
+    } else if (kind === 'spear') {
+      c.fillStyle = '#7a5a36'; c.fillRect(-1, -28, 2.4, 34);
+      c.fillStyle = '#d8dee6'; c.beginPath(); c.moveTo(0, -36); c.lineTo(4, -28); c.lineTo(-4, -28); c.closePath(); c.fill(); c.fillStyle = '#c9453a'; c.fillRect(-1.5, -27, 3.4, 3);
+    } else if (kind === 'bow') {
+      const col = pal ? `rgb(${pal[1]})` : /marfil/.test(id) ? '#efe6cc' : /dragon/.test(id) ? '#c8402a' : /sol/.test(id) ? '#f0c85a' : /sombras/.test(id) ? '#4a3a60' : /celestial/.test(id) ? '#cfe4ff' : '#8a5a2b';
+      if (pal) { c.save(); c.globalCompositeOperation = 'lighter'; glow(c, dir * -3, -3, 16, pal[1], 0.3); c.restore(); }
+      c.strokeStyle = col; c.lineWidth = d.atk >= 27 ? 2.6 : 2; c.beginPath(); c.arc(dir * -3, -3, d.atk >= 27 ? 12 : 10, -1.25, 1.25); c.stroke();
+      c.strokeStyle = '#d8d2c0'; c.lineWidth = 1; c.beginPath(); c.moveTo(dir * -3 + 5.5, -13); c.lineTo(dir * -3 + 5.5, 7); c.stroke();
+    } else if (kind === 'xbow') {
+      c.fillStyle = '#6b4a2e'; c.fillRect(-1.5, -4, 3, 12); c.fillStyle = id.includes('pesada') ? '#8a8d98' : '#a8763f'; c.fillRect(-9, -6, 18, 2.4);
+      c.strokeStyle = '#d8d2c0'; c.lineWidth = 1; c.beginPath(); c.moveTo(-9, -5); c.lineTo(0, -1); c.lineTo(9, -5); c.stroke(); c.fillStyle = '#cfd6df'; c.fillRect(-0.6, -12, 1.4, 9);
+    } else {                                                       // bastones, varas, cetros
+      const orb = pal ? pal[1] : /hueso/.test(id) ? '236,230,210' : /vara_novato/.test(id) ? '134,193,234' : ELEM.magic[1];
+      const shaft = /hueso/.test(id) ? '#ece6d2' : /faraon|solar/.test(id) ? '#e0b848' : /reina|escarcha/.test(id) ? '#bfe8ff' : '#7a4f26';
+      c.fillStyle = shaft; c.fillRect(-1, -19, 2.6, 25);
+      const gl = 3.6 + Math.sin(now / 200) * 0.8;
+      c.save(); c.globalCompositeOperation = 'lighter'; glow(c, 0, -21, gl + 7, orb, 0.55); c.restore();
+      c.fillStyle = `rgb(${orb})`;
+      if (/reina|cristal|escarcha/.test(id)) { c.beginPath(); c.moveTo(0, -29); c.lineTo(4, -21); c.lineTo(0, -15); c.lineTo(-4, -21); c.closePath(); c.fill(); }
+      else if (/faraon/.test(id)) { c.fillRect(-1.5, -27, 3, 9); c.beginPath(); c.arc(0, -22, 3.4, 0, 7); c.fill(); }
+      else { c.beginPath(); c.arc(0, -21, gl, 0, 7); c.fill(); c.fillStyle = 'rgba(255,255,255,.7)'; c.fillRect(-1.5, -23, 1.6, 1.6); }
     }
     c.restore();
   }
 
-  /* Personaje con ciclo de paso: la fase avanza con la distancia recorrida (ver frame()). */
+  function drawHelm(c, id, hx, hy, view, side, now) {
+    const m = matOf(id, 'hierro'), top = hy - 6;
+    const dome = (col, r = 6.9) => { c.fillStyle = col; c.beginPath(); c.arc(hx, hy - 0.8, r, Math.PI, 0); c.lineTo(hx + r, hy + 0.8); c.lineTo(hx - r, hy + 0.8); c.closePath(); c.fill(); };
+    if (/cuero/.test(id)) {
+      dome(m[0], 6.6); c.fillStyle = m[1]; c.fillRect(hx - 6.6, hy - 1.4, 13.2, 2);
+      if (view !== 's') { c.fillStyle = m[1]; c.fillRect(hx - 7, hy - 1, 2, 5); c.fillRect(hx + 5, hy - 1, 2, 5); }
+    } else if (/demonio/.test(id)) {
+      dome('#3a1420', 7); c.fillStyle = m[0]; c.fillRect(hx - 7, hy - 1.6, 14, 2);
+      c.strokeStyle = '#d8c8b8'; c.lineWidth = 2.2; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(hx - 5, top + 1); c.quadraticCurveTo(hx - 11, top - 2, hx - 9, top - 8); c.stroke();
+      c.beginPath(); c.moveTo(hx + 5, top + 1); c.quadraticCurveTo(hx + 11, top - 2, hx + 9, top - 8); c.stroke();
+      if (view === 'f') { c.fillStyle = '#ff5a2a'; c.fillRect(hx - 4, hy - 0.5, 2.4, 2); c.fillRect(hx + 1.6, hy - 0.5, 2.4, 2); }
+    } else if (/dragon/.test(id)) {
+      dome(m[0], 7); c.fillStyle = m[1]; c.beginPath(); c.moveTo(hx - 5, top + 1); c.lineTo(hx, top - 7); c.lineTo(hx + 5, top + 1); c.closePath(); c.fill();
+      c.fillStyle = '#f0c85a'; c.fillRect(hx - 7, hy - 1.6, 14, 1.6);
+      if (view === 'f') { c.fillStyle = '#111'; c.fillRect(hx - 4.5, hy - 0.2, 9, 1.8); }
+    } else if (/hielo|escarcha/.test(id)) {
+      dome(m[1], 7);
+      c.fillStyle = m[0]; for (const [dx, h] of [[-4, 6], [0, 9], [4, 6]]) { c.beginPath(); c.moveTo(hx + dx - 2.2, top + 1); c.lineTo(hx + dx, top - h); c.lineTo(hx + dx + 2.2, top + 1); c.closePath(); c.fill(); }
+      if (view === 'f') { c.fillStyle = '#e8fbff'; c.fillRect(hx - 4, hy - 0.2, 8, 1.6); }
+    } else if (/faraon/.test(id)) {
+      dome('#f0c85a', 7.2); c.fillStyle = '#2a60c8';
+      for (let i = -6; i <= 6; i += 4) c.fillRect(hx + i - 1, top + 1, 1.6, 6);
+      if (view !== 'b') { c.fillStyle = '#f0c85a'; c.fillRect(hx - 8.5, hy - 1, 3, 13); c.fillRect(hx + 5.5, hy - 1, 3, 13); c.fillStyle = '#2a60c8'; for (let k = 0; k < 3; k++) { c.fillRect(hx - 8.5, hy + 2 + k * 4, 3, 1.4); c.fillRect(hx + 5.5, hy + 2 + k * 4, 3, 1.4); } }
+      if (view === 'f') { c.fillStyle = '#3ad06a'; c.fillRect(hx - 1, top - 1, 2, 4); }
+    } else {                                                        // hierro, acero, bronce, escamas...
+      dome(m[0], 6.9); c.fillStyle = m[1]; c.fillRect(hx - 7, hy - 1.6, 14, 2);
+      c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(hx - 4, top + 0.5, 3, 1.6);
+      if (/acero|escamas/.test(id)) { c.fillStyle = /acero/.test(id) ? '#c9453a' : m[1]; c.fillRect(hx - 0.8, top - 3, 1.8, 4); }
+      if (view === 'f') { c.fillStyle = m[1]; c.fillRect(hx - 0.9, hy - 1, 1.8, 6); c.fillStyle = '#10131a'; c.fillRect(hx - 4.8, hy + 0.3, 3.6, 1.8); c.fillRect(hx + 1.2, hy + 0.3, 3.6, 1.8); }
+      if (view === 's') { c.fillStyle = m[1]; c.fillRect(hx + side * 5, hy - 1, 2, 4); }
+    }
+  }
+
+  function drawShieldItem(c, id, x, y, view, side) {
+    const m = matOf(id, 'madera'), s = view === 's' ? 0.55 : 1;
+    c.save(); c.translate(x, y); c.scale(s, 1);
+    const rim = (col) => { c.strokeStyle = col; c.lineWidth = 1.6; c.stroke(); };
+    c.fillStyle = m[0];
+    if (/torre|titan/.test(id)) { c.fillRect(-5.5, -7, 11, 17); rim(m[1]); c.strokeRect(-5.5, -7, 11, 17); c.fillStyle = m[1]; c.fillRect(-1, -5, 2, 13); c.fillRect(-4, 0, 8, 2); }
+    else if (/hierro|escamas|demonio/.test(id)) {
+      c.beginPath(); c.moveTo(-6, -7); c.lineTo(6, -7); c.lineTo(6, 2); c.lineTo(0, 10); c.lineTo(-6, 2); c.closePath(); c.fill(); rim(m[1]);
+      c.fillStyle = /demonio/.test(id) ? '#ff5a2a' : m[1]; c.fillRect(-1, -5, 2, 11); c.fillRect(-4, -1, 8, 2);
+      if (/demonio/.test(id)) { c.fillStyle = '#d8c8b8'; c.beginPath(); c.moveTo(-6, -7); c.lineTo(-8, -11); c.lineTo(-3, -7); c.fill(); c.beginPath(); c.moveTo(6, -7); c.lineTo(8, -11); c.lineTo(3, -7); c.fill(); }
+    } else if (/hielo|escarcha/.test(id)) {
+      c.beginPath(); c.moveTo(0, -9); c.lineTo(6, -2); c.lineTo(4, 8); c.lineTo(-4, 8); c.lineTo(-6, -2); c.closePath(); c.fill(); rim('#e8fbff');
+      c.fillStyle = 'rgba(255,255,255,.6)'; c.fillRect(-1, -6, 2, 9);
+    } else if (/faraon/.test(id)) {
+      c.beginPath(); c.arc(0, 1, 7, 0, 7); c.fill(); rim(m[1]); c.fillStyle = '#ffe9a0'; c.beginPath(); c.arc(0, 1, 3.2, 0, 7); c.fill();
+      c.strokeStyle = '#2a60c8'; c.lineWidth = 1; for (let i = 0; i < 8; i++) { const a = i * 0.785; c.beginPath(); c.moveTo(Math.cos(a) * 4, 1 + Math.sin(a) * 4); c.lineTo(Math.cos(a) * 6.4, 1 + Math.sin(a) * 6.4); c.stroke(); }
+    } else {                                                        // madera, bronce
+      c.beginPath(); c.arc(0, 1, 7, 0, 7); c.fill(); rim(m[1]); c.fillStyle = '#d8d2c0'; c.beginPath(); c.arc(0, 1, 2.4, 0, 7); c.fill();
+      c.strokeStyle = m[1]; c.lineWidth = 1; c.beginPath(); c.moveTo(0, -6); c.lineTo(0, 8); c.stroke();
+    }
+    c.restore();
+  }
+
+  /** Cuerpo con armadura: devuelve colores y dibuja detalles encima del torso. */
+  function armorLook(e, gr) {
+    if (!gr.bid || /tela/.test(gr.bid)) return null;
+    return { id: gr.bid, m: matOf(gr.bid, /cuero/.test(gr.bid) ? 'cuero' : 'hierro') };
+  }
+  function armorDetail(c, A, x, y, w, view) {            // (x,y) esquina superior izquierda del torso, w ancho, alto 12
+    const id = A.id, m = A.m;
+    if (/placas|malla|bronce|torre/.test(id)) { c.fillStyle = 'rgba(255,255,255,.28)'; c.fillRect(x + 1, y + 1, 3, 9); c.fillStyle = m[1]; c.fillRect(x, y + 6, w, 1.4); if (/malla/.test(id)) { c.fillStyle = 'rgba(0,0,0,.18)'; for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) c.fillRect(x + 1.5 + i * (w / 4), y + 1.5 + j * 3.6, 1.2, 1.2); } }
+    if (/cuero/.test(id)) { c.fillStyle = m[1]; c.fillRect(x, y + 9, w, 2); c.fillRect(x + w / 2 - 0.8, y, 1.6, 9); }
+    if (/escamas|dragon|hidra/.test(id)) { c.fillStyle = m[1]; for (let j = 0; j < 4; j++) for (let i = 0; i < Math.floor(w / 3.4); i++) c.fillRect(x + 1 + i * 3.4 + (j % 2) * 1.6, y + 1 + j * 3, 2.2, 1.6); }
+    if (/demonio|abismo/.test(id)) { c.fillStyle = '#ff5a2a'; if (view === 'f') { c.fillRect(x + w / 2 - 0.8, y + 2, 1.6, 6); c.fillRect(x + w / 2 - 3, y + 4, 6, 1.4); } c.fillStyle = m[1]; c.fillRect(x, y + 9, w, 2); }
+    if (/hielo|escarcha/.test(id)) { c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(x + 2, y + 2, 2, 7); c.fillRect(x + w - 4, y + 3, 2, 5); }
+    if (/faraon/.test(id)) { c.fillStyle = '#2a60c8'; c.fillRect(x + 1, y, w - 2, 2); c.fillStyle = '#ffe9a0'; c.fillRect(x + w / 2 - 1, y + 3, 2, 6); }
+  }
+  function pauldrons(c, A, lx, rx, y) {
+    if (!A || /cuero/.test(A.id)) return;
+    c.fillStyle = A.m[0]; c.beginPath(); c.ellipse(lx, y, 3.8, 3, 0, 0, 7); c.fill(); c.beginPath(); c.ellipse(rx, y, 3.8, 3, 0, 0, 7); c.fill();
+    c.fillStyle = A.m[1]; c.fillRect(lx - 3.8, y + 1.2, 7.6, 1.2); c.fillRect(rx - 3.8, y + 1.2, 7.6, 1.2);
+  }
+  function amuletDraw(c, aid, cx, y, view, side) {
+    if (!aid) return; const col = jewelCol(aid);
+    if (view === 'b') return;
+    c.strokeStyle = 'rgba(230,220,170,.9)'; c.lineWidth = 1;
+    if (view === 'f') { c.beginPath(); c.moveTo(cx - 3.5, y - 2); c.lineTo(cx, y + 2); c.lineTo(cx + 3.5, y - 2); c.stroke(); }
+    const gx = view === 'f' ? cx : cx + side * 4, gy = y + (view === 'f' ? 3.2 : 2);
+    c.fillStyle = col; c.beginPath(); c.arc(gx, gy, 2.1, 0, 7); c.fill(); c.fillStyle = 'rgba(255,255,255,.8)'; c.fillRect(gx - 1, gy - 1.2, 1, 1);
+    c.save(); c.globalCompositeOperation = 'lighter'; glow(c, gx, gy, 5, '255,255,220', 0.25); c.restore();
+  }
+  function ringGlint(c, rid, x, y, now, k) {
+    if (!rid) return; c.fillStyle = jewelCol(rid); c.fillRect(Math.round(x - 1), Math.round(y + 1.5), 2.4, 2); 
+    if (Math.sin(now / 300 + k * 2) > 0.85) { c.fillStyle = '#fff'; c.fillRect(Math.round(x), Math.round(y), 1.4, 1.4); }
+  }
+
+  // arma por defecto cuando el servidor aún no envió el equipo (o puños): nada en la mano
+  /* Personaje con ciclo de paso: la fase avanza con la distancia recorrida (ver frame()). Dibuja el equipo puesto. */
   function drawPlayer(c, e, sx, sy, now) {
     const cx = sx + TS / 2, base = sy + TS - 3;
     const amp = e.amp || 0, ph = e.phase || 0, fd = e.fd == null ? 2 : e.fd;
     const sw = Math.sin(ph), cs = Math.cos(ph);
     const idle = Math.sin(now / 450 + e.id) * 0.6 * (1 - amp);              // respiración en reposo
-    const bob = Math.round((-Math.abs(sw) * 1.5 * amp + idle) * 2) / 2;                            // el cuerpo sube a mitad de zancada
+    const bob = Math.round((-Math.abs(sw) * 1.5 * amp + idle) * 2) / 2;      // el cuerpo sube a mitad de zancada
     const side = fd === 1 ? 1 : fd === 3 ? -1 : 0;
     const lean = side * amp * 1.2;                                            // inclinación al correr
     const hipY = base - 10, shY = base - 21 + bob;
-    const body = e.c, dark = shade(e.c, 0.62), mid = shade(e.c, 0.82), skin = '#e8c39e', skinD = '#caa07c';
+    const gr = itemGear(e), A = armorLook(e, gr);
+    const body = A ? A.m[0] : e.c, dark = A ? shade(A.m[1], 0.85) : shade(e.c, 0.62), mid = A ? A.m[1] : shade(e.c, 0.82);
+    const capeCol = shade(e.c, 0.62), skin = '#e8c39e', skinD = '#caa07c';
+    const legCol = A && !/tela/.test(gr.bid) ? shade(A.m[1], 0.9) : '#2a2f3a', legFar = A && !/tela/.test(gr.bid) ? shade(A.m[1], 0.7) : shade('#2a2f3a', 0.8);
     c.save();
     if (e.o) c.globalAlpha = 0.55;
-    // sombra (se encoge cuando el cuerpo sube)
-    c.fillStyle = 'rgba(0,0,0,.34)'; c.beginPath(); c.ellipse(cx, base + 0.5, 10 - bob * 0.6, 3.6, 0, 0, 7); c.fill();
+    c.fillStyle = 'rgba(0,0,0,.34)'; c.beginPath(); c.ellipse(cx, base + 0.5, 10 - bob * 0.6, 3.6, 0, 0, 7); c.fill();   // sombra
 
     const leg = (x, len, col) => { c.fillStyle = col; c.fillRect(Math.round(x - 2), hipY + bob * 0.4, 4, len); c.fillStyle = '#15181f'; c.fillRect(Math.round(x - 2.5), hipY + bob * 0.4 + len - 2, 5 + (side ? 1 : 0), 2.5); };
     const arm = (x, y, dx, dy, col) => { c.strokeStyle = col; c.lineWidth = 3.4; c.lineCap = 'round'; c.beginPath(); c.moveTo(x, y); c.lineTo(x + dx, y + dy); c.stroke(); c.fillStyle = skin; c.beginPath(); c.arc(x + dx, y + dy, 2, 0, 7); c.fill(); };
     const cape = (hem, wide) => {
-      c.fillStyle = dark; c.beginPath();
+      c.fillStyle = capeCol; c.beginPath();
       c.moveTo(cx - wide + lean, shY + 1); c.lineTo(cx + wide + lean, shY + 1);
       c.lineTo(cx + wide + 1 + hem, base - 7); c.lineTo(cx - wide - 1 + hem, base - 7); c.closePath(); c.fill();
     };
+    const wdef = gr.w;
+    const holdWeapon = (hx, hy, dir, swing) => { if (wdef) drawWeaponItem(c, gr.wid, wdef, hx, hy, dir, now, swing); };
 
     if (side) {
       // ---------- perfil ----------
@@ -914,38 +1084,52 @@
       const lift1 = Math.max(0, cs) * 2.2 * amp, lift2 = Math.max(0, -cs) * 2.2 * amp;
       const farArmDx = swing * 3.6 * side, nearArmDx = -swing * 3.6 * side;
       arm(cx + lean - side * 1, shY + 4, farArmDx, 8, dark);
-      leg(cx - side * swing * 4, 10 - lift2, shade('#2a2f3a', 0.8));
+      leg(cx - side * swing * 4, 10 - lift2, legFar);
       cape(-side * (2.5 + amp * 3) + Math.sin(now / 220) * 0.8, 5);
+      if (gr.sid) drawShieldItem(c, gr.sid, cx + lean - side * 2, shY + 6, 's', side);
       c.fillStyle = mid; c.fillRect(Math.round(cx - 5 + lean), shY, 10, 12);
       c.fillStyle = body; c.fillRect(Math.round(cx - 5 + lean), shY, 10, 3);
-      c.fillStyle = '#6b4a2e'; c.fillRect(Math.round(cx - 5 + lean), shY + 9, 10, 2);
-      leg(cx + side * swing * 4, 10 - lift1, '#2a2f3a');
+      if (A) armorDetail(c, A, cx - 5 + lean, shY, 10, 's'); else { c.fillStyle = '#6b4a2e'; c.fillRect(Math.round(cx - 5 + lean), shY + 9, 10, 2); }
+      pauldrons(c, A, cx - 3 + lean, cx + 3 + lean, shY + 1);
+      amuletDraw(c, gr.aid, cx + lean, shY + 3, 's', side);
+      leg(cx + side * swing * 4, 10 - lift1, legCol);
       const hx = cx + lean, hy = shY - 5 + bob * 0.3;
       c.fillStyle = skin; c.beginPath(); c.arc(hx, hy, 6, 0, 7); c.fill();
-      c.fillStyle = '#3a2a1c'; c.beginPath(); c.arc(hx - side * 1.5, hy - 1.5, 6, Math.PI * (side > 0 ? 0.9 : -0.1), Math.PI * (side > 0 ? 2.1 : 1.1)); c.fill();
+      if (!gr.hid || /cuero|faraon/.test(gr.hid)) { c.fillStyle = '#3a2a1c'; c.beginPath(); c.arc(hx - side * 1.5, hy - 1.5, 6, Math.PI * (side > 0 ? 0.9 : -0.1), Math.PI * (side > 0 ? 2.1 : 1.1)); c.fill(); }
       c.fillStyle = skinD; c.fillRect(hx + side * 6 - (side > 0 ? 1 : 0), hy, 2, 2);                        // nariz
       c.fillStyle = '#111'; c.fillRect(hx + side * 2.5 - 1, hy - 1, 2, 2);                                  // ojo
+      if (gr.hid) drawHelm(c, gr.hid, hx, hy, 's', side, now);
       arm(cx + lean + side * 1, shY + 4, nearArmDx, 8, body);
-      drawWeapon(c, e.s, cx + lean + side * 1 + nearArmDx, shY + 12, side, now, -swing);
+      const handX = cx + lean + side * 1 + nearArmDx, handY = shY + 12;
+      ringGlint(c, gr.r1, handX, handY - 3.5, now, 1); ringGlint(c, gr.r2, handX + 1, handY - 5, now, 2);
+      holdWeapon(handX, handY, side, -swing);
     } else {
       // ---------- frente / espalda ----------
       const front = fd === 2;
       const l1 = Math.max(0, cs) * 3.2 * amp, l2 = Math.max(0, -cs) * 3.2 * amp;
-      leg(cx - 3, 10 - l1, '#2a2f3a'); leg(cx + 3, 10 - l2, '#2a2f3a');
+      leg(cx - 3, 10 - l1, legCol); leg(cx + 3, 10 - l2, legCol);
       const sway = Math.sin(ph) * amp;
       if (!front) cape(sway * 2.5 + Math.sin(now / 240) * 0.6, 7);
+      if (!front && gr.sid) drawShieldItem(c, gr.sid, cx + sway * 0.8, shY + 7, 'b', 0);                    // escudo a la espalda
       c.fillStyle = front ? body : mid; c.fillRect(Math.round(cx - 7 + sway * 0.8), shY, 14, 12);
-      if (front) { c.fillStyle = mid; c.fillRect(cx - 7 + sway * 0.8, shY + 9, 14, 3); c.fillStyle = '#c9a24b'; c.fillRect(cx - 1 + sway * 0.8, shY + 3, 2, 8); }
-      else { c.fillStyle = dark; c.fillRect(cx - 7 + sway * 0.8, shY, 14, 3); }
+      if (front) {
+        c.fillStyle = mid; c.fillRect(cx - 7 + sway * 0.8, shY + 9, 14, 3);
+        if (A) armorDetail(c, A, cx - 7 + sway * 0.8, shY, 14, 'f'); else { c.fillStyle = '#c9a24b'; c.fillRect(cx - 1 + sway * 0.8, shY + 3, 2, 8); }
+      } else { c.fillStyle = dark; c.fillRect(cx - 7 + sway * 0.8, shY, 14, 3); }
+      pauldrons(c, A, cx - 8 + sway * 0.8, cx + 8 + sway * 0.8, shY + 1);
+      if (front) amuletDraw(c, gr.aid, cx + sway * 0.8, shY + 2, 'f', 0);
       arm(cx - 8, shY + 3, -1, 7 - sw * 2.2 * amp, front ? mid : dark);
       const rdy = 7 + sw * 2.2 * amp;
       arm(cx + 8, shY + 3, 1, rdy, front ? body : mid);
+      if (front) { ringGlint(c, gr.r1, cx + 9, shY + 3 + rdy - 2, now, 1); ringGlint(c, gr.r2, cx - 9, shY + 3 + 7 - sw * 2.2 * amp - 2, now, 2); }
       const hx = cx + sway * 0.4, hy = shY - 5;
       c.fillStyle = skin; c.beginPath(); c.arc(hx, hy, 6, 0, 7); c.fill();
       c.fillStyle = '#3a2a1c';
-      if (front) { c.beginPath(); c.arc(hx, hy - 1.5, 6, Math.PI, 0); c.fill(); c.fillStyle = '#111'; c.fillRect(hx - 3, hy, 2, 2); c.fillRect(hx + 1, hy, 2, 2); }
+      if (front) { if (!gr.hid || /cuero|faraon/.test(gr.hid)) { c.beginPath(); c.arc(hx, hy - 1.5, 6, Math.PI, 0); c.fill(); } c.fillStyle = '#111'; c.fillRect(hx - 3, hy, 2, 2); c.fillRect(hx + 1, hy, 2, 2); }
       else { c.beginPath(); c.arc(hx, hy, 6, 0, 7); c.fill(); }
-      drawWeapon(c, e.s, cx + 9, shY + 3 + rdy, 1, now, sw * amp);
+      if (gr.hid) drawHelm(c, gr.hid, hx, hy, front ? 'f' : 'b', 0, now);
+      if (front && gr.sid) drawShieldItem(c, gr.sid, cx - 11 + sway * 0.8, shY + 8 - sw * amp, 'f', 0);        // escudo en el brazo izquierdo
+      holdWeapon(cx + 9, shY + 3 + rdy, 1, sw * amp);
     }
     c.restore();
   }

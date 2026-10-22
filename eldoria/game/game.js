@@ -233,10 +233,11 @@ class Game {
     const it = p.inv[slot];
     if (!it) return;
     const def = ITEMS[it.id];
-    if (!def || !SLOTS.includes(def.type)) return;
+    if (!def || !I.isGear(it.id)) return;
     if ((def.minLevel || 1) > p.level) { this.msg(p, `Necesitas nivel ${def.minLevel} para usar ${def.name}.`, 's'); return; }
-    const old = p.eq[def.type];
-    p.eq[def.type] = it;
+    const sl = I.slotFor(def.type, p.eq);
+    const old = p.eq[sl];
+    p.eq[sl] = it;
     p.inv[slot] = old || null;
     p.vis = null; this.recalc(p);
     p.dirty.inv = true;
@@ -257,7 +258,7 @@ class Game {
     if (!it) return;
     const def = ITEMS[it.id];
     if (!def) return;
-    if (def.type === 'weapon' || def.type === 'head' || def.type === 'body' || def.type === 'shield') { this.equip(p, slot); return; }
+    if (I.isGear(it.id)) { this.equip(p, slot); return; }
     if (def.type !== 'consumable') return;
     const now = this.now;
     if (now < p.nextPotion) return;
@@ -361,7 +362,7 @@ class Game {
       d.inv.forEach((it, i) => { const n = I.normalize(it); if (n && i < CFG.INV_SIZE) p.inv[i] = n; });
       if (Array.isArray(d.bank)) d.bank.forEach((it, i) => { const n = I.normalize(it); if (n && i < CFG.BANK_SIZE) p.bank[i] = n; });
       p.bankGold = d.bankGold | 0;
-      for (const s of SLOTS) { const n = I.normalize(d.eq && d.eq[s]); p.eq[s] = n && ITEMS[n.id].type === s ? n : null; }
+      for (const s of SLOTS) { const n = I.normalize(d.eq && d.eq[s]); p.eq[s] = n && I.fits(s, ITEMS[n.id].type) ? n : null; }
       if (world.isWalkable(d.x, d.y) && zoneAt(d.x, d.y).kind !== 'dungeon') { p.x = d.x; p.y = d.y; }
       this.recalc(p);
       p.hp = Math.max(1, Math.min(p.maxHp, d.hp | 0)); p.mana = Math.max(0, Math.min(p.maxMana, d.mana | 0));
@@ -510,7 +511,7 @@ class Game {
     for (const q of this.players.values()) {
       if (!inView(q.x, q.y)) continue;
       const vis = this.visOf(q);
-      pl.push({ i: q.id, n: q.name, x: q.x, y: q.y, h: q.hp, H: q.maxHp, l: q.level, c: q.color, s: this.styleOf(q), d: q.dir, k: now < q.pvpLock ? 1 : 0, o: q.ws ? 0 : 1, v: vis.g, a: vis.an, t: q.trade ? 1 : 0 });
+      pl.push({ i: q.id, n: q.name, x: q.x, y: q.y, h: q.hp, H: q.maxHp, l: q.level, c: q.color, s: this.styleOf(q), d: q.dir, k: now < q.pvpLock ? 1 : 0, o: q.ws ? 0 : 1, v: vis.g, a: vis.an, t: q.trade ? 1 : 0, q: SLOTS.map((s) => (q.eq[s] ? q.eq[s].id : 0)) });
     }
     for (const m of this.monsters) {
       if (m.dead || !inView(m.x, m.y)) continue;

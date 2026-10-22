@@ -25,6 +25,11 @@ Las cuentas se guardan en `data/players.json` (contraseñas con scrypt).
 Cada arma/armadura puede traer hasta 3 **ranuras** para gemas (solo se engarzan en zona segura, fuera de combate; sacarlas cuesta oro).
 Gemas: rubí (+ataque), zafiro (+maná), esmeralda (+vida), topacio (+defensa), amatista (crítico), ópalo (robo de vida) y diamante (**brillo**: aura del personaje; también brillan las piezas Ancient y los sets completos mejorados).
 
+## Equipo visible
+Casco, armadura, escudo y arma se ven puestos en tu personaje (y en los demás jugadores); también el amuleto (colgante) y los anillos (destello en la mano).
+Casillas: arma, casco, armadura, escudo, **amuleto** y **2 anillos**. Anillos y amuletos dan bonus (ataque, defensa, vida, maná, crítico, robo de vida), escalan con +N/Ancient y pueden llevar gemas.
+Se compran en las tiendas (los básicos) o caen de monstruos y jefes (los poderosos).
+
 ## Banco y comercio
 - **Banco** (Gerda en la ciudad, Marta en el puerto): guarda objetos y oro; lo guardado no se pierde al morir en PvP.
 - **Comercio** entre jugadores (clic derecho → Comerciar, a ≤4 casillas): ofertas con objetos y oro, los dos confirman, intercambio atómico; cualquier cambio anula las confirmaciones.

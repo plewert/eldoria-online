@@ -187,17 +187,50 @@ for (const [id, g] of Object.entries(GEMS)) ITEMS[id] = { name: g.name, icon: g.
 const RAR = { normal: '#9aa3ad', plus: '#5fd16a', ancient: '#4aa8ff', none: '#e8e2d0' };
 
 // Lo que vende cada mercader
+// ---- Anillos, amuletos y armas nuevas ----
+// bonus: se suma al personaje mientras lo lleva puesto (escala con +N y Ancient, salvo crit y steal)
+Object.assign(ITEMS, {
+  daga_sombra:     { name: 'Daga de Sombra',     icon: '🗡️', type: 'weapon', style: 'melee', atk: 18, cd: 800,  range: 1, minLevel: 12, price: 650, sell: 260 },
+  lanza_guerra:    { name: 'Lanza de Guerra',    icon: '🔱', type: 'weapon', style: 'melee', atk: 36, cd: 1150, range: 1, minLevel: 24, sell: 1900 },
+  hacha_doble:     { name: 'Hacha Doble de Guerra', icon: '🪓', type: 'weapon', style: 'melee', atk: 52, cd: 1300, range: 1, minLevel: 36, sell: 4800 },
+  espada_llamas:   { name: 'Espada de Llamas',   icon: '🔥', type: 'weapon', style: 'melee', atk: 74, cd: 1150, range: 1, minLevel: 50, sell: 11500 },
+  ballesta_pesada: { name: 'Ballesta Pesada',    icon: '🎯', type: 'weapon', style: 'ranged', atk: 36, cd: 1350, range: 6, minLevel: 24, sell: 1900 },
+  arco_sombras:    { name: 'Arco de Sombras',    icon: '🏹', type: 'weapon', style: 'ranged', atk: 72, cd: 1250, range: 7, minLevel: 50, sell: 11000 },
+  baston_hueso:    { name: 'Bastón de Hueso',    icon: '🦴', type: 'weapon', style: 'magic', atk: 24, cd: 1300, range: 5, mana: 10, minLevel: 10, price: 620, sell: 250 },
+  baston_solar:    { name: 'Bastón Solar',       icon: '☀️', type: 'weapon', style: 'magic', atk: 62, cd: 1400, range: 6, mana: 26, minLevel: 44, sell: 8200 },
+  // anillos (se pueden llevar dos)
+  anillo_cobre:    { name: 'Anillo de Cobre',    icon: '💍', type: 'ring', bonus: { def: 2 }, minLevel: 1,  price: 120, sell: 40 },
+  anillo_fuerza:   { name: 'Anillo de Fuerza',   icon: '💍', type: 'ring', bonus: { atk: 3 }, minLevel: 8,  price: 700, sell: 280 },
+  anillo_vida:     { name: 'Anillo de Vida',     icon: '💍', type: 'ring', bonus: { hp: 30 }, minLevel: 8,  price: 650, sell: 260 },
+  anillo_mana:     { name: 'Anillo Arcano',      icon: '💍', type: 'ring', bonus: { mana: 28 }, minLevel: 8, price: 650, sell: 260 },
+  anillo_plata:    { name: 'Anillo de Plata',    icon: '💍', type: 'ring', bonus: { def: 5, hp: 20 }, minLevel: 18, sell: 900 },
+  anillo_rubi:     { name: 'Anillo de Rubí',     icon: '💍', type: 'ring', bonus: { atk: 8, crit: 0.02 }, minLevel: 24, sell: 1800 },
+  anillo_sangre:   { name: 'Anillo de Sangre',   icon: '💍', type: 'ring', bonus: { atk: 5, steal: 0.03 }, minLevel: 30, sell: 2600 },
+  anillo_hielo:    { name: 'Anillo de Escarcha', icon: '💍', type: 'ring', bonus: { def: 8, mana: 40 }, minLevel: 40, sell: 5200 },
+  anillo_faraon:   { name: 'Anillo del Faraón',  icon: '💍', type: 'ring', bonus: { atk: 12, hp: 60, crit: 0.03 }, minLevel: 50, sell: 9800 },
+  // amuletos
+  amuleto_hueso:   { name: 'Amuleto de Hueso',   icon: '📿', type: 'amulet', bonus: { def: 1, hp: 15 }, minLevel: 1, price: 150, sell: 50 },
+  amuleto_jade:    { name: 'Amuleto de Jade',    icon: '📿', type: 'amulet', bonus: { def: 4, mana: 30 }, minLevel: 10, price: 900, sell: 360 },
+  amuleto_vigor:   { name: 'Amuleto de Vigor',   icon: '📿', type: 'amulet', bonus: { hp: 70 }, minLevel: 15, sell: 1100 },
+  amuleto_dragon:  { name: 'Amuleto de Dragón',  icon: '📿', type: 'amulet', bonus: { atk: 10, hp: 50 }, minLevel: 30, sell: 3300 },
+  amuleto_sol:     { name: 'Amuleto del Sol',    icon: '📿', type: 'amulet', bonus: { def: 8, mana: 60, crit: 0.04 }, minLevel: 40, sell: 6800 },
+  amuleto_abismo:  { name: 'Amuleto del Abismo', icon: '📿', type: 'amulet', bonus: { atk: 15, steal: 0.04 }, minLevel: 45, sell: 8800 },
+  amuleto_faraon:  { name: 'Amuleto del Faraón', icon: '📿', type: 'amulet', bonus: { atk: 10, def: 10, hp: 90 }, minLevel: 50, sell: 12500 },
+});
+
+
 const SHOPS = {
   boris: [
     'pocion_vida', 'pocion_vida_g', 'pocion_mana', 'pocion_mana_g',
-    'espada_hierro', 'hacha_acero', 'arco_largo', 'ballesta', 'baston_fuego', 'baston_hielo',
+    'espada_hierro', 'hacha_acero', 'arco_largo', 'ballesta', 'baston_fuego', 'baston_hielo', 'baston_hueso',
+    'anillo_cobre', 'anillo_fuerza', 'anillo_vida', 'anillo_mana', 'amuleto_hueso', 'amuleto_jade',
     'casco_cuero', 'casco_hierro', 'casco_acero',
     'armadura_cuero', 'cota_malla', 'armadura_placas',
     'escudo_madera', 'escudo_hierro', 'escudo_torre',
   ],
   brisa: [
     'pocion_vida_g', 'pocion_mana_g',
-    'espada_dorada', 'arco_cazador', 'baston_tormenta',
+    'espada_dorada', 'arco_cazador', 'baston_tormenta', 'daga_sombra',
     'casco_bronce', 'armadura_bronce', 'escudo_bronce',
   ],
 };
@@ -395,5 +428,19 @@ const NPC_TIPS = [
   'Hay un puerto al sur, Puerto Marea, con otro mercader y otro banco. Las Minas Enanas son seguras; la Pirámide y la Fortaleza de Hielo no.',
   'La poción de vida es la tecla H, la de maná la J, y el hechizo de curación la V.',
 ];
+
+// ---- Botín de anillos, amuletos y armas nuevas: [monstruo, objeto, probabilidad] ----
+const EXTRA_LOOT = [
+  ['rata', 'anillo_cobre', 0.02], ['esqueleto', 'amuleto_hueso', 0.04], ['esqueleto', 'baston_hueso', 0.015],
+  ['esqueleto_arquero', 'ballesta_pesada', 0.02], ['necrofago', 'anillo_plata', 0.012], ['rey_esqueleto', 'amuleto_vigor', 0.25],
+  ['orco', 'anillo_fuerza', 0.02], ['troll', 'lanza_guerra', 0.012], ['troll', 'amuleto_vigor', 0.02],
+  ['senor_orco', 'hacha_doble', 0.2], ['senor_orco', 'anillo_sangre', 0.25], ['golem_lava', 'espada_llamas', 0.015],
+  ['demonio_menor', 'anillo_rubi', 0.02], ['demonio_menor', 'arco_sombras', 0.008], ['dragon', 'amuleto_dragon', 0.03],
+  ['demonio_supremo', 'espada_llamas', 0.15], ['demonio_supremo', 'amuleto_abismo', 0.3], ['demonio_supremo', 'arco_sombras', 0.12],
+  ['hidra', 'anillo_sangre', 0.1], ['momia_real', 'baston_solar', 0.01], ['faraon', 'baston_solar', 0.15], ['faraon', 'anillo_faraon', 0.3],
+  ['faraon', 'amuleto_faraon', 0.2], ['yeti', 'anillo_hielo', 0.015], ['reina_hielo', 'anillo_hielo', 0.3], ['reina_hielo', 'amuleto_sol', 0.25],
+  ['caballero_hielo', 'amuleto_sol', 0.01], ['maestro_forjador', 'anillo_plata', 0.2], ['maestro_forjador', 'lanza_guerra', 0.15],
+];
+for (const [m, id, ch] of EXTRA_LOOT) if (MONSTERS[m]) MONSTERS[m].loot.push([id, ch, 1, 1]);
 
 module.exports = { CFG, ITEMS, GEMS, RAR, SHOP, SHOPS, START_KIT, MONSTERS, SPAWN_PLAN, NPC_TIPS };

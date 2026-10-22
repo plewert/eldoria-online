@@ -43,7 +43,7 @@ function findTile(zoneId, pred) {
 const open = (x, y) => [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([dx, dy]) => world.isWalkable(x + dx, y + dy) && world.isWalkable(x + 2 * dx, y + 2 * dy));
 
 let n = 0;
-const ok = (name, fn) => { try { fn(); n++; console.log('  ✔', name); } catch (e) { console.error('  ✘', name, '\n   ', e.message); process.exitCode = 1; } };
+const ok = (name, fn) => { try { fn(); n++; console.log('  ✔', name); } catch (e) { console.error('  ✘', name, '\n   ', e.stack.split('\n').slice(0,3).join(' | ')); process.exitCode = 1; } };
 
 console.log('Mundo');
 ok('todas las apariciones están en casillas alcanzables', () => {
@@ -356,6 +356,26 @@ ok('guardar y cargar conserva +N, Ancient, gemas y banco', () => {
   const back = I.normalize(JSON.parse(JSON.stringify(store.get('Dara').data.eq.weapon)));
   assert.deepEqual(back, D.p.eq.weapon);
   assert.equal(I.normalize('espada_madera').id, 'espada_madera', 'acepta el formato viejo');
+});
+
+ok('anillos y amuletos: dos anillos, bonus al personaje, se guardan y se ven en el snapshot', () => {
+  const J = login('Joya').p;
+  J.xp = 1e9; game.recalc(J); J.inv[0] = I.mk('anillo_fuerza'); J.inv[1] = I.mk('anillo_vida'); J.inv[2] = I.mk('anillo_rubi'); J.inv[3] = I.mk('amuleto_vigor');
+  const hp0 = J.maxHp, atk0 = I.gearBonus(J.eq).atk;
+  game.equip(J, 0); game.equip(J, 1);
+  assert.equal(J.eq.ring1.id, 'anillo_fuerza'); assert.equal(J.eq.ring2.id, 'anillo_vida');
+  game.equip(J, 3); assert.equal(J.eq.amulet.id, 'amuleto_vigor');
+  assert.ok(J.maxHp > hp0, 'el amuleto y el anillo de vida suben la vida máxima');
+  assert.equal(I.gearBonus(J.eq).atk, atk0 + 3);
+  game.equip(J, 2);                                  // tercer anillo: reemplaza al primero y el viejo vuelve a la mochila
+  assert.equal(J.eq.ring1.id, 'anillo_rubi');
+  assert.ok(J.inv.some((it) => it && it.id === 'anillo_fuerza'));
+  game.unequip(J, 'ring2'); assert.equal(J.eq.ring2, null);
+  const snap = game.sendSnapshot(J) || null;
+  game.savePlayer(J); store.flush();
+  const back = store.get('Joya').data.eq;
+  assert.equal(I.normalize(back.amulet).id, 'amuleto_vigor');
+  assert.equal(I.pack(J.eq.ring1)[7].crit, 0.02);
 });
 
 fs_cleanup();
