@@ -1008,8 +1008,9 @@ class Game {
     const gb = I.gearBonus(p.eq);
     let dmg = Math.round(w.atk * (0.55 + Math.random() * 0.45) * (1 + 0.05 * (skill - 1)) * (1 + 0.015 * (p.level - 1)));
     dmg = Math.max(1, dmg);
+    let crit = 0;
     if (gb.crit > 0 && Math.random() < gb.crit) {           // Amatista: golpe crítico
-      dmg = Math.round(dmg * 1.8);
+      crit = 1; dmg = Math.round(dmg * 1.8);
       this.fx.push({ k: 'd', x: p.x, y: p.y, v: '¡CRÍTICO!', c: 'x' });
     }
     if (t.kind === 'pl') {
@@ -1019,8 +1020,9 @@ class Game {
       t.pvpLock = now + CFG.PVP_LOCK_MS;
     }
     p.nextAtk = now + w.cd;
-    if (w.style === 'melee') this.fx.push({ k: 's', x: t.x, y: t.y });
-    else this.fx.push({ k: 'p', x1: p.x, y1: p.y, x2: t.x, y2: t.y, s: w.style });
+    const wid = p.eq.weapon ? p.eq.weapon.id : null;
+    if (w.style === 'melee') this.fx.push({ k: 's', x: t.x, y: t.y, w: wid, cr: crit });
+    else this.fx.push({ k: 'p', x1: p.x, y1: p.y, x2: t.x, y2: t.y, s: w.style, w: wid, cr: crit });
     this.addSkillXp(p, w.style, 1 + Math.floor(dmg / 3));
     p.dir = Math.abs(t.x - p.x) >= Math.abs(t.y - p.y) ? (t.x > p.x ? 1 : 3) : (t.y > p.y ? 2 : 0);
     if (t.kind === 'pl') this.hurtPlayer(t, dmg, p, now, p.name);
