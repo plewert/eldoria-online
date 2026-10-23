@@ -25,7 +25,7 @@ const FISTS = { name: 'Puños', style: 'melee', atk: 3, cd: 1500, range: 1 };
 const SKILL_NAMES = { melee: 'combate cuerpo a cuerpo', ranged: 'combate a distancia', magic: 'magia' };
 const SLOTS = I.SLOTS;
 const DIRS8 = [[0, -1], [1, 0], [0, 1], [-1, 0], [1, -1], [1, 1], [-1, 1], [-1, -1]];
-const NAME_RE = /^[A-Za-z0-9_]{3,14}$/;
+const NAME_RE = /^[A-Za-z0-9][A-Za-z0-9_]{2,13}$/;
 const npcTiles = new Set(NPCS.map((n) => kxy(n.x, n.y)));
 
 class Game {
@@ -44,6 +44,8 @@ class Game {
     this.pgrid = new Map();     // casilla -> jugador
     this.fx = [];
     this.lastSave = Date.now();
+    this.dots = []; this.parties = new Map(); this.nextPartyId = 1;
+    this.initNodes(); this.initEvent();
     for (const s of world.monsterSpawns) this.spawnMonster(s.type, s.x, s.y);
   }
 
@@ -105,7 +107,7 @@ class Game {
         this.hurtPlayer(t, raw, m, now, def.name);
       }
       if (!inRange && now >= m.nextMove) {
-        m.nextMove = now + def.move;
+        m.nextMove = now + def.move * (m.slowUntil > now ? 2.2 : 1);
         const goal = range === 1 ? (x, y) => cheb(x, y, t.x, t.y) <= 1 : (x, y) => dist(x, y, t.x, t.y) <= range - 0.3;
         this.moveToward(m, t.x, t.y, goal, (x, y) => this.monsterCanStep(m, x, y));
       }
@@ -356,6 +358,7 @@ class Game {
       target: null, nextMove: 0, nextAtk: 0, nextPotion: 0, nextSpell: 0, nextRegen: 0, pend: null,
       pvpLock: 0, offlineUntil: 0, tpSeq: 0, lastChat: 0, throttle: {}, dirty: { inv: true, stats: true },
     };
+    this.extLoad(p, d);
     if (d) {
       p.xp = d.xp | 0; p.gold = d.gold | 0;
       p.sxp = { melee: d.sxp.melee | 0, ranged: d.sxp.ranged | 0, magic: d.sxp.magic | 0 };
@@ -389,7 +392,7 @@ class Game {
     }
     return {
       x: p.x, y: p.y, hp: p.hp, mana: p.mana, xp: p.xp, sxp: p.sxp, gold,
-      inv, eq, bank: p.bank.map((it) => I.clone(it)), bankGold: p.bankGold,
+      inv, eq, bank: p.bank.map((it) => I.clone(it)), bankGold: p.bankGold, ext: this.extSave(p),
     };
   }
 
@@ -411,6 +414,7 @@ class Game {
     p.ws = ws; ws.p = p;
     p.dirty = { inv: true, stats: true };
     this.sendWelcome(p);
+    this.onLogin(p);
     this.msg(p, `¡Bienvenido a Eldoria, ${p.name}! Habla con Orin el Sabio en la ciudad para recibir consejos.`, 's');
     this.broadcastChat(`${p.name} se ha conectado.`, 's');
     return p;
@@ -511,7 +515,7 @@ class Game {
     for (const q of this.players.values()) {
       if (!inView(q.x, q.y)) continue;
       const vis = this.visOf(q);
-      pl.push({ i: q.id, n: q.name, x: q.x, y: q.y, h: q.hp, H: q.maxHp, l: q.level, c: q.color, s: this.styleOf(q), d: q.dir, k: now < q.pvpLock ? 1 : 0, o: q.ws ? 0 : 1, v: vis.g, a: vis.an, t: q.trade ? 1 : 0, q: SLOTS.map((s) => (q.eq[s] ? q.eq[s].id : 0)) });
+      pl.push({ i: q.id, n: q.name, x: q.x, y: q.y, h: q.hp, H: q.maxHp, l: q.level, c: q.color, s: this.styleOf(q), d: q.dir, k: now < q.pvpLock ? 1 : 0, o: q.ws ? 0 : 1, v: vis.g, a: vis.an, t: q.trade ? 1 : 0, q: SLOTS.map((s) => (q.eq[s] ? q.eq[s].id : 0)), ...this.extView(q) });
     }
     for (const m of this.monsters) {
       if (m.dead || !inView(m.x, m.y)) continue;
@@ -526,7 +530,7 @@ class Game {
       const fx0 = f.x !== undefined ? f.x : f.x1, fy0 = f.y !== undefined ? f.y : f.y1;
       if (Math.abs(fx0 - p.x) <= vx + 3 && Math.abs(fy0 - p.y) <= vy + 3) fx.push(f);
     }
-    this.send(p, { t: 's', me: { x: p.x, y: p.y, h: p.hp, m: p.mana, tg: p.target, tp: p.tpSeq, v: this.visOf(p).g, lk: p.pvpLock > now ? Math.ceil((p.pvpLock - now) / 1000) : 0 }, pl, mo, gi, fx });
+    this.send(p, { t: 's', me: { x: p.x, y: p.y, h: p.hp, m: p.mana, tg: p.target, tp: p.tpSeq, v: this.visOf(p).g, lk: p.pvpLock > now ? Math.ceil((p.pvpLock - now) / 1000) : 0 }, pl, mo, gi, fx, nd: this.nodeView(p) });
   }
 
   /* ============================ ENTRADAS DEL CLIENTE ============================ */
@@ -575,7 +579,7 @@ class Game {
         if (p.trade) this.tradeCancel(p, 'Comercio cancelado.');
         else if (p.tradeInv) { const q = this.ents.get(p.tradeInv.from); p.tradeInv = null; if (q && q.kind === 'pl') this.msg(q, `${p.name} rechazó el comercio.`, 's'); }
         break;
-      default: break;
+      default: this.handleExt(p, msg); break;
     }
     if (p.dirty.inv) { p.dirty.inv = false; this.sendInv(p); p.dirty.stats = true; }
     if (p.dirty.stats) { p.dirty.stats = false; this.sendStats(p); }
@@ -592,8 +596,9 @@ class Game {
       const list = [...this.players.values()].sort((a, b) => b.xp - a.xp).slice(0, 5).map((q) => `${q.name} (nv ${q.level})`).join(', ');
       this.msg(p, 'Jugadores conectados más fuertes: ' + list, 's'); return;
     }
-    if (text === '/ayuda') { this.msg(p, 'Comandos: /g mensaje (chat global), /pos, /top. Teclas: WASD mover, Z/X/C arma, H/J pociones, V curar, E recoger. Clic derecho: monstruo = ver sus drops, jugador = comerciar, objeto = gemas.', 's'); return; }
+    if (text === '/ayuda') { this.msg(p, 'Comandos: /g mensaje (global), /p mensaje (grupo), /gc mensaje (gremio), /grupo, /gremio, /clave, /pos, /top. Teclas 1-2-3: habilidades; Q misiones, L logros, G social, R ranking, P mercado, F oficios. Otras: WASD mover, Z/X/C arma, H/J pociones, V curar, E recoger. Clic derecho: monstruo = ver sus drops, jugador = comerciar, objeto = gemas.', 's'); return; }
     if (text.startsWith('/g ')) { this.broadcastChat(text.slice(3), 'g', p.name); return; }
+    if (this.chatExt(p, text)) return;
     if (text.startsWith('/')) { this.msg(p, 'Comando desconocido. Escribe /ayuda.', 's'); return; }
     for (const q of this.players.values()) {
       if (cheb(q.x, q.y, p.x, p.y) <= 14) this.send(q, { t: 'chat', n: p.name, m: text, k: 'l' });
@@ -617,6 +622,7 @@ class Game {
     } else {
       this.msg(p, `${n.name}: ${NPC_TIPS[rnd(0, NPC_TIPS.length - 1)]}`, 'n');
     }
+    this.sendQuests(p, n.id);
   }
 
   /** El mercader cuya tienda tiene abierta el jugador, si sigue cerca. */
@@ -1061,7 +1067,7 @@ class Game {
     const sdx = nx - p.x, sdy = ny - p.y;
     p.x = nx; p.y = ny;
     p.dir = sdx > 0 ? 1 : sdx < 0 ? 3 : sdy > 0 ? 2 : 0;
-    p.nextMove = now + CFG.STEP_MS * (sdx && sdy ? 1.35 : 1);
+    p.nextMove = now + CFG.STEP_MS * (sdx && sdy ? 1.35 : 1) * this.mountMult(p);
     this.pgrid.set(kxy(nx, ny), p);
     const portal = world.portalAt(nx, ny);
     if (portal) {
@@ -1130,6 +1136,7 @@ class Game {
     for (const p of this.players.values()) this.pgrid.set(kxy(p.x, p.y), p);
     for (const p of [...this.players.values()]) this.updatePlayer(p, now);
     for (const m of this.monsters) this.updateMonster(m, now);
+    this.tickExt(now);
     if (this.tickN % 40 === 0) {
       for (const g of [...this.ground.values()]) if (now >= g.exp) this.removeGround(g);
     }
@@ -1151,4 +1158,5 @@ class Game {
   saveAll() { for (const p of this.players.values()) this.savePlayer(p); this.store.flush(); }
 }
 
+require('./ext')(Game);
 module.exports = { Game, NAME_RE, levelFromXp, xpForLevel, skillFromXp };

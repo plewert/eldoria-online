@@ -26,6 +26,7 @@ const MIME = {
 const server = http.createServer((req, res) => {
   let u;
   try { u = decodeURIComponent((req.url || '/').split('?')[0]); } catch (e) { res.writeHead(400); return res.end(); }
+  if (u === '/health') { res.writeHead(200, { 'Content-Type': 'text/plain' }); return res.end('ok'); }
   if (u === '/status') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ online: [...game.players.values()].filter((p) => p.ws).length, monsters: game.monsters.filter((m) => !m.dead).length }));
@@ -73,23 +74,34 @@ wss.on('connection', (ws, req) => {
     if (!msg || typeof msg.t !== 'string') return;
 
     if (!ws.p) {
+      if (msg.t === 'recover') {                      // restablecer la contraseña con el código de recuperación
+        if (blocked(ip)) return sendErr('Demasiados intentos fallidos. Espera unos minutos.');
+        const acc0 = store.get(String(msg.name || '').trim());
+        const np = String(msg.pass || '');
+        if (np.length < 4 || np.length > 64) return sendErr('La contraseña nueva debe tener entre 4 y 64 caracteres.');
+        if (!acc0 || !store.verifyRecovery(acc0, msg.code)) { fail(ip); return sendErr('Nombre o código de recuperación incorrectos.'); }
+        store.setPassword(acc0, np); failures.delete(ip);
+        return ws.send(JSON.stringify({ t: 'xauth', ok: 'recovered' }));
+      }
       if (msg.t !== 'auth') return;
       if (blocked(ip)) return sendErr('Demasiados intentos fallidos. Espera unos minutos.');
       const name = String(msg.name || '').trim();
       const pass = String(msg.pass || '');
       if (!NAME_RE.test(name)) return sendErr('El nombre debe tener 3-14 letras, números o guion bajo.');
       if (pass.length < 4 || pass.length > 64) return sendErr('La contraseña debe tener entre 4 y 64 caracteres.');
-      let acc = store.get(name);
+      let acc = store.get(name), rc = null;
       if (msg.mode === 'register') {
         if (acc) return sendErr('Ese nombre ya existe. Elige otro o inicia sesión.');
         const color = /^#[0-9a-fA-F]{6}$/.test(msg.color || '') ? msg.color : '#4aa3ff';
         acc = store.create(name, pass, color);
+        rc = store.setRecovery(acc);
       } else {
         if (!acc) { fail(ip); return sendErr('Personaje no encontrado. Créalo primero.'); }
         if (!store.verify(acc, pass)) { fail(ip); return sendErr('Contraseña incorrecta.'); }
       }
       failures.delete(ip);
       game.attach(acc, ws);
+      if (rc) ws.send(JSON.stringify({ t: 'xauth', ok: 'created', rc }));
       return;
     }
     game.handle(ws.p, msg);

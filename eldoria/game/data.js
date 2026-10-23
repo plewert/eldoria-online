@@ -443,5 +443,15 @@ const EXTRA_LOOT = [
 ];
 for (const [m, id, ch] of EXTRA_LOOT) if (MONSTERS[m]) MONSTERS[m].loot.push([id, ch, 1, 1]);
 require('./mage').build(ITEMS, SHOPS, MONSTERS);
+{
+  const X = require('./extra');
+  Object.assign(ITEMS, X.EXTRA_ITEMS);
+  MONSTERS[X.BOSS.type] = X.BOSS.def;
+  SHOPS.brisa.push('mascota_lobito', 'mascota_murcielago', 'mascota_goblin', 'montura_lobo', 'montura_oso');
+  const rare = [['lobo', 'mascota_lobito', 0.004], ['murcielago', 'mascota_murcielago', 0.003], ['goblin', 'mascota_goblin', 0.003], ['dragon', 'mascota_dragoncito', 0.01],
+    ['espectro_helado', 'mascota_fantasma', 0.006], ['lobo_hielo', 'montura_lobo', 0.002], ['oso', 'montura_oso', 0.002], ['dragon', 'pluma_fenix', 0.08], ['faraon', 'pluma_fenix', 0.5],
+    ['elemental_hielo', 'cristal_arcano', 0.12], ['golem_hielo', 'cristal_arcano', 0.3], ['espectro_helado', 'cristal_arcano', 0.1], ['hidra', 'montura_dragon', 0.03], ['reina_hielo', 'montura_dragon', 0.2]];
+  for (const [m, id, ch] of rare) if (MONSTERS[m]) MONSTERS[m].loot.push([id, ch, 1, 1]);
+}
 
 module.exports = { CFG, ITEMS, GEMS, RAR, SHOP, SHOPS, START_KIT, MONSTERS, SPAWN_PLAN, NPC_TIPS };

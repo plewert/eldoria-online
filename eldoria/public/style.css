@@ -268,3 +268,74 @@ button.mini:hover { background: rgba(201, 162, 75, .14); }
 
 .s-gloves { grid-column: 3; grid-row: 1; } .s-belt { grid-column: 2; grid-row: 3; }
 .slot canvas.gico, .item .ico canvas.gico { width: 30px; height: 30px; object-fit: contain; image-rendering: auto; display: block; margin: auto; position: relative; top: 1px; }
+
+/* ---------- sonido, reloj y táctil ---------- */
+.sndbtn { position: absolute; top: 10px; left: 10px; z-index: 5; width: 34px; height: 34px; border-radius: 6px; background: rgba(14, 18, 24, .78); border: 1px solid var(--edge); color: var(--bone); font-size: 16px; cursor: pointer; }
+.sndbtn:hover { border-color: var(--brass); }
+.clock { position: absolute; top: 52px; left: 10px; z-index: 4; padding: 3px 8px; background: rgba(14, 18, 24, .72); border: 1px solid var(--edge); border-radius: 6px; color: var(--bone); font: 12px var(--sans); pointer-events: none; }
+.clock:empty { display: none; }
+.joy { position: absolute; left: 22px; bottom: 26px; width: 120px; height: 120px; border-radius: 50%; background: rgba(14, 18, 24, .45); border: 2px solid rgba(201, 162, 75, .55); touch-action: none; z-index: 6; display: none; }
+.joy .knob { position: absolute; left: 36px; top: 36px; width: 48px; height: 48px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgba(255, 235, 170, .9), rgba(201, 162, 75, .75)); box-shadow: 0 2px 8px rgba(0, 0, 0, .5); }
+.joy.on { background: rgba(14, 18, 24, .62); }
+.drawerBtn { position: absolute; right: 10px; top: 10px; z-index: 8; width: 44px; height: 44px; border-radius: 8px; background: rgba(14, 18, 24, .85); border: 1px solid var(--brass-dim); color: var(--bone); font-size: 20px; display: none; }
+body.touch .joy, body.touch .drawerBtn { display: block; }
+body.touch #game { grid-template-columns: minmax(0, 1fr); }
+body.touch #side { position: fixed; top: 0; right: 0; bottom: 0; width: min(330px, 88vw); z-index: 7; transform: translateX(105%); transition: transform .22s ease; }
+body.touch.drawer #side { transform: none; }
+body.touch #hotbar { bottom: 12px; right: 10px; gap: 6px; padding: 6px; }
+body.touch #hotbar button { width: 46px; height: 46px; }
+body.touch #hotbar button b { font-size: 22px; }
+body.touch #chat { bottom: 160px; width: min(480px, calc(100% - 24px)); }
+body.touch #zone { top: 8px; }
+body.touch .sndbtn { top: 62px; }
+body.touch .clock { top: 104px; }
+
+/* ---------- sistemas nuevos (ui2.js) ---------- */
+.menu2 { position: absolute; left: 10px; top: 92px; z-index: 5; display: grid; gap: 4px; }
+.menu2 button { width: 34px; height: 34px; border-radius: 6px; background: rgba(14, 18, 24, .78); border: 1px solid var(--edge); color: var(--bone); font-size: 16px; cursor: pointer; }
+.menu2 button:hover { border-color: var(--brass); }
+body.touch .menu2 { top: 146px; }
+.hud2 { position: absolute; left: 52px; top: 52px; z-index: 4; display: grid; gap: 6px; pointer-events: none; }
+.buffs2 { display: flex; gap: 4px; }
+.buffs2 .bf { position: relative; width: 30px; height: 30px; display: grid; place-items: center; background: rgba(14, 18, 24, .8); border: 1px solid var(--brass-dim); border-radius: 6px; pointer-events: auto; }
+.buffs2 .bf small { position: absolute; bottom: -2px; right: 1px; font: 700 9px var(--sans); color: #ffd96a; text-shadow: 0 0 3px #000; }
+.party2 { display: grid; gap: 3px; min-width: 120px; }
+.party2 .pm { background: rgba(14, 18, 24, .72); border: 1px solid var(--edge); padding: 2px 6px; font: 11px var(--sans); color: var(--bone); }
+.banner2 { position: absolute; top: 56px; left: 50%; transform: translateX(-50%); z-index: 6; max-width: min(520px, 90%); padding: 8px 14px; display: grid; gap: 2px; text-align: center; background: rgba(40, 14, 10, .9); border: 1px solid #d9633a; color: #ffd9c4; font: 13px var(--sans); box-shadow: 0 6px 24px rgba(0, 0, 0, .5); }
+.banner2.end { background: rgba(14, 18, 24, .9); border-color: var(--edge); color: var(--bone); }
+.banner2 b { color: #ffb48a; font-family: var(--serif); font-size: 15px; }
+.modal.w2 { z-index: 12; }
+.sheet.narrow2 { width: min(480px, 100%); }
+.w2body h3 { margin: 10px 0 6px; }
+.w2body input, .w2body select { background: var(--ink); color: var(--bone); border: 1px solid var(--edge); padding: 6px 8px; font: 13px var(--sans); min-width: 0; }
+.w2body input.price { width: 84px; }
+.mrow { display: flex; gap: 8px; align-items: center; justify-content: space-between; margin: 3px 0; flex-wrap: wrap; }
+.tabs2 { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+.tabs2 .gold { margin-left: auto; }
+button.mini.on { background: rgba(201, 162, 75, .25); color: #fff; }
+button.mini.go { background: var(--brass); color: #1a1405; font-weight: 600; }
+.qcard { border: 1px solid var(--edge); padding: 8px 10px; margin: 6px 0; background: var(--slate-2); }
+.qcard h4 { margin: 0 0 4px; font: 600 15px var(--serif); color: var(--brass); }
+.qcard p { margin: 3px 0; }
+.qcard .obj { color: #cfe7ff; }
+.qcard .rew { color: #ffd96a; font-size: 12.5px; }
+.qcard.st-done, .qcard.st-locked { opacity: .6; }
+.qcard.st-ready { border-color: #ffd23f; }
+.qcard .acts { display: flex; gap: 6px; justify-content: flex-end; margin-top: 4px; }
+.titles { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
+.achgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 6px; }
+.ach { border: 1px solid var(--edge); padding: 6px 8px; display: grid; gap: 2px; opacity: .65; }
+.ach.ok { opacity: 1; border-color: var(--brass-dim); background: rgba(201, 162, 75, .08); }
+ol.rank { margin: 0; padding-left: 26px; display: grid; gap: 3px; }
+ol.rank li span { display: inline-block; min-width: 150px; }
+ol.rank li.me { color: #ffd96a; }
+.item.dim { opacity: .55; }
+.skbox { display: inline-flex; gap: 4px; }
+#hotbar .skb { position: relative; overflow: hidden; }
+#hotbar .skb.lock { opacity: .35; filter: grayscale(1); }
+#hotbar .skb.nomana { opacity: .6; }
+#hotbar .skb .cdv { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: rgba(0, 0, 0, .65); pointer-events: none; }
+.linkbtn { background: none; border: 0; color: var(--brass); text-decoration: underline; cursor: pointer; font-size: 13px; margin-top: 8px; }
+.recbox { display: grid; gap: 6px; margin-top: 8px; }
+.recbox input { background: var(--ink); color: var(--bone); border: 1px solid var(--edge); padding: 8px; }
+.code { font: 700 22px monospace; letter-spacing: 2px; text-align: center; padding: 10px; background: var(--ink); border: 1px dashed var(--brass); user-select: all; }

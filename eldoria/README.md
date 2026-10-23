@@ -75,3 +75,17 @@ En el registro de Render verás `Base remota conectada: N cuentas cargadas.` Se 
 - Nuevas casillas: **cinto** y **guantes**. Túnicas, sombreros, báculos, cinto, guantes y libros se ven puestos en el personaje.
 - Orin el Sabio vende las piezas de nivel bajo; las demás caen de monstruos según su nivel.
 - Los dibujos están en `public/gear.png` y `public/gear.json`.
+
+## Sistemas nuevos
+
+- **Misiones** con PNJ (marcas ❗ sobre ellos, tecla `Q`), **logros y títulos** (`L`), **ranking** (`R`).
+- **Habilidades activas** por estilo con las teclas `1`, `2`, `3` (se desbloquean a nivel 1, 8 y 15 del estilo).
+- **Grupos y gremios** (`G`; clic derecho sobre un jugador → invitar). Chat: `/p` grupo, `/gc` gremio.
+- **Mercado entre jugadores** (`P`, solo en ciudades, comisión 5 %), **oficios** (`F`): recolecta 🌿💠⛏️🔷 con clic y fabrica pociones, elixires y gemas.
+- **Mascotas y monturas** (tienda de Brisa y botín): clic en el objeto para invocarlas.
+- **Jefe de evento**: el Coloso Ancestral aparece cada cierto tiempo; variables `EVENT_MIN` (minutos entre eventos) y `EVENT_FIRST_MIN` (primer evento tras arrancar).
+- **Día/noche y clima**, **música y sonidos** (botón 🔊), **controles táctiles** para móvil.
+- **Seguridad**: límite de intentos fallidos por IP y **código de recuperación** (se muestra al crear la cuenta; `/codigo tuClave` genera uno nuevo; en el login, «¿Olvidaste tu clave?»).
+
+### Que el servidor no se duerma (Render gratis)
+Render duerme el servicio tras 15 min sin visitas. Crea un monitor gratuito en UptimeRobot o cron-job.org que haga una petición cada 5 min a `https://TU-APP.onrender.com/health`.

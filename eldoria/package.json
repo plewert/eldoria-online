@@ -6,7 +6,7 @@
   "engines": { "node": ">=18" },
   "scripts": {
     "start": "node server.js",
-    "test": "node test/logic.js"
+    "test": "node test/logic.js && node test/logic2.js"
   },
   "license": "MIT"
 }

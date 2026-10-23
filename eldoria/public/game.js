@@ -18,6 +18,17 @@
   };
   if (location.hash === '#debug') { window.__eld = G; G.renderInv = () => renderInv(); G.openShop = (m) => openShop(m); }
   let ws = null, joined = false, wantMode = 'login';
+  /* Ganchos para los módulos extra (audio, clima, táctil, misiones, social...) */
+  const HK = { msg: [], fx: [], snap: [], draw: [], under: [], click: [], key: [], chat: [], inv: [], stats: [] };
+  const EXT = (window.EldExt = {
+    G, el, $, store, joy: { dx: 0, dy: 0 }, handlers: {},
+    on(n, f) { HK[n].push(f); },
+    msg(m) { for (const f of HK.msg) f(m); }, fx(f) { for (const h of HK.fx) h(f); }, snap(m) { for (const f of HK.snap) f(m); },
+    draw(c, now, cw, ch, dt, tx, ty) { for (const f of HK.draw) f(c, now, cw, ch, dt, tx, ty); },
+    under(c, now, cw, ch) { for (const f of HK.under) f(c, now, cw, ch); }, click(t, ev) { return HK.click.some((f) => f(t, ev)); },
+    key(k, ev) { return HK.key.some((f) => f(k, ev)); }, chat(m) { for (const f of HK.chat) f(m); },
+    inv(m) { for (const f of HK.inv) f(m); }, stats(m) { for (const f of HK.stats) f(m); },
+  });
 
   /* ======================================================================
    *  CONEXIÓN
@@ -36,6 +47,7 @@
     });
   }
   const send = (o) => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); };
+  EXT.send = send;
 
   /* ======================================================================
    *  ACCESO
@@ -74,21 +86,22 @@
   function onMsg(m) {
     switch (m.t) {
       case 'welcome': onWelcome(m); break;
-      case 'inv': G.inv = m.inv; G.eq = m.eq; G.gold = m.gold; G.bankGold = m.bankGold; renderInv(); break;
+      case 'inv': G.inv = m.inv; G.eq = m.eq; G.gold = m.gold; G.bankGold = m.bankGold; renderInv(); EXT.inv(m); break;
       case 'bank': openBank(m); break;
       case 'trade': openTrade(m); break;
       case 'trade_inv': onTradeInvite(m); break;
       case 'trade_end': closeTrade(m.done); break;
-      case 'stats': G.stats = m; renderStats(); renderGemSum(); break;
+      case 'stats': G.stats = m; renderStats(); renderGemSum(); EXT.stats(m); break;
       case 's': onSnapshot(m); break;
       case 'chat': addChat(m); break;
       case 'shop': openShop(m); break;
       case 'dead': onDead(m); break;
+      case 'xauth': if (EXT.handlers.xauth) EXT.handlers.xauth(m); break;
       case 'err':
         if (!joined) $('#loginErr').textContent = m.msg;
         else addChat({ n: '', m: m.msg, k: 'k' });
         break;
-      default: break;
+      default: if (EXT.handlers[m.t]) EXT.handlers[m.t](m); EXT.msg(m); break;
     }
   }
 
@@ -113,10 +126,10 @@
     requestAnimationFrame(frame);
   }
 
-  const zoneAt = (x, y) => (x < 0 || y < 0 || x >= G.W || y >= G.H ? G.zones[G.zones.length - 1] : G.zones[G.zoneGrid[y * G.W + x]]);
+  const zoneAt = EXT.zoneAt = (x, y) => (x < 0 || y < 0 || x >= G.W || y >= G.H ? G.zones[G.zones.length - 1] : G.zones[G.zoneGrid[y * G.W + x]]);
 
   // velocidad constante: la fija el servidor (un paso cada cfg.step ms / cada def.move ms para monstruos)
-  const speedOf = (e) => (e.kind === 'pl' ? 1000 / (G.cfg.step || 230) : 1000 / ((G.mons[e.t] || {}).move || 600));
+  const speedOf = (e) => (e.kind === 'pl' ? 1000 / ((G.cfg.step || 230) * ((e.mt && G.items[e.mt] && G.items[e.mt].speed) || 1)) : 1000 / ((G.mons[e.t] || {}).move || 600));
 
   function onSnapshot(m) {
     const seen = new Set();
@@ -124,7 +137,7 @@
       seen.add(p.i);
       let e = G.ents.get(p.i);
       if (!e) { e = { kind: 'pl', id: p.i, rx: p.x, ry: p.y }; G.ents.set(p.i, e); }
-      Object.assign(e, { n: p.n, x: p.x, y: p.y, h: p.h, H: p.H, l: p.l, c: p.c, s: p.s, d: p.d, k: p.k, o: p.o, v: p.v || 0, a: p.a || 0, tr: p.t, q: p.q });
+      Object.assign(e, { n: p.n, x: p.x, y: p.y, h: p.h, H: p.H, l: p.l, c: p.c, s: p.s, d: p.d, k: p.k, o: p.o, v: p.v || 0, a: p.a || 0, tr: p.t, q: p.q, tt: p.tt || '', gl: p.gl || '', pt: p.pt || '', mt: p.mt || '' });
     }
     for (const q of m.mo) {
       seen.add(q.i);
@@ -133,7 +146,7 @@
       Object.assign(e, { t: q.t, x: q.x, y: q.y, h: q.h, H: q.H });
     }
     for (const id of [...G.ents.keys()]) if (!seen.has(id) && !(G.keep && id >= 7000)) G.ents.delete(id);
-    G.me = m.me; G.ground = m.gi;
+    G.me = m.me; G.ground = m.gi; G.nodes = m.nd || [];
     if (G.me) {                                            // se cierran solos al alejarte del PNJ
       const far = (kind) => !G.npcs.some((n) => (kind === 'bank' ? n.type === 'bank' : n.type === 'shop') && Math.max(Math.abs(n.x - G.me.x), Math.abs(n.y - G.me.y)) <= 4);
       if (G.bankOpen && far('bank')) closeBank();
@@ -150,6 +163,7 @@
     for (const f of m.fx) addFx(f, now);
     updateHud();
     drawMini();
+    EXT.snap(m);
   }
 
   /* ---------------- efectos de combate: partículas, proyectiles, hechizos ---------------- */
@@ -195,6 +209,7 @@
   }
 
   function addFx(f, now) {
+    EXT.fx(f);
     switch (f.k) {
       case 'd': G.texts.push({ x: f.x, y: f.y, v: String(f.v), c: f.c, t: now, dx: (Math.random() - 0.5) * 14, big: f.v === '¡CRÍTICO!' }); break;
       case 'p': {
@@ -240,11 +255,12 @@
     const log = $('#log');
     const p = el('p', m.k || 's');
     if (m.n) {
-      const b = el('b', '', m.k === 'g' ? `[Global] ${m.n}: ` : `${m.n}: `);
+      const b = el('b', '', m.k === 'g' ? `[Global] ${m.n}: ` : m.k === 'pt' ? `[Grupo] ${m.n}: ` : m.k === 'gc' ? `[Gremio] ${m.n}: ` : `${m.n}: `);
       p.append(b, document.createTextNode(m.m));
     } else p.textContent = m.m;
     if (m.c) p.style.color = m.c;
     log.append(p);
+    EXT.chat(m);
     while (log.children.length > 120) log.firstChild.remove();
     log.scrollTop = log.scrollHeight;
     if (!$('#chat').classList.contains('closed')) return;
@@ -300,7 +316,7 @@
   const ALL_SLOTS = ['weapon', 'head', 'body', 'shield', 'amulet', 'ring1', 'ring2', 'belt', 'gloves'];
   const bonusTxt = (b) => { const o = []; if (b.atk) o.push(`+${b.atk} ataque`); if (b.def) o.push(`+${b.def} defensa`); if (b.hp) o.push(`+${b.hp} vida`); if (b.mana) o.push(`+${b.mana} maná`); if (b.crit) o.push(`${Math.round(b.crit * 100)}% crítico`); if (b.steal) o.push(`${Math.round(b.steal * 100)}% robo de vida`); return o.join(' · '); };
   const isGear = (id) => !!G.items[id] && GEAR.has(G.items[id].type);
-  const TYPE_NAME = { weapon: 'Arma', head: 'Casco', body: 'Armadura', shield: 'Escudo', amulet: 'Amuleto', ring: 'Anillo', belt: 'Cinto', gloves: 'Guantes', gem: 'Gema', consumable: 'Consumible', misc: 'Trofeo' };
+  const TYPE_NAME = { weapon: 'Arma', head: 'Casco', body: 'Armadura', shield: 'Escudo', amulet: 'Amuleto', ring: 'Anillo', belt: 'Cinto', gloves: 'Guantes', pet: 'Mascota', mount: 'Montura', gem: 'Gema', consumable: 'Consumible', misc: 'Trofeo' };
   const itName = (it) => {
     const d = G.items[it[0]]; if (!d) return String(it[0]);
     return isGear(it[0]) ? `${it[3] ? 'Ancient ' : ''}${d.name}${it[2] > 0 ? ' +' + it[2] : ''}` : d.name;
@@ -326,7 +342,8 @@
     if (d.type === 'weapon') box.append(el('div', 'tl', `Ataque ${it[6] != null ? it[6] : d.atk} · alcance ${d.range} · cada ${(d.cd / 1000).toFixed(2)} s${d.mana ? ` · ${d.mana} de maná` : ''}`));
     else if (d.type === 'ring' || d.type === 'amulet') box.append(el('div', 'tl', bonusTxt(it[7] || d.bonus || {})));
     else if (gear) { box.append(el('div', 'tl', `Defensa ${it[6] != null ? it[6] : d.def}`)); const bt = it[7] || d.bonus; if (bt) { const b2 = el('div', 'tl', bonusTxt(bt)); b2.style.color = '#8fd0ff'; box.append(b2); } }
-    else if (d.type === 'consumable') box.append(el('div', 'tl', d.heal ? `Cura ${d.heal} de vida` : `Restaura ${d.restore} de maná`));
+    else if (d.type === 'consumable') box.append(el('div', 'tl', d.buff ? d.desc : d.heal ? `Cura ${d.heal} de vida` : `Restaura ${d.restore} de maná`));
+    else if (d.type === 'pet' || d.type === 'mount') { box.append(el('div', 'tl', d.desc)); box.append(el('div', 'ts', d.type === 'mount' && d.minLevel > 1 ? `Nivel ${d.minLevel} · clic para montar` : 'Clic para invocar o guardar')); }
     else if (d.type === 'gem') box.append(el('div', 'tl', d.desc));
     if (gear) {
       box.append(el('div', 'tsep'));
@@ -1084,7 +1101,20 @@
 
   // arma por defecto cuando el servidor aún no envió el equipo (o puños): nada en la mano
   /* Personaje con ciclo de paso: la fase avanza con la distancia recorrida (ver frame()). Dibuja el equipo puesto. */
+  function drawSpriteS(c, key, fi, cx, feetY, flip, scale) {
+    const s = SPR[key]; if (!s || !sprReady()) return false;
+    const f = s.f[fi % s.f.length], w = f[2] * scale, h = f[3] * scale;
+    c.save(); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high'; c.translate(Math.round(cx), Math.round(feetY)); if (flip) c.scale(-1, 1);
+    c.drawImage(sprImg, f[0], f[1], f[2], f[3], -w / 2, -h, w, h); c.restore(); return true;
+  }
   function drawPlayer(c, e, sx, sy, now) {
+    if (e.mt && G.items[e.mt]) {                                 // montado: la montura va debajo y el jinete sube
+      const md = G.items[e.mt], bob = Math.abs(Math.sin(e.phase || 0)) * 1.6 * (e.amp || 0);
+      c.fillStyle = 'rgba(0,0,0,.34)'; c.beginPath(); c.ellipse(sx + TS / 2, sy + TS - 2, 14, 4, 0, 0, 7); c.fill();
+      const fr = SPR[md.mon] ? sprFrame(e, SPR[md.mon]) : 0;
+      drawSpriteS(c, md.mon, fr, sx + TS / 2, sy + TS - 2 - bob, (e.face || 1) < 0, md.scale || 0.9);
+      sy -= Math.round(8 + (SPR[md.mon] ? SPR[md.mon].h * (md.scale || 0.9) * 0.18 : 0));
+    }
     const cx = sx + TS / 2, base = sy + TS - 3;
     const amp = e.amp || 0, ph = e.phase || 0, fd = e.fd == null ? 2 : e.fd;
     const sw = Math.sin(ph), cs = Math.cos(ph);
@@ -1558,6 +1588,7 @@
         outlined(c, n.name, cx, cy - 26, '#c9a24b');
       }
     }
+    EXT.under(c, now, cw, ch);
     // entidades ordenadas por fila
     const list = [...G.ents.values()].sort((a, b) => a.ry - b.ry);
     const tgId = G.me.tg;
@@ -1573,7 +1604,8 @@
       if (e.kind === 'pl') {
         const top = sy - 14;
         hpBar(c, cx, top, 28, e.h / e.H);
-        outlined(c, `${e.n} [${e.l}]${e.k ? ' ⚔' : ''}${e.tr ? ' 🤝' : ''}${e.o ? ' (ausente)' : ''}`, cx, top - 8, e.id === G.id ? '#c9a24b' : '#e8e2d0');
+        outlined(c, `${e.gl ? '‹' + e.gl + '› ' : ''}${e.n} [${e.l}]${e.k ? ' ⚔' : ''}${e.tr ? ' 🤝' : ''}${e.o ? ' (ausente)' : ''}`, cx, top - 8, e.id === G.id ? '#c9a24b' : '#e8e2d0');
+        if (e.tt) outlined(c, e.tt, cx, top - 19, '#9fd0ff', 'italic 10px "Segoe UI", sans-serif');
       } else {
         const d = G.mons[e.t] || {}; const sp0 = sprReady() && SPR[e.t];
         const top = sp0 ? sy + TS - 4 - sp0.h - 8 : sy - (d.boss ? 18 : 6);
@@ -1605,6 +1637,7 @@
       outlined(c, t.v, sxOf(t.x) + TS / 2 + t.dx * (1 - a), syOf(t.y) - 4 - (1 - a) * 30, TXT_COL[t.c] || '#fff', t.big ? 'bold 20px "Segoe UI", sans-serif' : 'bold 14px "Segoe UI", sans-serif');
       c.globalAlpha = 1;
     }
+    EXT.draw(c, now, cw, ch, dt, tx, ty);
     // oscuridad en mazmorras
     const zk = zoneAt(G.me.x, G.me.y).kind;
     if (zk === 'dungeon') {
@@ -1634,6 +1667,7 @@
       return;
     }
     if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    if (EXT.key(k, ev)) { ev.preventDefault(); return; }
     if (k === 'enter') { ev.preventDefault(); if (!chatOpen()) setChat(true); chatIn.focus(); return; }
     if (k === 'tab') { ev.preventDefault(); setChat(!chatOpen()); return; }
     if (k === 'escape') { if (!ctxEl.hidden) closeCtx(); else if (!$('#drops').hidden) closeDrops(); else if (G.trade) send({ t: 'trade_no' }); else if (G.bankOpen) closeBank(); else if (G.shopOpen) closeShop(); else { send({ t: 'target', id: null }); G.path = []; } return; }
@@ -1654,8 +1688,9 @@
     if (!joined) return;
     let dx = 0, dy = 0;
     for (const k of held) { dx += KEYDIR[k][0]; dy += KEYDIR[k][1]; }
+    dx += EXT.joy.dx; dy += EXT.joy.dy;
     dx = Math.sign(dx); dy = Math.sign(dy);
-    if (dx || dy) { send({ t: 'move', dx, dy }); wasMoving = true; }
+    if (dx || dy) { if (EXT.joy.dx || EXT.joy.dy) G.path = []; send({ t: 'move', dx, dy }); wasMoving = true; }
     else if (wasMoving) { send({ t: 'move', dx: 0, dy: 0 }); wasMoving = false; }
   }, 80);
 
@@ -1691,7 +1726,7 @@
     ev.preventDefault(); if (!G.me) return;
     const e = entAtTile(tileAt(ev)); if (!e) return;
     if (e.kind === 'mo') { const d = G.mons[e.t]; if (!d) return; openCtx(ev, [{ hdr: d.name, color: d.boss ? '#ff9c80' : null }, { label: 'Ver botín y datos', fn: () => showDrops(e.t) }, { label: 'Atacar', fn: () => send({ t: 'target', id: e.id }) }]); }
-    else openCtx(ev, [{ hdr: e.n }, { label: 'Comerciar', fn: () => send({ t: 'trade_req', id: e.id }) }, { label: 'Atacar', fn: () => send({ t: 'target', id: e.id }) }]);
+    else openCtx(ev, [{ hdr: e.n }, { label: 'Comerciar', fn: () => send({ t: 'trade_req', id: e.id }) }, { label: 'Invitar al grupo', fn: () => send({ t: 'p_inv', id: e.id }) }, { label: 'Invitar al gremio', fn: () => send({ t: 'g_inv', id: e.id }) }, { label: 'Atacar', fn: () => send({ t: 'target', id: e.id }) }]);
   });
   cv.addEventListener('mousemove', (ev) => {
     if (!G.me) return;
@@ -1706,6 +1741,7 @@
     if (e) { send({ t: 'target', id: e.id }); G.path = []; return; }
     const n = G.npcs.find((q) => q.x === t.x && q.y === t.y);
     if (n) { send({ t: 'npc', id: n.id }); return; }
+    if (EXT.click(t, ev)) return;
     send({ t: 'target', id: null });
     walkTo(t.x, t.y);
   });
@@ -1743,4 +1779,8 @@
     if (Math.max(Math.abs(m.x - nx.x), Math.abs(m.y - nx.y)) > 1 || now - G.pathStuck > 1500) { G.path = []; return; }
     send({ t: 'move', dx: nx.x - m.x, dy: nx.y - m.y, once: true });
   }
+  Object.assign(EXT, {
+    itemRow, toast, fmt, itName, iconNode, drawSpriteS, SPR, sprImg, sprReady, sprFrame, burst, ring, openCtx, walkTo, outlined, hpBar,
+    addFx: (f) => addFx(f, performance.now()), sxOf, syOf, TS, shade, send, closeCtx, itColor, rarOf, connect,
+  });
 })();
