@@ -199,5 +199,18 @@ ok('nombres que empiezan por guion bajo están prohibidos (reservados)', () => {
   const { NAME_RE } = require('../game/game'); assert.ok(!NAME_RE.test('__market')); assert.ok(NAME_RE.test('Ana_1'));
 });
 
+ok('set del Titán: cae del Coloso y se equipa en todas las casillas (incluidas grebas y botas)', () => {
+  const loot = MONSTERS.coloso_ancestral.loot.map((l) => l[0]);
+  const ids = Object.keys(ITEMS).filter((i) => i.startsWith('titan_'));
+  assert.strictEqual(ids.length, 18); ids.forEach((i) => assert.ok(loot.includes(i), i));
+  const { p, ws } = login('Titan1'); p.level = 60; p.xp = 1e7; place(p, ...TOWN);
+  const seen = new Set();
+  for (const id of ['titan_martillo', 'titan_escudo', 'titan_yelmo', 'titan_coraza', 'titan_guantes', 'titan_cinto', 'titan_grebas', 'titan_botas']) {
+    p.inv[0] = I.mk(id); game.equip(p, 0); assert.strictEqual(p.eq[ITEMS[id].type].id, id, id); seen.add(ITEMS[id].type);
+  }
+  assert.strictEqual(seen.size, 8);
+  assert.ok(I.gearBonus(p.eq).hp >= 90 + 280 + 40 + 120 + 70 + 80);
+});
+
 console.log(`\n${n} pruebas correctas`);
 try { require('fs').unlinkSync(store.file); } catch (e) { /* nada */ }

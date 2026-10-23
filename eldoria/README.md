@@ -89,3 +89,6 @@ En el registro de Render verás `Base remota conectada: N cuentas cargadas.` Se 
 
 ### Que el servidor no se duerma (Render gratis)
 Render duerme el servicio tras 15 min sin visitas. Crea un monitor gratuito en UptimeRobot o cron-job.org que haga una petición cada 5 min a `https://TU-APP.onrender.com/health`.
+
+### Set del Titán de Magma (botín raro del Coloso Ancestral)
+18 piezas (6 cascos, coraza, 2 guanteletes, cinto, 4 grebas, botas, **Hoja de Magma**, **Martillo del Coloso** y **Escudo del Dragón de Magma**), niveles 46-58, con vida extra y algo de ataque. Hay dos casillas nuevas de equipo: **grebas** y **botas**. Cada pieza cae con un 3-5 % por victoria.

@@ -530,7 +530,7 @@ module.exports = function install(Game) {
   P.marketSend = function (p, filter) {
     const m = this.market(), now = Date.now(), f = filter || {};
     const q = String(f.q || '').toLowerCase().slice(0, 30);
-    const kinds = { weapon: ['weapon'], armor: ['head', 'body', 'shield', 'belt', 'gloves'], jewel: ['ring', 'amulet'], other: null };
+    const kinds = { weapon: ['weapon'], armor: ['head', 'body', 'shield', 'belt', 'gloves', 'legs', 'boots'], jewel: ['ring', 'amulet'], other: null };
     let list = m.list.filter((l) => {
       const d = ITEMS[l.it.id]; if (!d) return false;
       if (q && !d.name.toLowerCase().includes(q)) return false;
