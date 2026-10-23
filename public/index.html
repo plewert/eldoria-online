@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Eldoria Online</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Ccircle cx=%278%27 cy=%278%27 r=%277%27 fill=%27%23c9a24b%27/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============ Pantalla de acceso ============ -->
+<section id="login" aria-labelledby="loginTitle">
+  <canvas id="cover" aria-hidden="true"></canvas>
+
+  <form id="loginForm" autocomplete="on">
+    <h1 id="loginTitle">Eldoria Online</h1>
+    <p class="lede">Un solo héroe: con espada eres guerrero, con arco tirador y con vara mago. Tú decides cómo pelear.</p>
+
+    <label for="lname">Nombre del personaje</label>
+    <input id="lname" name="username" type="text" maxlength="14" autocomplete="username" spellcheck="false" required>
+
+    <label for="lpass">Contraseña</label>
+    <input id="lpass" name="password" type="password" maxlength="64" autocomplete="current-password" required>
+
+    <fieldset>
+      <legend>Color de tu capa</legend>
+      <div id="swatches"></div>
+    </fieldset>
+
+    <p id="loginErr" role="alert"></p>
+
+    <div class="row">
+      <button type="submit" class="primary" data-mode="login">Entrar</button>
+      <button type="submit" class="ghost" data-mode="register">Crear personaje</button>
+    </div>
+    <p id="online" class="fine"></p>
+  </form>
+</section>
+
+<!-- ============ Juego ============ -->
+<main id="game" hidden>
+  <div id="stage">
+    <canvas id="view" aria-label="Mapa del juego"></canvas>
+
+    <div id="zone" class="safe" aria-live="polite">
+      <span class="ward" aria-hidden="true"></span>
+      <span class="zname" id="zname"></span>
+      <span class="zrule" id="zrule"></span>
+    </div>
+
+    <div id="target" hidden>
+      <div class="tname" id="tname"></div>
+      <div class="bar hp"><i id="thp"></i></div>
+    </div>
+
+    <div id="hotbar">
+      <button data-style="melee" title="Cuerpo a cuerpo (Z)"><b>⚔️</b><small>Z</small></button>
+      <button data-style="ranged" title="Distancia (X)"><b>🏹</b><small>X</small></button>
+      <button data-style="magic" title="Magia (C)"><b>🔮</b><small>C</small></button>
+      <span class="gap"></span>
+      <button data-pot="heal" title="Poción de vida (H)"><b>🧪</b><small>H</small><em id="nHeal">0</em></button>
+      <button data-pot="mana" title="Poción de maná (J)"><b>💧</b><small>J</small><em id="nMana">0</em></button>
+      <button data-spell="1" title="Hechizo de curación, 25 de maná (V)"><b>✨</b><small>V</small></button>
+    </div>
+
+    <div id="chat">
+      <div id="chatBar"><button id="chatToggle" type="button" aria-expanded="true" aria-controls="chatBody" title="Mostrar u ocultar el chat (Tab)"><span class="ci">💬</span> <span id="chatLbl">Chat</span> <em id="chatUnread" hidden>0</em> <span class="cx" aria-hidden="true">▾</span></button></div>
+      <div id="chatBody">
+      <div id="log" role="log" aria-live="polite"></div>
+      <input id="chatIn" type="text" maxlength="120" placeholder="Enter para hablar · /g mensaje para todos · /ayuda" autocomplete="off">
+      </div>
+    </div>
+  </div>
+
+  <aside id="side">
+    <section>
+      <canvas id="mini" width="240" height="180" aria-label="Minimapa"></canvas>
+    </section>
+
+    <section id="char">
+      <h2><span id="cname"></span> <span class="lv">nivel <b id="clv">1</b></span></h2>
+      <div class="meter"><label>Vida</label><div class="bar hp"><i id="bhp"></i></div><span id="thpTxt"></span></div>
+      <div class="meter"><label>Maná</label><div class="bar mp"><i id="bmp"></i></div><span id="tmpTxt"></span></div>
+      <div class="meter"><label>Exp.</label><div class="bar xp"><i id="bxp"></i></div><span id="txpTxt"></span></div>
+      <ul id="skills">
+        <li data-sk="melee"><span>⚔️ Cuerpo a cuerpo</span><b></b><div class="bar mini"><i></i></div></li>
+        <li data-sk="ranged"><span>🏹 Distancia</span><b></b><div class="bar mini"><i></i></div></li>
+        <li data-sk="magic"><span>🔮 Magia</span><b></b><div class="bar mini"><i></i></div></li>
+      </ul>
+      <p class="fine" id="gemSum"></p>
+    </section>
+
+    <section>
+      <h2>Equipo <span class="fine" id="defTxt"></span></h2>
+      <div id="equip">
+        <div class="slot-wrap s-head"><div class="slot" data-eq="head"></div></div>
+        <div class="slot-wrap s-weapon"><div class="slot" data-eq="weapon"></div></div>
+        <div class="slot-wrap s-body"><div class="slot" data-eq="body"></div></div>
+        <div class="slot-wrap s-shield"><div class="slot" data-eq="shield"></div></div>
+        <div class="slot-wrap s-amulet"><div class="slot" data-eq="amulet"></div></div>
+        <div class="slot-wrap s-ring1"><div class="slot" data-eq="ring1"></div></div>
+        <div class="slot-wrap s-ring2"><div class="slot" data-eq="ring2"></div></div>
+        <div class="slot-wrap s-belt"><div class="slot" data-eq="belt"></div></div>
+        <div class="slot-wrap s-gloves"><div class="slot" data-eq="gloves"></div></div>
+        <div class="slot-wrap s-legs"><div class="slot" data-eq="legs"></div></div>
+        <div class="slot-wrap s-boots"><div class="slot" data-eq="boots"></div></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Mochila <span class="gold">💰 <b id="gold">0</b></span></h2>
+      <div id="inv"></div>
+      <p class="fine">Clic: usar o equipar · Mayús+clic: soltar · Botón derecho: más opciones (gemas, banco, comercio) · Pasa el ratón para ver el objeto</p>
+    </section>
+  </aside>
+</main>
+
+<!-- ============ Tienda ============ -->
+<div id="shop" class="modal" hidden>
+  <div class="sheet" role="dialog" aria-labelledby="shopTitle">
+    <header><h2 id="shopTitle">Tienda</h2><span class="gold">💰 <b id="shopGold">0</b></span><button id="shopClose" aria-label="Cerrar tienda">✕</button></header>
+    <div class="cols">
+      <div><h3>Comprar</h3><div id="buyList" class="list"></div></div>
+      <div><h3>Vender</h3><div id="sellList" class="list"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Muerte / desconexión ============ -->
+<div id="dead" class="modal" hidden>
+  <div class="sheet narrow" role="alertdialog" aria-labelledby="deadTitle">
+    <h2 id="deadTitle">Has caído</h2>
+    <p id="deadTxt"></p>
+    <ul id="deadLost"></ul>
+    <button id="deadOk" class="primary">Volver a la ciudad</button>
+  </div>
+</div>
+
+<div id="offline" class="modal" hidden>
+  <div class="sheet narrow" role="alertdialog" aria-labelledby="offTitle">
+    <h2 id="offTitle">Conexión perdida</h2>
+    <p id="offTxt">Se cortó la conexión con el servidor.</p>
+    <button id="offOk" class="primary">Volver a conectar</button>
+  </div>
+</div>
+
+<!-- ============ Banco ============ -->
+<div id="bank" class="modal" hidden>
+  <div class="sheet wide" role="dialog" aria-labelledby="bankTitle">
+    <header><h2 id="bankTitle">Banco</h2><button id="bankClose" aria-label="Cerrar banco">✕</button></header>
+    <div class="cols">
+      <div>
+        <h3>Tu mochila <span class="fine">clic: guardar · Mayús: toda la pila</span></h3>
+        <div id="bankInv" class="grid"></div>
+        <div class="goldrow"><span>💰 <b id="bankHand">0</b> en mano</span>
+          <input id="bankAmt" type="number" min="1" inputmode="numeric" placeholder="cantidad" aria-label="Cantidad de oro">
+          <button id="bankDep" class="mini">Depositar</button></div>
+      </div>
+      <div>
+        <h3>Tu caja fuerte <span class="fine">clic: sacar · Mayús: toda la pila</span></h3>
+        <div id="bankBox" class="grid"></div>
+        <div class="goldrow"><span>🏦 <b id="bankGold">0</b> guardados</span>
+          <button id="bankWd" class="mini">Retirar</button></div>
+      </div>
+    </div>
+    <p class="fine">Lo que guardas aquí está a salvo: no se pierde si te matan en una zona PvP.</p>
+  </div>
+</div>
+
+<!-- ============ Comercio entre jugadores ============ -->
+<div id="trade" class="modal" hidden>
+  <div class="sheet wide" role="dialog" aria-labelledby="tradeTitle">
+    <header><h2 id="tradeTitle">Comercio</h2><button id="tradeClose" aria-label="Cancelar comercio">✕</button></header>
+    <div class="cols three">
+      <div>
+        <h3>Tu oferta</h3>
+        <div id="tradeMine" class="list short"></div>
+        <div class="goldrow"><span>💰</span>
+          <input id="tradeGold" type="number" min="0" inputmode="numeric" placeholder="oro" aria-label="Oro que ofreces">
+          <button id="tradeGoldSet" class="mini">Poner</button></div>
+      </div>
+      <div>
+        <h3 id="tradeTheirsTitle">Su oferta</h3>
+        <div id="tradeTheirs" class="list short"></div>
+        <p class="fine">Oro que ofrece: <b id="tradeTheirGold">0</b></p>
+      </div>
+      <div>
+        <h3>Tu mochila <span class="fine">clic: ofrecer</span></h3>
+        <div id="tradeInv" class="grid"></div>
+      </div>
+    </div>
+    <div class="tfoot"><span id="tradeState" aria-live="polite"></span>
+      <button id="tradeOk" class="primary">Confirmar</button><button id="tradeNo" class="ghost">Cancelar</button></div>
+    <p class="fine">Si cualquiera cambia la oferta, las confirmaciones se anulan. El intercambio es instantáneo y los dos deben tener espacio.</p>
+  </div>
+</div>
+
+<!-- ============ Ficha de monstruo (clic derecho) ============ -->
+<div id="drops" class="modal" hidden>
+  <div class="sheet" role="dialog" aria-labelledby="dropTitle">
+    <header><span id="dropIcon" class="big" aria-hidden="true"></span><h2 id="dropTitle"></h2><span id="dropBadge" class="badge"></span><button id="dropClose" aria-label="Cerrar">✕</button></header>
+    <div id="dropStats" class="stats"></div>
+    <h3>Botín</h3>
+    <div id="dropList" class="list"></div>
+    <p id="dropNote" class="fine"></p>
+  </div>
+</div>
+
+<div id="ctx" role="menu" hidden></div>
+<div id="tip" role="tooltip" hidden></div>
+<div id="toasts" aria-live="polite"></div>
+
+<script src="cover.js"></script>
+<script src="game.js"></script>
+<script src="audio.js"></script>
+<script src="env.js"></script>
+<script src="touch.js"></script>
+<script src="ui2.js"></script>
+</body>
+</html>

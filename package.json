@@ -1,0 +1,12 @@
+{
+  "name": "eldoria-online",
+  "version": "1.0.0",
+  "description": "Eldoria Online: MMORPG de aventura estilo Tibia/RuneScape para navegador (sin dependencias)",
+  "main": "server.js",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/logic.js && node test/logic2.js"
+  },
+  "license": "MIT"
+}
