@@ -180,7 +180,7 @@
     baston_abismo: 'void', mandoble_runico: 'arcane', baston_tormenta: 'storm', baston_pantano: 'poison',
     cetro_faraon: 'sun', hoja_faraon: 'sun', cimitarra_desierto: 'sun',
   };
-  const HEAVY = new Set(['titan_martillo', 'hacha_acero', 'mandoble_runico', 'martillo_titan', 'maza_enana', 'hacha_hielo', 'colmillo_hidra']);
+  const HEAVY = new Set(['hacha_acero', 'mandoble_runico', 'martillo_titan', 'maza_enana', 'hacha_hielo', 'colmillo_hidra']);
   const elemOf = (f) => (f.s === 'fire' || f.s === 'ice' ? f.s : WEAPON_ELEM[f.w] || (f.s === 'magic' ? 'magic' : null));
   G.parts = []; G.rings = []; G.bolts = []; G.casts = []; G.shake = { t: 0, m: 0 };
 
@@ -1409,6 +1409,17 @@
     c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
   }
 
+  /** Aura de brillo del personaje (diamantes, piezas Ancient, set completo). e.v = intensidad 0..12, e.a = nº de piezas Ancient. */
+  function drawAura(c, e, cx, cy, now) {
+    const k = Math.min(12, e.v || 0), an = e.a || 0;
+    const pulse = 0.88 + 0.12 * Math.sin(now / 380 + (e.id || 0));
+    const r = (18 + k * 1.7) * pulse, a = Math.min(0.5, 0.14 + k * 0.03);
+    c.save(); c.globalCompositeOperation = 'lighter';
+    glow(c, cx, cy + 2, r, an > 0 ? '110,170,255' : '255,235,170', a);
+    if (k >= 6) glow(c, cx, cy + 2, r * 0.6, '255,255,255', 0.1 + 0.01 * k);
+    c.restore();
+  }
+
   function drawProj(c, p, now, dt) {
     const age = now - p.t, k = Math.min(1, age / p.T), el = p.el, pal = ELEM[el] || null;
     const wx = p.x1 + (p.x2 - p.x1) * k, wy = p.y1 + (p.y2 - p.y1) * k;
@@ -1600,8 +1611,10 @@
       if (e.id === tgId) {
         c.strokeStyle = `rgba(255,70,50,${0.7 + 0.3 * Math.sin(now / 150)})`; c.lineWidth = 2; c.strokeRect(sx + 1, sy + 1, TS - 2, TS - 2);
       }
-      if (e.kind === 'pl' && e.v > 0) drawAura(c, e, sx + TS / 2, sy + TS / 2, now);
-      if (e.kind === 'pl') drawPlayer(c, e, sx, sy, now); else drawMonster(c, e, sx, sy, now);
+      try {   // un fallo dibujando una entidad no debe romper todo el fotograma
+        if (e.kind === 'pl' && e.v > 0) drawAura(c, e, sx + TS / 2, sy + TS / 2, now);
+        if (e.kind === 'pl') drawPlayer(c, e, sx, sy, now); else drawMonster(c, e, sx, sy, now);
+      } catch (err) { if (!G.drawErr) { G.drawErr = 1; console.error('Error dibujando entidad', e, err); } }
       const cx = sx + TS / 2;
       if (e.kind === 'pl') {
         const top = sy - 14;
