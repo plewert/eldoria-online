@@ -238,6 +238,7 @@ module.exports = function install(Game) {
   };
   P.defOf = function (p) { return Math.round(G0.defOf.call(this, p) * this.buffMult(p, 'def')); };
   P.hurtPlayer = function (p, raw, src, now, srcName) {
+    if (src && src.kind === 'mo') { const a = zoneAt(src.x, src.y), b = zoneAt(p.x, p.y); if (a !== b && (a.kind === 'dungeon' || b.kind === 'dungeon')) return 0; }
     const sh = p.buffs && p.buffs.shield;
     if (sh && sh.until > now && sh.hp > 0) {
       const a = Math.min(sh.hp, raw); sh.hp -= a; raw -= a;

@@ -28,6 +28,9 @@ const DIRS8 = [[0, -1], [1, 0], [0, 1], [-1, 0], [1, -1], [1, 1], [-1, 1], [-1, 
 const NAME_RE = /^[A-Za-z0-9][A-Za-z0-9_]{2,13}$/;
 const npcTiles = new Set(NPCS.map((n) => kxy(n.x, n.y)));
 
+// Mazmorras y cuevas son recintos cerrados: nada ataca hacia dentro ni hacia fuera de ellas
+const sameRealm = (a, b) => { const za = zoneAt(a.x, a.y), zb = zoneAt(b.x, b.y); return za === zb || (za.kind !== 'dungeon' && zb.kind !== 'dungeon'); };
+
 class Game {
   constructor(store) {
     this.store = store;
@@ -84,12 +87,12 @@ class Game {
       return;
     }
     let t = m.target ? this.ents.get(m.target) : null;
-    if (t && (t.kind !== 'pl' || t.hp <= 0 || cheb(m.x, m.y, t.x, t.y) > def.aggro + 9 || cheb(t.x, t.y, m.sx, m.sy) > 20)) { m.target = null; t = null; }
+    if (t && (t.kind !== 'pl' || t.hp <= 0 || cheb(m.x, m.y, t.x, t.y) > def.aggro + 9 || cheb(t.x, t.y, m.sx, m.sy) > 20 || !sameRealm(m, t))) { m.target = null; t = null; }
     if (!t && def.aggro > 0 && now >= m.nextScan) {
       m.nextScan = now + 400;
       let best = null, bd = 1e9;
       for (const p of this.players.values()) {
-        if (p.hp <= 0) continue;
+        if (p.hp <= 0 || !sameRealm(m, p)) continue;
         const d = cheb(m.x, m.y, p.x, p.y);
         if (d <= def.aggro && d < bd) { bd = d; best = p; }
       }
@@ -924,6 +927,7 @@ class Game {
   }
 
   hurtMonster(m, dmg, p, now) {
+    if (p && p.kind === 'pl' && !sameRealm(m, p)) return;
     m.hp -= dmg;
     this.fx.push({ k: 'd', x: m.x, y: m.y, v: dmg, c: 'h' });
     const e = m.dmgBy.get(p.id);
@@ -1119,6 +1123,7 @@ class Game {
     if (p.target) {
       const t = this.ents.get(p.target);
       if (!t || (t.kind === 'mo' && t.dead) || (t.kind === 'pl' && !t.ws && !t.offlineUntil) || cheb(p.x, p.y, t.x, t.y) > CFG.VIEW_X) { p.target = null; return; }
+      if (!sameRealm(p, t)) { p.target = null; this.msgThrottle(p, 'realm', 'No puedes atacar a través de la entrada: entra a la mazmorra.'); return; }
       if (t.kind === 'pl' && !this.canPvp(p, t)) { p.target = null; this.explainNoPvp(p, t); return; }
       const w = this.weaponOf(p);
       const range = w.range || 1;

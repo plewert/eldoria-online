@@ -106,3 +106,5 @@ Botín raro: **Set de las Sombras** (capucha, coraza, guanteletes, botas, carcaj
 
 ## Cueva del Dragón de las Sombras
 Una caverna enorme y oscura (zona `cueva`, sin PvP) al sur del camino del desierto. Se entra por el portal del camino (122,79) y se sale por el portal de la entrada. Dentro solo vive el Dragón de las Sombras (nivel 500, reaparece a los 30 min); ya no es jefe de evento. La oscuridad solo se aclara alrededor del jugador, otros jugadores y portales.
+
+Las mazmorras y la cueva son recintos cerrados: ni tú puedes atacar a los monstruos de dentro desde fuera, ni ellos (aliento, pisotón, ataques) te alcanzan desde la entrada. Hay que entrar.

@@ -198,6 +198,15 @@ ok('Dragón de las Sombras: nivel 500, aliento negro, pisotón con grietas y bot
   ['dkw', 'dk', 'slw', 'sl', 'fiw', 'fi'].forEach((k) => assert.ok(seen.has(k), 'fx ' + k + ' → ' + [...seen]));
   game.removeEventBoss = game.removeEventBoss; game.mgrid.delete(m.y * world.W + m.x); game.monsters = game.monsters.filter((q) => q !== m); game.ents.delete(m.id);
 });
+ok('mazmorras y cuevas: nadie ataca a través de la entrada', () => {
+  const a = login('Wall1'); place(a.p, 122, 78); a.p.hp = a.p.maxHp = 5000;
+  const m = game.spawnMonster('dragon_sombra', 122, 84); const hp0 = m.hp;
+  game.hurtMonster(m, 500, a.p, T0); assert.equal(m.hp, hp0, 'desde fuera no daña');
+  m.target = a.p.id; m.nextAtk = 0; for (let i = 0; i < 40; i++) { T0 += CFG.TICK_MS; game.tick(T0); }
+  assert.equal(a.p.hp, 5000, 'el dragón no daña hacia fuera'); assert.notEqual(m.target, a.p.id);
+  place(a.p, 122, 86); game.hurtMonster(m, 500, a.p, T0); assert.equal(m.hp, hp0 - 500, 'dentro sí');
+  game.mgrid.delete(m.y * world.W + m.x); game.monsters = game.monsters.filter((q) => q !== m); game.ents.delete(m.id);
+});
 ok('todo lo nuevo se guarda y se carga', () => {
   const { p } = login('Save1'); place(p, ...TOWN);
   game.questAccept(p, 'ratas'); game.questKill(p, 'rata'); p.ext.pet = ''; p.ext.cxp = 99; p.ext.title = 'Novato';
