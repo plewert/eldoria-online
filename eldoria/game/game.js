@@ -18,8 +18,7 @@ const clampDir = (v) => (v > 0 ? 1 : v < 0 ? -1 : 0);
 
 const levelFromXp = (xp) => 1 + Math.floor(Math.sqrt(xp / 50));
 const xpForLevel = (l) => 50 * (l - 1) * (l - 1);
-const skillFromXp = (xp) => 1 + Math.floor(Math.sqrt(xp / 20));
-const skillXpFor = (l) => 20 * (l - 1) * (l - 1);
+const { SKILL_MAX, skillFromXp, skillXpFor, skillMult } = require('./skills');
 
 const FISTS = { name: 'Puños', style: 'melee', atk: 3, cd: 1500, range: 1 };
 const SKILL_NAMES = { melee: 'combate cuerpo a cuerpo', ranged: 'combate a distancia', magic: 'magia' };
@@ -368,7 +367,7 @@ class Game {
     this.extLoad(p, d);
     if (d) {
       p.xp = d.xp | 0; p.gold = d.gold | 0;
-      p.sxp = { melee: d.sxp.melee | 0, ranged: d.sxp.ranged | 0, magic: d.sxp.magic | 0 };
+      const cap = skillXpFor(SKILL_MAX); p.sxp = { melee: Math.min(cap, d.sxp.melee | 0), ranged: Math.min(cap, d.sxp.ranged | 0), magic: Math.min(cap, d.sxp.magic | 0) };
       d.inv.forEach((it, i) => { const n = I.normalize(it); if (n && i < CFG.INV_SIZE) p.inv[i] = n; });
       if (Array.isArray(d.bank)) d.bank.forEach((it, i) => { const n = I.normalize(it); if (n && i < CFG.BANK_SIZE) p.bank[i] = n; });
       p.bankGold = d.bankGold | 0;
@@ -504,7 +503,7 @@ class Game {
     const sk = {};
     for (const s of ['melee', 'ranged', 'magic']) {
       const l = skillFromXp(p.sxp[s]);
-      sk[s] = [l, p.sxp[s], skillXpFor(l), skillXpFor(l + 1)];
+      sk[s] = [l, p.sxp[s], skillXpFor(l), l >= SKILL_MAX ? skillXpFor(l) + 1 : skillXpFor(l + 1)];
     }
     const w = this.weaponOf(p);
     this.send(p, {
@@ -909,7 +908,7 @@ class Game {
 
   addSkillXp(p, style, amt) {
     const before = skillFromXp(p.sxp[style]);
-    p.sxp[style] += amt;
+    p.sxp[style] = Math.min(skillXpFor(SKILL_MAX), p.sxp[style] + amt);       // tope: nivel 400
     const after = skillFromXp(p.sxp[style]);
     if (after > before) this.msg(p, `¡Tu habilidad de ${SKILL_NAMES[style]} sube al nivel ${after}!`, 's');
     p.dirty.stats = true;
@@ -1049,7 +1048,7 @@ class Game {
     }
     const skill = skillFromXp(p.sxp[w.style]);
     const gb = I.gearBonus(p.eq);
-    let dmg = Math.round(w.atk * (0.55 + Math.random() * 0.45) * (1 + 0.05 * (skill - 1)) * (1 + 0.015 * (p.level - 1)));
+    let dmg = Math.round(w.atk * (0.55 + Math.random() * 0.45) * skillMult(skill) * (1 + 0.015 * (p.level - 1)));
     dmg = Math.max(1, dmg);
     let crit = 0;
     if (gb.crit > 0 && Math.random() < gb.crit) {           // Amatista: golpe crítico

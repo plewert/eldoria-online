@@ -78,12 +78,12 @@ ok('habilidad bloqueada por nivel de habilidad y por falta de maná', () => {
   const { p } = login('Skill2'); place(p, 50, 62); clearAround(50, 62, 6);
   const m = game.spawnMonster('esqueleto', 51, 62); p.target = m.id; p.mana = p.maxMana;
   p.sxp.melee = 0; game.useSkill(p, 2); assert.equal(p.buffs.atk, undefined, 'requiere habilidad 15');
-  p.sxp.melee = 20 * 14 * 14 + 5; p.mana = 0; game.useSkill(p, 2); assert.equal(p.buffs.atk, undefined, 'sin maná');
+  p.sxp.melee = require('../game/skills').skillXpFor(15) + 5; p.mana = 0; game.useSkill(p, 2); assert.equal(p.buffs.atk, undefined, 'sin maná');
   p.mana = p.maxMana; p.nextSkill = 0; game.useSkill(p, 2); assert.ok(p.buffs.atk && p.buffs.atk.m > 1);
   const w = game.weaponOf(p); assert.ok(w.atk > 3, 'el buff sube el ataque');
 });
 ok('escudo arcano absorbe daño', () => {
-  const { p } = login('Skill3'); place(p, 50, 64); p.eq.weapon = I.mk('baston_fuego'); p.sxp.magic = 20 * 14 * 14 + 5; p.mana = p.maxMana; p.hp = p.maxHp = 500;
+  const { p } = login('Skill3'); place(p, 50, 64); p.eq.weapon = I.mk('baston_fuego'); p.sxp.magic = require('../game/skills').skillXpFor(15) + 5; p.mana = p.maxMana; p.hp = p.maxHp = 500;
   game.useSkill(p, 2); assert.ok(p.buffs.shield.hp > 50);
   const hp0 = p.hp; game.hurtPlayer(p, 30, null, T0, 'x'); assert.equal(p.hp, hp0, 'todo absorbido');
 });
@@ -214,6 +214,15 @@ ok('Hidra de Jade: cueva propia, set de arquero y sus tres ataques', () => {
   delete game.fx.push;
   need.forEach((k) => assert.ok(seen.has(k), 'fx ' + k + ' → ' + [...seen]));
   game.mgrid.delete(m.y * world.W + m.x); game.monsters = game.monsters.filter((q) => q !== m); game.ents.delete(m.id);
+});
+ok('habilidades: tope 400 y cada nivel cuesta más', () => {
+  const S = require('../game/skills'); assert.equal(S.SKILL_MAX, 400);
+  assert.equal(S.skillFromXp(0), 1); assert.equal(S.skillFromXp(S.skillXpFor(50)), 50); assert.equal(S.skillFromXp(S.skillXpFor(50) - 1), 49);
+  assert.equal(S.skillFromXp(1e12), 400);
+  let prev = 0; for (let l = 2; l <= 400; l++) { const c = S.skillXpFor(l) - S.skillXpFor(l - 1); assert.ok(c > prev, 'cuesta más en ' + l); prev = c; }
+  assert.ok(S.skillXpFor(100) > 20 * 99 * 99, 'más caro que antes');
+  const a = login('Sk1'); a.p.sxp.melee = S.skillXpFor(400) - 1; game.addSkillXp(a.p, 'melee', 99999); assert.equal(a.p.sxp.melee, S.skillXpFor(400)); assert.equal(S.skillFromXp(a.p.sxp.melee), 400);
+  assert.ok(S.skillMult(400) < 10);
 });
 ok('mazmorras y cuevas: nadie ataca a través de la entrada', () => {
   const a = login('Wall1'); place(a.p, 122, 78); a.p.hp = a.p.maxHp = 5000;

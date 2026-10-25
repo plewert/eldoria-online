@@ -15,7 +15,7 @@ const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const kxy = (x, y) => y * W + x;
 const cheb = (ax, ay, bx, by) => Math.max(Math.abs(ax - bx), Math.abs(ay - by));
 const levelFromXp = (xp) => 1 + Math.floor(Math.sqrt(xp / 50));
-const skillFromXp = (xp) => 1 + Math.floor(Math.sqrt(xp / 20));
+const { skillFromXp, skillMult } = require('./skills');
 const craftLevel = (cxp) => 1 + Math.floor(Math.sqrt(cxp / 15));
 const ACH_BY = Object.fromEntries(X.ACHS.map((a) => [a[0], a]));
 const num = (v, max = 1e12) => Math.max(0, Math.min(max, Math.floor(Number(v) || 0)));
@@ -263,7 +263,7 @@ module.exports = function install(Game) {
   /** Daño base de un golpe del jugador (igual que el ataque normal). */
   P.baseDmg = function (p, w) {
     const skill = skillFromXp(p.sxp[w.style]);
-    return Math.max(1, Math.round(w.atk * (0.55 + Math.random() * 0.45) * (1 + 0.05 * (skill - 1)) * (1 + 0.015 * (p.level - 1))));
+    return Math.max(1, Math.round(w.atk * (0.55 + Math.random() * 0.45) * skillMult(skill) * (1 + 0.015 * (p.level - 1))));
   };
   /** Aplica daño de una habilidad a un objetivo (monstruo o jugador). */
   P.skillHit = function (p, t, dmg, now) {
