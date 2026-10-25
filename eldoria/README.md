@@ -114,3 +114,6 @@ Botín compartido de todos los jefes: cada jugador que le haga al menos 1 % del 
 ## Botín por clic derecho y tumba
 - Clic derecho sobre un objeto del suelo: menú «Recoger X» para cada objeto de la casilla. Caminas hasta allí y recoges solo ese (el resto queda). Pisar una casilla sin elegir sigue recogiendo todo.
 - Si mueres en una zona peligrosa (PvP o mazmorra/cueva) queda una cruz enterrada donde caíste, visible en el mundo y en el minimapa (solo para ti). Desaparece al acercarte o tras 2 horas, y se guarda aunque te desconectes.
+
+## Cueva del Hidra de Jade
+Segunda cueva oscura (zona `cueva_jade`, sin PvP) en el prado del noroeste: puerta en (52,59). Dentro solo vive la **Hidra de Jade** (nivel 550, 320.000 de vida, 80 % de defensa, reaparece al minuto, botín compartido). Tres ataques con aviso en el suelo: **lluvia ácida** (tres oleadas de gotas que dejan charcos), **fuego amarillo** por las tres bocas (línea larga + quemadura) y **golpe al suelo** con onda y **caída de piedras**. Botín raro: set de arquero de jade (Yelmo, Coraza, Guanteletes, Botas) y el Arco de la Hidra, además de la Escama de Jade.

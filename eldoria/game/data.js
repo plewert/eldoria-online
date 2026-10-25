@@ -450,6 +450,8 @@ require('./mage').build(ITEMS, SHOPS, MONSTERS);
   require('./titan').build(ITEMS, MONSTERS, X.BOSS.type);
   MONSTERS[X.DRAGON.type] = X.DRAGON.def;
   require('./shadow').build(ITEMS, MONSTERS, X.DRAGON.type);
+  MONSTERS[X.JADE.type] = X.JADE.def;
+  require('./jade').build(ITEMS, MONSTERS, X.JADE.type);
   SHOPS.brisa.push('mascota_lobito', 'mascota_murcielago', 'mascota_goblin', 'montura_lobo', 'montura_oso');
   const rare = [['lobo', 'mascota_lobito', 0.004], ['murcielago', 'mascota_murcielago', 0.003], ['goblin', 'mascota_goblin', 0.003], ['dragon', 'mascota_dragoncito', 0.01],
     ['espectro_helado', 'mascota_fantasma', 0.006], ['lobo_hielo', 'montura_lobo', 0.002], ['oso', 'montura_oso', 0.002], ['dragon', 'pluma_fenix', 0.08], ['faraon', 'pluma_fenix', 0.5],

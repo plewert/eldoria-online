@@ -77,6 +77,7 @@ const EXTRA_ITEMS = {
   montura_lobo: { name: 'Lobo de Montar', icon: '🐺', type: 'mount', mon: 'lobo', scale: 0.95, speed: 0.78, minLevel: 15, price: 6000, sell: 1500, desc: 'Cabalgas un 22% más rápido.' },
   montura_oso: { name: 'Oso Pardo de Montar', icon: '🐻', type: 'mount', mon: 'oso', scale: 0.9, speed: 0.7, minLevel: 25, price: 20000, sell: 5000, desc: 'Cabalgas un 30% más rápido.' },
   montura_dragon: { name: 'Dragón Joven', icon: '🐉', type: 'mount', mon: 'dragon', scale: 0.62, speed: 0.58, minLevel: 40, sell: 30000, desc: 'Vuelas un 42% más rápido.' },
+  trofeo_hidra: { name: 'Escama de Jade', icon: '💚', type: 'misc', stack: true, sell: 22000 },
   trofeo_dragon: { name: 'Escama de las Sombras', icon: '🖤', type: 'misc', stack: true, sell: 20000 },
   trofeo_coloso: { name: 'Trofeo del Coloso', icon: '🏆', type: 'misc', stack: true, sell: 8000 },
 };
@@ -113,7 +114,12 @@ const DRAGON = {
   def: { name: 'Dragón de las Sombras', icon: '🐉', lv: 500, hp: 300000, dmg: [220, 380], exp: 60000, move: 380, atkCd: 1300, aggro: 14, respawn: 60000, armor: 0.8, shared: true, boss: true, special: 'dragon',
     gold: [10000, 20000], loot: [['trofeo_dragon', 1, 1, 2], ['pocion_vida_g', 1, 5, 10], ['pocion_mana_g', 1, 5, 10], ['pluma_fenix', 0.5, 1, 2]] },
 };
+const JADE = {
+  type: 'hidra_jade',
+  def: { name: 'Hidra de Jade', icon: '🐲', lv: 550, hp: 320000, dmg: [190, 340], exp: 70000, move: 400, atkCd: 1300, aggro: 14, respawn: 60000, armor: 0.8, shared: true, boss: true, special: 'hydra',
+    gold: [12000, 22000], loot: [['trofeo_hidra', 1, 1, 2], ['pocion_vida_g', 1, 5, 10], ['pocion_mana_g', 1, 5, 10], ['pluma_fenix', 0.5, 1, 2]] },
+};
 BOSS.mins = 12; BOSS.arena = [100, 107]; BOSS.icon = '🗿';
 const BOSSES = [BOSS];   // el dragón vive en su cueva (no es jefe de evento)
 
-module.exports = { BOSSES, DRAGON, ACHS, SKILLS, EXTRA_ITEMS, RECIPES, NODES, BOSS };
+module.exports = { BOSSES, DRAGON, JADE, ACHS, SKILLS, EXTRA_ITEMS, RECIPES, NODES, BOSS };

@@ -795,10 +795,59 @@ module.exports = function install(Game) {
       });
     }
   };
+  // Hidra de Jade: lluvia ácida, fuego amarillo por las bocas y golpe al suelo con caída de piedras
+  P.hydraAI = function (m, now) {
+    if (now < (m.nextSp || 0)) return;
+    const t = m.target ? this.ents.get(m.target) : null; if (!t || t.kind !== 'pl' || t.hp <= 0) return;
+    const d = Math.hypot(t.x - m.x, t.y - m.y);
+    const near = [...this.players.values()].some((q) => q.hp > 0 && !inTownP(q) && Math.hypot(q.x - m.x, q.y - m.y) <= 6);
+    const order = ['acid', 'fire', 'stomp', 'acid', 'stomp', 'fire'];
+    let kind = order[(m.spN || 0) % order.length];
+    if (kind === 'fire' && !(d >= 2 && d <= 12)) kind = near ? 'stomp' : 'acid';
+    else if (kind === 'stomp' && !near) kind = d >= 2 && d <= 12 ? 'fire' : 'acid';
+    m.spN = (m.spN || 0) + 1; m.nextSp = now + 5500 + Math.random() * 3000;
+    m.nextMove = Math.max(m.nextMove, now + 1700); m.nextAtk = Math.max(m.nextAtk, now + 1700);
+    const alive = () => !m.dead && this.monsters.includes(m);
+    const near14 = (cx, cy, r) => [...this.players.values()].filter((q) => q.hp > 0 && !inTownP(q) && Math.hypot(q.x - cx, q.y - cy) <= r);
+    const rain = (cx, cy, R, warnK, hitK, n, lo, hi, tag, delay) => {       // círculos de aviso y luego impacto (se esquivan caminando)
+      const spots = [], tg = near14(cx, cy, R + 4);
+      for (let i = 0; i < n; i++) { const q = tg[i]; spots.push(q ? [q.x, q.y] : [Math.round(cx + (Math.random() - 0.5) * 2 * R), Math.round(cy + (Math.random() - 0.5) * 2 * R)]); }
+      for (const [x, y] of spots) this.fx.push({ k: warnK, x, y, r: 1.5 });
+      this.later(delay, () => {
+        if (!alive()) return;
+        for (const [x, y] of spots) { this.fx.push({ k: hitK, x, y }); hitPlayers(this, this.now, m, (q) => Math.hypot(q.x - x, q.y - y) <= 1.5, lo, hi, tag); }
+      });
+    };
+    if (kind === 'fire') {                                      // aliento de fuego amarillo
+      let dx = t.x - m.x, dy = t.y - m.y; const L = Math.hypot(dx, dy) || 1; dx /= L; dy /= L;
+      const ex = m.x + dx * 12, ey = m.y + dy * 12, ox = m.x, oy = m.y;
+      this.fx.push({ k: 'ykw', x1: ox, y1: oy, x2: ex, y2: ey });
+      this.later(1000, () => {
+        if (!alive()) return; const nw = this.now;
+        this.fx.push({ k: 'yk', x1: ox, y1: oy, x2: ex, y2: ey });
+        const hit = [];
+        for (const q of this.players.values()) { const rx = q.x - ox, ry = q.y - oy, s = rx * dx + ry * dy, perp = Math.abs(rx * dy - ry * dx); if (q.hp > 0 && !inTownP(q) && s >= 0.5 && s <= 12.5 && perp <= 1.8) hit.push(q); }
+        for (const q of hit) this.hurtPlayer(q, rnd(400, 580), m, nw, m.def.name);
+        for (let i = 1; i <= 3; i++) this.later(900 * i, () => { if (!alive()) return; for (const q of hit) if (q.hp > 0 && this.players.get(q.key) === q) { this.fx.push({ k: 'burn', x: q.x, y: q.y }); this.hurtPlayer(q, rnd(55, 90), m, this.now, 'Fuego amarillo'); } });
+      });
+    } else if (kind === 'acid') {                               // lluvia de ácido: tres oleadas
+      for (let w = 0; w < 3; w++) this.later(w * 1100, () => { if (alive()) rain(m.x, m.y, 10, 'acw', 'ac', 5 + w, 300, 440, 'Lluvia ácida', 900); });
+    } else {                                                    // golpe al suelo: onda y lluvia de piedras
+      const R = 4.5, cx = m.x, cy = m.y;
+      this.fx.push({ k: 'hsw', x: cx, y: cy, r: R });
+      this.later(1100, () => {
+        if (!alive()) return;
+        this.fx.push({ k: 'hs', x: cx, y: cy, r: R });
+        hitPlayers(this, this.now, m, (q) => Math.hypot(q.x - cx, q.y - cy) <= R, 480, 680);
+        rain(cx, cy, 9, 'rcw', 'rc', Math.min(9, 4 + near14(cx, cy, 14).length * 2), 360, 520, 'Piedra', 1100);
+      });
+    }
+  };
   G0.updateMonster = P.updateMonster;
   P.updateMonster = function (m, now) {
     G0.updateMonster.call(this, m, now);
     if (m.def.special === 'dragon' && !m.dead) this.dragonAI(m, now);
+    else if (m.def.special === 'hydra' && !m.dead) this.hydraAI(m, now);
   };
 
   /* ============================ ENGANCHES DE COMBATE ============================ */

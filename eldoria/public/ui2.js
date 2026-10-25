@@ -532,4 +532,73 @@
     box.append(n, cd, pw, go, msg); form.append(box);
     a.addEventListener('click', () => { box.hidden = !box.hidden; if (!box.hidden) { n.value = $('#lname').value; n.focus(); } });
   })();
+
+  /* ---------- Hidra de Jade: lluvia ácida, fuego amarillo, golpe con piedras ---------- */
+  X.on('fx', (f) => {
+    const now = performance.now();
+    switch (f.k) {
+      case 'ykw': BF.push({ k: 'ykw', t: now, T: 1000, f }); break;
+      case 'yk': BF.push({ k: 'yk', t: now, T: 1000, f, seed: Math.random() * 99 }); G.shake = { t: now, m: 3 }; X.sfx && X.sfx('boss'); X.burst(f.x1, f.y1, 'storm', 26, { sp: 4, life: 0.7, size: 3.2 }); break;
+      case 'acw': BF.push({ k: 'acw', t: now, T: 900, f }); break;
+      case 'ac': BF.push({ k: 'pool', t: now, T: 3500, x: f.x, y: f.y, seed: Math.random() * 9 }); X.burst(f.x, f.y, 'poison', 22, { sp: 3.5, up: 4, g: 5, life: 0.7, size: 3 }); X.ring(f.x, f.y, 'poison', 420, 34, 4); break;
+      case 'hsw': BF.push({ k: 'hsw', t: now, T: 1100, f }); break;
+      case 'hs': X.ring(f.x, f.y, 'poison', 650, f.r * 32, 6); X.ring(f.x, f.y, 'dark', 520, f.r * 20, 4); X.burst(f.x, f.y, 'dark', 40, { sp: 6, up: 3, g: 5, life: 0.9, size: 3.6, add: false }); G.shake = { t: now, m: 9 }; X.sfx && X.sfx('thunder'); break;
+      case 'rcw': BF.push({ k: 'rcw', t: now, T: 1100, f, h: rnd(-6, 6) }); break;
+      case 'rc': BF.push({ k: 'rubble', t: now, T: 5000, x: f.x, y: f.y, s: Math.random() * 99 }); X.burst(f.x, f.y, 'dark', 26, { sp: 5, up: 4, g: 6, life: 0.8, size: 3.4, add: false }); X.ring(f.x, f.y, 'dark', 380, 30, 4); G.shake = { t: now, m: 4 }; break;
+      default: break;
+    }
+  });
+  const hmouths = (f) => { let face = 1; for (const e of G.ents.values()) if (e.kind === 'mo' && e.t === 'hidra_jade' && Math.abs(e.x - f.x1) < 2 && Math.abs(e.y - f.y1) < 2) face = e.face || 1; return [-1.9, -1.25, -0.6].map((u) => [px(f.x1) + face * 1.7 * X.TS, py(f.y1) + u * X.TS]); };
+  X.on('under', (c, now) => {
+    const TS = X.TS;
+    for (const b of BF) {
+      const p = (now - b.t) / b.T; if (p >= 1) continue;
+      if (b.k === 'ykw') {
+        const f = b.f, [x1, y1] = hmouths(f)[1], x2 = px(f.x2), y2 = py(f.y2), a = Math.atan2(y2 - y1, x2 - x1), L = Math.hypot(x2 - x1, y2 - y1);
+        c.save(); c.translate(x1, y1); c.rotate(a); c.fillStyle = `rgba(255,210,40,${0.10 + 0.22 * p})`; c.fillRect(0, -TS * 1.8, L, TS * 3.6);
+        c.strokeStyle = `rgba(255,235,120,${0.35 + 0.4 * Math.abs(Math.sin(now / 90))})`; c.lineWidth = 2; c.strokeRect(0, -TS * 1.8, L, TS * 3.6); c.restore();
+      } else if (b.k === 'acw' || b.k === 'rcw') {
+        const f = b.f, x = px(f.x), y = py(f.y), r = f.r * TS, acid = b.k === 'acw';
+        c.fillStyle = acid ? `rgba(120,230,40,${0.10 + 0.25 * p})` : `rgba(200,170,120,${0.08 + 0.22 * p})`; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+        c.strokeStyle = acid ? `rgba(190,255,90,${0.5 + 0.4 * Math.abs(Math.sin(now / 70))})` : `rgba(255,200,120,${0.5 + 0.4 * Math.abs(Math.sin(now / 70))})`; c.lineWidth = 2; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke();
+      } else if (b.k === 'hsw') {
+        const f = b.f, x = px(f.x), y = py(f.y), r = f.r * TS;
+        c.fillStyle = `rgba(120,200,60,${0.08 + 0.22 * p})`; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+        c.strokeStyle = `rgba(200,255,120,.85)`; c.lineWidth = 3; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke(); c.beginPath(); c.arc(x, y, r * p, 0, 7); c.stroke();
+      } else if (b.k === 'pool') {
+        const x = px(b.x), y = py(b.y), al = Math.min(1, (1 - p) * 2.4);
+        const g = c.createRadialGradient(x, y, 2, x, y, TS * 1.3); g.addColorStop(0, `rgba(150,255,60,${0.75 * al})`); g.addColorStop(1, `rgba(60,150,20,0)`);
+        c.fillStyle = g; c.beginPath(); c.ellipse(x, y, TS * 1.3, TS * 0.9, 0, 0, 7); c.fill();
+        for (let i = 0; i < 4; i++) { const t = (now / 500 + i * 0.27 + b.seed) % 1; c.fillStyle = `rgba(220,255,140,${0.6 * al * (1 - t)})`; c.beginPath(); c.arc(x + Math.sin(i * 2.1 + b.seed) * TS * 0.7, y - t * 12 + 4, 2 + t * 2, 0, 7); c.fill(); }
+      } else if (b.k === 'rubble') {
+        const x = px(b.x), y = py(b.y), al = Math.min(1, (1 - p) * 3);
+        c.fillStyle = `rgba(0,0,0,${0.3 * al})`; c.beginPath(); c.ellipse(x, y + 8, 18, 6, 0, 0, 7); c.fill();
+        for (let i = 0; i < 5; i++) { const a = i * 1.3 + b.s, rr = 5 + (i % 3) * 5; c.fillStyle = `rgba(${70 + i * 12},${64 + i * 10},${58 + i * 8},${al})`; c.beginPath(); c.moveTo(x + Math.cos(a) * rr - 5, y + Math.sin(a) * rr * 0.5 + 3); c.lineTo(x + Math.cos(a) * rr + 1, y + Math.sin(a) * rr * 0.5 - 5); c.lineTo(x + Math.cos(a) * rr + 6, y + Math.sin(a) * rr * 0.5 + 4); c.closePath(); c.fill(); }
+      }
+    }
+  });
+  X.on('draw', (c, now) => {
+    const TS = X.TS;
+    for (const b of BF) {
+      const p = (now - b.t) / b.T; if (p >= 1) continue;
+      if (b.k === 'yk') {
+        const f = b.f, hm = hmouths(f), x2 = px(f.x2), y2 = py(f.y2), reach = Math.min(1, p * 4), al = p < 0.7 ? 1 : (1 - p) / 0.3;
+        hm.forEach(([x1, y1], hi) => {
+          const a = Math.atan2(y2 - y1, x2 - x1), L = Math.hypot(x2 - x1, y2 - y1);
+          c.save(); c.translate(x1, y1); c.rotate(a);
+          const n = 30; for (let i = 0; i < n; i++) {
+            const s = (i / n) * L * reach, w = 4 + (s / L) * (hi === 1 ? 24 : 15), off = Math.sin(now / 50 + i * 1.7 + b.seed + hi) * w * 0.5;
+            c.fillStyle = `rgba(255,${170 + (i % 3) * 25},20,${0.7 * al})`; c.beginPath(); c.arc(s, off, w, 0, 7); c.fill();
+          }
+          c.globalCompositeOperation = 'lighter';
+          for (let i = 0; i < 12; i++) { const s = rnd(0, L * reach); c.fillStyle = `rgba(255,245,150,${0.45 * al})`; c.beginPath(); c.arc(s, rnd(-1, 1) * (6 + s / L * 16), rnd(2, 5), 0, 7); c.fill(); }
+          c.restore();
+        });
+      } else if (b.k === 'acw' || b.k === 'rcw') {       // lo que cae: gota de ácido o piedra
+        const f = b.f, x = px(f.x), y0 = py(f.y), fall = (1 - p) * (b.k === 'acw' ? 170 : 210), y = y0 - fall;
+        if (b.k === 'acw') { c.fillStyle = 'rgba(150,255,60,.95)'; c.beginPath(); c.moveTo(x, y - 12); c.quadraticCurveTo(x + 8, y + 2, x, y + 6); c.quadraticCurveTo(x - 8, y + 2, x, y - 12); c.fill(); c.fillStyle = 'rgba(230,255,170,.8)'; c.fillRect(x - 2, y - 2, 2, 4); }
+        else { c.save(); c.translate(x + b.h, y); c.rotate(p * 7); c.fillStyle = '#6b6258'; c.beginPath(); c.moveTo(-9, 2); c.lineTo(-3, -9); c.lineTo(8, -5); c.lineTo(9, 6); c.lineTo(-2, 9); c.closePath(); c.fill(); c.strokeStyle = '#2b2622'; c.lineWidth = 2; c.stroke(); c.fillStyle = '#8c8276'; c.fillRect(-3, -6, 5, 3); c.restore(); }
+      }
+    }
+  });
 })();

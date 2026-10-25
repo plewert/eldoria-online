@@ -198,6 +198,23 @@ ok('Dragón de las Sombras: nivel 500, aliento negro, pisotón con grietas y bot
   ['dkw', 'dk', 'slw', 'sl', 'fiw', 'fi'].forEach((k) => assert.ok(seen.has(k), 'fx ' + k + ' → ' + [...seen]));
   game.removeEventBoss = game.removeEventBoss; game.mgrid.delete(m.y * world.W + m.x); game.monsters = game.monsters.filter((q) => q !== m); game.ents.delete(m.id);
 });
+ok('Hidra de Jade: cueva propia, set de arquero y sus tres ataques', () => {
+  assert.equal(MONSTERS.hidra_jade.special, 'hydra'); assert.equal(MONSTERS.hidra_jade.respawn, 60000);
+  const loot = MONSTERS.hidra_jade.loot.map((l) => l[0]);
+  ['jade_yelmo', 'jade_coraza', 'jade_guantes', 'jade_botas', 'jade_arco'].forEach((i) => assert.ok(loot.includes(i), i));
+  assert.equal(ITEMS.jade_arco.style, 'ranged');
+  const sp = world.monsterSpawns.find((q) => q.type === 'hidra_jade'); assert.equal(zoneOf([sp.x, sp.y]).id, 'cueva_jade');
+  assert.equal(world.monsterSpawns.filter((q) => zoneOf([q.x, q.y]).id === 'cueva_jade').length, 1, 'solo la hidra');
+  const door = world.PORTALS.find((q) => q.x === 52 && q.y === 59); assert.ok(door && zoneOf([door.tx, door.ty]).id === 'cueva_jade');
+  const a = login('Hyd1'); a.p.level = 80; a.p.maxHp = a.p.hp = 9000; place(a.p, sp.x + 5, sp.y + 2);
+  const m = game.spawnMonster('hidra_jade', sp.x, sp.y); m.noRespawn = true; m.target = a.p.id;
+  const seen = new Set(); const push0 = game.fx.push.bind(game.fx); game.fx.push = (...f) => { f.forEach((x) => seen.add(x.k)); return push0(...f); };
+  const need = ['ykw', 'yk', 'acw', 'ac', 'hsw', 'hs', 'rcw', 'rc'];
+  for (let i = 0; i < 1800 && !need.every((k) => seen.has(k)); i++) { a.p.hp = 9000; place(a.p, m.x + 6, m.y + 1); T0 += CFG.TICK_MS; game.tick(T0); }
+  delete game.fx.push;
+  need.forEach((k) => assert.ok(seen.has(k), 'fx ' + k + ' → ' + [...seen]));
+  game.mgrid.delete(m.y * world.W + m.x); game.monsters = game.monsters.filter((q) => q !== m); game.ents.delete(m.id);
+});
 ok('mazmorras y cuevas: nadie ataca a través de la entrada', () => {
   const a = login('Wall1'); place(a.p, 122, 78); a.p.hp = a.p.maxHp = 5000;
   const m = game.spawnMonster('dragon_sombra', 122, 84); const hp0 = m.hp;

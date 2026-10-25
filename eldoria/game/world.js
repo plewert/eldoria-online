@@ -27,6 +27,7 @@ const ZONES = [
   { id: 'catacumbas', name: 'Catacumbas Silenciosas', pvp: false, kind: 'dungeon', rect: [3, 40, 30, 91] },
   { id: 'minas',      name: 'Minas Enanas',           pvp: false, kind: 'dungeon', rect: [3, 96, 28, 136] },
   { id: 'cueva',      name: 'Cueva del Dragón de las Sombras', pvp: false, kind: 'dungeon', dark: true, rect: [106, 80, 139, 99] },
+  { id: 'cueva_jade', name: 'Cueva del Hidra de Jade', pvp: false, kind: 'dungeon', dark: true, rect: [36, 38, 69, 57] },
   { id: 'abismo',     name: 'Abismo Carmesí',         pvp: true,  kind: 'dungeon', rect: [112, 40, 139, 74] },
   { id: 'piramide',   name: 'Pirámide Olvidada',      pvp: true,  kind: 'dungeon', rect: [148, 100, 175, 136] },
   { id: 'fortaleza',  name: 'Fortaleza de Hielo',     pvp: true,  kind: 'dungeon', rect: [148, 3, 175, 30] },
@@ -199,24 +200,28 @@ const forRooms = carveDungeon('fortaleza', 3, 3, T.IFLOOR);
 
 /* 3b) Cueva del Dragón: una caverna enorme y oscura con una sola puerta (en el camino del desierto) */
 const CAVE = { rect: zoneById('cueva').rect, door: [122, 79], inside: [122, 85], exit: [122, 82], lair: [123, 95] };
-(function carveCave() {
-  const [x0, y0, x1, y1] = CAVE.rect, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2 + 1, nz = makeNoise(909);
+const CAVE2 = { rect: zoneById('cueva_jade').rect, door: [52, 59], inside: [52, 52], exit: [52, 55], lair: [53, 42], flip: true };
+function carveCave(C, seed) {
+  const [x0, y0, x1, y1] = C.rect, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2 + (C.flip ? -1 : 1), nz = makeNoise(seed);
+  const fy = (y) => (C.flip ? y0 + y1 - y : y);          // la puerta puede estar al norte o al sur
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) tiles[idx(x, y)] = T.CWALL;
   const floor = (x, y) => { if (x > x0 && x < x1 && y > y0 && y < y1) tiles[idx(x, y)] = T.CFLOOR; };
   for (let y = y0 + 1; y < y1; y++) for (let x = x0 + 1; x < x1; x++) {
     const dx = (x - cx) / ((x1 - x0) / 2), dy = (y - cy) / ((y1 - y0) / 2), r = Math.hypot(dx, dy);
     if (r < 0.9 + (nz(x / 3, y / 3) - 0.5) * 0.42) floor(x, y);
   }
-  for (let y = y0 + 1; y <= 88; y++) for (let x = 118; x <= 126; x++) floor(x, y);            // vestíbulo de la entrada
-  for (let y = 90; y <= y1 - 1; y++) for (let x = 114; x <= 132; x++) if (Math.hypot(x - 123, (y - 95) * 1.3) < 8.5) floor(x, y);   // guarida del dragón
-  const keep = (x, y) => Math.abs(x - CAVE.inside[0]) <= 3 && Math.abs(y - CAVE.inside[1]) <= 3 || Math.hypot(x - CAVE.lair[0], y - CAVE.lair[1]) <= 5;
-  const pil = mulberry32(31337);                                                                  // estalagmitas
+  const vx = C.inside[0];
+  for (let y = y0 + 1; y <= y0 + 8; y++) for (let x = vx - 4; x <= vx + 4; x++) floor(x, fy(y));        // vestíbulo de la entrada
+  for (let y = y0 + 10; y <= y1 - 1; y++) for (let x = C.lair[0] - 9; x <= C.lair[0] + 9; x++) if (Math.hypot(x - C.lair[0], (y - (y0 + 15)) * 1.3) < 8.5) floor(x, fy(y));   // guarida
+  const keep = (x, y) => Math.abs(x - C.inside[0]) <= 3 && Math.abs(y - C.inside[1]) <= 3 || Math.hypot(x - C.lair[0], y - C.lair[1]) <= 5;
+  const pil = mulberry32(seed * 7 + 1);                                                              // estalagmitas
   for (let y = y0 + 2; y < y1 - 1; y++) for (let x = x0 + 2; x < x1 - 1; x++) if (tiles[idx(x, y)] === T.CFLOOR && !keep(x, y) && pil() < 0.045) tiles[idx(x, y)] = T.CWALL;
-  // solo queda lo que se pueda recorrer desde la entrada
-  const seen = new Set([idx(CAVE.inside[0], CAVE.inside[1])]), q = [...seen];
+  const seen = new Set([idx(C.inside[0], C.inside[1])]), q = [...seen];                              // solo queda lo recorrible desde la entrada
   for (let i = 0; i < q.length; i++) { const k = q[i], x = k % W, y = (k / W) | 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) { const nk = idx(x + dx, y + dy); if (!seen.has(nk) && tiles[nk] === T.CFLOOR) { seen.add(nk); q.push(nk); } } }
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (tiles[idx(x, y)] === T.CFLOOR && !seen.has(idx(x, y))) tiles[idx(x, y)] = T.CWALL;
-})();
+}
+carveCave(CAVE, 909);
+carveCave(CAVE2, 1313);
 
 /* 4) Caminos (despejan árboles, agua y rocas del trazado) */
 function carvePath(x0, y0, x1, y1) {
@@ -253,6 +258,8 @@ link(150, 90, pirRooms, 150, 89, 'Pirámide Olvidada (¡PvP!)', 'Salir al Desier
 link(130, 20, forRooms, 130, 22, 'Fortaleza de Hielo (¡PvP!)', 'Salir a las Cumbres');
 addPortal(CAVE.door[0], CAVE.door[1], CAVE.inside[0], CAVE.inside[1], 'Cueva del Dragón de las Sombras (peligro extremo)');
 addPortal(CAVE.exit[0], CAVE.exit[1], CAVE.door[0], CAVE.door[1] - 1, 'Salir al Desierto');
+addPortal(CAVE2.door[0], CAVE2.door[1], CAVE2.inside[0], CAVE2.inside[1], 'Cueva del Hidra de Jade (peligro extremo)');
+addPortal(CAVE2.exit[0], CAVE2.exit[1], CAVE2.door[0], CAVE2.door[1] + 1, 'Salir al Prado');
 
 function clearAround(cx, cy, r) {
   for (let y = cy - r; y <= cy + r; y++) {
@@ -348,6 +355,7 @@ const monsterSpawns = [];
   monsterSpawns.push({ type: 'faraon', x: last(pirRooms).cx, y: last(pirRooms).cy });
   monsterSpawns.push({ type: 'reina_hielo', x: last(forRooms).cx, y: last(forRooms).cy });
   monsterSpawns.push({ type: 'dragon_sombra', x: CAVE.lair[0], y: CAVE.lair[1] });
+  monsterSpawns.push({ type: 'hidra_jade', x: CAVE2.lair[0], y: CAVE2.lair[1] });
   const nearest = (zoneId, px, py) => {
     let best = null, bd = 1e9;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
