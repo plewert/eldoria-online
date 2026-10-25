@@ -24,6 +24,8 @@ const CFG = {
   DEATH_EQUIP_DROP: 0.15,       // probabilidad de soltar cada pieza equipada al morir en PvP
   DEATH_GOLD_DROP: 0.25,        // fracción de oro que se suelta al morir en PvP
   AUTOSAVE_MS: 30000,
+  HEAL_AMOUNT: 200,             // hechizo de curar (V): vida por uso
+  HEAL_CD_MS: 6000,             // y su enfriamiento
   BANK_SIZE: 120,               // casillas del banco
   TRADE_RANGE: 4,               // distancia máxima para comerciar
   TRADE_MAX_ITEMS: 8,

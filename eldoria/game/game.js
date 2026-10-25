@@ -884,13 +884,12 @@ class Game {
 
   castHeal(p) {
     const now = this.now;
-    if (now < p.nextSpell) return;
+    if (now < p.nextSpell) { this.msgThrottle(p, 'spcd', `Curar se recarga: ${Math.ceil((p.nextSpell - now) / 1000)} s.`); return; }
     const cost = 25;
     if (p.mana < cost) { this.msgThrottle(p, 'mana', 'No tienes suficiente maná.'); return; }
     if (p.hp >= p.maxHp) return;
-    const ml = skillFromXp(p.sxp.magic);
-    const h = Math.min(p.maxHp - p.hp, 40 + 8 * ml + Math.floor(p.level * 2));
-    p.mana -= cost; p.hp += h; p.nextSpell = now + 1200;
+    const h = Math.min(p.maxHp - p.hp, CFG.HEAL_AMOUNT);                 // curación fija de 200
+    p.mana -= cost; p.hp += h; p.nextSpell = now + CFG.HEAL_CD_MS;
     this.fx.push({ k: 'd', x: p.x, y: p.y, v: '+' + h, c: 'g' });
     this.fx.push({ k: 'h', x: p.x, y: p.y });
     this.addSkillXp(p, 'magic', 8);

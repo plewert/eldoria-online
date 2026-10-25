@@ -239,6 +239,13 @@ ok('colección de jefes: registra lo que suelta el jefe y se guarda', () => {
   const back = game.extSave(a.p).col; assert.deepEqual(back.dragon_sombra, col);
   game.mgrid.delete(m.y * world.W + m.x); game.monsters = game.monsters.filter((q) => q !== m); game.ents.delete(m.id);
 });
+ok('hechizo de curar: 200 de vida y 6 s de enfriamiento', () => {
+  const a = login('Heal1'); place(a.p, 50, 64); a.p.maxHp = 1000; a.p.hp = 100; a.p.mana = a.p.maxMana = 200; a.p.nextSpell = 0;
+  T0 += 10; game.now = T0; game.castHeal(a.p); assert.equal(a.p.hp, 300);
+  game.castHeal(a.p); assert.equal(a.p.hp, 300, 'enfriamiento');
+  game.now = T0 + 5900; game.castHeal(a.p); assert.equal(a.p.hp, 300, 'aún en enfriamiento');
+  game.now = T0 + 6100; game.castHeal(a.p); assert.equal(a.p.hp, 500, 'otra vez a los 6 s');
+});
 ok('mazmorras y cuevas: nadie ataca a través de la entrada', () => {
   const a = login('Wall1'); place(a.p, 122, 78); a.p.hp = a.p.maxHp = 5000;
   const m = game.spawnMonster('dragon_sombra', 122, 84); const hp0 = m.hp;
