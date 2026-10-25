@@ -110,7 +110,7 @@ const BOSS = {
 
 const DRAGON = {
   type: 'dragon_sombra', mins: 15, arena: [160, 87], icon: '🐉',
-  def: { name: 'Dragón de las Sombras', icon: '🐉', lv: 500, hp: 200000, dmg: [170, 300], exp: 60000, move: 380, atkCd: 1300, aggro: 14, respawn: 1800000, boss: true, special: 'dragon',
+  def: { name: 'Dragón de las Sombras', icon: '🐉', lv: 500, hp: 300000, dmg: [220, 380], exp: 60000, move: 380, atkCd: 1300, aggro: 14, respawn: 60000, armor: 0.8, boss: true, special: 'dragon',
     gold: [10000, 20000], loot: [['trofeo_dragon', 1, 1, 2], ['pocion_vida_g', 1, 5, 10], ['pocion_mana_g', 1, 5, 10], ['pluma_fenix', 0.5, 1, 2]] },
 };
 BOSS.mins = 12; BOSS.arena = [100, 107]; BOSS.icon = '🗿';

@@ -928,6 +928,7 @@ class Game {
 
   hurtMonster(m, dmg, p, now) {
     if (p && p.kind === 'pl' && !sameRealm(m, p)) return;
+    if (m.def.armor) dmg = Math.max(1, Math.round(dmg * (1 - m.def.armor)));   // defensa: reduce todo el daño recibido
     m.hp -= dmg;
     this.fx.push({ k: 'd', x: m.x, y: m.y, v: dmg, c: 'h' });
     const e = m.dmgBy.get(p.id);

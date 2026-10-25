@@ -105,6 +105,6 @@ Alterna con el Coloso Ancestral en el evento de jefe (Dunas Ardientes, 15 minuto
 Botín raro: **Set de las Sombras** (capucha, coraza, guanteletes, botas, carcaj y Arco de las Sombras), más Escamas de las Sombras, pociones y plumas de fénix. Un día/hora fijos no hacen falta: `EVENT_MIN` marca cada cuánto sale un jefe.
 
 ## Cueva del Dragón de las Sombras
-Una caverna enorme y oscura (zona `cueva`, sin PvP) al sur del camino del desierto. Se entra por el portal del camino (122,79) y se sale por el portal de la entrada. Dentro solo vive el Dragón de las Sombras (nivel 500, reaparece a los 30 min); ya no es jefe de evento. La oscuridad solo se aclara alrededor del jugador, otros jugadores y portales.
+Una caverna enorme y oscura (zona `cueva`, sin PvP) al sur del camino del desierto. Se entra por el portal del camino (122,79) y se sale por el portal de la entrada. Dentro solo vive el Dragón de las Sombras (nivel 500, reaparece al minuto y tiene 80% de defensa, 300.000 de vida (reduce todo el daño que recibe)); ya no es jefe de evento. La oscuridad solo se aclara alrededor del jugador, otros jugadores y portales.
 
 Las mazmorras y la cueva son recintos cerrados: ni tú puedes atacar a los monstruos de dentro desde fuera, ni ellos (aliento, pisotón, ataques) te alcanzan desde la entrada. Hay que entrar.
