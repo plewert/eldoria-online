@@ -341,3 +341,12 @@ ol.rank li.me { color: #ffd96a; }
 .code { font: 700 22px monospace; letter-spacing: 2px; text-align: center; padding: 10px; background: var(--ink); border: 1px dashed var(--brass); user-select: all; }
 
 .s-legs { grid-column: 2; grid-row: 4; } .s-boots { grid-column: 2; grid-row: 5; }
+
+.colsec { margin: 0 0 14px; } .colsec h3 { margin: 0 0 6px; font: 700 14px var(--serif); color: var(--brass); } .colsec h3 small { color: var(--muted); font-weight: 400; }
+.colhead { margin: 0 0 10px; color: var(--bone); }
+.colgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 6px; }
+.coltile { position: relative; display: grid; justify-items: center; gap: 2px; padding: 6px 4px; border: 1px solid #263140; background: #10161d; text-align: center; font-size: 11px; }
+.coltile .ico { font-size: 22px; filter: grayscale(1) brightness(.35); } .coltile .ico canvas { width: 32px; height: 32px; image-rendering: pixelated; }
+.coltile.on { border-color: var(--brass); } .coltile.on .ico { filter: none; }
+.coltile small { color: var(--muted); line-height: 1.15; } .coltile.on small { color: var(--bone); }
+.coltile b { position: absolute; right: 4px; top: 2px; color: #f2d27a; font-size: 11px; }

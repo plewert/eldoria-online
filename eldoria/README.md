@@ -125,3 +125,8 @@ Las armas raras (Arco de las Sombras y Arco de la Hidra) caen con un 1 % base (a
 Las armas del Coloso (Hoja de Magma 0,8 %, Martillo 0,6 %) también son más raras.
 
 Todos los jefes hacen 1,5 veces más daño (ataques normales y especiales); constante `BOSS_DMG` en `game/ext.js`.
+
+Más espacio: mochila de 24 a 48 casillas y banco de 48 a 120 (`INV_SIZE` / `BANK_SIZE` en `game/data.js`).
+
+## Colección de jefes (tecla B, botón 📖)
+Registra cada objeto que te suelta un jefe (equipo, armas, mascotas, trofeos y otros objetos raros), con el número de veces. Lo que aún no te salió aparece en negro con «???»; al pasar el ratón se ve su probabilidad. Se guarda con tu cuenta. Solo cuenta desde ahora: lo que ya habías conseguido antes no se registra.

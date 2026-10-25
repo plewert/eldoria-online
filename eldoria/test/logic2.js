@@ -230,6 +230,15 @@ ok('los jefes pegan 1,5 veces más fuerte', () => {
   let sn = 0, sb = 0; for (let i = 0; i < 300; i++) { a.p.hp = 100000; game.hurtPlayer(a.p, 200, norm, T0, 'x'); sn += 100000 - a.p.hp; a.p.hp = 100000; game.hurtPlayer(a.p, 200, boss, T0, 'x'); sb += 100000 - a.p.hp; }
   assert.ok(sb / sn > 1.35 && sb / sn < 1.65, 'ratio ' + sb / sn);
 });
+ok('colección de jefes: registra lo que suelta el jefe y se guarda', () => {
+  const a = login('Col1'); place(a.p, 122, 86);
+  const m = game.spawnMonster('dragon_sombra', 122, 90); m.noRespawn = true; game.hurtMonster(m, 5000, a.p, T0);
+  const r0 = Math.random; Math.random = () => 0; game.killMonster(m, T0); Math.random = r0;
+  const col = a.p.ext.col.dragon_sombra; assert.ok(col && col.sombra_arco >= 1 && col.sombra_capucha >= 1, JSON.stringify(col));
+  assert.deepEqual(lastMsg(a.ws, 'col').v.dragon_sombra, col);
+  const back = game.extSave(a.p).col; assert.deepEqual(back.dragon_sombra, col);
+  game.mgrid.delete(m.y * world.W + m.x); game.monsters = game.monsters.filter((q) => q !== m); game.ents.delete(m.id);
+});
 ok('mazmorras y cuevas: nadie ataca a través de la entrada', () => {
   const a = login('Wall1'); place(a.p, 122, 78); a.p.hp = a.p.maxHp = 5000;
   const m = game.spawnMonster('dragon_sombra', 122, 84); const hp0 = m.hp;

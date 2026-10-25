@@ -25,7 +25,7 @@ const PARTY_MAX = 5;
 const MARKET_MAX = 8, MARKET_FEE = 0.05, MARKET_HOURS = 72;
 const EVENT_EVERY = (parseFloat(process.env.EVENT_MIN) || 35) * 60000;
 
-const defExt = () => ({ q: {}, ach: {}, title: '', kt: 0, kills: {}, bosses: 0, pvp: 0, deaths: 0, quests: 0, crafts: 0, gather: 0, cxp: 0, events: 0, sold: 0, pet: '', mount: '', hadPet: 0, hadMount: 0, partyKills: 0, guild: '', grole: '', mail: [], grave: null });
+const defExt = () => ({ q: {}, ach: {}, title: '', kt: 0, kills: {}, bosses: 0, pvp: 0, deaths: 0, quests: 0, crafts: 0, gather: 0, cxp: 0, events: 0, sold: 0, pet: '', mount: '', hadPet: 0, hadMount: 0, partyKills: 0, guild: '', grole: '', mail: [], grave: null, col: {} });
 
 function sanitizeExt(raw) {
   const e = defExt();
@@ -35,6 +35,7 @@ function sanitizeExt(raw) {
   if (raw.ach && typeof raw.ach === 'object') for (const [id, t] of Object.entries(raw.ach)) if (ACH_BY[id]) e.ach[id] = num(t, 1e15) || 1;
   if (raw.kills && typeof raw.kills === 'object') for (const [m, n] of Object.entries(raw.kills)) if (MONSTERS[m]) e.kills[m] = num(n);
   if (raw.grave && Number.isInteger(raw.grave.x) && Number.isInteger(raw.grave.y)) e.grave = { x: raw.grave.x, y: raw.grave.y, t: num(raw.grave.t, 1e15) };
+  if (raw.col && typeof raw.col === 'object') for (const [b, items] of Object.entries(raw.col)) if (MONSTERS[b] && items && typeof items === 'object') { e.col[b] = {}; for (const [id, n] of Object.entries(items)) if (ITEMS[id]) e.col[b][id] = num(n, 1e9) || 1; }
   e.title = typeof raw.title === 'string' ? raw.title.slice(0, 30) : '';
   e.pet = ITEMS[raw.pet] && ITEMS[raw.pet].type === 'pet' ? raw.pet : '';
   e.mount = ITEMS[raw.mount] && ITEMS[raw.mount].type === 'mount' ? raw.mount : '';
@@ -102,6 +103,7 @@ module.exports = function install(Game) {
     this.checkAch(p, true);
     this.sendXinfo(p, true);
     this.sendGrave(p);
+    this.sendCol(p);
     this.sendBuffs(p);
     if (e.guild) this.sendGuild(p);
     if (this.event && this.event.state === 'active' && this.event.boss) this.send(p, { t: 'event', k: 'start', x: this.event.boss.x, y: this.event.boss.y, text: `¡${this.event.boss.def.name} está causando estragos! Ve a ${zoneAt(this.event.boss.x, this.event.boss.y).name}.` });
@@ -922,6 +924,8 @@ module.exports = function install(Game) {
       }
     }
   };
+  P.logDrop = function (p, boss, id) { const c = p.ext.col[boss] || (p.ext.col[boss] = {}); c[id] = (c[id] || 0) + 1; };
+  P.sendCol = function (p) { this.send(p, { t: 'col', v: p.ext.col }); };
   P.sendGrave = function (p) { const g = p.ext.grave; this.send(p, { t: 'grave', x: g ? g.x : -1, y: g ? g.y : -1 }); };
   P.killPlayer = function (p, src, srcName, now) {
     const zd = zoneAt(p.x, p.y), pvp = zd.pvp, dx = p.x, dy = p.y;
@@ -948,6 +952,7 @@ module.exports = function install(Game) {
       case 'title': this.setTitle(p, String(msg.id || '')); break;
       case 'xinfo': this.sendXinfo(p, false); break;
       case 'rank': this.send(p, { t: 'rank', v: this.rankings() }); break;
+      case 'col': this.sendCol(p); break;
       case 'p_inv': this.partyInvite(p, msg.id); break;
       case 'p_acc': this.partyAccept(p, msg.id); break;
       case 'p_leave': this.partyLeave(p); break;

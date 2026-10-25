@@ -41,6 +41,34 @@
   const mount = () => { const st = $('#stage'); if (st && !bar.parentNode) st.append(bar, hud, banner); };
   document.addEventListener('DOMContentLoaded', mount); if (document.readyState !== 'loading') mount();
 
+  /* ============================ COLECCIÓN DE JEFES ============================ */
+  const wB = win('b', '📖 Colección de jefes', true); mkBtn('📖', 'Colección de jefes', 'b', 'b');
+  let colData = {};
+  function renderCol() {
+    const b = wB.body; b.replaceChildren();
+    const bosses = Object.entries(G.mons || {}).filter(([, d]) => d.boss && d.loot && d.loot.length).sort((a, c) => (a[1].lv || 0) - (c[1].lv || 0));
+    let got = 0, tot = 0;
+    const secs = bosses.map(([t, d]) => {
+      const sec = el('div', 'colsec'), have2 = colData[t] || {}; let g = 0, n = 0;
+      const grid = el('div', 'colgrid');
+      for (const [id, ch] of d.loot) {
+        const it = G.items[id]; if (!it) continue;
+        if (!(it.type === 'weapon' || it.type === 'shield' || ['head', 'body', 'gloves', 'legs', 'boots', 'amulet', 'ring', 'belt', 'pet', 'mount'].includes(it.type) || /^trofeo/.test(id)) && ch >= 0.2) continue;   // solo lo "coleccionable": equipo, mascotas y objetos raros
+        n++; const c = have2[id], tile = el('div', 'coltile' + (c ? ' on' : ''));
+        const ic = el('div', 'ico'); ic.append(X.iconNode ? X.iconNode(id) : it.icon || '?'); tile.append(ic, el('small', '', c ? it.name : '???'));
+        if (c) { g++; tile.append(el('b', '', '×' + c)); }
+        tile.title = c ? `${it.name} — conseguido ${c} ${c === 1 ? 'vez' : 'veces'}` : `Aún no te ha salido (${(ch * 100).toFixed(ch < 0.01 ? 2 : 1)} %)`;
+        grid.append(tile);
+      }
+      if (!n) return null; got += g; tot += n;
+      const h = el('h3', '', `${d.icon} ${d.name} · nivel ${d.lv} `); h.append(el('small', '', `${g} / ${n}`)); sec.append(h, grid); return sec;
+    }).filter(Boolean);
+    b.append(el('p', 'colhead', `Objetos de jefes que ya te han salido: ${got} / ${tot}`), ...secs);
+    if (!secs.length) b.append(el('p', '', 'Aún no hay jefes registrados.'));
+  }
+  wB.onOpen = () => { send({ t: 'col' }); renderCol(); };
+  X.handlers.col = (m) => { colData = m.v || {}; if (!wB.m.hidden) renderCol(); };
+
   /* ============================ MISIONES ============================ */
   const wQ = win('q', '📜 Misiones'), wN = win('n', 'Misión');
   const qBtn = mkBtn('📜', 'Misiones', 'q', 'q');
@@ -274,7 +302,7 @@
   wC.onOpen = () => { send({ t: 'xinfo' }); renderCraft(); };
 
   /* ---------- atajos ---------- */
-  const KEYS = { q: 'q', l: 'a', g: 's', r: 'r', p: 'm', f: 'c' };
+  const KEYS = { q: 'q', l: 'a', g: 's', r: 'r', p: 'm', f: 'c', b: 'b' };
   X.on('key', (k) => {
     if (KEYS[k]) { toggle(KEYS[k]); return true; }
     if (k === '1' || k === '2' || k === '3') { useSkill(+k - 1); return true; }

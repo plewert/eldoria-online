@@ -13,7 +13,7 @@ const CFG = {
   PVP_DMG_MULT: 0.6,      // el daño entre jugadores se reduce para que los combates duren
   PVP_LOCK_MS: 20000,     // "en combate": no puedes huir a zona segura ni teletransportarte
   GHOST_MS: 20000,        // si te desconectas en combate, tu personaje sigue 20 s (anti combat-log)
-  INV_SIZE: 24,
+  INV_SIZE: 48,
   STACK_MAX: 100,
   VIEW_X: 16,             // radio de visión enviado al cliente
   VIEW_Y: 12,
@@ -24,7 +24,7 @@ const CFG = {
   DEATH_EQUIP_DROP: 0.15,       // probabilidad de soltar cada pieza equipada al morir en PvP
   DEATH_GOLD_DROP: 0.25,        // fracción de oro que se suelta al morir en PvP
   AUTOSAVE_MS: 30000,
-  BANK_SIZE: 48,                // casillas del banco
+  BANK_SIZE: 120,               // casillas del banco
   TRADE_RANGE: 4,               // distancia máxima para comerciar
   TRADE_MAX_ITEMS: 8,
   TRADE_INVITE_MS: 20000,

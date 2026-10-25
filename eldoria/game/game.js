@@ -981,7 +981,9 @@ class Game {
           if (Math.random() >= Math.min(1, chance * f)) continue;
           if (I.isGear(id)) this.addGround(id, 1, m.x, m.y, Object.assign({ inst: I.rollGear(id, true) }, o));
           else this.addGround(id, rnd(qa, qb), m.x, m.y, o);
+          if (this.logDrop) this.logDrop(pl, m.type, id);      // colección de jefes
         }
+        if (this.sendCol) this.sendCol(pl);
         if (Math.random() < I.gemChance(def) * f) this.addGround(I.pickGem(def), 1, m.x, m.y, o);
         if (pl !== top) this.msg(pl, `Participaste contra ${def.name}: tienes tu propio botín en el suelo.`, 's');
       }
