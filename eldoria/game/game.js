@@ -195,13 +195,17 @@ class Game {
     if (!arr.length) this.gtile.delete(k);
   }
 
-  pickup(p, silent) {
+  pickup(p, silent, only) {
     const arr = this.gtile.get(kxy(p.x, p.y));
+    if (p.wantGid && this.now > p.wantUntil) p.wantGid = 0;
+    if (!only && p.wantGid) only = p.wantGid;          // modo elegir: al caminar solo se recoge lo pedido
     if (!arr || !arr.length) return;
     const now = this.now;
     let invDirty = false, blocked = false, full = false;
     for (const g of arr.slice()) {
+      if (only && g.gid !== only) continue;
       if (g.prot > now && g.owner !== p.id) { blocked = true; continue; }
+      if (only) p.wantGid = 0;
       if (g.item === 'gold') {
         p.gold += g.qty; this.removeGround(g); invDirty = true;
         this.fx.push({ k: 'd', x: p.x, y: p.y, v: '+' + g.qty + '💰', c: 'x' });
@@ -527,7 +531,7 @@ class Game {
     for (const [k, arr] of this.gtile) {
       const x = k % W, y = (k / W) | 0;
       if (!inView(x, y)) continue;
-      gi.push({ x, y, it: arr.slice(0, 4).map((g) => [g.item, g.qty, g.prot > now && g.owner !== p.id ? 1 : 0, g.inst ? g.inst.up || 0 : 0, g.inst && g.inst.an ? 1 : 0]), n: arr.length });
+      gi.push({ x, y, it: arr.slice(0, 4).map((g) => [g.item, g.qty, g.prot > now && g.owner !== p.id ? 1 : 0, g.inst ? g.inst.up || 0 : 0, g.inst && g.inst.an ? 1 : 0, g.gid]), n: arr.length });
     }
     for (const f of this.fx) {
       const fx0 = f.x !== undefined ? f.x : f.x1, fy0 = f.y !== undefined ? f.y : f.y1;
@@ -560,6 +564,13 @@ class Game {
       case 'use': this.use(p, msg.s | 0); break;
       case 'drop': this.drop(p, msg.s | 0, msg.q | 0); break;
       case 'pickup': this.pickup(p, false); break;
+      case 'pick': {                                  // clic derecho: recoger solo ese objeto
+        const g = this.ground.get(msg.gid | 0); if (!g) break;
+        if (cheb(p.x, p.y, g.x, g.y) > 40) break;
+        if (g.x === p.x && g.y === p.y) this.pickup(p, false, g.gid);
+        else { p.wantGid = g.gid; p.wantUntil = this.now + 20000; }
+        break;
+      }
       case 'style': if (['melee', 'ranged', 'magic'].includes(msg.s)) this.switchStyle(p, msg.s); break;
       case 'potion': this.useBest(p, msg.k === 'mana' ? 'restore' : 'heal'); break;
       case 'spell': this.castHeal(p); break;
@@ -958,7 +969,7 @@ class Game {
     // botín
     const zone = zoneAt(m.x, m.y);
     const opts = !zone.pvp && top ? { prot: now + CFG.LOOT_PROTECT_MS, owner: top.id } : {};
-    if (def.shared && parts.length) {
+    if ((def.shared || def.boss) && parts.length) {
       // botín compartido: cada participante tira por su cuenta; quien más daño hizo tiene mejor suerte
       const gold = rnd(def.gold[0], def.gold[1]);
       for (const [pl, dmg] of parts) {

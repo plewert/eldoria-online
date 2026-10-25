@@ -125,6 +125,19 @@
     b.append(grid);
   }
   wA.onOpen = () => { send({ t: 'xinfo' }); renderAch(); };
+  // cruz enterrada donde moriste en zona peligrosa
+  X.handlers.grave = (m) => { G.grave = m.x >= 0 ? { x: m.x, y: m.y } : null; if (G.grave) X.toast && X.toast('✝ Tu tumba quedó marcada en el mapa.'); };
+  X.on('under', (c, now) => {
+    const g = G.grave; if (!g) return; const TS = X.TS, x = X.sxOf(g.x), y = X.syOf(g.y);
+    if (x < -TS || y < -TS || x > c.canvas.width || y > c.canvas.height) return;
+    c.save(); c.translate(x + TS / 2, y + TS / 2 + 2);
+    c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.ellipse(0, 11, 11, 4, 0, 0, 7); c.fill();
+    c.fillStyle = '#5b4a36'; c.beginPath(); c.ellipse(0, 9, 10, 3.5, 0, 0, 7); c.fill();             // tierra removida
+    c.fillStyle = '#d9d2c2'; c.fillRect(-2, -12, 4, 22); c.fillRect(-7, -7, 14, 4);                    // cruz
+    c.fillStyle = '#a79f8d'; c.fillRect(0, -12, 2, 22); c.fillRect(0, -7, 7, 4);
+    c.strokeStyle = 'rgba(255,90,70,' + (0.35 + 0.2 * Math.sin(now / 350)) + ')'; c.lineWidth = 2; c.beginPath(); c.arc(0, 0, 15, 0, 7); c.stroke();
+    c.restore();
+  });
   X.handlers.xinfo = (m) => {
     xi.ach = m.ach || {}; xi.title = m.title || ''; xi.st = m.st || {}; xi.guild = m.guild || '';
     if (m.defs) {

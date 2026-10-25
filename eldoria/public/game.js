@@ -869,6 +869,10 @@
       g.fillStyle = e.kind === 'pl' ? '#ffffff' : '#ff7a5c';
       g.fillRect(e.x * sx - 1, e.y * sy - 1, e.kind === 'pl' ? 3 : 2, e.kind === 'pl' ? 3 : 2);
     }
+    if (G.grave && G.grave.x >= 0) {
+      const gx = G.grave.x * sx, gy = G.grave.y * sy; g.strokeStyle = '#000'; g.lineWidth = 4; g.beginPath(); g.moveTo(gx, gy - 6); g.lineTo(gx, gy + 6); g.moveTo(gx - 4, gy - 2); g.lineTo(gx + 4, gy - 2); g.stroke();
+      g.strokeStyle = '#ff5a4a'; g.lineWidth = 2; g.stroke();
+    }
     g.fillStyle = '#c9a24b'; g.strokeStyle = '#000'; g.lineWidth = 1;
     g.beginPath(); g.arc(G.me.x * sx, G.me.y * sy, 3.5, 0, 7); g.fill(); g.stroke();
   }
@@ -1768,7 +1772,21 @@
   };
   cv.addEventListener('contextmenu', (ev) => {
     ev.preventDefault(); if (!G.me) return;
-    const e = entAtTile(tileAt(ev)); if (!e) return;
+    const tl = tileAt(ev), e = entAtTile(tl);
+    if (!e) {
+      const gt = G.ground.find((g) => g.x === tl.x && g.y === tl.y);
+      if (gt) {
+        const rows = [{ hdr: 'Botín del suelo' }];
+        for (const it of gt.it) {
+          const d = G.items[it[0]]; if (!d) continue;
+          const lbl = it[0] === 'gold' ? it[1] + ' monedas de oro' : isGear(it[0]) ? itName([it[0], 1, it[3], it[4]]) : (it[1] > 1 ? it[1] + 'x ' : '') + d.name;
+          rows.push({ label: 'Recoger ' + lbl + (it[2] ? ' 🔒' : ''), color: isGear(it[0]) ? (it[4] ? G.rar.ancient : it[3] > 0 ? G.rar.plus : null) : null, fn: () => { send({ t: 'pick', gid: it[5] }); if (G.me.x !== gt.x || G.me.y !== gt.y) walkTo(gt.x, gt.y); } });
+        }
+        if (gt.n > gt.it.length) rows.push({ label: '… y más objetos (pisa la casilla)', fn: () => walkTo(gt.x, gt.y) });
+        if (rows.length > 1) openCtx(ev, rows);
+      }
+      return;
+    }
     if (e.kind === 'mo') { const d = G.mons[e.t]; if (!d) return; openCtx(ev, [{ hdr: d.name, color: d.boss ? '#ff9c80' : null }, { label: 'Ver botín y datos', fn: () => showDrops(e.t) }, { label: 'Atacar', fn: () => send({ t: 'target', id: e.id }) }]); }
     else openCtx(ev, [{ hdr: e.n }, { label: 'Comerciar', fn: () => send({ t: 'trade_req', id: e.id }) }, { label: 'Invitar al grupo', fn: () => send({ t: 'p_inv', id: e.id }) }, { label: 'Invitar al gremio', fn: () => send({ t: 'g_inv', id: e.id }) }, { label: 'Atacar', fn: () => send({ t: 'target', id: e.id }) }]);
   });
@@ -1778,7 +1796,7 @@
     cv.style.cursor = entAtTile(t) ? 'crosshair' : G.npcs.some((n) => n.x === t.x && n.y === t.y) ? 'help' : 'default';
   });
   cv.addEventListener('mousedown', (ev) => {
-    if (!G.me) return;
+    if (!G.me || ev.button !== 0) return;       // el clic derecho solo abre el menú
     if (typing()) chatIn.blur();
     const t = tileAt(ev);
     const e = entAtTile(t);

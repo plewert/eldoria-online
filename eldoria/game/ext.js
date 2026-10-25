@@ -24,7 +24,7 @@ const PARTY_MAX = 5;
 const MARKET_MAX = 8, MARKET_FEE = 0.05, MARKET_HOURS = 72;
 const EVENT_EVERY = (parseFloat(process.env.EVENT_MIN) || 35) * 60000;
 
-const defExt = () => ({ q: {}, ach: {}, title: '', kt: 0, kills: {}, bosses: 0, pvp: 0, deaths: 0, quests: 0, crafts: 0, gather: 0, cxp: 0, events: 0, sold: 0, pet: '', mount: '', hadPet: 0, hadMount: 0, partyKills: 0, guild: '', grole: '', mail: [] });
+const defExt = () => ({ q: {}, ach: {}, title: '', kt: 0, kills: {}, bosses: 0, pvp: 0, deaths: 0, quests: 0, crafts: 0, gather: 0, cxp: 0, events: 0, sold: 0, pet: '', mount: '', hadPet: 0, hadMount: 0, partyKills: 0, guild: '', grole: '', mail: [], grave: null });
 
 function sanitizeExt(raw) {
   const e = defExt();
@@ -33,6 +33,7 @@ function sanitizeExt(raw) {
   if (raw.q && typeof raw.q === 'object') for (const [id, v] of Object.entries(raw.q)) if (QBY[id] && v && (v.s === 'a' || v.s === 'd')) e.q[id] = { s: v.s, n: num(v.n, 1e6), t: num(v.t, 1e15) };
   if (raw.ach && typeof raw.ach === 'object') for (const [id, t] of Object.entries(raw.ach)) if (ACH_BY[id]) e.ach[id] = num(t, 1e15) || 1;
   if (raw.kills && typeof raw.kills === 'object') for (const [m, n] of Object.entries(raw.kills)) if (MONSTERS[m]) e.kills[m] = num(n);
+  if (raw.grave && Number.isInteger(raw.grave.x) && Number.isInteger(raw.grave.y)) e.grave = { x: raw.grave.x, y: raw.grave.y, t: num(raw.grave.t, 1e15) };
   e.title = typeof raw.title === 'string' ? raw.title.slice(0, 30) : '';
   e.pet = ITEMS[raw.pet] && ITEMS[raw.pet].type === 'pet' ? raw.pet : '';
   e.mount = ITEMS[raw.mount] && ITEMS[raw.mount].type === 'mount' ? raw.mount : '';
@@ -99,6 +100,7 @@ module.exports = function install(Game) {
     if (keep.length) this.msg(p, 'Tienes correo pendiente: libera espacio en tu mochila y vuelve a entrar.', 's');
     this.checkAch(p, true);
     this.sendXinfo(p, true);
+    this.sendGrave(p);
     this.sendBuffs(p);
     if (e.guild) this.sendGuild(p);
     if (this.event && this.event.state === 'active' && this.event.boss) this.send(p, { t: 'event', k: 'start', x: this.event.boss.x, y: this.event.boss.y, text: `¡${this.event.boss.def.name} está causando estragos! Ve a ${zoneAt(this.event.boss.x, this.event.boss.y).name}.` });
@@ -869,12 +871,15 @@ module.exports = function install(Game) {
       }
     }
   };
+  P.sendGrave = function (p) { const g = p.ext.grave; this.send(p, { t: 'grave', x: g ? g.x : -1, y: g ? g.y : -1 }); };
   P.killPlayer = function (p, src, srcName, now) {
-    const pvp = zoneAt(p.x, p.y).pvp;
+    const zd = zoneAt(p.x, p.y), pvp = zd.pvp, dx = p.x, dy = p.y;
+    if (zd.pvp || zd.kind === 'dungeon') p.ext.grave = { x: dx, y: dy, t: Date.now() };
     G0.killPlayer.call(this, p, src, srcName, now);
     p.ext.deaths++;
     if (src && src.kind === 'pl' && src !== p) { src.ext.pvp++; this.checkAch(src); }
     p.buffs.shield = null; this.checkAch(p);
+    this.sendGrave(p);
   };
   P.removePlayer = function (p) {
     if (p.partyId) this.partyLeave(p, true);
@@ -929,6 +934,7 @@ module.exports = function install(Game) {
       }
     }
     if (this.tickN % 20 === 0) {                    // cada segundo
+      for (const q of this.players.values()) { const g = q.ext && q.ext.grave; if (g && (Date.now() - g.t > 7200000 || (q.hp > 0 && cheb(q.x, q.y, g.x, g.y) <= 1))) { q.ext.grave = null; this.sendGrave(q); } }
       for (const p of this.players.values()) {
         if (!p.ws) continue;
         const txt = JSON.stringify(Object.fromEntries(Object.entries(p.buffs).filter(([k, v]) => v && v.until > now && (k !== 'shield' || v.hp > 0)).map(([k, v]) => [k, Math.ceil((v.until - now) / 1000)])));

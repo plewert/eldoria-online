@@ -208,7 +208,7 @@ ok('mazmorras y cuevas: nadie ataca a través de la entrada', () => {
   assert.equal(MONSTERS.dragon_sombra.respawn, 60000);
   game.mgrid.delete(m.y * world.W + m.x); game.monsters = game.monsters.filter((q) => q !== m); game.ents.delete(m.id);
 });
-ok('dragón: botín compartido, el que más daño hace tiene mejor suerte y todos reciben el suyo', () => {
+ok('jefes: botín compartido, el que más daño hace tiene mejor suerte y todos reciben el suyo', () => {
   const A = login('Lt1'), B = login('Lt2'); place(A.p, 122, 86); place(B.p, 123, 86);
   const m = game.spawnMonster('dragon_sombra', 122, 90); m.noRespawn = true;
   game.hurtMonster(m, 5000, A.p, T0); game.hurtMonster(m, 1000, B.p, T0);
@@ -219,6 +219,17 @@ ok('dragón: botín compartido, el que más daño hace tiene mejor suerte y todo
   assert.ok(mine(A.p).some((g) => g.item === 'gold') && mine(B.p).some((g) => g.item === 'gold'), 'ambos reciben oro');
   const gA = mine(A.p).find((g) => g.item === 'gold').qty, gB = mine(B.p).find((g) => g.item === 'gold').qty; assert.ok(gA > gB * 2, 'más daño, más oro');
   game.mgrid.delete(m.y * world.W + m.x); game.monsters = game.monsters.filter((q) => q !== m); game.ents.delete(m.id);
+});
+ok('clic derecho: recoger solo el objeto elegido; tumba al morir en zona peligrosa', () => {
+  const a = login('Pk1'); place(a.p, 51, 70); clearAround(51, 70, 3);
+  const g1 = game.addGround('pocion_vida', 1, 52, 70), g2 = game.addGround('pocion_mana', 1, 52, 70);
+  game.handle(a.p, { t: 'pick', gid: g2.gid }); assert.equal(a.p.wantGid, g2.gid);
+  place(a.p, 52, 70); game.pickup(a.p, false);
+  assert.ok(!game.ground.has(g2.gid) && game.ground.has(g1.gid), 'solo se recoge el elegido');
+  game.handle(a.p, { t: 'pick', gid: g1.gid }); assert.ok(!game.ground.has(g1.gid), 'ya encima: recoge directo');
+  const b = login('Gr1'); place(b.p, 122, 90); b.p.hp = 0; game.killPlayer(b.p, null, 'x', T0);
+  assert.deepEqual([b.p.ext.grave.x, b.p.ext.grave.y], [122, 90]); assert.ok(lastMsg(b.ws, 'grave'));
+  const c = login('Gr2'); place(c.p, ...TOWN); c.p.hp = 0; game.killPlayer(c.p, null, 'x', T0); assert.ok(!c.p.ext.grave, 'zona segura: sin tumba');
 });
 ok('todo lo nuevo se guarda y se carga', () => {
   const { p } = login('Save1'); place(p, ...TOWN);
