@@ -35,6 +35,8 @@ const CFG = {
   ANC_MULT: 1.5,                // los Ancient valen x1.5
   PLUS_CHANCE: 0.22,            // prob. de que un arma/armadura soltada venga con +N
   ANCIENT_CHANCE: 0.015,        // prob. de que un equipo soltado sea Ancient (x4 en jefes)
+  GEM_CHANCE: 0.0015,           // gemas: 0,15 % por muerte
+  GEAR_DROP_MULT: 0.5,          // los equipos raros que sueltan monstruos y jefes caen la mitad de seguido
   BOSS_RARE_MULT: 4,
   MAX_SOCKETS: 3,
   GEM_REMOVE_COST: 250,         // oro por sacar una gema de una ranura
@@ -397,6 +399,9 @@ const SPAWN_PLAN = [
   { zone: 'sabana',     type: 'goblin',          n: 18 },
   { zone: 'sabana',     type: 'arquero_goblin',  n: 12 },
   { zone: 'sabana',     type: 'escarabajo_gigante', n: 10 },
+  { zone: 'volcan',     type: 'golem_lava',      n: 26 },
+  { zone: 'volcan',     type: 'demonio_menor',   n: 22 },
+  { zone: 'volcan',     type: 'dragon',          n: 12 },
   { zone: 'catacumbas', type: 'murcielago',      n: 14 },
   { zone: 'catacumbas', type: 'esqueleto',       n: 18 },
   { zone: 'catacumbas', type: 'esqueleto_arquero', n: 10 },
@@ -474,6 +479,7 @@ require('./mage').build(ITEMS, SHOPS, MONSTERS);
   require('./shadow').build(ITEMS, MONSTERS, X.DRAGON.type);
   MONSTERS[X.JADE.type] = X.JADE.def;
   require('./jade').build(ITEMS, MONSTERS, X.JADE.type);
+  require('./bosspets').build(ITEMS, MONSTERS);
   SHOPS.brisa.push('mascota_lobito', 'mascota_murcielago', 'mascota_goblin', 'montura_lobo', 'montura_oso');
   const rare = [['lobo', 'mascota_lobito', 0.004], ['murcielago', 'mascota_murcielago', 0.003], ['goblin', 'mascota_goblin', 0.003], ['dragon', 'mascota_dragoncito', 0.01],
     ['espectro_helado', 'mascota_fantasma', 0.006], ['lobo_hielo', 'montura_lobo', 0.002], ['oso', 'montura_oso', 0.002], ['dragon', 'pluma_fenix', 0.08], ['faraon', 'pluma_fenix', 0.5],

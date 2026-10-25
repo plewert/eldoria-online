@@ -18,6 +18,8 @@ const clampDir = (v) => (v > 0 ? 1 : v < 0 ? -1 : 0);
 
 const levelFromXp = (xp) => 1 + Math.floor(Math.sqrt(xp / 50));
 const xpForLevel = (l) => 50 * (l - 1) * (l - 1);
+// los equipos raros de monstruos y jefes caen menos (una sola vez al cargar)
+for (const d of Object.values(MONSTERS)) for (const l of d.loot) if (I.isGear(l[0])) l[1] *= CFG.GEAR_DROP_MULT;
 const { SKILL_MAX, skillFromXp, skillXpFor, skillMult } = require('./skills');
 
 const FISTS = { name: 'Puños', style: 'melee', atk: 3, cd: 1500, range: 1 };

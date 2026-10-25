@@ -257,7 +257,7 @@ ok('comida: sardina 80, salmón 100, tiburón 150; se come con el mensaje eat y 
   assert.ok(require('../game/data').SHOPS.boris.includes('tiburon'));
 });
 ok('mapa ampliado: Selva Esmeralda, Sabana Dorada y Aldea Pesquera con comida y banco', () => {
-  assert.equal(world.W, 250);
+  assert.equal(world.W, 320);
   assert.equal(world.zoneAt(220, 30).id, 'selva'); assert.equal(world.zoneAt(220, 110).id, 'sabana'); assert.equal(world.zoneAt(210, 77).id, 'aldea');
   assert.ok(world.zoneAt(210, 77).kind === 'town' && !world.zoneAt(210, 77).pvp);
   for (const id of ['nilo', 'tomas']) { const n = world.NPCS.find((q) => q.id === id); assert.ok(n && world.reach[n.y * world.W + n.x], id + ' alcanzable'); }
@@ -265,6 +265,22 @@ ok('mapa ampliado: Selva Esmeralda, Sabana Dorada y Aldea Pesquera con comida y 
   for (const z of ['selva', 'sabana']) assert.ok(world.monsterSpawns.some((m) => world.zoneAt(m.x, m.y).id === z), 'monstruos en ' + z);
   assert.ok(world.reach[78 * world.W + 240], 'se llega al fondo de la sabana andando');
   const b = login('Far1'); place(b.p, 206, 75); game.handle(b.p, { t: 'npc', id: 'nilo' }); assert.ok(lastMsg(b.ws, 'shop'), 'abre la tienda de Nilo'); assert.ok(lastMsg(b.ws, 'shop').stock.includes('tiburon'));
+});
+ok('Tierras de Lava: zona PvP con lava intransitable y monstruos de fuego', () => {
+  const z = world.zoneById('volcan'); assert.ok(z.pvp && z.kind === 'wild');
+  assert.equal(world.zoneAt(280, 50).id, 'volcan');
+  let lava = 0; for (let y = 0; y < world.H; y++) for (let x = 250; x < world.W; x++) if (world.tiles[y * world.W + x] === world.T.LAVA) { lava++; assert.ok(!world.isWalkable(x, y)); }
+  assert.ok(lava > 300, 'hay lagos de lava: ' + lava);
+  assert.ok(world.reach[78 * world.W + 300], 'se llega andando por el camino');
+  const types = new Set(world.monsterSpawns.filter((m) => world.zoneAt(m.x, m.y).id === 'volcan').map((m) => m.type));
+  ['golem_lava', 'demonio_menor', 'dragon'].forEach((t) => assert.ok(types.has(t), t));
+  assert.equal(world.rows[0].length, world.W);
+});
+ok('gemas 0,15 %, equipo raro a la mitad y mascotas de jefe', () => {
+  assert.equal(I.gemChance(MONSTERS.rata), 0.0015); assert.equal(I.gemChance(MONSTERS.dragon_sombra), 0.0015);
+  assert.ok(Math.abs(MONSTERS.dragon_sombra.loot.find((l) => l[0] === 'sombra_arco')[1] - 0.005) < 1e-9, 'arco 0,5 %');
+  for (const [t, d] of Object.entries(MONSTERS)) if (d.boss) { const l = d.loot.find((q) => q[0] === 'pet_' + t); assert.ok(l, 'mascota de ' + t); assert.equal(ITEMS['pet_' + t].type, 'pet'); assert.equal(ITEMS['pet_' + t].mon, t); }
+  const a = login('Pet9'); place(a.p, 50, 64); a.p.inv[0] = I.mk('pet_dragon_sombra'); game.use(a.p, 0); assert.equal(a.p.ext.pet, 'pet_dragon_sombra');
 });
 ok('mazmorras y cuevas: nadie ataca a través de la entrada', () => {
   const a = login('Wall1'); place(a.p, 122, 78); a.p.hp = a.p.maxHp = 5000;

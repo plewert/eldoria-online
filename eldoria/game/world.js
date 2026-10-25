@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Mundo de Eldoria (250 x 140): se genera de forma determinista (siempre el mismo mapa).
+ * Mundo de Eldoria (320 x 140): se genera de forma determinista (siempre el mismo mapa).
  *
  *   norte    Bosque Maldito (PvP) · Cumbres Heladas (PvP) -> Fortaleza de Hielo (mazmorra PvP)
  *   centro   Ciudad de Aldea Real (segura) · Prado de los Novatos (seguro)
@@ -12,14 +12,14 @@
 const { SPAWN_PLAN } = require('./data');
 
 const W0 = 180;                 // el mapa original (se genera igual que siempre)
-const W = 250, H = 140;         // ampliado al este: Selva Esmeralda, Sabana Dorada y la Aldea Pesquera
+const W = 320, H = 140;         // ampliado al este: Selva Esmeralda, Sabana Dorada, Aldea Pesquera y las Tierras de Lava
 const T = {
   GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10,
   SAND: 11, SNOW: 12, SWAMP: 13, DUNE: 14, PALM: 15, PINE: 16, DEADTREE: 17, CACTUS: 18, ICEBLOCK: 19,
-  MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24, CFLOOR: 25, CWALL: 26,
+  MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24, CFLOOR: 25, CWALL: 26, LAVA: 27, ASH: 28,
 };
 const BLOCKED = new Uint8Array(32);
-[T.WATER, T.TREE, T.WALL, T.ROCK, T.PALM, T.PINE, T.DEADTREE, T.CACTUS, T.ICEBLOCK, T.BOG, T.CWALL].forEach((t) => { BLOCKED[t] = 1; });
+[T.WATER, T.TREE, T.WALL, T.ROCK, T.PALM, T.PINE, T.DEADTREE, T.CACTUS, T.ICEBLOCK, T.BOG, T.CWALL, T.LAVA].forEach((t) => { BLOCKED[t] = 1; });
 
 // El orden importa: gana la primera zona cuyo rectángulo contiene la casilla.
 const ZONES = [
@@ -41,6 +41,7 @@ const ZONES = [
   { id: 'playa',      name: 'Playa de Cristal',       pvp: false, kind: 'field',   rect: [60, 120, 139, 139] },
   { id: 'selva',      name: 'Selva Esmeralda',        pvp: true,  kind: 'wild',    rect: [180, 0, 249, 69], tint: 'rgba(60,160,90,.10)' },
   { id: 'sabana',     name: 'Sabana Dorada',          pvp: false, kind: 'field',   rect: [180, 70, 249, 139] },
+  { id: 'volcan',     name: 'Tierras de Lava y Fuego', pvp: true,  kind: 'wild',    rect: [250, 0, 319, 139], tint: 'rgba(255,70,20,.14)' },
   { id: 'prado',      name: 'Prado de los Novatos',   pvp: false, kind: 'field',   rect: [0, 0, 179, 139] },
 ];
 const zoneGrid = new Uint8Array(W * H);
@@ -133,7 +134,8 @@ for (let y = 0; y < H; y++) {
     for (let x = W0; x < W; x++) {
       const a = n4(x / 6, y / 6), b = n5(x / 8, y / 8), z = zoneAt(x, y).id;
       let t;
-      if (z === 'selva') { t = T.GRASS; if (a > 0.54 || r2() < 0.06) t = T.TREE; else if (b > 0.78) t = T.WATER; else if (r2() < 0.012) t = T.PALM; else if (r2() < 0.008) t = T.ROCK; else if (r2() < 0.04) t = T.FLOWER; }
+      if (z === 'volcan') { t = T.ASH; if (b > 0.64) t = T.LAVA; else if (a > 0.8 || r2() < 0.02) t = T.CWALL; }          // obsidiana
+      else if (z === 'selva') { t = T.GRASS; if (a > 0.54 || r2() < 0.06) t = T.TREE; else if (b > 0.78) t = T.WATER; else if (r2() < 0.012) t = T.PALM; else if (r2() < 0.008) t = T.ROCK; else if (r2() < 0.04) t = T.FLOWER; }
       else { t = T.HILL; if (a > 0.84 || r2() < 0.012) t = T.TREE; else if (b > 0.82) t = T.WATER; else if (r2() < 0.008) t = T.ROCK; else if (r2() < 0.05) t = T.FLOWER; else if (r2() < 0.004) t = T.PALM; }
       tiles[idx(x, y)] = t;
     }
@@ -259,7 +261,7 @@ carvePath(103, 78, 150, 78);    // camino al desierto
 carvePath(150, 78, 150, 89);    // ramal al portal de la Pirámide
 carvePath(150, 78, 200, 78);    // camino largo al este: Aldea Pesquera
 carvePath(211, 70, 211, 36);    // camino de la aldea a la Selva Esmeralda
-carvePath(222, 78, 240, 78);    // y hacia el fondo de la sabana
+carvePath(222, 78, 300, 78);    // y hacia el fondo de la sabana y las Tierras de Lava
 carvePath(90, 75, 90, 100);     // puerta sur -> colinas
 carvePath(90, 100, 67, 100);    // ramal al portal de las Minas
 carvePath(90, 100, 100, 119);   // camino al Puerto Marea
@@ -397,7 +399,7 @@ const monsterSpawns = [];
 })();
 
 // Versión compacta del mapa para el cliente (un carácter por casilla)
-const CH = '0123456789abcdefghijklmnopq';
+const CH = '0123456789abcdefghijklmnopqrs';
 const rows = [];
 for (let y = 0; y < H; y++) {
   let s = '';
