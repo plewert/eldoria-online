@@ -958,6 +958,24 @@ class Game {
     // botín
     const zone = zoneAt(m.x, m.y);
     const opts = !zone.pvp && top ? { prot: now + CFG.LOOT_PROTECT_MS, owner: top.id } : {};
+    if (def.shared && parts.length) {
+      // botín compartido: cada participante tira por su cuenta; quien más daño hizo tiene mejor suerte
+      const gold = rnd(def.gold[0], def.gold[1]);
+      for (const [pl, dmg] of parts) {
+        if (dmg < total * 0.01) continue;
+        const share = dmg / total, f = (0.3 + 0.7 * dmg / topDmg) * (pl === top ? 1.6 : 1);
+        const o = { prot: now + CFG.LOOT_PROTECT_MS, owner: pl.id };
+        const g = Math.round(gold * Math.max(0.1, share) * (pl === top ? 1.3 : 1));
+        if (g > 0) this.addGround('gold', g, m.x, m.y, o);
+        for (const [id, chance, qa, qb] of def.loot) {
+          if (Math.random() >= Math.min(1, chance * f)) continue;
+          if (I.isGear(id)) this.addGround(id, 1, m.x, m.y, Object.assign({ inst: I.rollGear(id, true) }, o));
+          else this.addGround(id, rnd(qa, qb), m.x, m.y, o);
+        }
+        if (Math.random() < I.gemChance(def) * f) this.addGround(I.pickGem(def), 1, m.x, m.y, o);
+        if (pl !== top) this.msg(pl, `Participaste contra ${def.name}: tienes tu propio botín en el suelo.`, 's');
+      }
+    } else {
     const gold = rnd(def.gold[0], def.gold[1]);
     if (gold > 0) this.addGround('gold', gold, m.x, m.y, opts);
     for (const [id, chance, a, b] of def.loot) {
@@ -966,6 +984,7 @@ class Game {
       else this.addGround(id, rnd(a, b), m.x, m.y, opts);
     }
     if (Math.random() < I.gemChance(def)) this.addGround(I.pickGem(def), 1, m.x, m.y, opts);
+    }
     this.fx.push({ k: 'x', x: m.x, y: m.y });
     if (def.boss && top) this.broadcastChat(`¡${top.name} ha derrotado a ${def.name}!`, 'k');
     m.dmgBy.clear();

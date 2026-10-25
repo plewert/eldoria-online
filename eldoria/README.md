@@ -108,3 +108,5 @@ Botín raro: **Set de las Sombras** (capucha, coraza, guanteletes, botas, carcaj
 Una caverna enorme y oscura (zona `cueva`, sin PvP) al sur del camino del desierto. Se entra por el portal del camino (122,79) y se sale por el portal de la entrada. Dentro solo vive el Dragón de las Sombras (nivel 500, reaparece al minuto y tiene 80% de defensa, 300.000 de vida (reduce todo el daño que recibe)); ya no es jefe de evento. La oscuridad solo se aclara alrededor del jugador, otros jugadores y portales.
 
 Las mazmorras y la cueva son recintos cerrados: ni tú puedes atacar a los monstruos de dentro desde fuera, ni ellos (aliento, pisotón, ataques) te alcanzan desde la entrada. Hay que entrar.
+
+Botín del dragón compartido: cada jugador que le haga al menos 1 % del daño recibe su propio botín (protegido para él). Quien más daño hace tiene +60 % de probabilidad en todo y más oro; los demás tiran con una probabilidad proporcional a su daño (mínimo 30 %), así que todos pueden sacar raros.

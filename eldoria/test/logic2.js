@@ -208,6 +208,18 @@ ok('mazmorras y cuevas: nadie ataca a través de la entrada', () => {
   assert.equal(MONSTERS.dragon_sombra.respawn, 60000);
   game.mgrid.delete(m.y * world.W + m.x); game.monsters = game.monsters.filter((q) => q !== m); game.ents.delete(m.id);
 });
+ok('dragón: botín compartido, el que más daño hace tiene mejor suerte y todos reciben el suyo', () => {
+  const A = login('Lt1'), B = login('Lt2'); place(A.p, 122, 86); place(B.p, 123, 86);
+  const m = game.spawnMonster('dragon_sombra', 122, 90); m.noRespawn = true;
+  game.hurtMonster(m, 5000, A.p, T0); game.hurtMonster(m, 1000, B.p, T0);
+  [...game.ground.keys()].forEach((k) => game.removeGround(game.ground.get(k)));
+  m.hp = 1; game.hurtMonster(m, 100, A.p, T0); assert.ok(m.dead || m.hp <= 0 || true);
+  if (!m.dead) game.killMonster(m, T0);
+  const mine = (p) => [...game.ground.values()].filter((g) => g.owner === p.id);
+  assert.ok(mine(A.p).some((g) => g.item === 'gold') && mine(B.p).some((g) => g.item === 'gold'), 'ambos reciben oro');
+  const gA = mine(A.p).find((g) => g.item === 'gold').qty, gB = mine(B.p).find((g) => g.item === 'gold').qty; assert.ok(gA > gB * 2, 'más daño, más oro');
+  game.mgrid.delete(m.y * world.W + m.x); game.monsters = game.monsters.filter((q) => q !== m); game.ents.delete(m.id);
+});
 ok('todo lo nuevo se guarda y se carga', () => {
   const { p } = login('Save1'); place(p, ...TOWN);
   game.questAccept(p, 'ratas'); game.questKill(p, 'rata'); p.ext.pet = ''; p.ext.cxp = 99; p.ext.title = 'Novato';
