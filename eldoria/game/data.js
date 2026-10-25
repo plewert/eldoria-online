@@ -24,6 +24,7 @@ const CFG = {
   DEATH_EQUIP_DROP: 0.15,       // probabilidad de soltar cada pieza equipada al morir en PvP
   DEATH_GOLD_DROP: 0.25,        // fracción de oro que se suelta al morir en PvP
   AUTOSAVE_MS: 30000,
+  FOOD_CD_MS: 1500,             // enfriamiento al comer
   HEAL_AMOUNT: 1000,            // hechizo de curar (V): vida por uso
   HEAL_CD_MS: 4000,             // y su enfriamiento
   BANK_SIZE: 120,               // casillas del banco
@@ -85,6 +86,10 @@ const ITEMS = {
   // ---- Consumibles ----
   pocion_vida:     { name: 'Poción de Vida',     icon: '🧪', type: 'consumable', heal: 70,     stack: true, price: 35,  sell: 5 },
   pocion_vida_g:   { name: 'Poción de Vida Grande', icon: '❤️‍🔥', type: 'consumable', heal: 180, stack: true, minLevel: 10, price: 110, sell: 20 },
+  // ---- Comida (tecla K): cura sin gastar pociones; enfriamiento propio ----
+  sardina:         { name: 'Sardina',            icon: '🐟', type: 'consumable', food: 1, heal: 80,  stack: true, price: 30, sell: 8 },
+  salmon:          { name: 'Salmón',             icon: '🍣', type: 'consumable', food: 1, heal: 100, stack: true, price: 45, sell: 12 },
+  tiburon:         { name: 'Tiburón',            icon: '🦈', type: 'consumable', food: 1, heal: 150, stack: true, price: 75, sell: 20 },
   pocion_mana:     { name: 'Poción de Maná',     icon: '💧', type: 'consumable', restore: 45,  stack: true, price: 40,  sell: 6 },
   pocion_mana_g:   { name: 'Poción de Maná Grande', icon: '🔷', type: 'consumable', restore: 120, stack: true, minLevel: 10, price: 120, sell: 22 },
   // ---- Trofeos / materiales (solo para vender) ----
@@ -223,6 +228,7 @@ Object.assign(ITEMS, {
 
 const SHOPS = {
   boris: [
+    'sardina', 'salmon', 'tiburon',
     'pocion_vida', 'pocion_vida_g', 'pocion_mana', 'pocion_mana_g',
     'espada_hierro', 'hacha_acero', 'arco_largo', 'ballesta', 'baston_fuego', 'baston_hielo', 'baston_hueso',
     'anillo_cobre', 'anillo_fuerza', 'anillo_vida', 'anillo_mana', 'amuleto_hueso', 'amuleto_jade',
@@ -230,7 +236,11 @@ const SHOPS = {
     'armadura_cuero', 'cota_malla', 'armadura_placas',
     'escudo_madera', 'escudo_hierro', 'escudo_torre',
   ],
+  nilo: [
+    'sardina', 'salmon', 'tiburon', 'pocion_vida', 'pocion_vida_g', 'pocion_mana', 'pocion_mana_g',
+  ],
   brisa: [
+    'sardina', 'salmon', 'tiburon',
     'pocion_vida_g', 'pocion_mana_g',
     'espada_dorada', 'arco_cazador', 'baston_tormenta', 'daga_sombra',
     'casco_bronce', 'armadura_bronce', 'escudo_bronce',
@@ -377,6 +387,16 @@ const SPAWN_PLAN = [
   { zone: 'prado',      type: 'rata',            n: 22, box: [31, 60, 111, 95] },
   { zone: 'prado',      type: 'serpiente',       n: 14, box: [31, 72, 111, 95] },
   { zone: 'prado',      type: 'arana',           n: 12, box: [31, 80, 111, 95] },
+  { zone: 'selva',      type: 'oso',             n: 14 },
+  { zone: 'selva',      type: 'troll',           n: 12 },
+  { zone: 'selva',      type: 'bruja',           n: 12 },
+  { zone: 'selva',      type: 'lagarto',         n: 16 },
+  { zone: 'selva',      type: 'cobra',           n: 14 },
+  { zone: 'sabana',     type: 'jabali',          n: 22 },
+  { zone: 'sabana',     type: 'bandido',         n: 16 },
+  { zone: 'sabana',     type: 'goblin',          n: 18 },
+  { zone: 'sabana',     type: 'arquero_goblin',  n: 12 },
+  { zone: 'sabana',     type: 'escarabajo_gigante', n: 10 },
   { zone: 'catacumbas', type: 'murcielago',      n: 14 },
   { zone: 'catacumbas', type: 'esqueleto',       n: 18 },
   { zone: 'catacumbas', type: 'esqueleto_arquero', n: 10 },

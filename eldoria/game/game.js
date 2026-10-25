@@ -269,7 +269,7 @@ class Game {
     if (I.isGear(it.id)) { this.equip(p, slot); return; }
     if (def.type !== 'consumable') return;
     const now = this.now;
-    if (now < p.nextPotion) return;
+    if (def.food ? now < p.nextFood : now < p.nextPotion) return;
     if ((def.minLevel || 1) > p.level) { this.msg(p, `Necesitas nivel ${def.minLevel} para usar ${def.name}.`, 's'); return; }
     if (def.heal) {
       if (p.hp >= p.maxHp) return;
@@ -280,7 +280,7 @@ class Game {
       const r = Math.min(def.restore, p.maxMana - p.mana);
       p.mana += r; this.fx.push({ k: 'd', x: p.x, y: p.y, v: '+' + r, c: 'm' });
     }
-    p.nextPotion = now + 1000;
+    if (def.food) p.nextFood = now + CFG.FOOD_CD_MS; else p.nextPotion = now + 1000;
     it.qty--; if (it.qty <= 0) p.inv[slot] = null;
     p.dirty.inv = true;
   }
@@ -292,11 +292,26 @@ class Game {
       const it = p.inv[i];
       if (!it) continue;
       const d = ITEMS[it.id];
-      if (!d || d.type !== 'consumable' || !d[kind] || (d.minLevel || 1) > p.level) continue;
+      if (!d || d.type !== 'consumable' || d.food || !d[kind] || (d.minLevel || 1) > p.level) continue;
       if (d[kind] < bestVal) { bestVal = d[kind]; bestSlot = i; }
     }
     if (bestSlot >= 0) this.use(p, bestSlot);
     else this.msgThrottle(p, 'nopot', kind === 'heal' ? 'No tienes pociones de vida.' : 'No tienes pociones de maná.');
+  }
+
+  /** Comer: la comida más pequeña que cubra lo que te falta; si ninguna basta, la mayor. */
+  useFood(p) {
+    if (p.hp >= p.maxHp) return;
+    const missing = p.maxHp - p.hp; let slot = -1, val = 0, fit = false;
+    for (let i = 0; i < p.inv.length; i++) {
+      const it = p.inv[i], d = it && ITEMS[it.id]; if (!d || !d.food) continue;
+      const ok = d.heal >= missing;
+      if (slot < 0 || (ok && (!fit || d.heal < val)) || (!ok && !fit && d.heal > val)) { slot = i; val = d.heal; fit = ok; }
+    }
+    if (slot < 0) { this.msgThrottle(p, 'nofood', 'No tienes comida. Cómprala en las tiendas o en la Aldea Pesquera.'); return; }
+    if (this.now < p.nextFood) return;
+    this.use(p, slot);
+    this.fx.push({ k: 'h', x: p.x, y: p.y });
   }
 
   drop(p, slot, qty) {
@@ -361,7 +376,7 @@ class Game {
       hp: 0, mana: 0, xp: 0, sxp: { melee: 0, ranged: 0, magic: 0 }, gold: 0,
       inv: new Array(CFG.INV_SIZE).fill(null), eq: { weapon: null, head: null, body: null, shield: null },
       bank: new Array(CFG.BANK_SIZE).fill(null), bankGold: 0, vis: null, trade: null, tradeInv: null, bankOpen: false,
-      target: null, nextMove: 0, nextAtk: 0, nextPotion: 0, nextSpell: 0, nextRegen: 0, pend: null,
+      target: null, nextMove: 0, nextAtk: 0, nextPotion: 0, nextFood: 0, nextSpell: 0, nextRegen: 0, pend: null,
       pvpLock: 0, offlineUntil: 0, tpSeq: 0, lastChat: 0, throttle: {}, dirty: { inv: true, stats: true },
     };
     this.extLoad(p, d);
@@ -573,6 +588,7 @@ class Game {
       case 'style': if (['melee', 'ranged', 'magic'].includes(msg.s)) this.switchStyle(p, msg.s); break;
       case 'potion': this.useBest(p, msg.k === 'mana' ? 'restore' : 'heal'); break;
       case 'spell': this.castHeal(p); break;
+      case 'eat': this.useFood(p); break;
       case 'chat': this.chat(p, String(msg.text || '')); break;
       case 'npc': this.npcClick(p, msg.id); break;
       case 'buy': this.buy(p, String(msg.id), msg.q | 0); break;

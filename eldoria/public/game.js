@@ -483,9 +483,10 @@
       if (!it) { s.textContent = EQ_GLYPH[s.dataset.eq]; s.title = 'Vacío: ' + EQ_NAME[s.dataset.eq]; } else s.removeAttribute('title');
     });
     $('#gold').textContent = fmt(G.gold);
-    const count = (key) => G.inv.reduce((n, it) => { const d = it && G.items[it[0]]; return n + (d && d[key] ? it[1] : 0); }, 0);
-    const h = count('heal'), mn = count('restore');
-    $('#nHeal').textContent = h; $('#nMana').textContent = mn;
+    const count = (key, food) => G.inv.reduce((n, it) => { const d = it && G.items[it[0]]; return n + (d && d[key] && !!d.food === !!food ? it[1] : 0); }, 0);
+    const h = count('heal'), mn = count('restore'), fd = count('heal', true);
+    $('#nHeal').textContent = h; $('#nMana').textContent = mn; $('#nFood').textContent = fd;
+    document.querySelector('[data-food]').classList.toggle('none', !fd);
     document.querySelector('[data-pot=heal]').classList.toggle('none', !h);
     document.querySelector('[data-pot=mana]').classList.toggle('none', !mn);
     if (G.shopOpen) renderShop();
@@ -1720,6 +1721,7 @@
     else if (k === 'h') send({ t: 'potion', k: 'heal' });
     else if (k === 'j') send({ t: 'potion', k: 'mana' });
     else if (k === 'v') send({ t: 'spell' });
+    else if (k === 'k') send({ t: 'eat' });
     else if (k === 'e' || k === ' ') { ev.preventDefault(); send({ t: 'pickup' }); }
   });
   window.addEventListener('keyup', (ev) => { held.delete(ev.key.toLowerCase()); });
@@ -1740,6 +1742,7 @@
     if (b.dataset.style) send({ t: 'style', s: b.dataset.style });
     else if (b.dataset.pot) send({ t: 'potion', k: b.dataset.pot });
     else if (b.dataset.spell) send({ t: 'spell' });
+    else if (b.dataset.food) send({ t: 'eat' });
   }));
 
   /* ---- chat plegable ---- */

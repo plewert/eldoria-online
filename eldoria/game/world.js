@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Mundo de Eldoria (180 x 140): se genera de forma determinista (siempre el mismo mapa).
+ * Mundo de Eldoria (250 x 140): se genera de forma determinista (siempre el mismo mapa).
  *
  *   norte    Bosque Maldito (PvP) · Cumbres Heladas (PvP) -> Fortaleza de Hielo (mazmorra PvP)
  *   centro   Ciudad de Aldea Real (segura) · Prado de los Novatos (seguro)
@@ -11,7 +11,8 @@
  */
 const { SPAWN_PLAN } = require('./data');
 
-const W = 180, H = 140;
+const W0 = 180;                 // el mapa original (se genera igual que siempre)
+const W = 250, H = 140;         // ampliado al este: Selva Esmeralda, Sabana Dorada y la Aldea Pesquera
 const T = {
   GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10,
   SAND: 11, SNOW: 12, SWAMP: 13, DUNE: 14, PALM: 15, PINE: 16, DEADTREE: 17, CACTUS: 18, ICEBLOCK: 19,
@@ -24,6 +25,7 @@ const BLOCKED = new Uint8Array(32);
 const ZONES = [
   { id: 'ciudad',     name: 'Ciudad de Aldea Real',   pvp: false, kind: 'town',    rect: [78, 58, 102, 74] },
   { id: 'puerto',     name: 'Puerto Marea',           pvp: false, kind: 'town',    rect: [90, 120, 108, 131] },
+  { id: 'aldea',      name: 'Aldea Pesquera de Coral', pvp: false, kind: 'town',    rect: [200, 70, 222, 84] },
   { id: 'catacumbas', name: 'Catacumbas Silenciosas', pvp: false, kind: 'dungeon', rect: [3, 40, 30, 91] },
   { id: 'minas',      name: 'Minas Enanas',           pvp: false, kind: 'dungeon', rect: [3, 96, 28, 136] },
   { id: 'cueva',      name: 'Cueva del Dragón de las Sombras', pvp: false, kind: 'dungeon', dark: true, rect: [106, 80, 139, 99] },
@@ -37,6 +39,8 @@ const ZONES = [
   { id: 'pantano',    name: 'Pantano Venenoso',       pvp: true,  kind: 'wild',    rect: [0, 96, 59, 139], tint: 'rgba(80,140,60,.13)' },
   { id: 'colinas',    name: 'Colinas Doradas',        pvp: false, kind: 'field',   rect: [60, 96, 139, 119] },
   { id: 'playa',      name: 'Playa de Cristal',       pvp: false, kind: 'field',   rect: [60, 120, 139, 139] },
+  { id: 'selva',      name: 'Selva Esmeralda',        pvp: true,  kind: 'wild',    rect: [180, 0, 249, 69], tint: 'rgba(60,160,90,.10)' },
+  { id: 'sabana',     name: 'Sabana Dorada',          pvp: false, kind: 'field',   rect: [180, 70, 249, 139] },
   { id: 'prado',      name: 'Prado de los Novatos',   pvp: false, kind: 'field',   rect: [0, 0, 179, 139] },
 ];
 const zoneGrid = new Uint8Array(W * H);
@@ -87,7 +91,7 @@ const SPAWN_POINT = { x: 90, y: 66 };
 
 /* 1) Terreno exterior por zona */
 for (let y = 0; y < H; y++) {
-  for (let x = 0; x < W; x++) {
+  for (let x = 0; x < W0; x++) {            // (solo el mapa original: así el generador aleatorio produce lo mismo de siempre)
     const z = zoneAt(x, y).id;
     const a = n1(x / 6, y / 6), b = n2(x / 9, y / 9);
     let t = T.GRASS;
@@ -122,6 +126,19 @@ for (let y = 0; y < H; y++) {
     tiles[idx(x, y)] = t;
   }
 }
+// ampliación al este (generador propio, no altera el mapa original)
+{
+  const r2 = mulberry32(8675309), n4 = makeNoise(31), n5 = makeNoise(63);
+  for (let y = 0; y < H; y++) {
+    for (let x = W0; x < W; x++) {
+      const a = n4(x / 6, y / 6), b = n5(x / 8, y / 8), z = zoneAt(x, y).id;
+      let t;
+      if (z === 'selva') { t = T.GRASS; if (a > 0.54 || r2() < 0.06) t = T.TREE; else if (b > 0.78) t = T.WATER; else if (r2() < 0.012) t = T.PALM; else if (r2() < 0.008) t = T.ROCK; else if (r2() < 0.04) t = T.FLOWER; }
+      else { t = T.HILL; if (a > 0.84 || r2() < 0.012) t = T.TREE; else if (b > 0.82) t = T.WATER; else if (r2() < 0.008) t = T.ROCK; else if (r2() < 0.05) t = T.FLOWER; else if (r2() < 0.004) t = T.PALM; }
+      tiles[idx(x, y)] = t;
+    }
+  }
+}
 // costa de agua alrededor del mapa
 for (let y = 0; y < H; y++) {
   for (let x = 0; x < W; x++) {
@@ -149,6 +166,9 @@ function buildTown(zoneId, gatesX, gatesY, flowers, houses) {
 buildTown('ciudad', [89, 90, 91], [65, 66, 67],
   [[81, 70], [82, 70], [81, 71], [100, 71], [101, 71], [101, 72], [80, 60], [101, 60]],
   [[81, 60, 89, 64, 85], [92, 60, 99, 64, 95], [92, 66, 99, 70, 95]]);
+buildTown('aldea', [210, 211, 212], [77, 78, 79],
+  [[202, 82], [203, 82], [219, 82], [220, 82], [201, 71], [221, 71]],
+  [[202, 72, 208, 77, 205], [213, 72, 219, 77, 216]]);
 buildTown('puerto', [99, 100, 101], [125, 126, 127],
   [[92, 129], [93, 129], [106, 129], [107, 129]],
   [[92, 122, 97, 126, 94], [102, 122, 107, 126, 104]]);
@@ -237,6 +257,9 @@ carvePath(77, 66, 41, 66);      // puerta oeste -> Catacumbas
 carvePath(103, 66, 103, 78);    // puerta este
 carvePath(103, 78, 150, 78);    // camino al desierto
 carvePath(150, 78, 150, 89);    // ramal al portal de la Pirámide
+carvePath(150, 78, 200, 78);    // camino largo al este: Aldea Pesquera
+carvePath(211, 70, 211, 36);    // camino de la aldea a la Selva Esmeralda
+carvePath(222, 78, 240, 78);    // y hacia el fondo de la sabana
 carvePath(90, 75, 90, 100);     // puerta sur -> colinas
 carvePath(90, 100, 67, 100);    // ramal al portal de las Minas
 carvePath(90, 100, 100, 119);   // camino al Puerto Marea
@@ -281,6 +304,8 @@ const NPCS = [
   { id: 'boris', name: 'Boris el Mercader',  icon: '🧑‍🌾', x: 85,  y: 62,  type: 'shop', shop: 'boris' },
   { id: 'orin',  name: 'Orin el Sabio',      icon: '🧙‍♂️', x: 95,  y: 62,  type: 'shop', shop: 'orin' },
   { id: 'gerda', name: 'Gerda la Banquera',  icon: '👩‍💼', x: 95,  y: 68,  type: 'bank' },
+  { id: 'nilo',  name: 'Nilo el Pescador',   icon: '🎣', x: 205, y: 74, type: 'shop', shop: 'nilo' },
+  { id: 'tomas', name: 'Tomás el Banquero',  icon: '🧑‍💼', x: 216, y: 74, type: 'bank' },
   { id: 'brisa', name: 'Capitán Brisa',      icon: '🧑‍✈️', x: 94,  y: 124, type: 'shop', shop: 'brisa' },
   { id: 'marta', name: 'Marta la Banquera',  icon: '💁‍♀️', x: 104, y: 124, type: 'bank' },
 ];

@@ -132,3 +132,7 @@ Más espacio: mochila de 24 a 48 casillas y banco de 48 a 120 (`INV_SIZE` / `BAN
 Registra cada objeto que te suelta un jefe (equipo, armas, mascotas, trofeos y otros objetos raros), con el número de veces. Lo que aún no te salió aparece en negro con «???»; al pasar el ratón se ve su probabilidad. Se guarda con tu cuenta. Solo cuenta desde ahora: lo que ya habías conseguido antes no se registra.
 
 Hechizo de curar (V): cura 1000 de vida fijos y se recarga en 4 s (`HEAL_AMOUNT` / `HEAL_CD_MS` en `game/data.js`); cuesta 25 de maná.
+
+## Mapa ampliado y comida
+- El mundo pasa de 180×140 a **250×140**. El mapa original no cambia; al este (siguiendo el camino del desierto) hay tres lugares nuevos: **Aldea Pesquera de Coral** (ciudad segura con Nilo el Pescador, tienda, y Tomás el Banquero), **Selva Esmeralda** al norte (PvP, monstruos fuertes) y **Sabana Dorada** al sur (zona segura con monstruos medios).
+- **Comida** (botón 🍣 de la barra o tecla **K**): Sardina 80, Salmón 100 y Tiburón 150 de vida. Se usa la más pequeña que cubra lo que te falta (si ninguna basta, la mayor). Enfriamiento propio de 1,5 s, aparte de las pociones. Se vende en Boris, Capitán Brisa y Nilo (`SHOPS` en `game/data.js`).

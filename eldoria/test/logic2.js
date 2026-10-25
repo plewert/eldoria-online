@@ -246,6 +246,26 @@ ok('hechizo de curar: 1000 de vida y 4 s de enfriamiento', () => {
   game.now = T0 + 3900; game.castHeal(a.p); assert.equal(a.p.hp, 1100, 'aún en enfriamiento');
   game.now = T0 + 4100; game.castHeal(a.p); assert.equal(a.p.hp, 2100, 'otra vez a los 4 s');
 });
+ok('comida: sardina 80, salmón 100, tiburón 150; se come con el mensaje eat y tiene enfriamiento propio', () => {
+  assert.equal(ITEMS.sardina.heal, 80); assert.equal(ITEMS.salmon.heal, 100); assert.equal(ITEMS.tiburon.heal, 150);
+  const a = login('Food1'); place(a.p, 50, 64); a.p.maxHp = 1000; a.p.hp = 100; a.p.inv = a.p.inv.map(() => null);
+  a.p.inv[0] = I.mk('sardina', 3); a.p.inv[1] = I.mk('tiburon', 2); a.p.inv[2] = I.mk('pocion_vida', 2); a.p.nextFood = 0;
+  T0 += 10; game.now = T0; game.handle(a.p, { t: 'eat' }); assert.equal(a.p.hp, 250, 'sin sobrar: come el tiburón (150) porque falta mucho');
+  game.handle(a.p, { t: 'eat' }); assert.equal(a.p.hp, 250, 'enfriamiento de la comida');
+  game.now = T0 + 2000; a.p.hp = 970; game.handle(a.p, { t: 'eat' }); assert.equal(a.p.hp, 1000); assert.equal(a.p.inv[0].qty, 2, 'con poco que curar se come la sardina');
+  game.now = T0 + 4000; a.p.hp = 100; game.handle(a.p, { t: 'potion', k: 'heal' }); assert.equal(a.p.inv[2].qty, 1, 'la poción no usa comida y viceversa');
+  assert.ok(require('../game/data').SHOPS.boris.includes('tiburon'));
+});
+ok('mapa ampliado: Selva Esmeralda, Sabana Dorada y Aldea Pesquera con comida y banco', () => {
+  assert.equal(world.W, 250);
+  assert.equal(world.zoneAt(220, 30).id, 'selva'); assert.equal(world.zoneAt(220, 110).id, 'sabana'); assert.equal(world.zoneAt(210, 77).id, 'aldea');
+  assert.ok(world.zoneAt(210, 77).kind === 'town' && !world.zoneAt(210, 77).pvp);
+  for (const id of ['nilo', 'tomas']) { const n = world.NPCS.find((q) => q.id === id); assert.ok(n && world.reach[n.y * world.W + n.x], id + ' alcanzable'); }
+  const nilo = require('../game/data').SHOPS.nilo; ['sardina', 'salmon', 'tiburon'].forEach((i) => assert.ok(nilo.includes(i)));
+  for (const z of ['selva', 'sabana']) assert.ok(world.monsterSpawns.some((m) => world.zoneAt(m.x, m.y).id === z), 'monstruos en ' + z);
+  assert.ok(world.reach[78 * world.W + 240], 'se llega al fondo de la sabana andando');
+  const b = login('Far1'); place(b.p, 206, 75); game.handle(b.p, { t: 'npc', id: 'nilo' }); assert.ok(lastMsg(b.ws, 'shop'), 'abre la tienda de Nilo'); assert.ok(lastMsg(b.ws, 'shop').stock.includes('tiburon'));
+});
 ok('mazmorras y cuevas: nadie ataca a través de la entrada', () => {
   const a = login('Wall1'); place(a.p, 122, 78); a.p.hp = a.p.maxHp = 5000;
   const m = game.spawnMonster('dragon_sombra', 122, 84); const hp0 = m.hp;
