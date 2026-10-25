@@ -13,6 +13,7 @@ const { zoneAt, NPCS, W, H, T } = world;
 
 const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const kxy = (x, y) => y * W + x;
+const BOSS_DMG = 1.5;
 const cheb = (ax, ay, bx, by) => Math.max(Math.abs(ax - bx), Math.abs(ay - by));
 const levelFromXp = (xp) => 1 + Math.floor(Math.sqrt(xp / 50));
 const { skillFromXp, skillMult } = require('./skills');
@@ -240,6 +241,7 @@ module.exports = function install(Game) {
   };
   P.defOf = function (p) { return Math.round(G0.defOf.call(this, p) * this.buffMult(p, 'def')); };
   P.hurtPlayer = function (p, raw, src, now, srcName) {
+    if (src && src.kind === 'mo' && src.def && src.def.boss) raw = Math.round(raw * BOSS_DMG);       // los jefes pegan más fuerte
     if (src && src.kind === 'mo') { const a = zoneAt(src.x, src.y), b = zoneAt(p.x, p.y); if (a !== b && (a.kind === 'dungeon' || b.kind === 'dungeon')) return 0; }
     const sh = p.buffs && p.buffs.shield;
     if (sh && sh.until > now && sh.hp > 0) {

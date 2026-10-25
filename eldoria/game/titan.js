@@ -19,8 +19,8 @@ const PIECES = [
 ];
 // armas y escudo: [id, nombre, sprite, nivel, ataque, cd, elemento, probabilidad]
 const WEAPONS = [
-  ['titan_espada',  'Hoja de Magma',        't_sword',  52, 90, 1050, 'fire', 0.03],
-  ['titan_martillo','Martillo del Coloso',  't_hammer', 56, 99, 1500, 'fire', 0.025],
+  ['titan_espada',  'Hoja de Magma',        't_sword',  52, 90, 1050, 'fire', 0.008],
+  ['titan_martillo','Martillo del Coloso',  't_hammer', 56, 99, 1500, 'fire', 0.006],
 ];
 const SHIELD = ['titan_escudo', 'Escudo del Dragón de Magma', 't_shield', 54, 34, { hp: 170, def: 6 }, 0.03];
 const ICON = { head: '⛑️', body: '🛡️', gloves: '🧤', belt: '🎗️', legs: '🦿', boots: '🥾' };

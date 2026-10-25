@@ -7,7 +7,7 @@ const PIECES = [
   ['sombra_botas',   'Botas de las Sombras',     's_boot',     'boots',  63, 20, { hp: 120 }, 0.06],
   ['sombra_carcaj',  'Carcaj de las Sombras',    's_quiver',   'shield', 65, 24, { hp: 140, crit: 0.02 }, 0.05],
 ];
-const BOW = ['sombra_arco', 'Arco de las Sombras', 's_bow', 68, 112, 1250, 'void', 0.04];
+const BOW = ['sombra_arco', 'Arco de las Sombras', 's_bow', 68, 112, 1250, 'void', 0.01];
 const ICON = { head: '🥷', body: '🛡️', gloves: '🧤', boots: '🥾', shield: '🎒' };
 
 function build(ITEMS, MONSTERS, bossType) {

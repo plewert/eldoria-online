@@ -224,6 +224,12 @@ ok('habilidades: tope 400 y cada nivel cuesta más', () => {
   const a = login('Sk1'); a.p.sxp.melee = S.skillXpFor(400) - 1; game.addSkillXp(a.p, 'melee', 99999); assert.equal(a.p.sxp.melee, S.skillXpFor(400)); assert.equal(S.skillFromXp(a.p.sxp.melee), 400);
   assert.ok(S.skillMult(400) < 10);
 });
+ok('los jefes pegan 1,5 veces más fuerte', () => {
+  const a = login('Bd1'); place(a.p, 50, 64); a.p.hp = a.p.maxHp = 100000; a.p.eq = {}; game.recalc(a.p);
+  const norm = { kind: 'mo', x: 50, y: 63, def: { boss: false } }, boss = { kind: 'mo', x: 50, y: 63, def: { boss: true } };
+  let sn = 0, sb = 0; for (let i = 0; i < 300; i++) { a.p.hp = 100000; game.hurtPlayer(a.p, 200, norm, T0, 'x'); sn += 100000 - a.p.hp; a.p.hp = 100000; game.hurtPlayer(a.p, 200, boss, T0, 'x'); sb += 100000 - a.p.hp; }
+  assert.ok(sb / sn > 1.35 && sb / sn < 1.65, 'ratio ' + sb / sn);
+});
 ok('mazmorras y cuevas: nadie ataca a través de la entrada', () => {
   const a = login('Wall1'); place(a.p, 122, 78); a.p.hp = a.p.maxHp = 5000;
   const m = game.spawnMonster('dragon_sombra', 122, 84); const hp0 = m.hp;

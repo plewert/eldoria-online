@@ -6,7 +6,7 @@ const PIECES = [
   ['jade_guantes',  'Guanteletes de Jade',  'j_glove', 'gloves', 72, 18, { hp: 100, atk: 8, crit: 0.02 }, 0.06],
   ['jade_botas',    'Botas de Jade',        'j_boot',  'boots',  71, 22, { hp: 140 }, 0.06],
 ];
-const BOW = ['jade_arco', 'Arco de la Hidra', 'j_bow', 76, 128, 1150, 'poison', 0.04];
+const BOW = ['jade_arco', 'Arco de la Hidra', 'j_bow', 76, 128, 1150, 'poison', 0.01];
 const ICON = { head: '🐲', body: '🛡️', gloves: '🧤', boots: '🥾' };
 
 function build(ITEMS, MONSTERS, bossType) {
