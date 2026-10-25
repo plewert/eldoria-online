@@ -683,41 +683,47 @@ module.exports = function install(Game) {
   };
 
   /* ============================ JEFE DE EVENTO ============================ */
-  P.initEvent = function () {
-    const zone = world.zoneById ? world.zoneById('colinas') : null;
+  P.findArena = function (cx, cy) {
     let best = null, bd = 1e9;
-    for (let y = 96; y <= 119; y++) for (let x = 60; x <= 139; x++) {
-      if (!world.reach[kxy(x, y)]) continue;
+    for (let y = Math.max(1, cy - 40); y <= cy + 40; y++) for (let x = Math.max(1, cx - 40); x <= cx + 40; x++) {
+      if (x >= world.W || y >= world.H || !world.reach[kxy(x, y)]) continue;
       const t = world.tiles[kxy(x, y)]; if (t === T.PORTAL || t === T.ROAD) continue;
-      const d = Math.hypot(x - 100, y - 107); if (d < bd) { bd = d; best = [x, y]; }
+      const d = Math.hypot(x - cx, y - cy); if (d < bd) { bd = d; best = [x, y]; }
     }
-    this.arena = best || [100, 107];
-    this.event = { state: 'idle', next: Date.now() + (parseFloat(process.env.EVENT_FIRST_MIN) || 6) * 60000, boss: null, ends: 0 };
+    return best || [cx, cy];
   };
+  P.initEvent = function () {
+    this.sched = [];
+    this.arenas = {}; for (const b of X.BOSSES) this.arenas[b.type] = this.findArena(b.arena[0], b.arena[1]);
+    this.event = { state: 'idle', i: 0, cur: X.BOSSES[0], next: Date.now() + (parseFloat(process.env.EVENT_FIRST_MIN) || 6) * 60000, boss: null, ends: 0 };
+  };
+  P.later = function (ms, fn) { this.sched.push({ at: this.now + ms, fn }); };
+  const evDone = (ev, now) => { ev.state = 'idle'; ev.next = now + EVENT_EVERY; ev.i++; ev.cur = X.BOSSES[ev.i % X.BOSSES.length]; };
   P.eventTick = function (now) {
     const ev = this.event; if (!ev) return;
     const online = [...this.players.values()].filter((q) => q.ws);
+    const B = ev.cur, name = B.def.name, ar = this.arenas[B.type];
     if (ev.state === 'idle' && now >= ev.next) {
       if (!online.length) { ev.next = now + 3 * 60000; return; }
-      ev.state = 'warn'; ev.spawnAt = now + 60000;
-      const zn = zoneAt(this.arena[0], this.arena[1]).name;
-      this.broadcastChat(`⚠️ ¡El Coloso Ancestral despertará en 60 segundos en ${zn}! Reúne a tu grupo.`, 'k');
-      for (const q of online) this.send(q, { t: 'event', k: 'warn', secs: 60, x: this.arena[0], y: this.arena[1], text: `El Coloso Ancestral despierta en 60 s (${zn}).` });
+      ev.state = 'warn'; ev.spawnAt = now + 60000; this.arena = ar;
+      const zn = zoneAt(ar[0], ar[1]).name;
+      this.broadcastChat(`⚠️ ¡${name} despertará en 60 segundos en ${zn}! Reúne a tu grupo.`, 'k');
+      for (const q of online) this.send(q, { t: 'event', k: 'warn', secs: 60, x: ar[0], y: ar[1], text: `${name} despierta en 60 s (${zn}).` });
     } else if (ev.state === 'warn' && now >= ev.spawnAt) {
       const n = Math.max(1, online.length);
-      const m = this.spawnMonster(X.BOSS.type, this.arena[0], this.arena[1]);
-      m.maxHp = m.hp = Math.round(X.BOSS.def.hp * (1 + 0.35 * (n - 1))); m.event = true; m.noRespawn = true; m.sx = m.x; m.sy = m.y;
-      ev.boss = m; ev.state = 'active'; ev.ends = now + 12 * 60000;
+      const m = this.spawnMonster(B.type, ar[0], ar[1]);
+      m.maxHp = m.hp = Math.round(B.def.hp * (1 + 0.35 * (n - 1))); m.event = true; m.noRespawn = true; m.sx = m.x; m.sy = m.y;
+      ev.boss = m; ev.state = 'active'; ev.ends = now + B.mins * 60000;
       const zn = zoneAt(m.x, m.y).name;
-      this.broadcastChat(`🗿 ¡El Coloso Ancestral ha despertado en ${zn}! Tenéis 12 minutos para derrotarlo.`, 'k');
-      for (const q of online) this.send(q, { t: 'event', k: 'start', x: m.x, y: m.y, text: `¡El Coloso Ancestral ha despertado en ${zn}!` });
+      this.broadcastChat(`${B.icon} ¡${name} ha despertado en ${zn}! Tenéis ${B.mins} minutos para derrotarlo.`, 'k');
+      for (const q of online) this.send(q, { t: 'event', k: 'start', x: m.x, y: m.y, text: `¡${name} ha despertado en ${zn}!` });
     } else if (ev.state === 'active') {
       const m = ev.boss;
-      if (!m || m.dead) { this.removeEventBoss(); ev.state = 'idle'; ev.next = now + EVENT_EVERY; }
+      if (!m || m.dead) { this.removeEventBoss(); evDone(ev, now); }
       else if (now >= ev.ends) {
-        this.removeEventBoss(); ev.state = 'idle'; ev.next = now + EVENT_EVERY;
-        this.broadcastChat('El Coloso Ancestral se desvaneció entre la niebla… volverá.', 'k');
-        for (const q of online) this.send(q, { t: 'event', k: 'end', text: 'El Coloso Ancestral se desvaneció.' });
+        this.removeEventBoss(); evDone(ev, now);
+        this.broadcastChat(`${name} se desvaneció entre la niebla… volverá.`, 'k');
+        for (const q of online) this.send(q, { t: 'event', k: 'end', text: `${name} se desvaneció.` });
       }
     }
   };
@@ -725,6 +731,71 @@ module.exports = function install(Game) {
     const m = this.event.boss; if (!m) return;
     this.mgrid.delete(kxy(m.x, m.y));
     this.monsters = this.monsters.filter((q) => q !== m); this.ents.delete(m.id); this.event.boss = null;
+  };
+
+  /* ============================ DRAGÓN DE LAS SOMBRAS: 3 ataques ============================ */
+  // 1) cuerpo a cuerpo (el normal), 2) aliento de fuego negro a distancia, 3) pisotón que rompe el suelo y abre grietas.
+  const inTownP = (q) => zoneAt(q.x, q.y).kind === 'town';
+  const hitPlayers = function (self, now, m, test, lo, hi, tag) {
+    for (const q of self.players.values()) {
+      if (q.hp <= 0 || inTownP(q) || !test(q)) continue;
+      self.hurtPlayer(q, rnd(lo, hi), m, now, tag || m.def.name);
+    }
+  };
+  P.dragonAI = function (m, now) {
+    if (now < (m.nextSp || 0)) return;
+    const t = m.target ? this.ents.get(m.target) : null; if (!t || t.kind !== 'pl' || t.hp <= 0) return;
+    const d = Math.hypot(t.x - m.x, t.y - m.y);
+    const near = [...this.players.values()].some((q) => q.hp > 0 && !inTownP(q) && Math.hypot(q.x - m.x, q.y - m.y) <= 6);
+    const order = ['breath', 'slam', 'breath', 'slam', 'slam', 'breath'];
+    let kind = order[(m.spN || 0) % order.length];
+    if (kind === 'breath' && !(d >= 2 && d <= 12)) kind = near ? 'slam' : null;
+    else if (kind === 'slam' && !near) kind = d >= 2 && d <= 12 ? 'breath' : null;
+    if (!kind) { m.nextSp = now + 1000; return; }
+    m.spN = (m.spN || 0) + 1; m.nextSp = now + 5500 + Math.random() * 3000;
+    m.nextMove = Math.max(m.nextMove, now + 1700); m.nextAtk = Math.max(m.nextAtk, now + 1700);
+    const alive = () => !m.dead && this.monsters.includes(m);
+    if (kind === 'breath') {                                   // aliento de fuego negro (se esquiva moviéndose)
+      let dx = t.x - m.x, dy = t.y - m.y; const L = Math.hypot(dx, dy) || 1; dx /= L; dy /= L;
+      const ex = m.x + dx * 12, ey = m.y + dy * 12, ox = m.x, oy = m.y;
+      this.fx.push({ k: 'dkw', x1: ox, y1: oy, x2: ex, y2: ey });
+      this.later(1000, () => {
+        if (!alive()) return; const nw = this.now;
+        this.fx.push({ k: 'dk', x1: ox, y1: oy, x2: ex, y2: ey });
+        const inLine = (q) => { const rx = q.x - ox, ry = q.y - oy, s = rx * dx + ry * dy, perp = Math.abs(rx * dy - ry * dx); return s >= 0.5 && s <= 12.5 && perp <= 1.6; };
+        const hit = [];
+        for (const q of this.players.values()) if (q.hp > 0 && !inTownP(q) && inLine(q)) hit.push(q);
+        for (const q of hit) this.hurtPlayer(q, rnd(380, 560), m, nw, m.def.name);
+        for (let i = 1; i <= 3; i++) this.later(900 * i, () => {            // fuego negro: quemadura 3 s
+          if (!alive()) return;
+          for (const q of hit) if (q.hp > 0 && this.players.get(q.key) === q) { this.fx.push({ k: 'burn', x: q.x, y: q.y }); this.hurtPlayer(q, rnd(50, 85), m, this.now, 'Fuego negro'); }
+        });
+      });
+    } else {                                                   // pisotón: rompe el suelo
+      const R = 5.5, cx = m.x, cy = m.y;
+      this.fx.push({ k: 'slw', x: cx, y: cy, r: R });
+      this.later(1100, () => {
+        if (!alive()) return;
+        this.fx.push({ k: 'sl', x: cx, y: cy, r: R });
+        hitPlayers(this, this.now, m, (q) => Math.hypot(q.x - cx, q.y - cy) <= R, 520, 760);
+        const spots = []; const tgt = [...this.players.values()].filter((q) => q.hp > 0 && !inTownP(q) && Math.hypot(q.x - cx, q.y - cy) <= 14);
+        const n = Math.min(7, 2 + tgt.length);
+        for (let i = 0; i < n; i++) {                           // grietas: una sobre cada jugador cercano y otras al azar
+          const q = tgt[i]; const x = q ? q.x : Math.round(cx + (Math.random() - 0.5) * 14), y = q ? q.y : Math.round(cy + (Math.random() - 0.5) * 14);
+          spots.push([x, y]);
+        }
+        this.later(250, () => { if (alive()) for (const [x, y] of spots) this.fx.push({ k: 'fiw', x, y, r: 1.5 }); });
+        this.later(1250, () => {
+          if (!alive()) return;
+          for (const [x, y] of spots) { this.fx.push({ k: 'fi', x, y }); hitPlayers(this, this.now, m, (q) => Math.hypot(q.x - x, q.y - y) <= 1.5, 320, 460, 'Grieta de lava'); }
+        });
+      });
+    }
+  };
+  G0.updateMonster = P.updateMonster;
+  P.updateMonster = function (m, now) {
+    G0.updateMonster.call(this, m, now);
+    if (m.def.special === 'dragon' && !m.dead) this.dragonAI(m, now);
   };
 
   /* ============================ ENGANCHES DE COMBATE ============================ */
@@ -844,6 +915,7 @@ module.exports = function install(Game) {
   /* ============================ BUCLE ============================ */
   P.tickExt = function (now) {
     this.eventTick(now);
+    if (this.sched && this.sched.length) { const due = this.sched.filter((e) => e.at <= now); if (due.length) { this.sched = this.sched.filter((e) => e.at > now); for (const e of due) { try { e.fn(); } catch (err) { console.error('sched', err); } } } }
     // veneno
     if (this.dots.length) {
       for (const d of this.dots.slice()) {

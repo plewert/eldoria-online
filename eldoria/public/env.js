@@ -47,12 +47,13 @@
     const wi = indoors ? '' : W.kind === 'rain' && !desert ? (snow ? ' ❄️' : ' 🌧️') : W.kind === 'fog' ? ' 🌫️' : '';
     const txt = `${icon} ${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}${wi}`;
     if (clock.textContent !== txt) clock.textContent = txt;
-    if (indoors) { if (lastRain !== 0) { lastRain = 0; X.setRain && X.setRain(0); } return; }
+    const cave = !!z.dark;
+    if (indoors && !cave) { if (lastRain !== 0) { lastRain = 0; X.setRain && X.setRain(0); } return; }
 
     // --- noche / ocaso con luces alrededor del jugador, las antorchas y otros jugadores ---
-    const [a0, r, g, b] = tone(h);
+    const [a0, r, g, b] = cave ? [0.9, 6, 3, 14] : tone(h);
     const wet = W.kind === 'rain' && !desert ? W.k : 0, fog = W.kind === 'fog' ? W.k : 0;
-    const a = Math.min(0.78, a0 + 0.14 * wet + 0.08 * fog);
+    const a = cave ? 0.8 : Math.min(0.78, a0 + 0.14 * wet + 0.08 * fog);
     if (a > 0.01) {
       const sc = 0.5, w = Math.ceil(cw * sc), hgt = Math.ceil(ch * sc);
       if (lc.width !== w || lc.height !== hgt) { lc.width = w; lc.height = hgt; }
@@ -64,8 +65,8 @@
         gr.addColorStop(0, `rgba(0,0,0,${k})`); gr.addColorStop(1, 'rgba(0,0,0,0)'); lx.fillStyle = gr; lx.beginPath(); lx.arc(x * sc, y * sc, rad * sc, 0, 7); lx.fill();
       };
       const px = (tx - G.cam.x) * TS + cw / 2, py = (ty - G.cam.y) * TS + ch / 2 - 6;
-      const lit = a0 > 0.12 ? 1 : 0.5 * (a0 / 0.12);
-      hole(px, py, 150 + 16 * Math.min(4, G.me.v || 0), 0.95 * Math.max(0.2, lit));
+      const lit = cave || a0 > 0.12 ? 1 : 0.5 * (a0 / 0.12);
+      hole(px, py, (cave ? 200 : 150) + 16 * Math.min(4, G.me.v || 0), 0.95 * Math.max(0.2, lit));
       for (const e of G.ents.values()) if (e.kind === 'pl' && e.id !== G.id) hole((e.rx - G.cam.x) * TS + cw / 2, (e.ry - G.cam.y) * TS + ch / 2 - 6, 70, 0.8 * lit);
       for (const n of G.npcs) hole((n.x - G.cam.x) * TS + cw / 2 + TS / 2 - 16, (n.y - G.cam.y) * TS + ch / 2, 90, 0.85 * lit);
       for (const p of G.portals) hole((p.x - G.cam.x) * TS + cw / 2, (p.y - G.cam.y) * TS + ch / 2, 80, 0.8 * lit);

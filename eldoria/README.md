@@ -92,3 +92,17 @@ Render duerme el servicio tras 15 min sin visitas. Crea un monitor gratuito en U
 
 ### Set del Titán de Magma (botín raro del Coloso Ancestral)
 18 piezas (6 cascos, coraza, 2 guanteletes, cinto, 4 grebas, botas, **Hoja de Magma**, **Martillo del Coloso** y **Escudo del Dragón de Magma**), niveles 46-58, con vida extra y algo de ataque. Hay dos casillas nuevas de equipo: **grebas** y **botas**. Cada pieza cae con un 3-5 % por victoria.
+
+### Niveles de los monstruos
+Cada monstruo muestra un pequeño `lvl N` sobre su nombre (gris = trivial, verde, amarillo = parejo, naranja/rojo = peligroso, morado = imposible). Sale de la experiencia que da; el Coloso es nivel 150 y el Dragón nivel 500.
+
+### Dragón de las Sombras (jefe de evento, nivel 500)
+Alterna con el Coloso Ancestral en el evento de jefe (Dunas Ardientes, 15 minutos, 200.000 de vida más un 35 % por jugador extra conectado). Tres ataques:
+1. **Cuerpo a cuerpo** (170-300).
+2. **Aliento de fuego negro** a distancia: avisa 1 s con una franja morada; se esquiva moviéndose. Deja una quemadura de 3 s.
+3. **Pisotón que rompe el suelo**: círculo rojo de aviso, onda de choque (520-760) y después grietas de lava sobre los jugadores.
+
+Botín raro: **Set de las Sombras** (capucha, coraza, guanteletes, botas, carcaj y Arco de las Sombras), más Escamas de las Sombras, pociones y plumas de fénix. Un día/hora fijos no hacen falta: `EVENT_MIN` marca cada cuánto sale un jefe.
+
+## Cueva del Dragón de las Sombras
+Una caverna enorme y oscura (zona `cueva`, sin PvP) al sur del camino del desierto. Se entra por el portal del camino (122,79) y se sale por el portal de la entrada. Dentro solo vive el Dragón de las Sombras (nivel 500, reaparece a los 30 min); ya no es jefe de evento. La oscuridad solo se aclara alrededor del jugador, otros jugadores y portales.

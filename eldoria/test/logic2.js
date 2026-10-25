@@ -24,6 +24,7 @@ const clearAround = (x, y, r) => { for (const m of game.monsters) if (!m.dead &&
 let n = 0;
 const ok = (name, fn) => { try { fn(); n++; console.log('  ✔', name); } catch (e) { console.error('  ✘', name, '\n   ', e.stack.split('\n').slice(0, 3).join(' | ')); process.exitCode = 1; } };
 const TOWN = [86, 64];
+const zoneOf = (a) => world.zoneAt(a[0], a[1]);
 
 console.log('Sistemas extra');
 ok('misión de matar: aceptar, progresar, entregar y cobrar la recompensa', () => {
@@ -171,8 +172,8 @@ ok('mascota recoge el oro del botín con su bonus', () => {
   assert.ok(got >= 0);
 });
 ok('jefe de evento: aviso, aparición, recompensa y desaparición', () => {
-  const a = login('Evt1'); place(a.p, game.arena[0] - 2, game.arena[1]); a.p.xp = 9000; game.recalc(a.p);
-  game.event.state = 'idle'; game.event.next = 0; T0 += 5; game.tick(T0);
+  const a = login('Evt1'); const EX = require('../game/extra'); const AR = game.arenas.coloso_ancestral; place(a.p, AR[0] - 2, AR[1]); a.p.xp = 9000; game.recalc(a.p);
+  game.event.i = 0; game.event.cur = EX.BOSSES[0]; game.event.state = 'idle'; game.event.next = 0; T0 += 5; game.tick(T0);
   assert.equal(game.event.state, 'warn'); assert.ok(lastMsg(a.ws, 'event'));
   game.event.spawnAt = 0; T0 += 5; game.tick(T0); assert.equal(game.event.state, 'active');
   const b = game.event.boss; assert.ok(b && b.def.boss && b.hp > 10000);
@@ -180,6 +181,22 @@ ok('jefe de evento: aviso, aparición, recompensa y desaparición', () => {
   assert.ok(b.dead); assert.ok(a.p.gold > g0 + 2000, 'recompensa de oro'); assert.equal(a.p.ext.events, 1); assert.ok(a.p.ext.ach.ev);
   T0 += 5; game.tick(T0); assert.equal(game.event.state, 'idle'); assert.ok(!game.monsters.includes(b));
   game.event.next = Infinity;
+});
+ok('Dragón de las Sombras: nivel 500, aliento negro, pisotón con grietas y botín del set de sombras', () => {
+  const EX = require('../game/extra'); assert.equal(MONSTERS.dragon_sombra.lv, 500);
+  const loot = MONSTERS.dragon_sombra.loot.map((l) => l[0]);
+  ['sombra_capucha', 'sombra_coraza', 'sombra_guantes', 'sombra_botas', 'sombra_carcaj', 'sombra_arco'].forEach((i) => assert.ok(loot.includes(i), i));
+  assert.equal(ITEMS.sombra_arco.style, 'ranged'); assert.equal(ITEMS.sombra_carcaj.type, 'shield');
+  const sp = world.monsterSpawns.find((s) => s.type === 'dragon_sombra'); const AR = [sp.x, sp.y]; assert.equal(zoneOf(AR).id, 'cueva'); assert.ok(zoneOf(AR).dark);
+  assert.equal(world.monsterSpawns.filter((s) => zoneOf([s.x, s.y]).id === 'cueva').length, 1, 'solo el dragón en la cueva');
+  const door = world.PORTALS.find((q) => q.x === 122 && q.y === 79); assert.ok(door && zoneOf([door.tx, door.ty]).id === 'cueva');
+  const a = login('Drg1'); a.p.level = 80; a.p.maxHp = a.p.hp = 5000; place(a.p, AR[0] + 5, AR[1]);
+  const m = game.spawnMonster('dragon_sombra', AR[0], AR[1]); m.event = true; m.noRespawn = true; m.target = a.p.id; game.event.boss = null;
+  const seen = new Set(); const push0 = game.fx.push.bind(game.fx); game.fx.push = (...f) => { f.forEach((x) => seen.add(x.k)); return push0(...f); };
+  for (let i = 0; i < 900; i++) { a.p.hp = 5000; T0 += CFG.TICK_MS; game.tick(T0); if (seen.has('fi') && seen.has('dk')) break; }
+  delete game.fx.push;
+  ['dkw', 'dk', 'slw', 'sl', 'fiw', 'fi'].forEach((k) => assert.ok(seen.has(k), 'fx ' + k + ' → ' + [...seen]));
+  game.removeEventBoss = game.removeEventBoss; game.mgrid.delete(m.y * world.W + m.x); game.monsters = game.monsters.filter((q) => q !== m); game.ents.delete(m.id);
 });
 ok('todo lo nuevo se guarda y se carga', () => {
   const { p } = login('Save1'); place(p, ...TOWN);

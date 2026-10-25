@@ -15,10 +15,10 @@ const W = 180, H = 140;
 const T = {
   GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10,
   SAND: 11, SNOW: 12, SWAMP: 13, DUNE: 14, PALM: 15, PINE: 16, DEADTREE: 17, CACTUS: 18, ICEBLOCK: 19,
-  MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24,
+  MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24, CFLOOR: 25, CWALL: 26,
 };
 const BLOCKED = new Uint8Array(32);
-[T.WATER, T.TREE, T.WALL, T.ROCK, T.PALM, T.PINE, T.DEADTREE, T.CACTUS, T.ICEBLOCK, T.BOG].forEach((t) => { BLOCKED[t] = 1; });
+[T.WATER, T.TREE, T.WALL, T.ROCK, T.PALM, T.PINE, T.DEADTREE, T.CACTUS, T.ICEBLOCK, T.BOG, T.CWALL].forEach((t) => { BLOCKED[t] = 1; });
 
 // El orden importa: gana la primera zona cuyo rectángulo contiene la casilla.
 const ZONES = [
@@ -26,6 +26,7 @@ const ZONES = [
   { id: 'puerto',     name: 'Puerto Marea',           pvp: false, kind: 'town',    rect: [90, 120, 108, 131] },
   { id: 'catacumbas', name: 'Catacumbas Silenciosas', pvp: false, kind: 'dungeon', rect: [3, 40, 30, 91] },
   { id: 'minas',      name: 'Minas Enanas',           pvp: false, kind: 'dungeon', rect: [3, 96, 28, 136] },
+  { id: 'cueva',      name: 'Cueva del Dragón de las Sombras', pvp: false, kind: 'dungeon', dark: true, rect: [106, 80, 139, 99] },
   { id: 'abismo',     name: 'Abismo Carmesí',         pvp: true,  kind: 'dungeon', rect: [112, 40, 139, 74] },
   { id: 'piramide',   name: 'Pirámide Olvidada',      pvp: true,  kind: 'dungeon', rect: [148, 100, 175, 136] },
   { id: 'fortaleza',  name: 'Fortaleza de Hielo',     pvp: true,  kind: 'dungeon', rect: [148, 3, 175, 30] },
@@ -196,9 +197,30 @@ const abyRooms = carveDungeon('abismo', 3, 3, T.AFLOOR);
 const pirRooms = carveDungeon('piramide', 3, 4, T.PFLOOR);
 const forRooms = carveDungeon('fortaleza', 3, 3, T.IFLOOR);
 
+/* 3b) Cueva del Dragón: una caverna enorme y oscura con una sola puerta (en el camino del desierto) */
+const CAVE = { rect: zoneById('cueva').rect, door: [122, 79], inside: [122, 85], exit: [122, 82], lair: [123, 95] };
+(function carveCave() {
+  const [x0, y0, x1, y1] = CAVE.rect, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2 + 1, nz = makeNoise(909);
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) tiles[idx(x, y)] = T.CWALL;
+  const floor = (x, y) => { if (x > x0 && x < x1 && y > y0 && y < y1) tiles[idx(x, y)] = T.CFLOOR; };
+  for (let y = y0 + 1; y < y1; y++) for (let x = x0 + 1; x < x1; x++) {
+    const dx = (x - cx) / ((x1 - x0) / 2), dy = (y - cy) / ((y1 - y0) / 2), r = Math.hypot(dx, dy);
+    if (r < 0.9 + (nz(x / 3, y / 3) - 0.5) * 0.42) floor(x, y);
+  }
+  for (let y = y0 + 1; y <= 88; y++) for (let x = 118; x <= 126; x++) floor(x, y);            // vestíbulo de la entrada
+  for (let y = 90; y <= y1 - 1; y++) for (let x = 114; x <= 132; x++) if (Math.hypot(x - 123, (y - 95) * 1.3) < 8.5) floor(x, y);   // guarida del dragón
+  const keep = (x, y) => Math.abs(x - CAVE.inside[0]) <= 3 && Math.abs(y - CAVE.inside[1]) <= 3 || Math.hypot(x - CAVE.lair[0], y - CAVE.lair[1]) <= 5;
+  const pil = mulberry32(31337);                                                                  // estalagmitas
+  for (let y = y0 + 2; y < y1 - 1; y++) for (let x = x0 + 2; x < x1 - 1; x++) if (tiles[idx(x, y)] === T.CFLOOR && !keep(x, y) && pil() < 0.045) tiles[idx(x, y)] = T.CWALL;
+  // solo queda lo que se pueda recorrer desde la entrada
+  const seen = new Set([idx(CAVE.inside[0], CAVE.inside[1])]), q = [...seen];
+  for (let i = 0; i < q.length; i++) { const k = q[i], x = k % W, y = (k / W) | 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) { const nk = idx(x + dx, y + dy); if (!seen.has(nk) && tiles[nk] === T.CFLOOR) { seen.add(nk); q.push(nk); } } }
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (tiles[idx(x, y)] === T.CFLOOR && !seen.has(idx(x, y))) tiles[idx(x, y)] = T.CWALL;
+})();
+
 /* 4) Caminos (despejan árboles, agua y rocas del trazado) */
 function carvePath(x0, y0, x1, y1) {
-  const put = (x, y) => { if (inb(x, y) && tiles[idx(x, y)] !== T.PORTAL && tiles[idx(x, y)] !== T.WALL) tiles[idx(x, y)] = T.ROAD; };
+  const put = (x, y) => { if (inb(x, y) && tiles[idx(x, y)] !== T.PORTAL && tiles[idx(x, y)] !== T.WALL && tiles[idx(x, y)] !== T.CWALL) tiles[idx(x, y)] = T.ROAD; };
   for (let x = Math.min(x0, x1); x <= Math.max(x0, x1); x++) put(x, y0);
   for (let y = Math.min(y0, y1); y <= Math.max(y0, y1); y++) put(x1, y);
 }
@@ -229,13 +251,15 @@ link(66, 100, minRooms, 67, 100, 'Minas Enanas (zona segura)', 'Salir a las Coli
 link(96, 28, abyRooms, 96, 30, 'Abismo Carmesí (¡PvP!)', 'Salir al Bosque');
 link(150, 90, pirRooms, 150, 89, 'Pirámide Olvidada (¡PvP!)', 'Salir al Desierto');
 link(130, 20, forRooms, 130, 22, 'Fortaleza de Hielo (¡PvP!)', 'Salir a las Cumbres');
+addPortal(CAVE.door[0], CAVE.door[1], CAVE.inside[0], CAVE.inside[1], 'Cueva del Dragón de las Sombras (peligro extremo)');
+addPortal(CAVE.exit[0], CAVE.exit[1], CAVE.door[0], CAVE.door[1] - 1, 'Salir al Desierto');
 
 function clearAround(cx, cy, r) {
   for (let y = cy - r; y <= cy + r; y++) {
     for (let x = cx - r; x <= cx + r; x++) {
       if (!inb(x, y)) continue;
       const t = tiles[idx(x, y)];
-      if (BLOCKED[t] && t !== T.WALL) tiles[idx(x, y)] = zoneAt(x, y).id === 'dunas' ? T.DUNE : zoneAt(x, y).id === 'cumbres' ? T.SNOW : T.GRASS;
+      if (BLOCKED[t] && t !== T.WALL && t !== T.CWALL) tiles[idx(x, y)] = zoneAt(x, y).id === 'dunas' ? T.DUNE : zoneAt(x, y).id === 'cumbres' ? T.SNOW : T.GRASS;
     }
   }
 }
@@ -323,6 +347,7 @@ const monsterSpawns = [];
   monsterSpawns.push({ type: 'demonio_supremo', x: last(abyRooms).cx, y: last(abyRooms).cy });
   monsterSpawns.push({ type: 'faraon', x: last(pirRooms).cx, y: last(pirRooms).cy });
   monsterSpawns.push({ type: 'reina_hielo', x: last(forRooms).cx, y: last(forRooms).cy });
+  monsterSpawns.push({ type: 'dragon_sombra', x: CAVE.lair[0], y: CAVE.lair[1] });
   const nearest = (zoneId, px, py) => {
     let best = null, bd = 1e9;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -339,7 +364,7 @@ const monsterSpawns = [];
 })();
 
 // Versión compacta del mapa para el cliente (un carácter por casilla)
-const CH = '0123456789abcdefghijklmno';
+const CH = '0123456789abcdefghijklmnopq';
 const rows = [];
 for (let y = 0; y < H; y++) {
   let s = '';

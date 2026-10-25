@@ -415,6 +415,84 @@
     }
   });
 
+  /* ============================ ATAQUES DEL DRAGÓN DE LAS SOMBRAS ============================ */
+  const BF = [];                                   // efectos de jefe en curso
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const cracks = (r) => Array.from({ length: 10 }, (_, i) => { const a = (i / 10) * 6.283 + rnd(-0.2, 0.2), pts = [[0, 0]]; let d = 0; while (d < r * rnd(0.7, 1)) { d += rnd(0.35, 0.7); pts.push([Math.cos(a + rnd(-0.28, 0.28)) * d, Math.sin(a + rnd(-0.28, 0.28)) * d]); } return pts; });
+  X.on('fx', (f) => {
+    const now = performance.now();
+    switch (f.k) {
+      case 'dkw': BF.push({ k: 'dkw', t: now, T: 1000, f }); break;
+      case 'dk': BF.push({ k: 'dk', t: now, T: 1000, f, seed: Math.random() * 99 }); G.shake = { t: now, m: 3 }; X.sfx && X.sfx('boss'); X.burst(f.x1, f.y1, 'dark', 26, { sp: 4, life: 0.7, size: 3.2, add: false }); break;
+      case 'slw': BF.push({ k: 'slw', t: now, T: 1100, f }); break;
+      case 'sl': BF.push({ k: 'crack', t: now, T: 9000, x: f.x, y: f.y, r: f.r, c: cracks(f.r) });
+        X.ring(f.x, f.y, 'fire', 700, f.r * 32, 6); X.ring(f.x, f.y, 'dark', 520, f.r * 20, 4);
+        X.burst(f.x, f.y, 'fire', 60, { sp: 7, up: 3, g: 5, life: 0.9, size: 3.4 }); X.burst(f.x, f.y, 'dark', 30, { sp: 5, life: 0.9, size: 3.5, add: false });
+        G.shake = { t: now, m: 9 }; X.sfx && X.sfx('thunder'); break;
+      case 'fiw': BF.push({ k: 'fiw', t: now, T: 1000, f }); break;
+      case 'fi': BF.push({ k: 'crack', t: now, T: 6000, x: f.x, y: f.y, r: 1.5, c: cracks(1.5) }); BF.push({ k: 'fi', t: now, T: 700, f });
+        X.burst(f.x, f.y, 'fire', 34, { sp: 3, up: 6, g: 4, life: 0.9, size: 3.4 }); X.ring(f.x, f.y, 'fire', 500, 26, 4); break;
+      case 'burn': X.burst(f.x, f.y - 0.3, 'dark', 8, { sp: 1.2, up: 2.4, life: 0.7, size: 2.6, add: false }); break;
+      default: break;
+    }
+  });
+  const px = (x) => X.sxOf(x) + X.TS / 2, py = (y) => X.syOf(y) + X.TS / 2;
+  // el aliento sale de la boca: algo por encima y hacia donde mira el dragón
+  const mouth = (f) => { let face = 1; for (const e of G.ents.values()) if (e.kind === 'mo' && e.t === 'dragon_sombra' && Math.abs(e.x - f.x1) < 2 && Math.abs(e.y - f.y1) < 2) face = e.face || 1; return [px(f.x1) + face * 1.4 * X.TS, py(f.y1) - 1.3 * X.TS]; };
+  // suelo: avisos rojos, grietas de lava
+  X.on('under', (c, now) => {
+    for (let i = BF.length - 1; i >= 0; i--) {
+      const b = BF[i], p = (now - b.t) / b.T; if (p >= 1) { BF.splice(i, 1); continue; }
+      const TS = X.TS;
+      if (b.k === 'dkw') {
+        const f = b.f, [x1, y1] = mouth(f), x2 = px(f.x2), y2 = py(f.y2), a = Math.atan2(y2 - y1, x2 - x1), L = Math.hypot(x2 - x1, y2 - y1);
+        c.save(); c.translate(x1, y1); c.rotate(a); c.fillStyle = `rgba(140,60,220,${0.10 + 0.22 * p})`; c.fillRect(0, -TS * 1.6, L, TS * 3.2);
+        c.strokeStyle = `rgba(210,150,255,${0.35 + 0.4 * Math.abs(Math.sin(now / 90))})`; c.lineWidth = 2; c.strokeRect(0, -TS * 1.6, L, TS * 3.2); c.restore();
+      } else if (b.k === 'slw') {
+        const f = b.f, x = px(f.x), y = py(f.y), r = f.r * TS;
+        c.fillStyle = `rgba(230,40,20,${0.08 + 0.22 * p})`; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+        c.strokeStyle = `rgba(255,${90 + 100 * Math.abs(Math.sin(now / 80))},40,.85)`; c.lineWidth = 3; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke();
+        c.beginPath(); c.arc(x, y, r * p, 0, 7); c.stroke();
+      } else if (b.k === 'fiw') {
+        const f = b.f, x = px(f.x), y = py(f.y), r = f.r * TS;
+        c.strokeStyle = `rgba(255,150,40,${0.5 + 0.4 * Math.abs(Math.sin(now / 70))})`; c.lineWidth = 2; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke();
+        c.fillStyle = `rgba(255,90,20,${0.12 + 0.3 * p})`; c.fill();
+      } else if (b.k === 'crack') {
+        const x = px(b.x), y = py(b.y), al = Math.min(1, (1 - p) * 2.2);
+        c.save(); c.translate(x, y); c.lineCap = 'round'; c.lineJoin = 'round';
+        for (const pts of b.c) {
+          c.beginPath(); pts.forEach(([u, v], j) => (j ? c.lineTo(u * TS, v * TS) : c.moveTo(u * TS, v * TS)));
+          c.strokeStyle = `rgba(10,6,8,${0.85 * al})`; c.lineWidth = 4; c.stroke();
+          c.strokeStyle = `rgba(255,${100 + 60 * Math.sin(now / 200 + pts.length)},20,${0.9 * al})`; c.lineWidth = 1.6; c.stroke();
+        }
+        c.restore();
+      }
+    }
+  });
+  // por encima: aliento de fuego negro y columnas de lava
+  X.on('draw', (c, now) => {
+    for (const b of BF) {
+      const p = (now - b.t) / b.T, TS = X.TS; if (p >= 1) continue;
+      if (b.k === 'dk') {
+        const f = b.f, [x1, y1] = mouth(f), x2 = px(f.x2), y2 = py(f.y2), a = Math.atan2(y2 - y1, x2 - x1), L = Math.hypot(x2 - x1, y2 - y1);
+        const reach = Math.min(1, p * 4), al = p < 0.7 ? 1 : (1 - p) / 0.3;
+        c.save(); c.translate(x1, y1); c.rotate(a);
+        for (let i = 0; i < 46; i++) {
+          const s = (i / 46) * L * reach, w = 7 + (s / L) * 26, off = Math.sin(now / 55 + i * 1.7 + b.seed) * w * 0.55;
+          c.fillStyle = `rgba(14,5,24,${0.85 * al})`; c.beginPath(); c.arc(s, off, w, 0, 7); c.fill();
+          if (i % 2) { c.strokeStyle = `rgba(170,90,255,${0.55 * al})`; c.lineWidth = 2; c.beginPath(); c.arc(s, off, w + 1, 0, 7); c.stroke(); }
+        }
+        c.globalCompositeOperation = 'lighter';
+        for (let i = 0; i < 14; i++) { const s = rnd(0, L * reach); c.fillStyle = `rgba(190,110,255,${0.35 * al})`; c.beginPath(); c.arc(s, rnd(-1, 1) * (8 + s / L * 24), rnd(2, 5), 0, 7); c.fill(); }
+        c.restore();
+      } else if (b.k === 'fi') {
+        const f = b.f, x = px(f.x), y = py(f.y) + 8, h = 90 * Math.sin(Math.min(1, p * 2.2) * Math.PI * 0.5) * (1 - p * 0.6);
+        const g = c.createLinearGradient(0, y, 0, y - h); g.addColorStop(0, 'rgba(255,230,120,.95)'); g.addColorStop(0.5, 'rgba(255,110,20,.85)'); g.addColorStop(1, 'rgba(90,20,10,0)');
+        c.fillStyle = g; c.beginPath(); c.moveTo(x - 13, y); c.quadraticCurveTo(x - 7 + Math.sin(now / 50) * 3, y - h * 0.6, x, y - h); c.quadraticCurveTo(x + 7 + Math.sin(now / 60) * 3, y - h * 0.6, x + 13, y); c.closePath(); c.fill();
+      }
+    }
+  });
+
   /* ============================ CLAVE: código de recuperación ============================ */
   X.handlers.xauth = (m) => {
     if (m.ok === 'created' && m.rc) {

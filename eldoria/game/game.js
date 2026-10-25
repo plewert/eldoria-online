@@ -467,7 +467,7 @@ class Game {
     const monsDefs = {};
     for (const [k, d] of Object.entries(MONSTERS)) {
       monsDefs[k] = Object.assign({
-        name: d.name, icon: d.icon, boss: !!d.boss, range: d.range || 1,
+        name: d.name, icon: d.icon, boss: !!d.boss, range: d.range || 1, lv: d.lv || 1,
         hp: d.hp, dmg: d.dmg, exp: Math.round(d.exp * CFG.XP_RATE), aggro: d.aggro, respawn: d.respawn, move: d.move,
       }, I.dropInfo(d));
     }
@@ -475,7 +475,7 @@ class Game {
     for (const [k, g] of Object.entries(GEMS)) gems[k] = { name: g.name, icon: g.icon, col: g.col, desc: g.desc };
     this.send(p, {
       t: 'welcome', id: p.id, w: W, h: H, rows: world.rows,
-      zones: ZONES.map((z) => ({ id: z.id, name: z.name, pvp: z.pvp, kind: z.kind, rect: z.rect, tint: z.tint || null })),
+      zones: ZONES.map((z) => ({ id: z.id, name: z.name, pvp: z.pvp, kind: z.kind, dark: !!z.dark, rect: z.rect, tint: z.tint || null })),
       portals: PORTALS.map((q) => ({ x: q.x, y: q.y, label: q.label })),
       npcs: NPCS, items: ITEMS, mons: monsDefs, gems, rar: RAR,
       cfg: {
