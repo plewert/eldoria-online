@@ -925,7 +925,7 @@ class Game {
 
   addSkillXp(p, style, amt) {
     const before = skillFromXp(p.sxp[style]);
-    p.sxp[style] = Math.min(skillXpFor(SKILL_MAX), p.sxp[style] + amt);       // tope: nivel 400
+    p.sxp[style] = Math.min(skillXpFor(SKILL_MAX), p.sxp[style] + amt);       // tope: nivel 320
     const after = skillFromXp(p.sxp[style]);
     if (after > before) this.msg(p, `¡Tu habilidad de ${SKILL_NAMES[style]} sube al nivel ${after}!`, 's');
     p.dirty.stats = true;

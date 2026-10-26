@@ -216,13 +216,13 @@ ok('Hidra de Jade: cueva propia, set de arquero y sus tres ataques', () => {
   game.mgrid.delete(m.y * world.W + m.x); game.monsters = game.monsters.filter((q) => q !== m); game.ents.delete(m.id);
 });
 ok('habilidades: tope 400 y cada nivel cuesta más', () => {
-  const S = require('../game/skills'); assert.equal(S.SKILL_MAX, 400);
+  const S = require('../game/skills'); assert.equal(S.SKILL_MAX, 320);
   assert.equal(S.skillFromXp(0), 1); assert.equal(S.skillFromXp(S.skillXpFor(50)), 50); assert.equal(S.skillFromXp(S.skillXpFor(50) - 1), 49);
-  assert.equal(S.skillFromXp(1e12), 400);
-  let prev = 0; for (let l = 2; l <= 400; l++) { const c = S.skillXpFor(l) - S.skillXpFor(l - 1); assert.ok(c > prev, 'cuesta más en ' + l); prev = c; }
+  assert.equal(S.skillFromXp(1e12), 320);
+  let prev = 0; for (let l = 2; l <= 320; l++) { const c = S.skillXpFor(l) - S.skillXpFor(l - 1); assert.ok(c > prev, 'cuesta más en ' + l); prev = c; }
   assert.ok(S.skillXpFor(100) > 20 * 99 * 99, 'más caro que antes');
-  const a = login('Sk1'); a.p.sxp.melee = S.skillXpFor(400) - 1; game.addSkillXp(a.p, 'melee', 99999); assert.equal(a.p.sxp.melee, S.skillXpFor(400)); assert.equal(S.skillFromXp(a.p.sxp.melee), 400);
-  assert.ok(S.skillMult(400) < 10);
+  const a = login('Sk1'); a.p.sxp.melee = S.skillXpFor(320) - 1; game.addSkillXp(a.p, 'melee', 99999); assert.equal(a.p.sxp.melee, S.skillXpFor(320)); assert.equal(S.skillFromXp(a.p.sxp.melee), 320);
+  assert.ok(S.skillMult(320) < 10);
 });
 ok('los jefes pegan 1,5 veces más fuerte', () => {
   const a = login('Bd1'); place(a.p, 50, 64); a.p.hp = a.p.maxHp = 100000; a.p.eq = {}; game.recalc(a.p);
