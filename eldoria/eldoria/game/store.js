@@ -78,6 +78,26 @@ class Store {
     return h.length === want.length && crypto.timingSafeEqual(h, want);
   }
 
+  setPassword(acc, password) {
+    acc.salt = crypto.randomBytes(16).toString('hex');
+    acc.hash = crypto.scryptSync(password, acc.salt, 32).toString('hex');
+    this.dirty.add(acc.key); this.touch();
+  }
+
+  /** Código de recuperación: se muestra una sola vez al crear el personaje. */
+  setRecovery(acc) {
+    const code = crypto.randomBytes(6).toString('hex').toUpperCase().replace(/(.{4})/g, '$1-').slice(0, -1);
+    acc.rsalt = crypto.randomBytes(16).toString('hex');
+    acc.rhash = crypto.scryptSync(code, acc.rsalt, 32).toString('hex');
+    this.dirty.add(acc.key); this.touch();
+    return code;
+  }
+  verifyRecovery(acc, code) {
+    if (!acc.rhash) return false;
+    const h = crypto.scryptSync(String(code).trim().toUpperCase(), acc.rsalt, 32), want = Buffer.from(acc.rhash, 'hex');
+    return h.length === want.length && crypto.timingSafeEqual(h, want);
+  }
+
   saveData(key, data) {
     const acc = this.accounts[key];
     if (!acc) return;

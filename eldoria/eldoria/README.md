@@ -25,6 +25,14 @@ Las cuentas se guardan en `data/players.json` (contraseñas con scrypt).
 Cada arma/armadura puede traer hasta 3 **ranuras** para gemas (solo se engarzan en zona segura, fuera de combate; sacarlas cuesta oro).
 Gemas: rubí (+ataque), zafiro (+maná), esmeralda (+vida), topacio (+defensa), amatista (crítico), ópalo (robo de vida) y diamante (**brillo**: aura del personaje; también brillan las piezas Ancient y los sets completos mejorados).
 
+## Equipo visible
+Casco, armadura, escudo y arma se ven puestos en tu personaje (y en los demás jugadores); también el amuleto (colgante) y los anillos (destello en la mano).
+Casillas: arma, casco, armadura, escudo, **amuleto** y **2 anillos**. Anillos y amuletos dan bonus (ataque, defensa, vida, maná, crítico, robo de vida), escalan con +N/Ancient y pueden llevar gemas.
+Se compran en las tiendas (los básicos) o caen de monstruos y jefes (los poderosos).
+
+## Sprites
+Los monstruos y PNJ con sprite de píxel-art salen de `public/sprites.png` + `sprites.json` (atlas hecho con tus láminas). Los que no tienen sprite siguen con emoji y extremidades animadas. Para cambiar uno, edita el atlas o quita su clave de `sprites.json`.
+
 ## Banco y comercio
 - **Banco** (Gerda en la ciudad, Marta en el puerto): guarda objetos y oro; lo guardado no se pierde al morir en PvP.
 - **Comercio** entre jugadores (clic derecho → Comerciar, a ≤4 casillas): ofertas con objetos y oro, los dos confirman, intercambio atómico; cualquier cambio anula las confirmaciones.
@@ -61,3 +69,83 @@ Render gratis borra los archivos al reiniciar. Eldoria guarda cuentas y estadís
 2. En la base, pestaña **REST API**: copia `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`.
 3. En Render → tu servicio → **Environment** → añade esas dos variables con esos nombres → Save (redespliega).
 En el registro de Render verás `Base remota conectada: N cuentas cargadas.` Se guarda cada 30 s, al desconectarte y al apagarse el servidor.
+
+## Equipo de mago (láminas de pixel-art)
+- 13 túnicas, 15 sombreros/coronas/capuchas, 19 báculos, 10 cintos, 6 guantes y 8 libros/orbes (mano libre). Cada pieza es más fuerte que la anterior (ver `game/mage.js`).
+- Nuevas casillas: **cinto** y **guantes**. Túnicas, sombreros, báculos, cinto, guantes y libros se ven puestos en el personaje.
+- Orin el Sabio vende las piezas de nivel bajo; las demás caen de monstruos según su nivel.
+- Los dibujos están en `public/gear.png` y `public/gear.json`.
+
+## Sistemas nuevos
+
+- **Misiones** con PNJ (marcas ❗ sobre ellos, tecla `Q`), **logros y títulos** (`L`), **ranking** (`R`).
+- **Habilidades activas** por estilo con las teclas `1`, `2`, `3` (se desbloquean a nivel 1, 8 y 15 del estilo).
+- **Grupos y gremios** (`G`; clic derecho sobre un jugador → invitar). Chat: `/p` grupo, `/gc` gremio.
+- **Mercado entre jugadores** (`P`, solo en ciudades, comisión 5 %), **oficios** (`F`): recolecta 🌿💠⛏️🔷 con clic y fabrica pociones, elixires y gemas.
+- **Mascotas y monturas** (tienda de Brisa y botín): clic en el objeto para invocarlas.
+- **Jefe de evento**: el Coloso Ancestral aparece cada cierto tiempo; variables `EVENT_MIN` (minutos entre eventos) y `EVENT_FIRST_MIN` (primer evento tras arrancar).
+- **Día/noche y clima**, **música y sonidos** (botón 🔊), **controles táctiles** para móvil.
+- **Seguridad**: límite de intentos fallidos por IP y **código de recuperación** (se muestra al crear la cuenta; `/codigo tuClave` genera uno nuevo; en el login, «¿Olvidaste tu clave?»).
+
+### Que el servidor no se duerma (Render gratis)
+Render duerme el servicio tras 15 min sin visitas. Crea un monitor gratuito en UptimeRobot o cron-job.org que haga una petición cada 5 min a `https://TU-APP.onrender.com/health`.
+
+### Set del Titán de Magma (botín raro del Coloso Ancestral)
+18 piezas (6 cascos, coraza, 2 guanteletes, cinto, 4 grebas, botas, **Hoja de Magma**, **Martillo del Coloso** y **Escudo del Dragón de Magma**), niveles 46-58, con vida extra y algo de ataque. Hay dos casillas nuevas de equipo: **grebas** y **botas**. Cada pieza cae con un 3-5 % por victoria.
+
+### Niveles de los monstruos
+Cada monstruo muestra un pequeño `lvl N` sobre su nombre (gris = trivial, verde, amarillo = parejo, naranja/rojo = peligroso, morado = imposible). Sale de la experiencia que da; el Coloso es nivel 150 y el Dragón nivel 500.
+
+### Dragón de las Sombras (jefe de evento, nivel 500)
+Alterna con el Coloso Ancestral en el evento de jefe (Dunas Ardientes, 15 minutos, 200.000 de vida más un 35 % por jugador extra conectado). Tres ataques:
+1. **Cuerpo a cuerpo** (170-300).
+2. **Aliento de fuego negro** a distancia: avisa 1 s con una franja morada; se esquiva moviéndose. Deja una quemadura de 3 s.
+3. **Pisotón que rompe el suelo**: círculo rojo de aviso, onda de choque (520-760) y después grietas de lava sobre los jugadores.
+
+Botín raro: **Set de las Sombras** (capucha, coraza, guanteletes, botas, carcaj y Arco de las Sombras), más Escamas de las Sombras, pociones y plumas de fénix. Un día/hora fijos no hacen falta: `EVENT_MIN` marca cada cuánto sale un jefe.
+
+## Cueva del Dragón de las Sombras
+Una caverna enorme y oscura (zona `cueva`, sin PvP) al sur del camino del desierto. Se entra por el portal del camino (122,79) y se sale por el portal de la entrada. Dentro solo vive el Dragón de las Sombras (nivel 500, reaparece al minuto y tiene 80% de defensa, 300.000 de vida (reduce todo el daño que recibe)); ya no es jefe de evento. La oscuridad solo se aclara alrededor del jugador, otros jugadores y portales.
+
+Las mazmorras y la cueva son recintos cerrados: ni tú puedes atacar a los monstruos de dentro desde fuera, ni ellos (aliento, pisotón, ataques) te alcanzan desde la entrada. Hay que entrar.
+
+Botín compartido de todos los jefes: cada jugador que le haga al menos 1 % del daño recibe su propio botín (protegido para él). Quien más daño hace tiene +60 % de probabilidad en todo y más oro; los demás tiran con una probabilidad proporcional a su daño (mínimo 30 %), así que todos pueden sacar raros.
+
+## Botín por clic derecho y tumba
+- Clic derecho sobre un objeto del suelo: menú «Recoger X» para cada objeto de la casilla. Caminas hasta allí y recoges solo ese (el resto queda). Pisar una casilla sin elegir sigue recogiendo todo.
+- Si mueres en una zona peligrosa (PvP o mazmorra/cueva) queda una cruz enterrada donde caíste, visible en el mundo y en el minimapa (solo para ti). Desaparece al acercarte o tras 2 horas, y se guarda aunque te desconectes.
+
+## Cueva del Hidra de Jade
+Segunda cueva oscura (zona `cueva_jade`, sin PvP) en el prado del noroeste: puerta en (52,59). Dentro solo vive la **Hidra de Jade** (nivel 550, 320.000 de vida, 80 % de defensa, reaparece al minuto, botín compartido). Tres ataques con aviso en el suelo: **lluvia ácida** (tres oleadas de gotas que dejan charcos), **fuego amarillo** por las tres bocas (línea larga + quemadura) y **golpe al suelo** con onda y **caída de piedras**. Botín raro: set de arquero de jade (Yelmo, Coraza, Guanteletes, Botas) y el Arco de la Hidra, además de la Escama de Jade.
+
+## Habilidades (cuerpo a cuerpo, distancia, magia)
+Máximo nivel 320 en cada una. El nivel general (vida, maná, daño) también se congela en 320: la experiencia deja de subir y vida máx. = 6480. Cada nivel cuesta más experiencia que el anterior (curva ~ 20·(n-1)²·(1+(n-1)/150): nivel 100 ≈ 325 mil, nivel 320 ≈ 6 millones). El bonus de daño es +5 % por nivel hasta el 100 y +1 % por nivel después. Al llegar al 320 la experiencia se detiene.
+
+Las armas raras (Arco de las Sombras y Arco de la Hidra) caen con un 1 % base (antes 4 %); quien más daño hace tiene +60 %.
+Las armas del Coloso (Hoja de Magma 0,8 %, Martillo 0,6 %) también son más raras.
+
+Todos los jefes hacen 1,5 veces más daño (ataques normales y especiales); constante `BOSS_DMG` en `game/ext.js`.
+
+Más espacio: mochila de 24 a 48 casillas y banco de 48 a 120 (`INV_SIZE` / `BANK_SIZE` en `game/data.js`).
+
+## Colección de jefes (tecla B, botón 📖)
+Registra cada objeto que te suelta un jefe (equipo, armas, mascotas, trofeos y otros objetos raros), con el número de veces. Lo que aún no te salió aparece en negro con «???»; al pasar el ratón se ve su probabilidad. Se guarda con tu cuenta. Solo cuenta desde ahora: lo que ya habías conseguido antes no se registra.
+
+Hechizo de curar (V): cura 1000 de vida fijos y se recarga en 4 s (`HEAL_AMOUNT` / `HEAL_CD_MS` en `game/data.js`); cuesta 25 de maná.
+
+## Mapa ampliado y comida
+- El mundo pasa de 180×140 a **250×140**. El mapa original no cambia; al este (siguiendo el camino del desierto) hay tres lugares nuevos: **Aldea Pesquera de Coral** (ciudad segura con Nilo el Pescador, tienda, y Tomás el Banquero), **Selva Esmeralda** al norte (PvP, monstruos fuertes) y **Sabana Dorada** al sur (zona segura con monstruos medios).
+- **Comida** (botón 🍣 de la barra o tecla **K**): Sardina 80, Salmón 100 y Tiburón 150 de vida. Se usa la más pequeña que cubra lo que te falta (si ninguna basta, la mayor). Enfriamiento propio de 1,5 s, aparte de las pociones. Se vende en Boris, Capitán Brisa y Nilo (`SHOPS` en `game/data.js`).
+
+## Tierras de Lava y Fuego, gemas y mascotas de jefe
+- Nueva zona **PvP** al este de la Sabana (x 250–319): **Tierras de Lava y Fuego**. La lava es intransitable (se ve animada), el suelo es ceniza y hay formaciones de obsidiana. Monstruos de fuego: golems de lava, demonios y dragones. Se llega por el camino largo del este.
+- **Gemas**: ahora caen con un 0,15 % por muerte (monstruos y jefes; antes los jefes siempre soltaban una). `GEM_CHANCE` en `game/data.js`.
+- **Equipo raro** de monstruos y jefes: cae a la mitad de seguido (`GEAR_DROP_MULT` = 0,5).
+- **Mascotas de jefe**: cada jefe puede soltar una "Cría de ..." (0,4–1 % base) que te sigue y da +20–35 % de oro. Aparecen también en la colección de jefes (B).
+
+## Pantalones de los dragones
+- **Pantalón de Asesino de Sombras** (nv 64, def 28, +200 vida, +2% crítico): lo suelta el Dragón de las Sombras.
+- **Pantalón de Escamas de Dragón** (nv 73, def 30, +220 vida, +5 ataque): lo suelta la Hidra de Jade.
+- Ranura de piernas, 5% base como el resto del set (con GEAR_DROP_MULT 0.5 queda en ~2.5%). Aparecen en la colección de jefes.
+
+**Carcaj de Escamas de Jade** (escudo/carcaj, nv 72, def 26, +150 vida, +6 ataque, +2% crítico): drop de la Hidra de Jade (5% base).

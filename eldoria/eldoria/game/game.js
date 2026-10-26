@@ -16,17 +16,21 @@ const cheb = (ax, ay, bx, by) => Math.max(Math.abs(ax - bx), Math.abs(ay - by));
 const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
 const clampDir = (v) => (v > 0 ? 1 : v < 0 ? -1 : 0);
 
-const levelFromXp = (xp) => 1 + Math.floor(Math.sqrt(xp / 50));
+const levelFromXp = (xp) => Math.min(LEVEL_MAX, 1 + Math.floor(Math.sqrt(xp / 50)));
 const xpForLevel = (l) => 50 * (l - 1) * (l - 1);
-const skillFromXp = (xp) => 1 + Math.floor(Math.sqrt(xp / 20));
-const skillXpFor = (l) => 20 * (l - 1) * (l - 1);
+// los equipos raros de monstruos y jefes caen menos (una sola vez al cargar)
+for (const d of Object.values(MONSTERS)) for (const l of d.loot) if (I.isGear(l[0])) l[1] *= CFG.GEAR_DROP_MULT;
+const { LEVEL_MAX, SKILL_MAX, skillFromXp, skillXpFor, skillMult } = require('./skills');
 
 const FISTS = { name: 'Puños', style: 'melee', atk: 3, cd: 1500, range: 1 };
 const SKILL_NAMES = { melee: 'combate cuerpo a cuerpo', ranged: 'combate a distancia', magic: 'magia' };
 const SLOTS = I.SLOTS;
 const DIRS8 = [[0, -1], [1, 0], [0, 1], [-1, 0], [1, -1], [1, 1], [-1, 1], [-1, -1]];
-const NAME_RE = /^[A-Za-z0-9_]{3,14}$/;
+const NAME_RE = /^[A-Za-z0-9][A-Za-z0-9_]{2,13}$/;
 const npcTiles = new Set(NPCS.map((n) => kxy(n.x, n.y)));
+
+// Mazmorras y cuevas son recintos cerrados: nada ataca hacia dentro ni hacia fuera de ellas
+const sameRealm = (a, b) => { const za = zoneAt(a.x, a.y), zb = zoneAt(b.x, b.y); return za === zb || (za.kind !== 'dungeon' && zb.kind !== 'dungeon'); };
 
 class Game {
   constructor(store) {
@@ -44,6 +48,8 @@ class Game {
     this.pgrid = new Map();     // casilla -> jugador
     this.fx = [];
     this.lastSave = Date.now();
+    this.dots = []; this.parties = new Map(); this.nextPartyId = 1;
+    this.initNodes(); this.initEvent();
     for (const s of world.monsterSpawns) this.spawnMonster(s.type, s.x, s.y);
   }
 
@@ -82,12 +88,12 @@ class Game {
       return;
     }
     let t = m.target ? this.ents.get(m.target) : null;
-    if (t && (t.kind !== 'pl' || t.hp <= 0 || cheb(m.x, m.y, t.x, t.y) > def.aggro + 9 || cheb(t.x, t.y, m.sx, m.sy) > 20)) { m.target = null; t = null; }
+    if (t && (t.kind !== 'pl' || t.hp <= 0 || cheb(m.x, m.y, t.x, t.y) > def.aggro + 9 || cheb(t.x, t.y, m.sx, m.sy) > 20 || !sameRealm(m, t))) { m.target = null; t = null; }
     if (!t && def.aggro > 0 && now >= m.nextScan) {
       m.nextScan = now + 400;
       let best = null, bd = 1e9;
       for (const p of this.players.values()) {
-        if (p.hp <= 0) continue;
+        if (p.hp <= 0 || !sameRealm(m, p)) continue;
         const d = cheb(m.x, m.y, p.x, p.y);
         if (d <= def.aggro && d < bd) { bd = d; best = p; }
       }
@@ -105,7 +111,7 @@ class Game {
         this.hurtPlayer(t, raw, m, now, def.name);
       }
       if (!inRange && now >= m.nextMove) {
-        m.nextMove = now + def.move;
+        m.nextMove = now + def.move * (m.slowUntil > now ? 2.2 : 1);
         const goal = range === 1 ? (x, y) => cheb(x, y, t.x, t.y) <= 1 : (x, y) => dist(x, y, t.x, t.y) <= range - 0.3;
         this.moveToward(m, t.x, t.y, goal, (x, y) => this.monsterCanStep(m, x, y));
       }
@@ -190,13 +196,17 @@ class Game {
     if (!arr.length) this.gtile.delete(k);
   }
 
-  pickup(p, silent) {
+  pickup(p, silent, only) {
     const arr = this.gtile.get(kxy(p.x, p.y));
+    if (p.wantGid && this.now > p.wantUntil) p.wantGid = 0;
+    if (!only && p.wantGid) only = p.wantGid;          // modo elegir: al caminar solo se recoge lo pedido
     if (!arr || !arr.length) return;
     const now = this.now;
     let invDirty = false, blocked = false, full = false;
     for (const g of arr.slice()) {
+      if (only && g.gid !== only) continue;
       if (g.prot > now && g.owner !== p.id) { blocked = true; continue; }
+      if (only) p.wantGid = 0;
       if (g.item === 'gold') {
         p.gold += g.qty; this.removeGround(g); invDirty = true;
         this.fx.push({ k: 'd', x: p.x, y: p.y, v: '+' + g.qty + '💰', c: 'x' });
@@ -233,10 +243,11 @@ class Game {
     const it = p.inv[slot];
     if (!it) return;
     const def = ITEMS[it.id];
-    if (!def || !SLOTS.includes(def.type)) return;
+    if (!def || !I.isGear(it.id)) return;
     if ((def.minLevel || 1) > p.level) { this.msg(p, `Necesitas nivel ${def.minLevel} para usar ${def.name}.`, 's'); return; }
-    const old = p.eq[def.type];
-    p.eq[def.type] = it;
+    const sl = I.slotFor(def.type, p.eq);
+    const old = p.eq[sl];
+    p.eq[sl] = it;
     p.inv[slot] = old || null;
     p.vis = null; this.recalc(p);
     p.dirty.inv = true;
@@ -257,10 +268,10 @@ class Game {
     if (!it) return;
     const def = ITEMS[it.id];
     if (!def) return;
-    if (def.type === 'weapon' || def.type === 'head' || def.type === 'body' || def.type === 'shield') { this.equip(p, slot); return; }
+    if (I.isGear(it.id)) { this.equip(p, slot); return; }
     if (def.type !== 'consumable') return;
     const now = this.now;
-    if (now < p.nextPotion) return;
+    if (def.food ? now < p.nextFood : now < p.nextPotion) return;
     if ((def.minLevel || 1) > p.level) { this.msg(p, `Necesitas nivel ${def.minLevel} para usar ${def.name}.`, 's'); return; }
     if (def.heal) {
       if (p.hp >= p.maxHp) return;
@@ -271,7 +282,7 @@ class Game {
       const r = Math.min(def.restore, p.maxMana - p.mana);
       p.mana += r; this.fx.push({ k: 'd', x: p.x, y: p.y, v: '+' + r, c: 'm' });
     }
-    p.nextPotion = now + 1000;
+    if (def.food) p.nextFood = now + CFG.FOOD_CD_MS; else p.nextPotion = now + 1000;
     it.qty--; if (it.qty <= 0) p.inv[slot] = null;
     p.dirty.inv = true;
   }
@@ -283,11 +294,26 @@ class Game {
       const it = p.inv[i];
       if (!it) continue;
       const d = ITEMS[it.id];
-      if (!d || d.type !== 'consumable' || !d[kind] || (d.minLevel || 1) > p.level) continue;
+      if (!d || d.type !== 'consumable' || d.food || !d[kind] || (d.minLevel || 1) > p.level) continue;
       if (d[kind] < bestVal) { bestVal = d[kind]; bestSlot = i; }
     }
     if (bestSlot >= 0) this.use(p, bestSlot);
     else this.msgThrottle(p, 'nopot', kind === 'heal' ? 'No tienes pociones de vida.' : 'No tienes pociones de maná.');
+  }
+
+  /** Comer: la comida más pequeña que cubra lo que te falta; si ninguna basta, la mayor. */
+  useFood(p) {
+    if (p.hp >= p.maxHp) return;
+    const missing = p.maxHp - p.hp; let slot = -1, val = 0, fit = false;
+    for (let i = 0; i < p.inv.length; i++) {
+      const it = p.inv[i], d = it && ITEMS[it.id]; if (!d || !d.food) continue;
+      const ok = d.heal >= missing;
+      if (slot < 0 || (ok && (!fit || d.heal < val)) || (!ok && !fit && d.heal > val)) { slot = i; val = d.heal; fit = ok; }
+    }
+    if (slot < 0) { this.msgThrottle(p, 'nofood', 'No tienes comida. Cómprala en las tiendas o en la Aldea Pesquera.'); return; }
+    if (this.now < p.nextFood) return;
+    this.use(p, slot);
+    this.fx.push({ k: 'h', x: p.x, y: p.y });
   }
 
   drop(p, slot, qty) {
@@ -352,16 +378,17 @@ class Game {
       hp: 0, mana: 0, xp: 0, sxp: { melee: 0, ranged: 0, magic: 0 }, gold: 0,
       inv: new Array(CFG.INV_SIZE).fill(null), eq: { weapon: null, head: null, body: null, shield: null },
       bank: new Array(CFG.BANK_SIZE).fill(null), bankGold: 0, vis: null, trade: null, tradeInv: null, bankOpen: false,
-      target: null, nextMove: 0, nextAtk: 0, nextPotion: 0, nextSpell: 0, nextRegen: 0, pend: null,
+      target: null, nextMove: 0, nextAtk: 0, nextPotion: 0, nextFood: 0, nextSpell: 0, nextRegen: 0, pend: null,
       pvpLock: 0, offlineUntil: 0, tpSeq: 0, lastChat: 0, throttle: {}, dirty: { inv: true, stats: true },
     };
+    this.extLoad(p, d);
     if (d) {
-      p.xp = d.xp | 0; p.gold = d.gold | 0;
-      p.sxp = { melee: d.sxp.melee | 0, ranged: d.sxp.ranged | 0, magic: d.sxp.magic | 0 };
+      p.xp = Math.min(xpForLevel(LEVEL_MAX), d.xp | 0); p.gold = d.gold | 0;
+      const cap = skillXpFor(SKILL_MAX); p.sxp = { melee: Math.min(cap, d.sxp.melee | 0), ranged: Math.min(cap, d.sxp.ranged | 0), magic: Math.min(cap, d.sxp.magic | 0) };
       d.inv.forEach((it, i) => { const n = I.normalize(it); if (n && i < CFG.INV_SIZE) p.inv[i] = n; });
       if (Array.isArray(d.bank)) d.bank.forEach((it, i) => { const n = I.normalize(it); if (n && i < CFG.BANK_SIZE) p.bank[i] = n; });
       p.bankGold = d.bankGold | 0;
-      for (const s of SLOTS) { const n = I.normalize(d.eq && d.eq[s]); p.eq[s] = n && ITEMS[n.id].type === s ? n : null; }
+      for (const s of SLOTS) { const n = I.normalize(d.eq && d.eq[s]); p.eq[s] = n && I.fits(s, ITEMS[n.id].type) ? n : null; }
       if (world.isWalkable(d.x, d.y) && zoneAt(d.x, d.y).kind !== 'dungeon') { p.x = d.x; p.y = d.y; }
       this.recalc(p);
       p.hp = Math.max(1, Math.min(p.maxHp, d.hp | 0)); p.mana = Math.max(0, Math.min(p.maxMana, d.mana | 0));
@@ -388,7 +415,7 @@ class Game {
     }
     return {
       x: p.x, y: p.y, hp: p.hp, mana: p.mana, xp: p.xp, sxp: p.sxp, gold,
-      inv, eq, bank: p.bank.map((it) => I.clone(it)), bankGold: p.bankGold,
+      inv, eq, bank: p.bank.map((it) => I.clone(it)), bankGold: p.bankGold, ext: this.extSave(p),
     };
   }
 
@@ -410,6 +437,7 @@ class Game {
     p.ws = ws; ws.p = p;
     p.dirty = { inv: true, stats: true };
     this.sendWelcome(p);
+    this.onLogin(p);
     this.msg(p, `¡Bienvenido a Eldoria, ${p.name}! Habla con Orin el Sabio en la ciudad para recibir consejos.`, 's');
     this.broadcastChat(`${p.name} se ha conectado.`, 's');
     return p;
@@ -462,7 +490,7 @@ class Game {
     const monsDefs = {};
     for (const [k, d] of Object.entries(MONSTERS)) {
       monsDefs[k] = Object.assign({
-        name: d.name, icon: d.icon, boss: !!d.boss, range: d.range || 1,
+        name: d.name, icon: d.icon, boss: !!d.boss, range: d.range || 1, lv: d.lv || 1,
         hp: d.hp, dmg: d.dmg, exp: Math.round(d.exp * CFG.XP_RATE), aggro: d.aggro, respawn: d.respawn, move: d.move,
       }, I.dropInfo(d));
     }
@@ -470,7 +498,7 @@ class Game {
     for (const [k, g] of Object.entries(GEMS)) gems[k] = { name: g.name, icon: g.icon, col: g.col, desc: g.desc };
     this.send(p, {
       t: 'welcome', id: p.id, w: W, h: H, rows: world.rows,
-      zones: ZONES.map((z) => ({ id: z.id, name: z.name, pvp: z.pvp, kind: z.kind, rect: z.rect, tint: z.tint || null })),
+      zones: ZONES.map((z) => ({ id: z.id, name: z.name, pvp: z.pvp, kind: z.kind, dark: !!z.dark, rect: z.rect, tint: z.tint || null })),
       portals: PORTALS.map((q) => ({ x: q.x, y: q.y, label: q.label })),
       npcs: NPCS, items: ITEMS, mons: monsDefs, gems, rar: RAR,
       cfg: {
@@ -492,11 +520,11 @@ class Game {
     const sk = {};
     for (const s of ['melee', 'ranged', 'magic']) {
       const l = skillFromXp(p.sxp[s]);
-      sk[s] = [l, p.sxp[s], skillXpFor(l), skillXpFor(l + 1)];
+      sk[s] = [l, p.sxp[s], skillXpFor(l), l >= SKILL_MAX ? skillXpFor(l) + 1 : skillXpFor(l + 1)];
     }
     const w = this.weaponOf(p);
     this.send(p, {
-      t: 'stats', lv: p.level, xp: p.xp, xpLo: xpForLevel(p.level), xpHi: xpForLevel(p.level + 1),
+      t: 'stats', lv: p.level, xp: p.xp, xpLo: xpForLevel(Math.min(p.level, LEVEL_MAX - 1)), xpHi: xpForLevel(Math.min(p.level + 1, LEVEL_MAX)),
       maxHp: p.maxHp, maxMana: p.maxMana, gold: p.gold, sk, style: w.style, def: this.defOf(p), weapon: w.name,
       gb: I.gearBonus(p.eq), glow: this.visOf(p).g,
     });
@@ -510,7 +538,7 @@ class Game {
     for (const q of this.players.values()) {
       if (!inView(q.x, q.y)) continue;
       const vis = this.visOf(q);
-      pl.push({ i: q.id, n: q.name, x: q.x, y: q.y, h: q.hp, H: q.maxHp, l: q.level, c: q.color, s: this.styleOf(q), d: q.dir, k: now < q.pvpLock ? 1 : 0, o: q.ws ? 0 : 1, v: vis.g, a: vis.an, t: q.trade ? 1 : 0 });
+      pl.push({ i: q.id, n: q.name, x: q.x, y: q.y, h: q.hp, H: q.maxHp, l: q.level, c: q.color, s: this.styleOf(q), d: q.dir, k: now < q.pvpLock ? 1 : 0, o: q.ws ? 0 : 1, v: vis.g, a: vis.an, t: q.trade ? 1 : 0, q: SLOTS.map((s) => (q.eq[s] ? q.eq[s].id : 0)), ...this.extView(q) });
     }
     for (const m of this.monsters) {
       if (m.dead || !inView(m.x, m.y)) continue;
@@ -519,13 +547,13 @@ class Game {
     for (const [k, arr] of this.gtile) {
       const x = k % W, y = (k / W) | 0;
       if (!inView(x, y)) continue;
-      gi.push({ x, y, it: arr.slice(0, 4).map((g) => [g.item, g.qty, g.prot > now && g.owner !== p.id ? 1 : 0, g.inst ? g.inst.up || 0 : 0, g.inst && g.inst.an ? 1 : 0]), n: arr.length });
+      gi.push({ x, y, it: arr.slice(0, 4).map((g) => [g.item, g.qty, g.prot > now && g.owner !== p.id ? 1 : 0, g.inst ? g.inst.up || 0 : 0, g.inst && g.inst.an ? 1 : 0, g.gid]), n: arr.length });
     }
     for (const f of this.fx) {
       const fx0 = f.x !== undefined ? f.x : f.x1, fy0 = f.y !== undefined ? f.y : f.y1;
       if (Math.abs(fx0 - p.x) <= vx + 3 && Math.abs(fy0 - p.y) <= vy + 3) fx.push(f);
     }
-    this.send(p, { t: 's', me: { x: p.x, y: p.y, h: p.hp, m: p.mana, tg: p.target, tp: p.tpSeq, v: this.visOf(p).g, lk: p.pvpLock > now ? Math.ceil((p.pvpLock - now) / 1000) : 0 }, pl, mo, gi, fx });
+    this.send(p, { t: 's', me: { x: p.x, y: p.y, h: p.hp, m: p.mana, tg: p.target, tp: p.tpSeq, v: this.visOf(p).g, lk: p.pvpLock > now ? Math.ceil((p.pvpLock - now) / 1000) : 0 }, pl, mo, gi, fx, nd: this.nodeView(p) });
   }
 
   /* ============================ ENTRADAS DEL CLIENTE ============================ */
@@ -552,9 +580,17 @@ class Game {
       case 'use': this.use(p, msg.s | 0); break;
       case 'drop': this.drop(p, msg.s | 0, msg.q | 0); break;
       case 'pickup': this.pickup(p, false); break;
+      case 'pick': {                                  // clic derecho: recoger solo ese objeto
+        const g = this.ground.get(msg.gid | 0); if (!g) break;
+        if (cheb(p.x, p.y, g.x, g.y) > 40) break;
+        if (g.x === p.x && g.y === p.y) this.pickup(p, false, g.gid);
+        else { p.wantGid = g.gid; p.wantUntil = this.now + 20000; }
+        break;
+      }
       case 'style': if (['melee', 'ranged', 'magic'].includes(msg.s)) this.switchStyle(p, msg.s); break;
       case 'potion': this.useBest(p, msg.k === 'mana' ? 'restore' : 'heal'); break;
       case 'spell': this.castHeal(p); break;
+      case 'eat': this.useFood(p); break;
       case 'chat': this.chat(p, String(msg.text || '')); break;
       case 'npc': this.npcClick(p, msg.id); break;
       case 'buy': this.buy(p, String(msg.id), msg.q | 0); break;
@@ -574,7 +610,7 @@ class Game {
         if (p.trade) this.tradeCancel(p, 'Comercio cancelado.');
         else if (p.tradeInv) { const q = this.ents.get(p.tradeInv.from); p.tradeInv = null; if (q && q.kind === 'pl') this.msg(q, `${p.name} rechazó el comercio.`, 's'); }
         break;
-      default: break;
+      default: this.handleExt(p, msg); break;
     }
     if (p.dirty.inv) { p.dirty.inv = false; this.sendInv(p); p.dirty.stats = true; }
     if (p.dirty.stats) { p.dirty.stats = false; this.sendStats(p); }
@@ -591,8 +627,9 @@ class Game {
       const list = [...this.players.values()].sort((a, b) => b.xp - a.xp).slice(0, 5).map((q) => `${q.name} (nv ${q.level})`).join(', ');
       this.msg(p, 'Jugadores conectados más fuertes: ' + list, 's'); return;
     }
-    if (text === '/ayuda') { this.msg(p, 'Comandos: /g mensaje (chat global), /pos, /top. Teclas: WASD mover, Z/X/C arma, H/J pociones, V curar, E recoger. Clic derecho: monstruo = ver sus drops, jugador = comerciar, objeto = gemas.', 's'); return; }
+    if (text === '/ayuda') { this.msg(p, 'Comandos: /g mensaje (global), /p mensaje (grupo), /gc mensaje (gremio), /grupo, /gremio, /clave, /pos, /top. Teclas 1-2-3: habilidades; Q misiones, L logros, G social, R ranking, P mercado, F oficios. Otras: WASD mover, Z/X/C arma, H/J pociones, V curar, E recoger. Clic derecho: monstruo = ver sus drops, jugador = comerciar, objeto = gemas.', 's'); return; }
     if (text.startsWith('/g ')) { this.broadcastChat(text.slice(3), 'g', p.name); return; }
+    if (this.chatExt(p, text)) return;
     if (text.startsWith('/')) { this.msg(p, 'Comando desconocido. Escribe /ayuda.', 's'); return; }
     for (const q of this.players.values()) {
       if (cheb(q.x, q.y, p.x, p.y) <= 14) this.send(q, { t: 'chat', n: p.name, m: text, k: 'l' });
@@ -609,12 +646,14 @@ class Game {
       p.shopNpc = n.id;
       this.send(p, { t: 'shop', npc: n.name, stock: SHOPS[n.shop] || [] });
       this.msg(p, `${n.name}: ¡Bienvenido! Compro tus trofeos y vendo equipo de calidad.`, 'n');
+      if (n.id === 'orin') this.msg(p, `${n.name}: ${NPC_TIPS[rnd(0, NPC_TIPS.length - 1)]}`, 'n');
     } else if (n.type === 'bank') {
       this.sendBank(p);
       this.msg(p, `${n.name}: Guardo tu oro y tus objetos a salvo. Lo que está en el banco no se pierde si te matan.`, 'n');
     } else {
       this.msg(p, `${n.name}: ${NPC_TIPS[rnd(0, NPC_TIPS.length - 1)]}`, 'n');
     }
+    this.sendQuests(p, n.id);
   }
 
   /** El mercader cuya tienda tiene abierta el jugador, si sigue cerca. */
@@ -863,13 +902,12 @@ class Game {
 
   castHeal(p) {
     const now = this.now;
-    if (now < p.nextSpell) return;
+    if (now < p.nextSpell) { this.msgThrottle(p, 'spcd', `Curar se recarga: ${Math.ceil((p.nextSpell - now) / 1000)} s.`); return; }
     const cost = 25;
     if (p.mana < cost) { this.msgThrottle(p, 'mana', 'No tienes suficiente maná.'); return; }
     if (p.hp >= p.maxHp) return;
-    const ml = skillFromXp(p.sxp.magic);
-    const h = Math.min(p.maxHp - p.hp, 40 + 8 * ml + Math.floor(p.level * 2));
-    p.mana -= cost; p.hp += h; p.nextSpell = now + 1200;
+    const h = Math.min(p.maxHp - p.hp, CFG.HEAL_AMOUNT);                 // curación fija de 200
+    p.mana -= cost; p.hp += h; p.nextSpell = now + CFG.HEAL_CD_MS;
     this.fx.push({ k: 'd', x: p.x, y: p.y, v: '+' + h, c: 'g' });
     this.fx.push({ k: 'h', x: p.x, y: p.y });
     this.addSkillXp(p, 'magic', 8);
@@ -887,7 +925,7 @@ class Game {
 
   addSkillXp(p, style, amt) {
     const before = skillFromXp(p.sxp[style]);
-    p.sxp[style] += amt;
+    p.sxp[style] = Math.min(skillXpFor(SKILL_MAX), p.sxp[style] + amt);       // tope: nivel 320
     const after = skillFromXp(p.sxp[style]);
     if (after > before) this.msg(p, `¡Tu habilidad de ${SKILL_NAMES[style]} sube al nivel ${after}!`, 's');
     p.dirty.stats = true;
@@ -895,7 +933,7 @@ class Game {
 
   gainXp(p, xp) {
     const before = p.level;
-    p.xp += xp;
+    p.xp = Math.min(xpForLevel(LEVEL_MAX), p.xp + xp);   // experiencia congelada al nivel máximo
     this.recalc(p);
     this.fx.push({ k: 'd', x: p.x, y: p.y, v: '+' + xp + ' xp', c: 'x' });
     if (p.level > before) {
@@ -916,6 +954,8 @@ class Game {
   }
 
   hurtMonster(m, dmg, p, now) {
+    if (p && p.kind === 'pl' && !sameRealm(m, p)) return;
+    if (m.def.armor) dmg = Math.max(1, Math.round(dmg * (1 - m.def.armor)));   // defensa: reduce todo el daño recibido
     m.hp -= dmg;
     this.fx.push({ k: 'd', x: m.x, y: m.y, v: dmg, c: 'h' });
     const e = m.dmgBy.get(p.id);
@@ -945,6 +985,26 @@ class Game {
     // botín
     const zone = zoneAt(m.x, m.y);
     const opts = !zone.pvp && top ? { prot: now + CFG.LOOT_PROTECT_MS, owner: top.id } : {};
+    if ((def.shared || def.boss) && parts.length) {
+      // botín compartido: cada participante tira por su cuenta; quien más daño hizo tiene mejor suerte
+      const gold = rnd(def.gold[0], def.gold[1]);
+      for (const [pl, dmg] of parts) {
+        if (dmg < total * 0.01) continue;
+        const share = dmg / total, f = (0.3 + 0.7 * dmg / topDmg) * (pl === top ? 1.6 : 1);
+        const o = { prot: now + CFG.LOOT_PROTECT_MS, owner: pl.id };
+        const g = Math.round(gold * Math.max(0.1, share) * (pl === top ? 1.3 : 1));
+        if (g > 0) this.addGround('gold', g, m.x, m.y, o);
+        for (const [id, chance, qa, qb] of def.loot) {
+          if (Math.random() >= Math.min(1, chance * f)) continue;
+          if (I.isGear(id)) this.addGround(id, 1, m.x, m.y, Object.assign({ inst: I.rollGear(id, true) }, o));
+          else this.addGround(id, rnd(qa, qb), m.x, m.y, o);
+          if (this.logDrop) this.logDrop(pl, m.type, id);      // colección de jefes
+        }
+        if (this.sendCol) this.sendCol(pl);
+        if (Math.random() < I.gemChance(def) * f) this.addGround(I.pickGem(def), 1, m.x, m.y, o);
+        if (pl !== top) this.msg(pl, `Participaste contra ${def.name}: tienes tu propio botín en el suelo.`, 's');
+      }
+    } else {
     const gold = rnd(def.gold[0], def.gold[1]);
     if (gold > 0) this.addGround('gold', gold, m.x, m.y, opts);
     for (const [id, chance, a, b] of def.loot) {
@@ -953,6 +1013,7 @@ class Game {
       else this.addGround(id, rnd(a, b), m.x, m.y, opts);
     }
     if (Math.random() < I.gemChance(def)) this.addGround(I.pickGem(def), 1, m.x, m.y, opts);
+    }
     this.fx.push({ k: 'x', x: m.x, y: m.y });
     if (def.boss && top) this.broadcastChat(`¡${top.name} ha derrotado a ${def.name}!`, 'k');
     m.dmgBy.clear();
@@ -1006,10 +1067,11 @@ class Game {
     }
     const skill = skillFromXp(p.sxp[w.style]);
     const gb = I.gearBonus(p.eq);
-    let dmg = Math.round(w.atk * (0.55 + Math.random() * 0.45) * (1 + 0.05 * (skill - 1)) * (1 + 0.015 * (p.level - 1)));
+    let dmg = Math.round(w.atk * (0.55 + Math.random() * 0.45) * skillMult(skill) * (1 + 0.015 * (p.level - 1)));
     dmg = Math.max(1, dmg);
+    let crit = 0;
     if (gb.crit > 0 && Math.random() < gb.crit) {           // Amatista: golpe crítico
-      dmg = Math.round(dmg * 1.8);
+      crit = 1; dmg = Math.round(dmg * 1.8);
       this.fx.push({ k: 'd', x: p.x, y: p.y, v: '¡CRÍTICO!', c: 'x' });
     }
     if (t.kind === 'pl') {
@@ -1019,8 +1081,9 @@ class Game {
       t.pvpLock = now + CFG.PVP_LOCK_MS;
     }
     p.nextAtk = now + w.cd;
-    if (w.style === 'melee') this.fx.push({ k: 's', x: t.x, y: t.y });
-    else this.fx.push({ k: 'p', x1: p.x, y1: p.y, x2: t.x, y2: t.y, s: w.style });
+    const wid = p.eq.weapon ? p.eq.weapon.id : null;
+    if (w.style === 'melee') this.fx.push({ k: 's', x: t.x, y: t.y, w: wid, cr: crit });
+    else this.fx.push({ k: 'p', x1: p.x, y1: p.y, x2: t.x, y2: t.y, s: w.style, w: wid, cr: crit });
     this.addSkillXp(p, w.style, 1 + Math.floor(dmg / 3));
     p.dir = Math.abs(t.x - p.x) >= Math.abs(t.y - p.y) ? (t.x > p.x ? 1 : 3) : (t.y > p.y ? 2 : 0);
     if (t.kind === 'pl') this.hurtPlayer(t, dmg, p, now, p.name);
@@ -1057,7 +1120,7 @@ class Game {
     const sdx = nx - p.x, sdy = ny - p.y;
     p.x = nx; p.y = ny;
     p.dir = sdx > 0 ? 1 : sdx < 0 ? 3 : sdy > 0 ? 2 : 0;
-    p.nextMove = now + CFG.STEP_MS * (sdx && sdy ? 1.35 : 1);
+    p.nextMove = now + CFG.STEP_MS * (sdx && sdy ? 1.35 : 1) * this.mountMult(p);
     this.pgrid.set(kxy(nx, ny), p);
     const portal = world.portalAt(nx, ny);
     if (portal) {
@@ -1109,6 +1172,7 @@ class Game {
     if (p.target) {
       const t = this.ents.get(p.target);
       if (!t || (t.kind === 'mo' && t.dead) || (t.kind === 'pl' && !t.ws && !t.offlineUntil) || cheb(p.x, p.y, t.x, t.y) > CFG.VIEW_X) { p.target = null; return; }
+      if (!sameRealm(p, t)) { p.target = null; this.msgThrottle(p, 'realm', 'No puedes atacar a través de la entrada: entra a la mazmorra.'); return; }
       if (t.kind === 'pl' && !this.canPvp(p, t)) { p.target = null; this.explainNoPvp(p, t); return; }
       const w = this.weaponOf(p);
       const range = w.range || 1;
@@ -1126,6 +1190,7 @@ class Game {
     for (const p of this.players.values()) this.pgrid.set(kxy(p.x, p.y), p);
     for (const p of [...this.players.values()]) this.updatePlayer(p, now);
     for (const m of this.monsters) this.updateMonster(m, now);
+    this.tickExt(now);
     if (this.tickN % 40 === 0) {
       for (const g of [...this.ground.values()]) if (now >= g.exp) this.removeGround(g);
     }
@@ -1147,4 +1212,5 @@ class Game {
   saveAll() { for (const p of this.players.values()) this.savePlayer(p); this.store.flush(); }
 }
 
+require('./ext')(Game);
 module.exports = { Game, NAME_RE, levelFromXp, xpForLevel, skillFromXp };

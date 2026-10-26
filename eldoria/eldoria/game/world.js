@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Mundo de Eldoria (180 x 140): se genera de forma determinista (siempre el mismo mapa).
+ * Mundo de Eldoria (320 x 140): se genera de forma determinista (siempre el mismo mapa).
  *
  *   norte    Bosque Maldito (PvP) · Cumbres Heladas (PvP) -> Fortaleza de Hielo (mazmorra PvP)
  *   centro   Ciudad de Aldea Real (segura) · Prado de los Novatos (seguro)
@@ -11,21 +11,25 @@
  */
 const { SPAWN_PLAN } = require('./data');
 
-const W = 180, H = 140;
+const W0 = 180;                 // el mapa original (se genera igual que siempre)
+const W = 320, H = 140;         // ampliado al este: Selva Esmeralda, Sabana Dorada, Aldea Pesquera y las Tierras de Lava
 const T = {
   GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10,
   SAND: 11, SNOW: 12, SWAMP: 13, DUNE: 14, PALM: 15, PINE: 16, DEADTREE: 17, CACTUS: 18, ICEBLOCK: 19,
-  MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24,
+  MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24, CFLOOR: 25, CWALL: 26, LAVA: 27, ASH: 28,
 };
 const BLOCKED = new Uint8Array(32);
-[T.WATER, T.TREE, T.WALL, T.ROCK, T.PALM, T.PINE, T.DEADTREE, T.CACTUS, T.ICEBLOCK, T.BOG].forEach((t) => { BLOCKED[t] = 1; });
+[T.WATER, T.TREE, T.WALL, T.ROCK, T.PALM, T.PINE, T.DEADTREE, T.CACTUS, T.ICEBLOCK, T.BOG, T.CWALL, T.LAVA].forEach((t) => { BLOCKED[t] = 1; });
 
 // El orden importa: gana la primera zona cuyo rectángulo contiene la casilla.
 const ZONES = [
   { id: 'ciudad',     name: 'Ciudad de Aldea Real',   pvp: false, kind: 'town',    rect: [78, 58, 102, 74] },
   { id: 'puerto',     name: 'Puerto Marea',           pvp: false, kind: 'town',    rect: [90, 120, 108, 131] },
+  { id: 'aldea',      name: 'Aldea Pesquera de Coral', pvp: false, kind: 'town',    rect: [200, 70, 222, 84] },
   { id: 'catacumbas', name: 'Catacumbas Silenciosas', pvp: false, kind: 'dungeon', rect: [3, 40, 30, 91] },
   { id: 'minas',      name: 'Minas Enanas',           pvp: false, kind: 'dungeon', rect: [3, 96, 28, 136] },
+  { id: 'cueva',      name: 'Cueva del Dragón de las Sombras', pvp: false, kind: 'dungeon', dark: true, rect: [106, 80, 139, 99] },
+  { id: 'cueva_jade', name: 'Cueva del Hidra de Jade', pvp: false, kind: 'dungeon', dark: true, rect: [36, 38, 69, 57] },
   { id: 'abismo',     name: 'Abismo Carmesí',         pvp: true,  kind: 'dungeon', rect: [112, 40, 139, 74] },
   { id: 'piramide',   name: 'Pirámide Olvidada',      pvp: true,  kind: 'dungeon', rect: [148, 100, 175, 136] },
   { id: 'fortaleza',  name: 'Fortaleza de Hielo',     pvp: true,  kind: 'dungeon', rect: [148, 3, 175, 30] },
@@ -35,6 +39,9 @@ const ZONES = [
   { id: 'pantano',    name: 'Pantano Venenoso',       pvp: true,  kind: 'wild',    rect: [0, 96, 59, 139], tint: 'rgba(80,140,60,.13)' },
   { id: 'colinas',    name: 'Colinas Doradas',        pvp: false, kind: 'field',   rect: [60, 96, 139, 119] },
   { id: 'playa',      name: 'Playa de Cristal',       pvp: false, kind: 'field',   rect: [60, 120, 139, 139] },
+  { id: 'selva',      name: 'Selva Esmeralda',        pvp: true,  kind: 'wild',    rect: [180, 0, 249, 69], tint: 'rgba(60,160,90,.10)' },
+  { id: 'sabana',     name: 'Sabana Dorada',          pvp: false, kind: 'field',   rect: [180, 70, 249, 139] },
+  { id: 'volcan',     name: 'Tierras de Lava y Fuego', pvp: true,  kind: 'wild',    rect: [250, 0, 319, 139], tint: 'rgba(255,70,20,.14)' },
   { id: 'prado',      name: 'Prado de los Novatos',   pvp: false, kind: 'field',   rect: [0, 0, 179, 139] },
 ];
 const zoneGrid = new Uint8Array(W * H);
@@ -85,7 +92,7 @@ const SPAWN_POINT = { x: 90, y: 66 };
 
 /* 1) Terreno exterior por zona */
 for (let y = 0; y < H; y++) {
-  for (let x = 0; x < W; x++) {
+  for (let x = 0; x < W0; x++) {            // (solo el mapa original: así el generador aleatorio produce lo mismo de siempre)
     const z = zoneAt(x, y).id;
     const a = n1(x / 6, y / 6), b = n2(x / 9, y / 9);
     let t = T.GRASS;
@@ -120,6 +127,20 @@ for (let y = 0; y < H; y++) {
     tiles[idx(x, y)] = t;
   }
 }
+// ampliación al este (generador propio, no altera el mapa original)
+{
+  const r2 = mulberry32(8675309), n4 = makeNoise(31), n5 = makeNoise(63);
+  for (let y = 0; y < H; y++) {
+    for (let x = W0; x < W; x++) {
+      const a = n4(x / 6, y / 6), b = n5(x / 8, y / 8), z = zoneAt(x, y).id;
+      let t;
+      if (z === 'volcan') { t = T.ASH; if (b > 0.64) t = T.LAVA; else if (a > 0.8 || r2() < 0.02) t = T.CWALL; }          // obsidiana
+      else if (z === 'selva') { t = T.GRASS; if (a > 0.54 || r2() < 0.06) t = T.TREE; else if (b > 0.78) t = T.WATER; else if (r2() < 0.012) t = T.PALM; else if (r2() < 0.008) t = T.ROCK; else if (r2() < 0.04) t = T.FLOWER; }
+      else { t = T.HILL; if (a > 0.84 || r2() < 0.012) t = T.TREE; else if (b > 0.82) t = T.WATER; else if (r2() < 0.008) t = T.ROCK; else if (r2() < 0.05) t = T.FLOWER; else if (r2() < 0.004) t = T.PALM; }
+      tiles[idx(x, y)] = t;
+    }
+  }
+}
 // costa de agua alrededor del mapa
 for (let y = 0; y < H; y++) {
   for (let x = 0; x < W; x++) {
@@ -147,6 +168,9 @@ function buildTown(zoneId, gatesX, gatesY, flowers, houses) {
 buildTown('ciudad', [89, 90, 91], [65, 66, 67],
   [[81, 70], [82, 70], [81, 71], [100, 71], [101, 71], [101, 72], [80, 60], [101, 60]],
   [[81, 60, 89, 64, 85], [92, 60, 99, 64, 95], [92, 66, 99, 70, 95]]);
+buildTown('aldea', [210, 211, 212], [77, 78, 79],
+  [[202, 82], [203, 82], [219, 82], [220, 82], [201, 71], [221, 71]],
+  [[202, 72, 208, 77, 205], [213, 72, 219, 77, 216]]);
 buildTown('puerto', [99, 100, 101], [125, 126, 127],
   [[92, 129], [93, 129], [106, 129], [107, 129]],
   [[92, 122, 97, 126, 94], [102, 122, 107, 126, 104]]);
@@ -196,9 +220,34 @@ const abyRooms = carveDungeon('abismo', 3, 3, T.AFLOOR);
 const pirRooms = carveDungeon('piramide', 3, 4, T.PFLOOR);
 const forRooms = carveDungeon('fortaleza', 3, 3, T.IFLOOR);
 
+/* 3b) Cueva del Dragón: una caverna enorme y oscura con una sola puerta (en el camino del desierto) */
+const CAVE = { rect: zoneById('cueva').rect, door: [122, 79], inside: [122, 85], exit: [122, 82], lair: [123, 95] };
+const CAVE2 = { rect: zoneById('cueva_jade').rect, door: [52, 59], inside: [52, 52], exit: [52, 55], lair: [53, 42], flip: true };
+function carveCave(C, seed) {
+  const [x0, y0, x1, y1] = C.rect, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2 + (C.flip ? -1 : 1), nz = makeNoise(seed);
+  const fy = (y) => (C.flip ? y0 + y1 - y : y);          // la puerta puede estar al norte o al sur
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) tiles[idx(x, y)] = T.CWALL;
+  const floor = (x, y) => { if (x > x0 && x < x1 && y > y0 && y < y1) tiles[idx(x, y)] = T.CFLOOR; };
+  for (let y = y0 + 1; y < y1; y++) for (let x = x0 + 1; x < x1; x++) {
+    const dx = (x - cx) / ((x1 - x0) / 2), dy = (y - cy) / ((y1 - y0) / 2), r = Math.hypot(dx, dy);
+    if (r < 0.9 + (nz(x / 3, y / 3) - 0.5) * 0.42) floor(x, y);
+  }
+  const vx = C.inside[0];
+  for (let y = y0 + 1; y <= y0 + 8; y++) for (let x = vx - 4; x <= vx + 4; x++) floor(x, fy(y));        // vestíbulo de la entrada
+  for (let y = y0 + 10; y <= y1 - 1; y++) for (let x = C.lair[0] - 9; x <= C.lair[0] + 9; x++) if (Math.hypot(x - C.lair[0], (y - (y0 + 15)) * 1.3) < 8.5) floor(x, fy(y));   // guarida
+  const keep = (x, y) => Math.abs(x - C.inside[0]) <= 3 && Math.abs(y - C.inside[1]) <= 3 || Math.hypot(x - C.lair[0], y - C.lair[1]) <= 5;
+  const pil = mulberry32(seed * 7 + 1);                                                              // estalagmitas
+  for (let y = y0 + 2; y < y1 - 1; y++) for (let x = x0 + 2; x < x1 - 1; x++) if (tiles[idx(x, y)] === T.CFLOOR && !keep(x, y) && pil() < 0.045) tiles[idx(x, y)] = T.CWALL;
+  const seen = new Set([idx(C.inside[0], C.inside[1])]), q = [...seen];                              // solo queda lo recorrible desde la entrada
+  for (let i = 0; i < q.length; i++) { const k = q[i], x = k % W, y = (k / W) | 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) { const nk = idx(x + dx, y + dy); if (!seen.has(nk) && tiles[nk] === T.CFLOOR) { seen.add(nk); q.push(nk); } } }
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (tiles[idx(x, y)] === T.CFLOOR && !seen.has(idx(x, y))) tiles[idx(x, y)] = T.CWALL;
+}
+carveCave(CAVE, 909);
+carveCave(CAVE2, 1313);
+
 /* 4) Caminos (despejan árboles, agua y rocas del trazado) */
 function carvePath(x0, y0, x1, y1) {
-  const put = (x, y) => { if (inb(x, y) && tiles[idx(x, y)] !== T.PORTAL && tiles[idx(x, y)] !== T.WALL) tiles[idx(x, y)] = T.ROAD; };
+  const put = (x, y) => { if (inb(x, y) && tiles[idx(x, y)] !== T.PORTAL && tiles[idx(x, y)] !== T.WALL && tiles[idx(x, y)] !== T.CWALL) tiles[idx(x, y)] = T.ROAD; };
   for (let x = Math.min(x0, x1); x <= Math.max(x0, x1); x++) put(x, y0);
   for (let y = Math.min(y0, y1); y <= Math.max(y0, y1); y++) put(x1, y);
 }
@@ -210,6 +259,9 @@ carvePath(77, 66, 41, 66);      // puerta oeste -> Catacumbas
 carvePath(103, 66, 103, 78);    // puerta este
 carvePath(103, 78, 150, 78);    // camino al desierto
 carvePath(150, 78, 150, 89);    // ramal al portal de la Pirámide
+carvePath(150, 78, 200, 78);    // camino largo al este: Aldea Pesquera
+carvePath(211, 70, 211, 36);    // camino de la aldea a la Selva Esmeralda
+carvePath(222, 78, 300, 78);    // y hacia el fondo de la sabana y las Tierras de Lava
 carvePath(90, 75, 90, 100);     // puerta sur -> colinas
 carvePath(90, 100, 67, 100);    // ramal al portal de las Minas
 carvePath(90, 100, 100, 119);   // camino al Puerto Marea
@@ -229,13 +281,17 @@ link(66, 100, minRooms, 67, 100, 'Minas Enanas (zona segura)', 'Salir a las Coli
 link(96, 28, abyRooms, 96, 30, 'Abismo Carmesí (¡PvP!)', 'Salir al Bosque');
 link(150, 90, pirRooms, 150, 89, 'Pirámide Olvidada (¡PvP!)', 'Salir al Desierto');
 link(130, 20, forRooms, 130, 22, 'Fortaleza de Hielo (¡PvP!)', 'Salir a las Cumbres');
+addPortal(CAVE.door[0], CAVE.door[1], CAVE.inside[0], CAVE.inside[1], 'Cueva del Dragón de las Sombras (peligro extremo)');
+addPortal(CAVE.exit[0], CAVE.exit[1], CAVE.door[0], CAVE.door[1] - 1, 'Salir al Desierto');
+addPortal(CAVE2.door[0], CAVE2.door[1], CAVE2.inside[0], CAVE2.inside[1], 'Cueva del Hidra de Jade (peligro extremo)');
+addPortal(CAVE2.exit[0], CAVE2.exit[1], CAVE2.door[0], CAVE2.door[1] + 1, 'Salir al Prado');
 
 function clearAround(cx, cy, r) {
   for (let y = cy - r; y <= cy + r; y++) {
     for (let x = cx - r; x <= cx + r; x++) {
       if (!inb(x, y)) continue;
       const t = tiles[idx(x, y)];
-      if (BLOCKED[t] && t !== T.WALL) tiles[idx(x, y)] = zoneAt(x, y).id === 'dunas' ? T.DUNE : zoneAt(x, y).id === 'cumbres' ? T.SNOW : T.GRASS;
+      if (BLOCKED[t] && t !== T.WALL && t !== T.CWALL) tiles[idx(x, y)] = zoneAt(x, y).id === 'dunas' ? T.DUNE : zoneAt(x, y).id === 'cumbres' ? T.SNOW : T.GRASS;
     }
   }
 }
@@ -248,8 +304,10 @@ for (const p of PORTALS) tiles[idx(p.x, p.y)] = T.PORTAL;
 /* 6) PNJ */
 const NPCS = [
   { id: 'boris', name: 'Boris el Mercader',  icon: '🧑‍🌾', x: 85,  y: 62,  type: 'shop', shop: 'boris' },
-  { id: 'orin',  name: 'Orin el Sabio',      icon: '🧙‍♂️', x: 95,  y: 62,  type: 'sage' },
+  { id: 'orin',  name: 'Orin el Sabio',      icon: '🧙‍♂️', x: 95,  y: 62,  type: 'shop', shop: 'orin' },
   { id: 'gerda', name: 'Gerda la Banquera',  icon: '👩‍💼', x: 95,  y: 68,  type: 'bank' },
+  { id: 'nilo',  name: 'Nilo el Pescador',   icon: '🎣', x: 205, y: 74, type: 'shop', shop: 'nilo' },
+  { id: 'tomas', name: 'Tomás el Banquero',  icon: '🧑‍💼', x: 216, y: 74, type: 'bank' },
   { id: 'brisa', name: 'Capitán Brisa',      icon: '🧑‍✈️', x: 94,  y: 124, type: 'shop', shop: 'brisa' },
   { id: 'marta', name: 'Marta la Banquera',  icon: '💁‍♀️', x: 104, y: 124, type: 'bank' },
 ];
@@ -323,6 +381,8 @@ const monsterSpawns = [];
   monsterSpawns.push({ type: 'demonio_supremo', x: last(abyRooms).cx, y: last(abyRooms).cy });
   monsterSpawns.push({ type: 'faraon', x: last(pirRooms).cx, y: last(pirRooms).cy });
   monsterSpawns.push({ type: 'reina_hielo', x: last(forRooms).cx, y: last(forRooms).cy });
+  monsterSpawns.push({ type: 'dragon_sombra', x: CAVE.lair[0], y: CAVE.lair[1] });
+  monsterSpawns.push({ type: 'hidra_jade', x: CAVE2.lair[0], y: CAVE2.lair[1] });
   const nearest = (zoneId, px, py) => {
     let best = null, bd = 1e9;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -339,7 +399,7 @@ const monsterSpawns = [];
 })();
 
 // Versión compacta del mapa para el cliente (un carácter por casilla)
-const CH = '0123456789abcdefghijklmno';
+const CH = '0123456789abcdefghijklmnopqrs';
 const rows = [];
 for (let y = 0; y < H; y++) {
   let s = '';

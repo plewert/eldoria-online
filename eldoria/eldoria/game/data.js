@@ -13,7 +13,7 @@ const CFG = {
   PVP_DMG_MULT: 0.6,      // el daño entre jugadores se reduce para que los combates duren
   PVP_LOCK_MS: 20000,     // "en combate": no puedes huir a zona segura ni teletransportarte
   GHOST_MS: 20000,        // si te desconectas en combate, tu personaje sigue 20 s (anti combat-log)
-  INV_SIZE: 24,
+  INV_SIZE: 48,
   STACK_MAX: 100,
   VIEW_X: 16,             // radio de visión enviado al cliente
   VIEW_Y: 12,
@@ -24,7 +24,10 @@ const CFG = {
   DEATH_EQUIP_DROP: 0.15,       // probabilidad de soltar cada pieza equipada al morir en PvP
   DEATH_GOLD_DROP: 0.25,        // fracción de oro que se suelta al morir en PvP
   AUTOSAVE_MS: 30000,
-  BANK_SIZE: 48,                // casillas del banco
+  FOOD_CD_MS: 1500,             // enfriamiento al comer
+  HEAL_AMOUNT: 1000,            // hechizo de curar (V): vida por uso
+  HEAL_CD_MS: 4000,             // y su enfriamiento
+  BANK_SIZE: 120,               // casillas del banco
   TRADE_RANGE: 4,               // distancia máxima para comerciar
   TRADE_MAX_ITEMS: 8,
   TRADE_INVITE_MS: 20000,
@@ -32,6 +35,8 @@ const CFG = {
   ANC_MULT: 1.5,                // los Ancient valen x1.5
   PLUS_CHANCE: 0.22,            // prob. de que un arma/armadura soltada venga con +N
   ANCIENT_CHANCE: 0.015,        // prob. de que un equipo soltado sea Ancient (x4 en jefes)
+  GEM_CHANCE: 0.0015,           // gemas: 0,15 % por muerte
+  GEAR_DROP_MULT: 0.5,          // los equipos raros que sueltan monstruos y jefes caen la mitad de seguido
   BOSS_RARE_MULT: 4,
   MAX_SOCKETS: 3,
   GEM_REMOVE_COST: 250,         // oro por sacar una gema de una ranura
@@ -83,6 +88,10 @@ const ITEMS = {
   // ---- Consumibles ----
   pocion_vida:     { name: 'Poción de Vida',     icon: '🧪', type: 'consumable', heal: 70,     stack: true, price: 35,  sell: 5 },
   pocion_vida_g:   { name: 'Poción de Vida Grande', icon: '❤️‍🔥', type: 'consumable', heal: 180, stack: true, minLevel: 10, price: 110, sell: 20 },
+  // ---- Comida (tecla K): cura sin gastar pociones; enfriamiento propio ----
+  sardina:         { name: 'Sardina',            icon: '🐟', type: 'consumable', food: 1, heal: 80,  stack: true, price: 30, sell: 8 },
+  salmon:          { name: 'Salmón',             icon: '🍣', type: 'consumable', food: 1, heal: 100, stack: true, price: 45, sell: 12 },
+  tiburon:         { name: 'Tiburón',            icon: '🦈', type: 'consumable', food: 1, heal: 150, stack: true, price: 75, sell: 20 },
   pocion_mana:     { name: 'Poción de Maná',     icon: '💧', type: 'consumable', restore: 45,  stack: true, price: 40,  sell: 6 },
   pocion_mana_g:   { name: 'Poción de Maná Grande', icon: '🔷', type: 'consumable', restore: 120, stack: true, minLevel: 10, price: 120, sell: 22 },
   // ---- Trofeos / materiales (solo para vender) ----
@@ -187,17 +196,55 @@ for (const [id, g] of Object.entries(GEMS)) ITEMS[id] = { name: g.name, icon: g.
 const RAR = { normal: '#9aa3ad', plus: '#5fd16a', ancient: '#4aa8ff', none: '#e8e2d0' };
 
 // Lo que vende cada mercader
+// ---- Anillos, amuletos y armas nuevas ----
+// bonus: se suma al personaje mientras lo lleva puesto (escala con +N y Ancient, salvo crit y steal)
+Object.assign(ITEMS, {
+  daga_sombra:     { name: 'Daga de Sombra',     icon: '🗡️', type: 'weapon', style: 'melee', atk: 18, cd: 800,  range: 1, minLevel: 12, price: 650, sell: 260 },
+  lanza_guerra:    { name: 'Lanza de Guerra',    icon: '🔱', type: 'weapon', style: 'melee', atk: 36, cd: 1150, range: 1, minLevel: 24, sell: 1900 },
+  hacha_doble:     { name: 'Hacha Doble de Guerra', icon: '🪓', type: 'weapon', style: 'melee', atk: 52, cd: 1300, range: 1, minLevel: 36, sell: 4800 },
+  espada_llamas:   { name: 'Espada de Llamas',   icon: '🔥', type: 'weapon', style: 'melee', atk: 74, cd: 1150, range: 1, minLevel: 50, sell: 11500 },
+  ballesta_pesada: { name: 'Ballesta Pesada',    icon: '🎯', type: 'weapon', style: 'ranged', atk: 36, cd: 1350, range: 6, minLevel: 24, sell: 1900 },
+  arco_sombras:    { name: 'Arco de Sombras',    icon: '🏹', type: 'weapon', style: 'ranged', atk: 72, cd: 1250, range: 7, minLevel: 50, sell: 11000 },
+  baston_hueso:    { name: 'Bastón de Hueso',    icon: '🦴', type: 'weapon', style: 'magic', atk: 24, cd: 1300, range: 5, mana: 10, minLevel: 10, price: 620, sell: 250 },
+  baston_solar:    { name: 'Bastón Solar',       icon: '☀️', type: 'weapon', style: 'magic', atk: 62, cd: 1400, range: 6, mana: 26, minLevel: 44, sell: 8200 },
+  // anillos (se pueden llevar dos)
+  anillo_cobre:    { name: 'Anillo de Cobre',    icon: '💍', type: 'ring', bonus: { def: 2 }, minLevel: 1,  price: 120, sell: 40 },
+  anillo_fuerza:   { name: 'Anillo de Fuerza',   icon: '💍', type: 'ring', bonus: { atk: 3 }, minLevel: 8,  price: 700, sell: 280 },
+  anillo_vida:     { name: 'Anillo de Vida',     icon: '💍', type: 'ring', bonus: { hp: 30 }, minLevel: 8,  price: 650, sell: 260 },
+  anillo_mana:     { name: 'Anillo Arcano',      icon: '💍', type: 'ring', bonus: { mana: 28 }, minLevel: 8, price: 650, sell: 260 },
+  anillo_plata:    { name: 'Anillo de Plata',    icon: '💍', type: 'ring', bonus: { def: 5, hp: 20 }, minLevel: 18, sell: 900 },
+  anillo_rubi:     { name: 'Anillo de Rubí',     icon: '💍', type: 'ring', bonus: { atk: 8, crit: 0.02 }, minLevel: 24, sell: 1800 },
+  anillo_sangre:   { name: 'Anillo de Sangre',   icon: '💍', type: 'ring', bonus: { atk: 5, steal: 0.03 }, minLevel: 30, sell: 2600 },
+  anillo_hielo:    { name: 'Anillo de Escarcha', icon: '💍', type: 'ring', bonus: { def: 8, mana: 40 }, minLevel: 40, sell: 5200 },
+  anillo_faraon:   { name: 'Anillo del Faraón',  icon: '💍', type: 'ring', bonus: { atk: 12, hp: 60, crit: 0.03 }, minLevel: 50, sell: 9800 },
+  // amuletos
+  amuleto_hueso:   { name: 'Amuleto de Hueso',   icon: '📿', type: 'amulet', bonus: { def: 1, hp: 15 }, minLevel: 1, price: 150, sell: 50 },
+  amuleto_jade:    { name: 'Amuleto de Jade',    icon: '📿', type: 'amulet', bonus: { def: 4, mana: 30 }, minLevel: 10, price: 900, sell: 360 },
+  amuleto_vigor:   { name: 'Amuleto de Vigor',   icon: '📿', type: 'amulet', bonus: { hp: 70 }, minLevel: 15, sell: 1100 },
+  amuleto_dragon:  { name: 'Amuleto de Dragón',  icon: '📿', type: 'amulet', bonus: { atk: 10, hp: 50 }, minLevel: 30, sell: 3300 },
+  amuleto_sol:     { name: 'Amuleto del Sol',    icon: '📿', type: 'amulet', bonus: { def: 8, mana: 60, crit: 0.04 }, minLevel: 40, sell: 6800 },
+  amuleto_abismo:  { name: 'Amuleto del Abismo', icon: '📿', type: 'amulet', bonus: { atk: 15, steal: 0.04 }, minLevel: 45, sell: 8800 },
+  amuleto_faraon:  { name: 'Amuleto del Faraón', icon: '📿', type: 'amulet', bonus: { atk: 10, def: 10, hp: 90 }, minLevel: 50, sell: 12500 },
+});
+
+
 const SHOPS = {
   boris: [
+    'sardina', 'salmon', 'tiburon',
     'pocion_vida', 'pocion_vida_g', 'pocion_mana', 'pocion_mana_g',
-    'espada_hierro', 'hacha_acero', 'arco_largo', 'ballesta', 'baston_fuego', 'baston_hielo',
+    'espada_hierro', 'hacha_acero', 'arco_largo', 'ballesta', 'baston_fuego', 'baston_hielo', 'baston_hueso',
+    'anillo_cobre', 'anillo_fuerza', 'anillo_vida', 'anillo_mana', 'amuleto_hueso', 'amuleto_jade',
     'casco_cuero', 'casco_hierro', 'casco_acero',
     'armadura_cuero', 'cota_malla', 'armadura_placas',
     'escudo_madera', 'escudo_hierro', 'escudo_torre',
   ],
+  nilo: [
+    'sardina', 'salmon', 'tiburon', 'pocion_vida', 'pocion_vida_g', 'pocion_mana', 'pocion_mana_g',
+  ],
   brisa: [
+    'sardina', 'salmon', 'tiburon',
     'pocion_vida_g', 'pocion_mana_g',
-    'espada_dorada', 'arco_cazador', 'baston_tormenta',
+    'espada_dorada', 'arco_cazador', 'baston_tormenta', 'daga_sombra',
     'casco_bronce', 'armadura_bronce', 'escudo_bronce',
   ],
 };
@@ -342,6 +389,19 @@ const SPAWN_PLAN = [
   { zone: 'prado',      type: 'rata',            n: 22, box: [31, 60, 111, 95] },
   { zone: 'prado',      type: 'serpiente',       n: 14, box: [31, 72, 111, 95] },
   { zone: 'prado',      type: 'arana',           n: 12, box: [31, 80, 111, 95] },
+  { zone: 'selva',      type: 'oso',             n: 14 },
+  { zone: 'selva',      type: 'troll',           n: 12 },
+  { zone: 'selva',      type: 'bruja',           n: 12 },
+  { zone: 'selva',      type: 'lagarto',         n: 16 },
+  { zone: 'selva',      type: 'cobra',           n: 14 },
+  { zone: 'sabana',     type: 'jabali',          n: 22 },
+  { zone: 'sabana',     type: 'bandido',         n: 16 },
+  { zone: 'sabana',     type: 'goblin',          n: 18 },
+  { zone: 'sabana',     type: 'arquero_goblin',  n: 12 },
+  { zone: 'sabana',     type: 'escarabajo_gigante', n: 10 },
+  { zone: 'volcan',     type: 'golem_lava',      n: 26 },
+  { zone: 'volcan',     type: 'demonio_menor',   n: 22 },
+  { zone: 'volcan',     type: 'dragon',          n: 12 },
   { zone: 'catacumbas', type: 'murcielago',      n: 14 },
   { zone: 'catacumbas', type: 'esqueleto',       n: 18 },
   { zone: 'catacumbas', type: 'esqueleto_arquero', n: 10 },
@@ -395,5 +455,39 @@ const NPC_TIPS = [
   'Hay un puerto al sur, Puerto Marea, con otro mercader y otro banco. Las Minas Enanas son seguras; la Pirámide y la Fortaleza de Hielo no.',
   'La poción de vida es la tecla H, la de maná la J, y el hechizo de curación la V.',
 ];
+
+// ---- Botín de anillos, amuletos y armas nuevas: [monstruo, objeto, probabilidad] ----
+const EXTRA_LOOT = [
+  ['rata', 'anillo_cobre', 0.02], ['esqueleto', 'amuleto_hueso', 0.04], ['esqueleto', 'baston_hueso', 0.015],
+  ['esqueleto_arquero', 'ballesta_pesada', 0.02], ['necrofago', 'anillo_plata', 0.012], ['rey_esqueleto', 'amuleto_vigor', 0.25],
+  ['orco', 'anillo_fuerza', 0.02], ['troll', 'lanza_guerra', 0.012], ['troll', 'amuleto_vigor', 0.02],
+  ['senor_orco', 'hacha_doble', 0.2], ['senor_orco', 'anillo_sangre', 0.25], ['golem_lava', 'espada_llamas', 0.015],
+  ['demonio_menor', 'anillo_rubi', 0.02], ['demonio_menor', 'arco_sombras', 0.008], ['dragon', 'amuleto_dragon', 0.03],
+  ['demonio_supremo', 'espada_llamas', 0.15], ['demonio_supremo', 'amuleto_abismo', 0.3], ['demonio_supremo', 'arco_sombras', 0.12],
+  ['hidra', 'anillo_sangre', 0.1], ['momia_real', 'baston_solar', 0.01], ['faraon', 'baston_solar', 0.15], ['faraon', 'anillo_faraon', 0.3],
+  ['faraon', 'amuleto_faraon', 0.2], ['yeti', 'anillo_hielo', 0.015], ['reina_hielo', 'anillo_hielo', 0.3], ['reina_hielo', 'amuleto_sol', 0.25],
+  ['caballero_hielo', 'amuleto_sol', 0.01], ['maestro_forjador', 'anillo_plata', 0.2], ['maestro_forjador', 'lanza_guerra', 0.15],
+];
+for (const [m, id, ch] of EXTRA_LOOT) if (MONSTERS[m]) MONSTERS[m].loot.push([id, ch, 1, 1]);
+require('./mage').build(ITEMS, SHOPS, MONSTERS);
+{
+  const X = require('./extra');
+  Object.assign(ITEMS, X.EXTRA_ITEMS);
+  MONSTERS[X.BOSS.type] = X.BOSS.def;
+  require('./titan').build(ITEMS, MONSTERS, X.BOSS.type);
+  MONSTERS[X.DRAGON.type] = X.DRAGON.def;
+  require('./shadow').build(ITEMS, MONSTERS, X.DRAGON.type);
+  MONSTERS[X.JADE.type] = X.JADE.def;
+  require('./jade').build(ITEMS, MONSTERS, X.JADE.type);
+  require('./bosspets').build(ITEMS, MONSTERS);
+  SHOPS.brisa.push('mascota_lobito', 'mascota_murcielago', 'mascota_goblin', 'montura_lobo', 'montura_oso');
+  const rare = [['lobo', 'mascota_lobito', 0.004], ['murcielago', 'mascota_murcielago', 0.003], ['goblin', 'mascota_goblin', 0.003], ['dragon', 'mascota_dragoncito', 0.01],
+    ['espectro_helado', 'mascota_fantasma', 0.006], ['lobo_hielo', 'montura_lobo', 0.002], ['oso', 'montura_oso', 0.002], ['dragon', 'pluma_fenix', 0.08], ['faraon', 'pluma_fenix', 0.5],
+    ['elemental_hielo', 'cristal_arcano', 0.12], ['golem_hielo', 'cristal_arcano', 0.3], ['espectro_helado', 'cristal_arcano', 0.1], ['hidra', 'montura_dragon', 0.03], ['reina_hielo', 'montura_dragon', 0.2]];
+  for (const [m, id, ch] of rare) if (MONSTERS[m]) MONSTERS[m].loot.push([id, ch, 1, 1]);
+}
+
+// Nivel de cada monstruo (se muestra sobre su cabeza): sale de la experiencia que da, salvo los que fijan el suyo.
+for (const d of Object.values(MONSTERS)) if (!d.lv) d.lv = Math.max(1, Math.round(0.6 * Math.sqrt(d.exp)));
 
 module.exports = { CFG, ITEMS, GEMS, RAR, SHOP, SHOPS, START_KIT, MONSTERS, SPAWN_PLAN, NPC_TIPS };

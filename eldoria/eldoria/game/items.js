@@ -8,8 +8,13 @@
  */
 const { ITEMS, GEMS, CFG, RAR } = require('./data');
 
-const SLOTS = ['weapon', 'head', 'body', 'shield'];
-const GEAR_TYPES = new Set(SLOTS);
+const CORE = ['weapon', 'head', 'body', 'shield'];
+const SLOTS = [...CORE, 'amulet', 'ring1', 'ring2', 'belt', 'gloves', 'legs', 'boots'];
+const GEAR_TYPES = new Set([...CORE, 'amulet', 'ring', 'belt', 'gloves', 'legs', 'boots']);
+/** ¿Un objeto de este tipo cabe en esa casilla? (los anillos van en cualquiera de las dos) */
+const fits = (slot, type) => slot === type || (type === 'ring' && (slot === 'ring1' || slot === 'ring2'));
+/** Casilla donde se equipa un objeto (anillo: la primera libre, si no la primera). */
+const slotFor = (type, eq) => (type === 'ring' ? (!eq.ring1 ? 'ring1' : !eq.ring2 ? 'ring2' : 'ring1') : type);
 const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -43,7 +48,17 @@ const mult = (it) => (1 + CFG.UP_STAT * (it.up || 0)) * (it.an ? CFG.ANC_MULT : 
 function baseStat(it) {
   const d = ITEMS[it.id];
   if (d.type === 'weapon') return Math.round(d.atk * mult(it));
+  if (d.type === 'ring' || d.type === 'amulet') return 0;
   return Math.round(d.def * mult(it)) + (it.up > 0 ? Math.ceil(it.up / 2) : 0);
+}
+
+/** Bonus propio de anillos y amuletos (escala con +N y Ancient, salvo crítico y robo de vida). */
+function bonusOf(it) {
+  const b = it && ITEMS[it.id] && ITEMS[it.id].bonus;
+  if (!b) return null;
+  const m = mult(it), out = {};
+  for (const k of Object.keys(b)) out[k] = k === 'crit' || k === 'steal' ? b[k] : Math.round(b[k] * m);
+  return out;
 }
 
 function emptyFx() { return { atk: 0, hp: 0, mana: 0, def: 0, crit: 0, steal: 0, glow: 0 }; }
@@ -60,7 +75,11 @@ function addGemFx(out, it) {
 /** Suma de los efectos de todas las gemas del equipo puesto. */
 function gearBonus(eq) {
   const out = emptyFx();
-  for (const s of SLOTS) addGemFx(out, eq[s]);
+  for (const s of SLOTS) {
+    addGemFx(out, eq[s]);
+    const b = bonusOf(eq[s]);
+    if (b) for (const k of Object.keys(b)) out[k] += b[k];
+  }
   return out;
 }
 
@@ -68,14 +87,14 @@ function gearBonus(eq) {
 function visOf(eq) {
   let glow = 0, an = 0, all = true, minUp = 99;
   for (const s of SLOTS) {
-    const it = eq[s];
-    if (!it) { all = false; continue; }
+    const it = eq[s], core = CORE.includes(s);
+    if (!it) { if (core) all = false; continue; }
     if (it.an) an++;
-    minUp = Math.min(minUp, it.up || 0);
+    if (core) minUp = Math.min(minUp, it.up || 0);
     for (const g of it.gm || []) if (g === 'diamante') glow++;
   }
   glow += an;
-  if (all && (minUp >= 1 || an === 4)) glow += 2;       // set completo mejorado
+  if (all && (minUp >= 1 || CORE.every((s) => eq[s] && eq[s].an))) glow += 2;       // set completo mejorado
   return { g: Math.min(12, glow), an };
 }
 
@@ -104,7 +123,10 @@ function sellValue(it) {
 function pack(it) {
   if (!it) return null;
   if (!isGear(it.id)) return [it.id, it.qty];
-  return [it.id, 1, it.up || 0, it.an ? 1 : 0, it.gm.length, it.gm.slice(), baseStat(it)];
+  const out = [it.id, 1, it.up || 0, it.an ? 1 : 0, it.gm.length, it.gm.slice(), baseStat(it)];
+  const b = bonusOf(it);
+  if (b) out.push(b);
+  return out;
 }
 
 /** ¿Son idénticos (para comprobar ofertas de comercio)? */
@@ -161,7 +183,7 @@ function rollGear(id, boss) {
   return mk(id, 1, { up, an, ns });
 }
 
-const gemChance = (def) => (def.boss ? 1 : clamp(0.012 + def.exp / 10000, 0.012, 0.15));
+const gemChance = () => CFG.GEM_CHANCE;      // 0,15 % por muerte (monstruos y jefes)
 
 function pickGem(def) {
   const w = { rubi: 10, zafiro: 10, esmeralda: 10, topacio: 10 };
@@ -190,6 +212,7 @@ function dropInfo(def) {
 }
 
 module.exports = {
+  CORE, fits, slotFor, bonusOf,
   SLOTS, isGear, isGem, clone, mk, normalize, baseStat, gearBonus, visOf, nameOf, rarityOf, colorOf,
   sellValue, pack, same, putInto, rollGear, gemChance, pickGem, dropInfo, rnd,
 };
