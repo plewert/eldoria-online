@@ -66,6 +66,15 @@
     b.append(el('p', 'colhead', `Objetos de jefes que ya te han salido: ${got} / ${tot}`), ...secs);
     if (!secs.length) b.append(el('p', '', 'Aún no hay jefes registrados.'));
   }
+  const colQ = []; let colBusy = false;
+  const colNext = () => {
+    const m = colQ.shift(); if (!m) { colBusy = false; return; }
+    colBusy = true; const it = G.items[m.id] || {}, st = $('#stage'); if (!st) { colBusy = false; return; }
+    const n = el('div', 'colnew'), ic = el('div', 'ico'); ic.append(X.iconNode ? X.iconNode(m.id) : it.icon || '?');
+    n.append(ic, el('div', 'ct', ''), ); n.lastChild.append(el('small', '', '📖 ¡Nuevo en tu colección!'), el('b', '', it.name || m.id));
+    st.append(n); setTimeout(() => n.classList.add('out'), 4200); setTimeout(() => { n.remove(); colNext(); }, 4800);
+  };
+  X.handlers.colnew = (m) => { colQ.push(m); if (!colBusy) colNext(); };
   wB.onOpen = () => { send({ t: 'col' }); renderCol(); };
   X.handlers.col = (m) => { colData = m.v || {}; if (!wB.m.hidden) renderCol(); };
 

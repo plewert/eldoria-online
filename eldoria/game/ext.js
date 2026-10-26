@@ -925,7 +925,7 @@ module.exports = function install(Game) {
       }
     }
   };
-  P.logDrop = function (p, boss, id) { const c = p.ext.col[boss] || (p.ext.col[boss] = {}); c[id] = (c[id] || 0) + 1; };
+  P.logDrop = function (p, boss, id) { const c = p.ext.col[boss] || (p.ext.col[boss] = {}); const first = !c[id]; c[id] = (c[id] || 0) + 1; if (first) this.send(p, { t: 'colnew', id, boss }); };
   P.sendCol = function (p) { this.send(p, { t: 'col', v: p.ext.col }); };
   P.sendGrave = function (p) { const g = p.ext.grave; this.send(p, { t: 'grave', x: g ? g.x : -1, y: g ? g.y : -1 }); };
   P.killPlayer = function (p, src, srcName, now) {

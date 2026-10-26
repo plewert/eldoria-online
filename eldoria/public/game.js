@@ -678,7 +678,8 @@
     for (let i = 0; i < 6; i++) { const x = ((r() * 12 | 0) * 2 + f * 6) % 28, y = (r() * 15 | 0) * 2; dot(g, '#3a77a3', x, y, 8, 2); }
     for (let i = 0; i < 3; i++) dot(g, '#1f4a6b', (r() * 14 | 0) * 2, (r() * 15 | 0) * 2, 6, 2);
   });
-  const withGrass = (v, fn) => mk((g) => { g.drawImage(grass(v), 0, 0); fn(g); });
+  let FG = false;      // true: genera solo la copa/tronco (sin fondo) para poder animarla
+  const withGrass = (v, fn) => mk((g) => { if (!FG) g.drawImage(grass(v), 0, 0); fn(g); });
   const tree = (v) => withGrass(v, (g) => {
     dot(g, 'rgba(0,0,0,.25)', 7, 25, 18, 5);
     dot(g, '#5a3b22', 14, 18, 4, 11); dot(g, '#46301b', 14, 18, 1, 11);
@@ -745,7 +746,7 @@
     g.drawImage(grass(v), 0, 0); g.fillStyle = 'rgba(190,170,70,.22)'; g.fillRect(0, 0, TS, TS);
     const r = seeded(1700 + v); for (let i = 0; i < 6; i++) dot(g, '#c9b14d', (r() * 16 | 0) * 2, (r() * 16 | 0) * 2, 2, 3);
   });
-  const onTile = (bg, v, fn) => mk((g) => { g.drawImage(bg(v), 0, 0); fn(g); });
+  const onTile = (bg, v, fn) => mk((g) => { if (!FG) g.drawImage(bg(v), 0, 0); fn(g); });
   const palm = (v) => onTile(sand, v, (g) => {
     dot(g, 'rgba(0,0,0,.2)', 8, 25, 16, 4);
     g.strokeStyle = '#7a5a30'; g.lineWidth = 3; g.beginPath(); g.moveTo(15, 28); g.quadraticCurveTo(19, 18, 16, 9); g.stroke();
@@ -830,7 +831,47 @@
     palm: [0, 1].map(palm), pine: [0, 1].map(pine), dead: [0, 1].map(dead), cactus: [0, 1].map(cactus), ice: [0, 1].map(ice),
     mfloor: [0, 1, 2, 3].map(mfloor), pfloor: [0, 1, 2, 3].map(pfloor), ifloor: [0, 1, 2, 3].map(ifloor), cfloor: [0, 1, 2, 3].map(cfloor), lava: [lava(0), lava(1)], obsid: [0, 1, 2].map(obsid), ash: [0, 1, 2, 3].map(ash), cwall: [0, 1, 2].map(cwall),
   };
+  FG = true;
+  const TEXFG = { tree: [0, 1].map(tree), palm: [0, 1].map(palm), pine: [0, 1].map(pine), dead: [0, 1].map(dead) };
+  FG = false;
+  const SWAY = { [TILE.TREE]: ['tree', 'grass', 0.085], [TILE.PALM]: ['palm', 'sand', 0.12], [TILE.PINE]: ['pine', 'snow', 0.055], [TILE.DEADTREE]: ['dead', 'swamp', 0.035] };
   const hash = (x, y) => { let h = (x * 374761393 + y * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177; return (h ^ (h >>> 16)) >>> 0; };
+
+  /* ---- agua viva: olas que fluyen, destellos y espuma en las orillas ---- */
+  let lastLeaf = 0; G.leaves = [];
+  function drawWater(c, x, y, sx, sy, now) {
+    c.drawImage(TEX.water[0], sx, sy);
+    const T = G.tiles, W = G.W;
+    for (let k = 0; k < 3; k++) {
+      const dir = k === 1 ? -1 : 1, len = 10 + k * 3;
+      const px = (((x * 32 + y * 11 * (k + 1) + k * 37 + now * 0.014 * dir) % 64) + 64) % 64 - 16;
+      const py = 5 + k * 10 + ((y * 7 + x * 3 + k) % 3);
+      const a = 0.14 + 0.22 * Math.max(0, Math.sin(now / 900 + x * 0.9 + y * 0.6 + k * 2));
+      if (px > -len && px < TS) { const x0 = Math.max(0, px), x1 = Math.min(TS, px + len); c.fillStyle = `rgba(170,215,240,${a})`; c.fillRect(sx + x0, sy + py, x1 - x0, 2); c.fillStyle = `rgba(20,60,95,${a * 0.9})`; c.fillRect(sx + x0 + 2, sy + py + 2, Math.max(0, x1 - x0 - 3), 1); }
+    }
+    const hs = hash(x + (now / 520 | 0), y * 3);
+    if ((hs & 15) === 0) { c.fillStyle = 'rgba(255,255,255,.75)'; c.fillRect(sx + (hs >> 5) % 28 + 1, sy + (hs >> 9) % 28 + 1, 2, 2); }
+    const wt = (xx, yy) => xx >= 0 && yy >= 0 && xx < W && yy < G.H && T[yy * W + xx] === TILE.WATER;
+    const ph = now / 520 + x * 1.7 + y * 1.3;
+    c.fillStyle = 'rgba(235,248,255,.55)';
+    if (!wt(x, y - 1)) for (let i = 0; i < TS; i += 4) c.fillRect(sx + i, sy, 4, 1.5 + Math.sin(ph + i * 0.4) * 1.2 + 1.2);
+    if (!wt(x, y + 1)) for (let i = 0; i < TS; i += 4) c.fillRect(sx + i, sy + TS - 2.5 - Math.sin(ph + i * 0.4 + 2) * 1.2, 4, 2.5 + Math.sin(ph + i * 0.4 + 2) * 1.2);
+    if (!wt(x - 1, y)) for (let i = 0; i < TS; i += 4) c.fillRect(sx, sy + i, 1.5 + Math.sin(ph + i * 0.4 + 1) * 1.2 + 1.2, 4);
+    if (!wt(x + 1, y)) for (let i = 0; i < TS; i += 4) c.fillRect(sx + TS - 2.5 - Math.sin(ph + i * 0.4 + 3) * 1.2, sy + i, 2.5 + Math.sin(ph + i * 0.4 + 3) * 1.2, 4);
+  }
+  function drawLeaves(c, now) {
+    const L = G.leaves;
+    for (let i = L.length - 1; i >= 0; i--) {
+      const l = L[i], a = (now - l.t) / 1000;
+      if (a > 6) { L.splice(i, 1); continue; }
+      const lx = l.x + a * 0.55 + Math.sin(a * 2.2 + l.p) * 0.25, ly = l.y + a * 0.28 + Math.abs(Math.sin(a * 1.4 + l.p)) * 0.1;
+      c.globalAlpha = Math.min(1, (6 - a) / 1.5);
+      c.fillStyle = (i & 1) ? '#7fb85a' : '#c9b14d';
+      c.save(); c.translate(sxOf(lx), syOf(ly)); c.rotate(a * 3 + l.p); c.fillRect(-2, -1, 4, 2); c.restore();
+      c.globalAlpha = 1;
+    }
+    if (L.length > 40) L.splice(0, L.length - 40);
+  }
 
   function texFor(t, x, y, frame) {
     const h = hash(x, y);
@@ -1588,8 +1629,18 @@
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
       if (x < 0 || y < 0 || x >= G.W || y >= G.H) continue;
       const t = G.tiles[y * G.W + x];
-      c.drawImage(texFor(t, x, y, frameW), sxOf(x), syOf(y));
+      const sx = sxOf(x), sy = syOf(y), sw = SWAY[t];
+      if (sw) {                                                   // árboles que se mecen con el viento
+        const h = hash(x, y), v = h % 2;
+        c.drawImage(TEX[sw[1]][v], sx, sy);
+        const gust = Math.sin(now / 2300 + x * 0.35 + y * 0.2), ph = (h % 628) / 100;
+        const k = (Math.sin(now / 760 + ph) * 0.6 + gust * 0.9) * sw[2];
+        c.save(); c.translate(sx + 16, sy + 29); c.transform(1, 0, k, 1 + Math.sin(now / 520 + ph) * 0.006, 0, 0); c.drawImage(TEXFG[sw[0]][v], -16, -29); c.restore();
+        if (t === TILE.TREE && (h & 7) === 0 && now - lastLeaf > 380) { lastLeaf = now; G.leaves.push({ x: x + 0.3 + Math.random() * 0.4, y: y + 0.2 + Math.random() * 0.3, t: now, p: Math.random() * 6 }); }
+      } else if (t === TILE.WATER) drawWater(c, x, y, sx, sy, now);
+      else c.drawImage(texFor(t, x, y, frameW), sx, sy);
     }
+    drawLeaves(c, now);
     // zonas PvP: velo rojizo y borde donde termina la zona segura
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
       if (x < 0 || y < 0 || x >= G.W || y >= G.H || !zoneAt(x, y).pvp) continue;

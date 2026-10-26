@@ -201,7 +201,8 @@ ok('Dragón de las Sombras: nivel 500, aliento negro, pisotón con grietas y bot
 ok('Hidra de Jade: cueva propia, set de arquero y sus tres ataques', () => {
   assert.equal(MONSTERS.hidra_jade.special, 'hydra'); assert.equal(MONSTERS.hidra_jade.respawn, 60000);
   const loot = MONSTERS.hidra_jade.loot.map((l) => l[0]);
-  ['jade_yelmo', 'jade_coraza', 'jade_guantes', 'jade_botas', 'jade_arco', 'jade_pantalon'].forEach((i) => assert.ok(loot.includes(i), i));
+  ['jade_yelmo', 'jade_coraza', 'jade_guantes', 'jade_botas', 'jade_arco', 'jade_pantalon', 'jade_carcaj'].forEach((i) => assert.ok(loot.includes(i), i));
+  assert.equal(ITEMS.jade_carcaj.type, 'shield');
   assert.equal(ITEMS.jade_arco.style, 'ranged');
   const sp = world.monsterSpawns.find((q) => q.type === 'hidra_jade'); assert.equal(zoneOf([sp.x, sp.y]).id, 'cueva_jade');
   assert.equal(world.monsterSpawns.filter((q) => zoneOf([q.x, q.y]).id === 'cueva_jade').length, 1, 'solo la hidra');
@@ -236,6 +237,8 @@ ok('colección de jefes: registra lo que suelta el jefe y se guarda', () => {
   const r0 = Math.random; Math.random = () => 0; game.killMonster(m, T0); Math.random = r0;
   const col = a.p.ext.col.dragon_sombra; assert.ok(col && col.sombra_arco >= 1 && col.sombra_capucha >= 1, JSON.stringify(col));
   assert.deepEqual(lastMsg(a.ws, 'col').v.dragon_sombra, col);
+  const nw = lastMsg(a.ws, 'colnew'); assert.ok(nw && col[nw.id] === 1, 'aviso de objeto nuevo');
+  const c0 = Object.assign({}, col); game.logDrop(a.p, 'dragon_sombra', 'sombra_arco'); assert.equal(a.p.ext.col.dragon_sombra.sombra_arco, c0.sombra_arco + 1);
   const back = game.extSave(a.p).col; assert.deepEqual(back.dragon_sombra, col);
   game.mgrid.delete(m.y * world.W + m.x); game.monsters = game.monsters.filter((q) => q !== m); game.ents.delete(m.id);
 });

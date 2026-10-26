@@ -147,3 +147,11 @@ Hechizo de curar (V): cura 1000 de vida fijos y se recarga en 4 s (`HEAL_AMOUNT`
 - **Pantalón de Asesino de Sombras** (nv 64, def 28, +200 vida, +2% crítico): lo suelta el Dragón de las Sombras.
 - **Pantalón de Escamas de Dragón** (nv 73, def 30, +220 vida, +5 ataque): lo suelta la Hidra de Jade.
 - Ranura de piernas, 5% base como el resto del set (con GEAR_DROP_MULT 0.5 queda en ~2.5%). Aparecen en la colección de jefes.
+
+**Carcaj de Escamas de Jade** (escudo/carcaj, nv 72, def 26, +150 vida, +6 ataque, +2% crítico): drop de la Hidra de Jade (5% base).
+
+**Aviso de colección:** la primera vez que te cae un objeto de jefe aparece un cartel dorado en pantalla (“¡Nuevo en tu colección!”) con su icono y nombre; si caen varios, se muestran en cola.
+
+## Ambiente animado
+- **Agua** (ríos y lagos): olas que fluyen en sentidos opuestos, destellos y espuma que ondula en las orillas.
+- **Árboles, palmeras, pinos y árboles muertos** se mecen con el viento (ráfagas que recorren el mapa) y los árboles sueltan hojas que caen flotando.
