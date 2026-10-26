@@ -16,11 +16,11 @@ const cheb = (ax, ay, bx, by) => Math.max(Math.abs(ax - bx), Math.abs(ay - by));
 const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
 const clampDir = (v) => (v > 0 ? 1 : v < 0 ? -1 : 0);
 
-const levelFromXp = (xp) => 1 + Math.floor(Math.sqrt(xp / 50));
+const levelFromXp = (xp) => Math.min(LEVEL_MAX, 1 + Math.floor(Math.sqrt(xp / 50)));
 const xpForLevel = (l) => 50 * (l - 1) * (l - 1);
 // los equipos raros de monstruos y jefes caen menos (una sola vez al cargar)
 for (const d of Object.values(MONSTERS)) for (const l of d.loot) if (I.isGear(l[0])) l[1] *= CFG.GEAR_DROP_MULT;
-const { SKILL_MAX, skillFromXp, skillXpFor, skillMult } = require('./skills');
+const { LEVEL_MAX, SKILL_MAX, skillFromXp, skillXpFor, skillMult } = require('./skills');
 
 const FISTS = { name: 'Puños', style: 'melee', atk: 3, cd: 1500, range: 1 };
 const SKILL_NAMES = { melee: 'combate cuerpo a cuerpo', ranged: 'combate a distancia', magic: 'magia' };
@@ -383,7 +383,7 @@ class Game {
     };
     this.extLoad(p, d);
     if (d) {
-      p.xp = d.xp | 0; p.gold = d.gold | 0;
+      p.xp = Math.min(xpForLevel(LEVEL_MAX), d.xp | 0); p.gold = d.gold | 0;
       const cap = skillXpFor(SKILL_MAX); p.sxp = { melee: Math.min(cap, d.sxp.melee | 0), ranged: Math.min(cap, d.sxp.ranged | 0), magic: Math.min(cap, d.sxp.magic | 0) };
       d.inv.forEach((it, i) => { const n = I.normalize(it); if (n && i < CFG.INV_SIZE) p.inv[i] = n; });
       if (Array.isArray(d.bank)) d.bank.forEach((it, i) => { const n = I.normalize(it); if (n && i < CFG.BANK_SIZE) p.bank[i] = n; });
@@ -524,7 +524,7 @@ class Game {
     }
     const w = this.weaponOf(p);
     this.send(p, {
-      t: 'stats', lv: p.level, xp: p.xp, xpLo: xpForLevel(p.level), xpHi: xpForLevel(p.level + 1),
+      t: 'stats', lv: p.level, xp: p.xp, xpLo: xpForLevel(Math.min(p.level, LEVEL_MAX - 1)), xpHi: xpForLevel(Math.min(p.level + 1, LEVEL_MAX)),
       maxHp: p.maxHp, maxMana: p.maxMana, gold: p.gold, sk, style: w.style, def: this.defOf(p), weapon: w.name,
       gb: I.gearBonus(p.eq), glow: this.visOf(p).g,
     });
@@ -933,7 +933,7 @@ class Game {
 
   gainXp(p, xp) {
     const before = p.level;
-    p.xp += xp;
+    p.xp = Math.min(xpForLevel(LEVEL_MAX), p.xp + xp);   // experiencia congelada al nivel máximo
     this.recalc(p);
     this.fx.push({ k: 'd', x: p.x, y: p.y, v: '+' + xp + ' xp', c: 'x' });
     if (p.level > before) {

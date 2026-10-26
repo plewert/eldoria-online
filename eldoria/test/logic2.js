@@ -215,7 +215,7 @@ ok('Hidra de Jade: cueva propia, set de arquero y sus tres ataques', () => {
   need.forEach((k) => assert.ok(seen.has(k), 'fx ' + k + ' → ' + [...seen]));
   game.mgrid.delete(m.y * world.W + m.x); game.monsters = game.monsters.filter((q) => q !== m); game.ents.delete(m.id);
 });
-ok('habilidades: tope 400 y cada nivel cuesta más', () => {
+ok('habilidades: tope 320 y cada nivel cuesta más', () => {
   const S = require('../game/skills'); assert.equal(S.SKILL_MAX, 320);
   assert.equal(S.skillFromXp(0), 1); assert.equal(S.skillFromXp(S.skillXpFor(50)), 50); assert.equal(S.skillFromXp(S.skillXpFor(50) - 1), 49);
   assert.equal(S.skillFromXp(1e12), 320);
@@ -353,5 +353,15 @@ ok('set del Titán: cae del Coloso y se equipa en todas las casillas (incluidas 
   assert.ok(I.gearBonus(p.eq).hp >= 90 + 280 + 40 + 120 + 70 + 80);
 });
 
+ok('nivel general congelado en 320: experiencia, vida y maná dejan de crecer', () => {
+  const S = require('../game/skills'); const { xpForLevel } = require('../game/game');
+  assert.equal(S.LEVEL_MAX, 320);
+  const a = login('Lvl1'); a.p.xp = xpForLevel(319); game.gainXp(a.p, 10 ** 9);
+  assert.equal(a.p.level, 320); assert.equal(a.p.xp, xpForLevel(320));
+  const hp = a.p.maxHp; game.gainXp(a.p, 10 ** 9); assert.equal(a.p.maxHp, hp); assert.equal(a.p.xp, xpForLevel(320));
+  assert.equal(hp, 100 + 20 * 319);
+});
+
 console.log(`\n${n} pruebas correctas`);
 try { require('fs').unlinkSync(store.file); } catch (e) { /* nada */ }
+
