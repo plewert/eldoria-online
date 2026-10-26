@@ -155,3 +155,7 @@ Hechizo de curar (V): cura 1000 de vida fijos y se recarga en 4 s (`HEAL_AMOUNT`
 ## Ambiente animado
 - **Agua** (ríos y lagos): olas que fluyen en sentidos opuestos, destellos y espuma que ondula en las orillas.
 - **Árboles, palmeras, pinos y árboles muertos** se mecen con el viento (ráfagas que recorren el mapa) y los árboles sueltan hojas que caen flotando.
+
+## Árboles y pasto nuevos
+- `public/trees.png` + `trees.json`: 9 árboles (3 grandes, roble, redondo, bosquecillo, manzano, naranjo, florido) y un árbol seco, más 4 teselas de pasto, tomados de la imagen de arte. Los árboles se eligen por posición del mapa y se dibujan sobre el terreno, así sobresalen por encima del tile.
+- Los árboles se mecen con el viento (ráfagas) y sueltan hojas; el pasto tiene briznas que se mueven. Palmeras y pinos siguen con su dibujo anterior (también animados).

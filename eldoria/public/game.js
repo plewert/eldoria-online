@@ -667,7 +667,10 @@
   const mk = (fn) => { const c = document.createElement('canvas'); c.width = c.height = TS; const g = c.getContext('2d'); fn(g); return c; };
   const dot = (g, c, x, y, w = 2, h = 2) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
 
+  const trImg = new Image(); let TJ = null;
+  const trReady = () => TJ && trImg.complete && trImg.naturalWidth > 0;
   const grass = (v) => mk((g) => {
+    if (trReady()) { const f = TJ['grass' + (v % 4)]; g.drawImage(trImg, f[0], f[1], f[2], f[3], 0, 0, TS, TS); return; }
     const r = seeded(100 + v); g.fillStyle = '#3d6a38'; g.fillRect(0, 0, TS, TS);
     for (let i = 0; i < 26; i++) dot(g, r() < 0.5 ? '#477a41' : '#335c31', (r() * 16 | 0) * 2, (r() * 16 | 0) * 2);
     for (let i = 0; i < 5; i++) dot(g, '#5c9552', (r() * 16 | 0) * 2, (r() * 14 | 0) * 2, 2, 4);
@@ -821,7 +824,7 @@
     g.strokeStyle = 'rgba(255,255,255,.5)'; g.beginPath(); g.moveTo(4, 28); g.lineTo(14, 18); g.stroke();
   }); };
 
-  const TEX = {
+  const buildTEX = () => ({
     grass: [0, 1, 2, 3].map(grass), water: [water(0), water(1)],
     tree: [0, 1].map(tree), rock: [0, 1].map(rock),
     flower: [flower(0, '#e86a8a'), flower(1, '#f0d26a'), flower(2, '#b894f0')],
@@ -830,12 +833,41 @@
     sand: [0, 1, 2, 3].map(sand), snow: [0, 1, 2, 3].map(snow), dune: [0, 1, 2, 3].map(dune), swamp: [0, 1, 2, 3].map(swamp), bog: [bog(0), bog(1)], hill: [0, 1, 2, 3].map(hill),
     palm: [0, 1].map(palm), pine: [0, 1].map(pine), dead: [0, 1].map(dead), cactus: [0, 1].map(cactus), ice: [0, 1].map(ice),
     mfloor: [0, 1, 2, 3].map(mfloor), pfloor: [0, 1, 2, 3].map(pfloor), ifloor: [0, 1, 2, 3].map(ifloor), cfloor: [0, 1, 2, 3].map(cfloor), lava: [lava(0), lava(1)], obsid: [0, 1, 2].map(obsid), ash: [0, 1, 2, 3].map(ash), cwall: [0, 1, 2].map(cwall),
-  };
-  FG = true;
-  const TEXFG = { tree: [0, 1].map(tree), palm: [0, 1].map(palm), pine: [0, 1].map(pine), dead: [0, 1].map(dead) };
-  FG = false;
+  });
+  const buildFG = () => { FG = true; const o = { tree: [0, 1].map(tree), palm: [0, 1].map(palm), pine: [0, 1].map(pine), dead: [0, 1].map(dead) }; FG = false; return o; };
+  let TEX = buildTEX(), TEXFG = buildFG();
+  const FOREST = ['big1', 'big2', 'big3', 'oak', 'round', 'oak', 'big1', 'round', 'grove', 'apple', 'orange', 'blossom', 'big3', 'big2'];
+  trImg.onload = () => { if (TJ) { TEX = buildTEX(); TEXFG = buildFG(); } };
+  trImg.src = 'trees.png';
+  fetch('trees.json').then((r) => r.json()).then((j) => { TJ = j; if (trImg.complete && trImg.naturalWidth) { TEX = buildTEX(); TEXFG = buildFG(); } }).catch(() => {});
   const SWAY = { [TILE.TREE]: ['tree', 'grass', 0.085], [TILE.PALM]: ['palm', 'sand', 0.12], [TILE.PINE]: ['pine', 'snow', 0.055], [TILE.DEADTREE]: ['dead', 'swamp', 0.035] };
   const hash = (x, y) => { let h = (x * 374761393 + y * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177; return (h ^ (h >>> 16)) >>> 0; };
+
+  /* ---- árboles nuevos (sprites) y pasto con viento ---- */
+  function drawNewTree(c, x, y, t, now) {
+    const h = hash(x, y), name = t === TILE.DEADTREE ? 'dead' : FOREST[h % FOREST.length], f = TJ[name]; if (!f) return;
+    const sx = sxOf(x), sy = syOf(y), bx = sx + TS / 2, by = sy + TS - 2;
+    c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(bx, by - 1, f[2] * 0.3, 4, 0, 0, 7); c.fill();
+    const ph = (h % 628) / 100, gust = Math.sin(now / 2300 + x * 0.35 + y * 0.2);
+    const k = (Math.sin(now / 780 + ph) * 0.55 + gust * 0.9) * (name === 'dead' ? 0.02 : name === 'grove' ? 0.045 : 0.05);
+    c.save(); c.translate(bx, by); c.transform(1, 0, k, 1 + Math.sin(now / 560 + ph) * 0.007, 0, 0);
+    c.drawImage(trImg, f[0], f[1], f[2], f[3], -Math.round(f[2] / 2), -f[3], f[2], f[3]); c.restore();
+    if (name !== 'dead' && (h & 7) === 0 && now - lastLeaf > 380) { lastLeaf = now; G.leaves.push({ x: x + 0.2 + Math.random() * 0.6, y: y - 0.6 + Math.random() * 0.4, t: now, p: Math.random() * 6 }); }
+  }
+  function grassBlades(c, x, y, sx, sy, now) {
+    const h = hash(x, y), n = 3 + (h & 1), g = Math.sin(now / 2100 + x * 0.4 + y * 0.25);
+    c.lineWidth = 1.5; c.lineCap = 'round';
+    for (let pass = 0; pass < 2; pass++) {
+      c.strokeStyle = pass ? '#7fbf5c' : '#2f6a33'; c.beginPath();
+      for (let i = pass; i < n; i += 2) {
+        const bx = sx + 4 + ((h >> (i * 3)) % 24), by = sy + 8 + ((h >> (i * 3 + 2)) % 20), bh = 4 + ((h >> i) & 3);
+        const sw = Math.sin(now / 600 + i * 1.7 + x + y * 0.7) * 1.3 + g * 2;
+        c.moveTo(bx, by); c.quadraticCurveTo(bx + sw * 0.4, by - bh * 0.6, bx + sw, by - bh);
+      }
+      c.stroke();
+    }
+    c.lineCap = 'butt';
+  }
 
   /* ---- agua viva: olas que fluyen, destellos y espuma en las orillas ---- */
   let lastLeaf = 0; G.leaves = [];
@@ -1626,11 +1658,18 @@
     const y0 = Math.floor(G.cam.y - ch / 2 / TS) - 1, y1 = Math.ceil(G.cam.y + ch / 2 / TS) + 1;
 
     // terreno
+    const treeList = [];
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
       if (x < 0 || y < 0 || x >= G.W || y >= G.H) continue;
       const t = G.tiles[y * G.W + x];
-      const sx = sxOf(x), sy = syOf(y), sw = SWAY[t];
-      if (sw) {                                                   // árboles que se mecen con el viento
+      const sx = sxOf(x), sy = syOf(y), sw = SWAY[t], nt = trReady() && (t === TILE.TREE || t === TILE.DEADTREE);
+      if (nt) {                                                   // árboles nuevos: se dibujan después, por encima del terreno
+        c.drawImage(t === TILE.TREE ? TEX.grass[hash(x, y) % 4] : TEX.swamp[hash(x, y) % 4], sx, sy);
+        treeList.push(x, y, t);
+      } else if (t === TILE.GRASS) {
+        c.drawImage(TEX.grass[hash(x, y) % 4], sx, sy);
+        if (hash(x * 3 + 1, y * 7) % 3 === 0) grassBlades(c, x, y, sx, sy, now);
+      } else if (sw) {                                                   // árboles que se mecen con el viento
         const h = hash(x, y), v = h % 2;
         c.drawImage(TEX[sw[1]][v], sx, sy);
         const gust = Math.sin(now / 2300 + x * 0.35 + y * 0.2), ph = (h % 628) / 100;
@@ -1640,6 +1679,7 @@
       } else if (t === TILE.WATER) drawWater(c, x, y, sx, sy, now);
       else c.drawImage(texFor(t, x, y, frameW), sx, sy);
     }
+    for (let i = 0; i < treeList.length; i += 3) drawNewTree(c, treeList[i], treeList[i + 1], treeList[i + 2], now);
     drawLeaves(c, now);
     // zonas PvP: velo rojizo y borde donde termina la zona segura
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
