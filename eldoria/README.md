@@ -142,3 +142,8 @@ Hechizo de curar (V): cura 1000 de vida fijos y se recarga en 4 s (`HEAL_AMOUNT`
 - **Gemas**: ahora caen con un 0,15 % por muerte (monstruos y jefes; antes los jefes siempre soltaban una). `GEM_CHANCE` en `game/data.js`.
 - **Equipo raro** de monstruos y jefes: cae a la mitad de seguido (`GEAR_DROP_MULT` = 0,5).
 - **Mascotas de jefe**: cada jefe puede soltar una "Cría de ..." (0,4–1 % base) que te sigue y da +20–35 % de oro. Aparecen también en la colección de jefes (B).
+
+## Pantalones de los dragones
+- **Pantalón de Asesino de Sombras** (nv 64, def 28, +200 vida, +2% crítico): lo suelta el Dragón de las Sombras.
+- **Pantalón de Escamas de Dragón** (nv 73, def 30, +220 vida, +5 ataque): lo suelta la Hidra de Jade.
+- Ranura de piernas, 5% base como el resto del set (con GEAR_DROP_MULT 0.5 queda en ~2.5%). Aparecen en la colección de jefes.

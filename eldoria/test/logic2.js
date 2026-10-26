@@ -185,7 +185,7 @@ ok('jefe de evento: aviso, aparición, recompensa y desaparición', () => {
 ok('Dragón de las Sombras: nivel 500, aliento negro, pisotón con grietas y botín del set de sombras', () => {
   const EX = require('../game/extra'); assert.equal(MONSTERS.dragon_sombra.lv, 500);
   const loot = MONSTERS.dragon_sombra.loot.map((l) => l[0]);
-  ['sombra_capucha', 'sombra_coraza', 'sombra_guantes', 'sombra_botas', 'sombra_carcaj', 'sombra_arco'].forEach((i) => assert.ok(loot.includes(i), i));
+  ['sombra_capucha', 'sombra_coraza', 'sombra_guantes', 'sombra_botas', 'sombra_carcaj', 'sombra_arco', 'sombra_pantalon'].forEach((i) => assert.ok(loot.includes(i), i));
   assert.equal(ITEMS.sombra_arco.style, 'ranged'); assert.equal(ITEMS.sombra_carcaj.type, 'shield');
   const sp = world.monsterSpawns.find((s) => s.type === 'dragon_sombra'); const AR = [sp.x, sp.y]; assert.equal(zoneOf(AR).id, 'cueva'); assert.ok(zoneOf(AR).dark);
   assert.equal(world.monsterSpawns.filter((s) => zoneOf([s.x, s.y]).id === 'cueva').length, 1, 'solo el dragón en la cueva');
@@ -201,7 +201,7 @@ ok('Dragón de las Sombras: nivel 500, aliento negro, pisotón con grietas y bot
 ok('Hidra de Jade: cueva propia, set de arquero y sus tres ataques', () => {
   assert.equal(MONSTERS.hidra_jade.special, 'hydra'); assert.equal(MONSTERS.hidra_jade.respawn, 60000);
   const loot = MONSTERS.hidra_jade.loot.map((l) => l[0]);
-  ['jade_yelmo', 'jade_coraza', 'jade_guantes', 'jade_botas', 'jade_arco'].forEach((i) => assert.ok(loot.includes(i), i));
+  ['jade_yelmo', 'jade_coraza', 'jade_guantes', 'jade_botas', 'jade_arco', 'jade_pantalon'].forEach((i) => assert.ok(loot.includes(i), i));
   assert.equal(ITEMS.jade_arco.style, 'ranged');
   const sp = world.monsterSpawns.find((q) => q.type === 'hidra_jade'); assert.equal(zoneOf([sp.x, sp.y]).id, 'cueva_jade');
   assert.equal(world.monsterSpawns.filter((q) => zoneOf([q.x, q.y]).id === 'cueva_jade').length, 1, 'solo la hidra');
@@ -281,6 +281,13 @@ ok('gemas 0,15 %, equipo raro a la mitad y mascotas de jefe', () => {
   assert.ok(Math.abs(MONSTERS.dragon_sombra.loot.find((l) => l[0] === 'sombra_arco')[1] - 0.005) < 1e-9, 'arco 0,5 %');
   for (const [t, d] of Object.entries(MONSTERS)) if (d.boss) { const l = d.loot.find((q) => q[0] === 'pet_' + t); assert.ok(l, 'mascota de ' + t); assert.equal(ITEMS['pet_' + t].type, 'pet'); assert.equal(ITEMS['pet_' + t].mon, t); }
   const a = login('Pet9'); place(a.p, 50, 64); a.p.inv[0] = I.mk('pet_dragon_sombra'); game.use(a.p, 0); assert.equal(a.p.ext.pet, 'pet_dragon_sombra');
+});
+ok('pantalones de los dragones: ranura de piernas, drop y se equipan', () => {
+  for (const [id, boss, spr] of [['sombra_pantalon', 'dragon_sombra', 's_leg'], ['jade_pantalon', 'hidra_jade', 'j_leg']]) {
+    assert.equal(ITEMS[id].type, 'legs'); assert.equal(ITEMS[id].spr, spr); assert.ok(MONSTERS[boss].loot.some((l) => l[0] === id && l[1] > 0.02));
+    const a = login('Lg' + id.length); a.p.level = 90; a.p.inv[0] = I.mk(id); game.use(a.p, 0); assert.ok(a.p.eq.legs && a.p.eq.legs.id === id, 'equipa en piernas');
+  }
+  const g = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '../public/gear.json'), 'utf8')); assert.ok(g.i_s_leg && g.i_j_leg, 'iconos');
 });
 ok('mazmorras y cuevas: nadie ataca a través de la entrada', () => {
   const a = login('Wall1'); place(a.p, 122, 78); a.p.hp = a.p.maxHp = 5000;
