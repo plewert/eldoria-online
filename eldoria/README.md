@@ -192,3 +192,6 @@ Arrastra un objeto de la mochila a otra casilla (vacía u ocupada) para moverlo 
 ## Coloso Ancestral (jefe de evento): animación y ataques
 - Sprite animado (respira y brilla, 4 fotogramas).
 - **Lluvia de fuego**: 3 oleadas de bolas con círculos de aviso; dejan charcos de fuego. **Terremoto**: onda de aviso, el suelo se agrieta y tiembla (daño en área de 7 casillas) con una réplica menor. IA en `titanAI` (`game/ext.js`).
+
+## Balance de jefes
+Coloso Ancestral: vida 30 000 → 90 000 y daño ×1,8. Jefes de cueva (Dragón de las Sombras, Hidra de Jade, Arcángel): daño ×1,5 extra (campo `dmgK` en `game/extra.js`, sobre el ×1,5 general de jefes).

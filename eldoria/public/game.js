@@ -1175,9 +1175,9 @@
   function drawHead(c, id, hx, hy, view, side, now) {
     const d = G.items[id];
     if (d && d.spr && GJ['c_' + d.spr]) {
-      const hood = /^hat1[234]$/.test(d.spr);
-      if (hood && view !== 'f') { drawLayer(c, d.spr, hx - side * 0.5, hy + 7.5, 0.5, 1, false, 0); return; }
-      if (drawLayer(c, d.spr, hx - side * 1, hood ? hy + 7.5 : hy + 0.5, 0.5, 1, false, side * 0.06)) return;
+      const hood = /^hat1[234]$/.test(d.spr), boss = /^(t_helm|s_hood|j_helm|a_helm)$/.test(d.spr), dy = hood ? 7.5 : d.spr === 't_helm' ? 9.5 : d.spr === 'a_helm' ? 8.5 : boss ? 5.5 : 0.5;   // capuchas y cascos de jefe: cubren el rostro
+      if ((hood || boss) && view !== 'f') { drawLayer(c, d.spr, hx - side * 0.5, hy + dy, 0.5, 1, false, 0); return; }
+      if (drawLayer(c, d.spr, hx - side * 1, hy + dy, 0.5, 1, false, side * 0.06)) return;
     }
     drawHelm(c, id, hx, hy, view, side, now);
   }
