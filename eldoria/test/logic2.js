@@ -185,7 +185,7 @@ ok('jefe de evento: aviso, aparición, recompensa y desaparición', () => {
 ok('Dragón de las Sombras: nivel 500, aliento negro, pisotón con grietas y botín del set de sombras', () => {
   const EX = require('../game/extra'); assert.equal(MONSTERS.dragon_sombra.lv, 500);
   const loot = MONSTERS.dragon_sombra.loot.map((l) => l[0]);
-  ['sombra_capucha', 'sombra_coraza', 'sombra_guantes', 'sombra_botas', 'sombra_carcaj', 'sombra_arco', 'sombra_pantalon'].forEach((i) => assert.ok(loot.includes(i), i));
+  ['sombra_capucha', 'sombra_coraza', 'sombra_guantes', 'sombra_botas', 'sombra_carcaj', 'sombra_arco', 'sombra_pantalon', 'sombra_cinturon', 'sombra_anillo_umbrio', 'sombra_anillo_noche', 'sombra_anillo_vacio', 'sombra_amuleto_abismo'].forEach((i) => assert.ok(loot.includes(i), i));
   assert.equal(ITEMS.sombra_arco.style, 'ranged'); assert.equal(ITEMS.sombra_carcaj.type, 'shield');
   const sp = world.monsterSpawns.find((s) => s.type === 'dragon_sombra'); const AR = [sp.x, sp.y]; assert.equal(zoneOf(AR).id, 'cueva'); assert.ok(zoneOf(AR).dark);
   assert.equal(world.monsterSpawns.filter((s) => zoneOf([s.x, s.y]).id === 'cueva').length, 1, 'solo el dragón en la cueva');

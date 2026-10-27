@@ -159,3 +159,8 @@ Hechizo de curar (V): cura 1000 de vida fijos y se recarga en 4 s (`HEAL_AMOUNT`
 ## Árboles y pasto nuevos
 - `public/trees.png` + `trees.json`: 9 árboles (3 grandes, roble, redondo, bosquecillo, manzano, naranjo, florido) y un árbol seco, más 4 teselas de pasto, tomados de la imagen de arte. Los árboles se eligen por posición del mapa y se dibujan sobre el terreno, así sobresalen por encima del tile.
 - Los árboles se mecen con el viento (ráfagas) y sueltan hojas; el pasto tiene briznas que se mueven. Palmeras y pinos siguen con su dibujo anterior (también animados).
+
+## Joyas del Dragón de las Sombras
+Drops del Dragón de las Sombras (4–5% base, ×0.5 por la reducción de equipo): **Anillo Umbrío** (nv 60, +12 def, +120 vida), **Anillo de la Noche Estrellada** (nv 62, +10 ataque, +3% crítico), **Anillo del Vacío Violeta** (nv 64, +8 ataque, +100 vida, +2% crítico) y **Amuleto del Abismo Violeta** (nv 66, +300 vida, +150 maná, +3% crítico). Aparecen en la colección de jefes.
+
+**Cinturón de las Sombras** (cinturón, nv 63, def 14, +160 vida, +60 maná, +1% crítico): drop del Dragón de las Sombras (5% base). Se dibuja en la cintura del personaje.
