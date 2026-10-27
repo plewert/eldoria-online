@@ -245,7 +245,7 @@ module.exports = function install(Game) {
   };
   P.defOf = function (p) { return Math.round(G0.defOf.call(this, p) * this.buffMult(p, 'def')); };
   P.hurtPlayer = function (p, raw, src, now, srcName) {
-    if (src && src.kind === 'mo' && src.def && src.def.boss) raw = Math.round(raw * BOSS_DMG);       // los jefes pegan más fuerte
+    if (src && src.kind === 'mo' && src.def && src.def.boss) raw = Math.round(raw * BOSS_DMG * (src.def.dmgK || 1));       // los jefes pegan más fuerte
     if (src && src.kind === 'mo') { const a = zoneAt(src.x, src.y), b = zoneAt(p.x, p.y); if (a !== b && (a.kind === 'dungeon' || b.kind === 'dungeon')) return 0; }
     const sh = p.buffs && p.buffs.shield;
     if (sh && sh.until > now && sh.hp > 0) {
@@ -882,12 +882,41 @@ module.exports = function install(Game) {
       this.later(1300, () => { if (!alive()) return; for (const [x, y] of spots) { this.fx.push({ k: 'nv', x, y, r: 2.4 }); hitPlayers(this, this.now, m, (q) => Math.hypot(q.x - x, q.y - y) <= 2.4, 560, 780, 'Nova celestial'); } });
     }
   };
+  // Coloso Ancestral (jefe de evento): lluvia de fuego y terremoto con daño en área
+  P.titanAI = function (m, now) {
+    if (now < (m.nextSp || 0)) return;
+    const t = m.target ? this.ents.get(m.target) : null; if (!t || t.kind !== 'pl' || t.hp <= 0) return;
+    const kind = ['fire', 'quake', 'fire', 'quake', 'quake', 'fire'][(m.spN || 0) % 6];
+    m.spN = (m.spN || 0) + 1; m.nextSp = now + 6000 + Math.random() * 3000;
+    m.nextMove = Math.max(m.nextMove, now + 1700); m.nextAtk = Math.max(m.nextAtk, now + 1700);
+    const alive = () => !m.dead && this.monsters.includes(m);
+    const near = (cx, cy, r) => [...this.players.values()].filter((q) => q.hp > 0 && !inTownP(q) && Math.hypot(q.x - cx, q.y - cy) <= r);
+    if (kind === 'fire') {                                      // lluvia de fuego: 3 oleadas de bolas que caen (se esquivan)
+      for (let w = 0; w < 3; w++) this.later(w * 1000, () => {
+        if (!alive()) return;
+        const tg = near(m.x, m.y, 14), n = 5 + w * 2, spots = [];
+        for (let i = 0; i < n; i++) { const q = tg[i]; spots.push(q ? [q.x, q.y] : [Math.round(m.x + (Math.random() - 0.5) * 20), Math.round(m.y + (Math.random() - 0.5) * 20)]); }
+        for (const [x, y] of spots) this.fx.push({ k: 'frw', x, y, r: 1.6 });
+        this.later(900, () => { if (!alive()) return; for (const [x, y] of spots) { this.fx.push({ k: 'fr', x, y }); hitPlayers(this, this.now, m, (q) => Math.hypot(q.x - x, q.y - y) <= 1.6, 110, 170, 'Lluvia de fuego'); } });
+      });
+    } else {                                                    // terremoto: el suelo tiembla y daña en área
+      const R = 7, cx = m.x, cy = m.y;
+      this.fx.push({ k: 'fqw', x: cx, y: cy, r: R });
+      this.later(1300, () => {
+        if (!alive()) return;
+        this.fx.push({ k: 'fq', x: cx, y: cy, r: R });
+        hitPlayers(this, this.now, m, (q) => Math.hypot(q.x - cx, q.y - cy) <= R, 160, 250, 'Terremoto');
+        this.later(700, () => { if (!alive()) return; this.fx.push({ k: 'fq', x: cx, y: cy, r: R * 0.7 }); hitPlayers(this, this.now, m, (q) => Math.hypot(q.x - cx, q.y - cy) <= R * 0.7, 90, 150, 'Réplica'); });
+      });
+    }
+  };
   G0.updateMonster = P.updateMonster;
   P.updateMonster = function (m, now) {
     G0.updateMonster.call(this, m, now);
     if (m.def.special === 'dragon' && !m.dead) this.dragonAI(m, now);
     else if (m.def.special === 'hydra' && !m.dead) this.hydraAI(m, now);
     else if (m.def.special === 'angel' && !m.dead) this.angelAI(m, now);
+    else if (m.def.special === 'titan' && !m.dead) this.titanAI(m, now);
   };
 
   /* ============================ ENGANCHES DE COMBATE ============================ */

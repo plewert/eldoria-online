@@ -423,6 +423,11 @@ ok('mochila: arrastrar y soltar intercambia casillas', () => {
   game.handle(p, { t: 'swap', a: -1, b: 999 }); assert.equal(p.inv[5], B, 'índices inválidos se ignoran');
 });
 
+ok('Coloso del evento: lluvia de fuego y terremoto', () => {
+  assert.equal(MONSTERS.coloso_ancestral.special, 'titan'); assert.equal(typeof Game.prototype.titanAI, 'function');
+  const sp = require('../public/sprites.json').coloso_ancestral; assert.ok(sp.f.length >= 4 && sp.anim > 0, 'animado');
+});
+
 console.log(`\n${n} pruebas correctas`);
 try { require('fs').unlinkSync(store.file); } catch (e) { /* nada */ }
 

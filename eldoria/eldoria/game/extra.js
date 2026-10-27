@@ -107,22 +107,22 @@ const NODES = {
 
 const BOSS = {
   type: 'coloso_ancestral',
-  def: { name: 'Coloso Ancestral', icon: '🗿', lv: 150, hp: 30000, dmg: [60, 110], exp: 9000, move: 520, atkCd: 1500, aggro: 12, respawn: 999999999, boss: true, gold: [3000, 6000], loot: [['trofeo_coloso', 1, 1, 2], ['pocion_vida_g', 1, 3, 6], ['pocion_mana_g', 1, 3, 6]] },
+  def: { name: 'Coloso Ancestral', icon: '🗿', lv: 150, hp: 90000, dmgK: 1.8, dmg: [60, 110], exp: 9000, move: 520, atkCd: 1500, aggro: 12, respawn: 999999999, boss: true, special: 'titan', gold: [3000, 6000], loot: [['trofeo_coloso', 1, 1, 2], ['pocion_vida_g', 1, 3, 6], ['pocion_mana_g', 1, 3, 6]] },
 };
 
 const DRAGON = {
   type: 'dragon_sombra', mins: 15, arena: [160, 87], icon: '🐉',
-  def: { name: 'Dragón de las Sombras', icon: '🐉', lv: 500, hp: 300000, dmg: [220, 380], exp: 60000, move: 380, atkCd: 1300, aggro: 14, respawn: 60000, armor: 0.8, shared: true, boss: true, special: 'dragon',
+  def: { name: 'Dragón de las Sombras', icon: '🐉', lv: 500, hp: 300000, dmg: [220, 380], exp: 60000, move: 380, atkCd: 1300, aggro: 14, respawn: 60000, armor: 0.8, shared: true, boss: true, special: 'dragon', dmgK: 1.5,
     gold: [10000, 20000], loot: [['trofeo_dragon', 1, 1, 2], ['pocion_vida_g', 1, 5, 10], ['pocion_mana_g', 1, 5, 10], ['pluma_fenix', 0.5, 1, 2]] },
 };
 const JADE = {
   type: 'hidra_jade',
-  def: { name: 'Hidra de Jade', icon: '🐲', lv: 550, hp: 320000, dmg: [190, 340], exp: 70000, move: 400, atkCd: 1300, aggro: 14, respawn: 60000, armor: 0.8, shared: true, boss: true, special: 'hydra',
+  def: { name: 'Hidra de Jade', icon: '🐲', lv: 550, hp: 320000, dmg: [190, 340], exp: 70000, move: 400, atkCd: 1300, aggro: 14, respawn: 60000, armor: 0.8, shared: true, boss: true, special: 'hydra', dmgK: 1.5,
     gold: [12000, 22000], loot: [['trofeo_hidra', 1, 1, 2], ['pocion_vida_g', 1, 5, 10], ['pocion_mana_g', 1, 5, 10], ['pluma_fenix', 0.5, 1, 2]] },
 };
 const ANGEL = {
   type: 'arcangel',
-  def: { name: 'Arcángel del Santuario', icon: '👼', lv: 600, hp: 360000, dmg: [210, 360], exp: 80000, move: 380, atkCd: 1300, aggro: 14, respawn: 60000, armor: 0.8, shared: true, boss: true, special: 'angel',
+  def: { name: 'Arcángel del Santuario', icon: '👼', lv: 600, hp: 360000, dmg: [210, 360], exp: 80000, move: 380, atkCd: 1300, aggro: 14, respawn: 60000, armor: 0.8, shared: true, boss: true, special: 'angel', dmgK: 1.5,
     gold: [14000, 24000], loot: [['trofeo_arcangel', 1, 1, 2], ['pocion_vida_g', 1, 5, 10], ['pocion_mana_g', 1, 5, 10], ['pluma_fenix', 0.5, 1, 2]] },
 };
 BOSS.mins = 12; BOSS.arena = [100, 107]; BOSS.icon = '🗿';
