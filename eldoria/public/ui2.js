@@ -336,7 +336,14 @@
     showGame(); if (m.ok && fs.res) setTimeout(() => { if (fs.res && performance.now() - fs.res.t > 1300) { fs.res = null; showGame(); } }, 1400);
     if (!m.ok && fs.res) setTimeout(() => { if (fs.res && !fs.res.ok) { fs.res = null; showGame(); } }, 1400);
   };
-  X.handlers.fish = (m) => { Object.assign(fsd, m); if (m.defs) fsd.defs = m.defs; if (!wF.m.hidden) renderFish(); };
+  const fishLi = document.querySelector('#skills li[data-sk="fish"]');
+  const syncFishRow = () => {
+    if (!fishLi) return; const max = fsd.defs ? fsd.defs.max : 320, hi = fsd.hi > fsd.lo ? fsd.hi : fsd.lo + 1;
+    fishLi.querySelector('b').textContent = fsd.lv; fishLi.title = `Nivel de pesca ${fsd.lv} / ${max} (clic para abrir la ventana de pesca)`;
+    fishLi.querySelector('.bar i').style.width = (fsd.lv >= max ? 100 : Math.max(0, Math.min(100, (fsd.xp - fsd.lo) / (hi - fsd.lo) * 100))) + '%';
+  };
+  if (fishLi) { fishLi.style.cursor = 'pointer'; fishLi.addEventListener('click', () => toggle('o')); }
+  X.handlers.fish = (m) => { Object.assign(fsd, m); if (m.defs) fsd.defs = m.defs; syncFishRow(); if (!wF.m.hidden) renderFish(); };
 
   // barra del minijuego
   const fg = el('div', 'fishgame'); fg.hidden = true;

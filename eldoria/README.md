@@ -177,3 +177,5 @@ Drops de la Hidra de Jade (4–5% base, ×0.5 por la reducción de equipo): **An
 - **Tesoros raros:** Perla Marina y Cofre Hundido (muy poca probabilidad; se venden caro).
 - **Tiburón:** si se escapa, se lleva un cebo o te muerde (8 % de tu vida, nunca te mata).
 - **Misiones de Nilo:** Primeras capturas, Salmones del norte (caña de hierro), Atunes de la costa, El rey del mar (caña de acero).
+
+- **Nivel de pesca a la vista:** aparece como cuarta habilidad (🎣 Pesca) bajo Magia en el panel del personaje, con su barra de experiencia; al hacer clic se abre la ventana de pesca.

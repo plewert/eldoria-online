@@ -294,6 +294,7 @@
     } else tp.hidden = true;
   }
 
+  const fishRow = () => { const f = G.fish; return f ? [f.lv, f.xp, f.lo, f.hi > f.lo ? f.hi : f.lo + 1] : [1, 0, 0, 1]; };
   function renderStats() {
     const s = G.stats; if (!s) return;
     const me = G.ents.get(G.id);
@@ -303,10 +304,11 @@
     $('#txpTxt').textContent = `${fmt(s.xp - s.xpLo)} / ${fmt(s.xpHi - s.xpLo)}`;
     $('#gold').textContent = fmt(s.gold); $('#defTxt').textContent = `Defensa ${s.def}`;
     document.querySelectorAll('#skills li').forEach((li) => {
-      const k = li.dataset.sk, [lv, xp, lo, hi] = s.sk[k];
+      const k = li.dataset.sk, [lv, xp, lo, hi] = k === 'fish' ? fishRow() : s.sk[k];
       li.querySelector('b').textContent = lv;
       li.querySelector('.bar i').style.width = pct(xp - lo, hi - lo);
       li.classList.toggle('on', s.style === k);
+      if (k === 'fish') li.querySelector('.bar i').style.width = pct(Math.min(xp, hi) - lo, hi - lo);
     });
     document.querySelectorAll('#hotbar [data-style]').forEach((b) => b.classList.toggle('on', s.style === b.dataset.style));
     updateHud();
