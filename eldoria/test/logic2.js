@@ -201,7 +201,7 @@ ok('Dragón de las Sombras: nivel 500, aliento negro, pisotón con grietas y bot
 ok('Hidra de Jade: cueva propia, set de arquero y sus tres ataques', () => {
   assert.equal(MONSTERS.hidra_jade.special, 'hydra'); assert.equal(MONSTERS.hidra_jade.respawn, 60000);
   const loot = MONSTERS.hidra_jade.loot.map((l) => l[0]);
-  ['jade_yelmo', 'jade_coraza', 'jade_guantes', 'jade_botas', 'jade_arco', 'jade_pantalon', 'jade_carcaj'].forEach((i) => assert.ok(loot.includes(i), i));
+  ['jade_yelmo', 'jade_coraza', 'jade_guantes', 'jade_botas', 'jade_arco', 'jade_pantalon', 'jade_carcaj', 'jade_anillo_rubi', 'jade_anillo_hoja', 'jade_cinturon', 'jade_amuleto'].forEach((i) => assert.ok(loot.includes(i), i));
   assert.equal(ITEMS.jade_carcaj.type, 'shield');
   assert.equal(ITEMS.jade_arco.style, 'ranged');
   const sp = world.monsterSpawns.find((q) => q.type === 'hidra_jade'); assert.equal(zoneOf([sp.x, sp.y]).id, 'cueva_jade');

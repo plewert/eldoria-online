@@ -164,3 +164,6 @@ Hechizo de curar (V): cura 1000 de vida fijos y se recarga en 4 s (`HEAL_AMOUNT`
 Drops del Dragón de las Sombras (4–5% base, ×0.5 por la reducción de equipo): **Anillo Umbrío** (nv 60, +12 def, +120 vida), **Anillo de la Noche Estrellada** (nv 62, +10 ataque, +3% crítico), **Anillo del Vacío Violeta** (nv 64, +8 ataque, +100 vida, +2% crítico) y **Amuleto del Abismo Violeta** (nv 66, +300 vida, +150 maná, +3% crítico). Aparecen en la colección de jefes.
 
 **Cinturón de las Sombras** (cinturón, nv 63, def 14, +160 vida, +60 maná, +1% crítico): drop del Dragón de las Sombras (5% base). Se dibuja en la cintura del personaje.
+
+## Joyas de la Hidra de Jade
+Drops de la Hidra de Jade (4–5% base, ×0.5 por la reducción de equipo): **Anillo del Rubí Dracónico** (nv 72, +10 ataque, +120 vida, +2% crít.), **Anillo de Hoja de Jade** (nv 70, +10 def, +160 vida), **Cinturón de Escamas de Jade** (nv 71, def 16, +180 vida, +5 ataque) y **Amuleto del Dragón de Jade** (nv 74, +350 vida, +100 maná, +8 ataque, +3% crít.). Salen en la colección de jefes.
