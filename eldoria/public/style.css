@@ -378,3 +378,10 @@ ol.rank li.me { color: #ffd96a; }
 #inv .slot[draggable="true"] { cursor: grab; }
 #inv .slot.dragging { opacity: .35; }
 #inv .slot.dragover { border-color: var(--brass); box-shadow: inset 0 0 0 1px var(--brass), 0 0 10px rgba(201, 162, 75, .55); }
+
+/* mapa del mundo */
+.maptb { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
+.maptb button { min-width: 34px; }
+.mapz { margin-left: auto; color: var(--brass); font-size: 13px; }
+.mapcv { display: block; max-width: 100%; border: 1px solid var(--edge); background: #05070a; cursor: grab; touch-action: none; image-rendering: pixelated; }
+.mapcv.grab { cursor: grabbing; }

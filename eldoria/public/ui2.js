@@ -426,7 +426,7 @@
   wF.onOpen = () => { send({ t: 'fish' }); renderFish(); };
 
   /* ---------- atajos ---------- */
-  const KEYS = { q: 'q', l: 'a', g: 's', r: 'r', p: 'm', f: 'c', b: 'b', o: 'o' };
+  const KEYS = { n: 'map', q: 'q', l: 'a', g: 's', r: 'r', p: 'm', f: 'c', b: 'b', o: 'o' };
   X.on('key', (k) => {
     if (KEYS[k]) { toggle(KEYS[k]); return true; }
     if (k === '1' || k === '2' || k === '3') { useSkill(+k - 1); return true; }
@@ -859,4 +859,75 @@
       }
     }
   });
+  /* ---------- mapa del mundo: zoom, arrastre y nombres de zona ---------- */
+  const wMap = win('map', '🗺️ Mapa del mundo', true); mkBtn('🗺️', 'Mapa del mundo', 'n', 'map');
+  {
+    const tb = el('div', 'maptb'), cvm = el('canvas', 'mapcv'), hint = el('p', 'fine', 'Rueda del ratón o + / − para acercar · arrastra para mover · N para cerrar');
+    const zm = el('span', 'mapz', ''); const bMinus = btn('−', () => zoomBy(1 / 1.35)), bPlus = btn('+', () => zoomBy(1.35)), bMe = btn('📍 Centrar en mí', () => { center(); }), bAll = btn('Ver todo', () => { fitAll(); });
+    tb.append(bMinus, bPlus, bMe, bAll, zm); wMap.body.append(tb, cvm, hint);
+    const M = { z: 3, cx: 160, cy: 70, drag: null, raf: 0, w: 0, h: 0 };
+    const LBL = { prado: [55, 48], dunas: [160, 52], sabana: [214, 128], volcan: [285, 45], pantano: [45, 128], playa: [100, 135], colinas: [100, 108] };
+    const kindCol = (z) => (z.kind === 'town' ? '#ffe08a' : z.kind === 'dungeon' ? (z.pvp ? '#ff9a7a' : '#d6b8ff') : z.pvp ? '#ffb0a0' : '#e8f2dc');
+    const sizeCv = () => {
+      const w = Math.max(280, Math.min(920, window.innerWidth - 60)), h = Math.max(260, Math.min(520, window.innerHeight - 200)), d = window.devicePixelRatio || 1;
+      if (M.w !== w || M.h !== h) { M.w = w; M.h = h; cvm.style.width = w + 'px'; cvm.style.height = h + 'px'; cvm.width = Math.round(w * d); cvm.height = Math.round(h * d); }
+      return d;
+    };
+    const minZ = () => Math.min(M.w / G.W, M.h / G.H), clampV = () => {
+      M.z = Math.max(minZ(), Math.min(18, M.z));
+      const hw = M.w / M.z / 2, hh = M.h / M.z / 2;
+      M.cx = G.W * M.z <= M.w ? G.W / 2 : Math.max(hw, Math.min(G.W - hw, M.cx)); M.cy = G.H * M.z <= M.h ? G.H / 2 : Math.max(hh, Math.min(G.H - hh, M.cy));
+    };
+    function zoomBy(k, mx, my) {
+      const bx = mx == null ? M.w / 2 : mx, by = my == null ? M.h / 2 : my;
+      const wx = M.cx + (bx - M.w / 2) / M.z, wy = M.cy + (by - M.h / 2) / M.z;
+      M.z *= k; clampV();
+      M.cx = wx - (bx - M.w / 2) / M.z; M.cy = wy - (by - M.h / 2) / M.z; clampV();
+    }
+    function center() { if (G.me) { M.z = Math.max(M.z, 6); M.cx = G.me.x; M.cy = G.me.y; clampV(); } }
+    function fitAll() { sizeCv(); M.z = minZ(); M.cx = G.W / 2; M.cy = G.H / 2; clampV(); }
+    function drawMap() {
+      if (wMap.m.hidden) { M.raf = 0; return; }
+      const d = sizeCv(), mb = X.miniBase && X.miniBase(); const c = cvm.getContext('2d');
+      c.setTransform(d, 0, 0, d, 0, 0); c.fillStyle = '#05070a'; c.fillRect(0, 0, M.w, M.h);
+      if (mb && G.W) {
+        clampV(); const z = M.z, ox = M.w / 2 - M.cx * z, oy = M.h / 2 - M.cy * z;
+        c.imageSmoothingEnabled = false; c.drawImage(mb, ox, oy, G.W * z, G.H * z);
+        c.strokeStyle = 'rgba(0,0,0,.9)'; c.lineJoin = 'round';
+        for (const zn of G.zones) {                                                             // recuadros de las zonas pequeñas (ciudades y cuevas)
+          if (zn.kind === 'wild' || zn.kind === 'field') continue; const [a, b2, c2, d2] = zn.rect;
+          c.strokeStyle = zn.kind === 'town' ? 'rgba(255,224,138,.7)' : 'rgba(214,184,255,.55)'; c.lineWidth = 1.5; c.strokeRect(ox + a * z, oy + b2 * z, (c2 - a + 1) * z, (d2 - b2 + 1) * z);
+        }
+        if (z >= 4) for (const q of G.portals || []) { c.fillStyle = '#b07cff'; c.beginPath(); c.arc(ox + (q.x + 0.5) * z, oy + (q.y + 0.5) * z, Math.max(2, z * 0.35), 0, 7); c.fill(); }
+        for (const e of G.ents.values()) if (e.kind === 'pl' && e.id !== G.id) { c.fillStyle = '#fff'; c.fillRect(ox + e.x * z - 1.5, oy + e.y * z - 1.5, 3, 3); }
+        const small = z < 3.2;
+        for (const zn of G.zones) {                                                             // nombres de las zonas
+          if (zn.id === 'prado' && false) continue; const big = zn.kind === 'wild' || zn.kind === 'field';
+          if (!big && small) continue;
+          const [a, b2, c2, d2] = zn.rect, ov = LBL[zn.id], lx = ov ? ov[0] : (a + c2) / 2, ly = ov ? ov[1] : (b2 + d2) / 2;
+          const fs = big ? Math.max(11, Math.min(20, z * 4.2)) : Math.max(10, Math.min(15, z * 2.6));
+          const nm = zn.name; c.font = `700 ${fs}px "Segoe UI", system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+          const x = ox + lx * z, y = oy + ly * z; if (x < -120 || x > M.w + 120 || y < -20 || y > M.h + 20) continue;
+          c.lineWidth = 4; c.strokeStyle = 'rgba(0,0,0,.85)'; c.strokeText(nm, x, y); c.fillStyle = kindCol(zn); c.fillText(nm, x, y);
+          if (zn.pvp && z >= 2.2) { c.font = `600 ${Math.max(9, fs * 0.6)}px system-ui, sans-serif`; c.lineWidth = 3; c.strokeText('⚔ PvP', x, y + fs * 0.85); c.fillStyle = '#ff7a6a'; c.fillText('⚔ PvP', x, y + fs * 0.85); }
+        }
+        if (G.me) {                                                                              // tú
+          const px2 = ox + (G.me.x + 0.5) * z, py2 = oy + (G.me.y + 0.5) * z, pu = 6 + Math.sin(performance.now() / 260) * 2;
+          c.strokeStyle = 'rgba(255,220,120,.9)'; c.lineWidth = 2; c.beginPath(); c.arc(px2, py2, pu + 4, 0, 7); c.stroke();
+          c.fillStyle = '#c9a24b'; c.strokeStyle = '#000'; c.lineWidth = 1.5; c.beginPath(); c.arc(px2, py2, 4.5, 0, 7); c.fill(); c.stroke();
+        }
+        if (G.grave && G.grave.x >= 0) { const gx = ox + (G.grave.x + 0.5) * z, gy = oy + (G.grave.y + 0.5) * z; c.fillStyle = '#ff5a4a'; c.font = '700 14px system-ui'; c.textAlign = 'center'; c.fillText('✝', gx, gy); }
+        zm.textContent = `Zoom ×${(z / minZ()).toFixed(1)}`;
+      }
+      M.raf = requestAnimationFrame(drawMap);
+    }
+    wMap.onOpen = () => { fitAll(); if (G.me) { M.z = Math.max(M.z, 4.2); M.cx = G.me.x; M.cy = G.me.y; clampV(); } if (!M.raf) M.raf = requestAnimationFrame(drawMap); };
+    cvm.addEventListener('wheel', (ev) => { ev.preventDefault(); const r = cvm.getBoundingClientRect(); zoomBy(ev.deltaY < 0 ? 1.2 : 1 / 1.2, ev.clientX - r.left, ev.clientY - r.top); }, { passive: false });
+    cvm.addEventListener('pointerdown', (ev) => { cvm.setPointerCapture(ev.pointerId); M.drag = { x: ev.clientX, y: ev.clientY, cx: M.cx, cy: M.cy }; cvm.classList.add('grab'); });
+    cvm.addEventListener('pointermove', (ev) => { if (!M.drag) return; M.cx = M.drag.cx - (ev.clientX - M.drag.x) / M.z; M.cy = M.drag.cy - (ev.clientY - M.drag.y) / M.z; clampV(); });
+    const endDrag = () => { M.drag = null; cvm.classList.remove('grab'); }; cvm.addEventListener('pointerup', endDrag); cvm.addEventListener('pointercancel', endDrag);
+    cvm.addEventListener('dblclick', (ev) => { const r = cvm.getBoundingClientRect(); zoomBy(1.8, ev.clientX - r.left, ev.clientY - r.top); });
+    document.addEventListener('keydown', (ev) => { if (wMap.m.hidden) return; if (ev.key === '+' || ev.key === '=') zoomBy(1.35); else if (ev.key === '-' || ev.key === '_') zoomBy(1 / 1.35); });
+    const mini = $('#mini'); if (mini) { mini.style.cursor = 'zoom-in'; mini.title = 'Clic para abrir el mapa del mundo (N)'; mini.addEventListener('click', () => open('map')); }
+  }
 })();

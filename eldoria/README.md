@@ -209,3 +209,8 @@ Al atacar con un arma cuerpo a cuerpo, el personaje balancea el arma con una est
 
 ## Tabletas de teletransporte
 Boris vende 11 tabletas (100 000 de oro cada una, de un solo uso): Ciudad, Bosque, Cumbres, Dunas, Aldea Pesquera, Selva, Sabana, Tierras de Lava, Pantano, Colinas y Puerto. Clic en la tableta para usarla; no funciona en combate. Ver `game/tablets.js`.
+
+## Mapa del mundo
+- Ábrelo con el botón 🗺️, la tecla **N** o haciendo clic en el minimapa.
+- Acerca/aleja con la rueda del ratón o los botones **+ / −**, arrastra para moverte; "Centrar en mí" y "Ver todo".
+- Muestra el nombre de cada zona (con etiqueta ⚔ PvP si aplica), ciudades y cuevas.

@@ -1028,7 +1028,7 @@
       g.fillStyle = MINI_COL[G.tiles[y * G.W + x]]; g.fillRect(x, y, 1, 1);
       if (zoneAt(x, y).pvp) { g.fillStyle = 'rgba(212,80,59,.22)'; g.fillRect(x, y, 1, 1); }
     }
-    miniBase = c;
+    miniBase = c; EXT.miniBase = () => miniBase;
   }
   function drawMini() {
     const cv = $('#mini'); if (!miniBase || !G.me) return;
