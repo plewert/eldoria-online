@@ -214,3 +214,8 @@ Boris vende 11 tabletas (100 000 de oro cada una, de un solo uso): Ciudad, Bosqu
 - Ábrelo con el botón 🗺️, la tecla **N** o haciendo clic en el minimapa.
 - Acerca/aleja con la rueda del ratón o los botones **+ / −**, arrastra para moverte; "Centrar en mí" y "Ver todo".
 - Muestra el nombre de cada zona (con etiqueta ⚔ PvP si aplica), ciudades y cuevas.
+
+## Set del Maestro Pescador (botín raro de pesca)
+- Sombrero, Chaleco, Pantalón y Botas del Maestro Pescador + Caña del Maestro Pescador (pesca 100): cada captura tiene un **0,5 %** de dar cada pieza.
+- Con las 4 piezas de armadura puestas, cada captura tiene un 25 % de traer **5 presas** de golpe.
+- Al pescar, el personaje sostiene en la mano la mejor caña que tenga (incluida la del Maestro Pescador) y el sedal sale de su punta.

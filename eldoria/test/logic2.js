@@ -407,6 +407,29 @@ ok('pesca: caña, picada, minijuego de temporización, nivel y peces por zona', 
   const back = game.extSave(a.p); assert.equal(back.fish.xp, 1e6);
 });
 
+ok('pesca: set del Maestro Pescador (drop 0,5 %, 5 presas con el set completo)', () => {
+  for (const id of ['pesca_sombrero', 'pesca_chaleco', 'pesca_pantalon', 'pesca_botas', 'cana_maestra']) assert.ok(ITEMS[id], id);
+  assert.deepEqual(['pesca_sombrero', 'pesca_chaleco', 'pesca_pantalon', 'pesca_botas'].map((i) => ITEMS[i].type), ['head', 'body', 'legs', 'boots']);
+  let wx = -1, wy = -1, lx = -1, ly = -1;
+  outer: for (let y = 2; y < world.H - 2; y++) for (let x = 2; x < 100; x++) {
+    if (world.tiles[y * world.W + x] === world.T.WATER && world.zoneAt(x, y).id === 'prado' && world.tiles[y * world.W + x - 1] === world.T.GRASS) { wx = x; wy = y; lx = x - 1; ly = y; break outer; }
+  }
+  const a = login('Pez2'); place(a.p, lx, ly); a.p.inv[0] = I.mk('cana_madera', 1);
+  const r0 = Math.random;
+  const cast = () => { T0 += 20000; game.now = T0; game.fishCast(a.p, wx, wy); T0 += 20000; game.now = T0; game.fishTick(T0); const f = a.p.fishing; const mid = (f.lo + f.hi) / 2; let tt = f.t0; for (let q = 0; q < 4000; q++) { const ph = ((tt - f.t0) / 1000 * f.speed) % 2, pos = ph < 1 ? ph : 2 - ph; if (Math.abs(pos - mid) < 0.01) break; tt += 1; } game.now = tt; game.fishReel(a.p); };
+  const count = () => a.p.inv.reduce((n, it) => n + (it && (it.id === 'sardina' || it.id === 'salmon') ? it.qty : 0), 0);
+  try {
+    Math.random = () => 0.001;                                        // todo sale: pieza rara en cada captura
+    cast(); assert.ok(a.p.inv.some((it) => it && it.id === 'pesca_sombrero') && a.p.inv.some((it) => it && it.id === 'cana_maestra'), 'cae el set');
+    Math.random = () => 0.5;                                          // sin drop y sin set: 1 presa
+    const n0 = count(); cast(); assert.equal(count() - n0, 1);
+    for (const [s, id] of [['head', 'pesca_sombrero'], ['body', 'pesca_chaleco'], ['legs', 'pesca_pantalon'], ['boots', 'pesca_botas']]) a.p.eq[s] = I.mk(id, 1);
+    Math.random = () => 0.2;                                          // < 25 %: 5 presas
+    const n1 = count(); cast(); assert.equal(count() - n1, 5);
+    Math.random = () => 0.6; const n2 = count(); cast(); assert.equal(count() - n2, 1, 'sin suerte: 1 presa');
+  } finally { Math.random = r0; }
+});
+
 ok('Arcángel: cueva de nubes, set celestial raro y sus tres ataques', () => {
   assert.equal(MONSTERS.arcangel.special, 'angel');
   const loot = MONSTERS.arcangel.loot.map((l) => l[0]);

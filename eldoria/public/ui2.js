@@ -377,14 +377,25 @@
   });
 
   // sedal y corcho en el mundo
+  const rodIc = {};
   X.on('draw', (c, now) => {
     if (!fs.st || !G.me) return;
     const me = G.ents.get(G.id); if (!me) return; const TS = X.TS;
     const tx = X.sxOf(fs.x) + TS / 2, ty = X.syOf(fs.y) + TS / 2, px = X.sxOf(me.rx) + TS / 2 + 6, py = X.syOf(me.ry) + TS / 2 - 10;
     const k = Math.min(1, (performance.now() - fs.ct) / 380), bite = fs.st === 'bite';
-    const bx = px + (tx - px) * k, by = py + (ty - py) * k - Math.sin(k * Math.PI) * 26;
+    // caña en la mano: la mejor que tengas (el icono girado, mango en la mano y punta hacia el agua); el sedal sale de la punta
+    let px0 = px, py0 = py, rid = '', rq = -1;
+    for (const it of G.inv || []) { const d = it && G.items[it[0]]; const r = d && d.rod && fsd.defs && fsd.defs.rods[it[0]]; if (r && r.req <= fsd.lv && r.req > rq) { rq = r.req; rid = it[0]; } }
+    if (rid && X.iconNode) {
+      const ic = (rodIc[rid] && rodIc[rid].width ? rodIc[rid] : (rodIc[rid] = X.iconNode(rid))), dir = tx < px - 1 ? -1 : 1, sz = 30, sway = bite ? Math.sin(now / 45) * 1.6 : Math.sin(now / 700) * 0.6;
+      const hx = px - dir * 5, hy = py + 11;
+      if (ic && ic.tagName === 'CANVAS' && ic.width) { c.save(); c.translate(hx, hy); c.scale(dir, 1); c.imageSmoothingEnabled = false; c.drawImage(ic, 0, -sz + 2, sz, sz); c.restore(); }
+      px0 = hx + dir * (sz - 3); py0 = hy - sz + 5 + sway;
+    }
+    const px1 = px0, py1 = py0;
+    const bx = px1 + (tx - px1) * k, by = py1 + (ty - py1) * k - Math.sin(k * Math.PI) * 26;
     c.save();
-    c.strokeStyle = 'rgba(235,235,225,.85)'; c.lineWidth = 1; c.beginPath(); c.moveTo(px, py); c.quadraticCurveTo((px + bx) / 2, Math.min(py, by) + 10 * (1 - k * 0.7), bx, by); c.stroke();
+    c.strokeStyle = 'rgba(235,235,225,.85)'; c.lineWidth = 1; c.beginPath(); c.moveTo(px1, py1); c.quadraticCurveTo((px1 + bx) / 2, Math.min(py1, by) + 10 * (1 - k * 0.7), bx, by); c.stroke();
     if (k >= 1) {
       for (let i = 0; i < 2; i++) { const ph = ((now / (bite ? 350 : 1100)) + i * 0.5) % 1; c.strokeStyle = `rgba(220,240,255,${(1 - ph) * (bite ? 0.9 : 0.5)})`; c.lineWidth = 1.5; c.beginPath(); c.ellipse(tx, ty + 4, 4 + ph * (bite ? 14 : 10), 2 + ph * (bite ? 6 : 4), 0, 0, 7); c.stroke(); }
       const dip = bite ? 3 + Math.sin(now / 55) * 2.2 : Math.sin(now / 600) * 1;
