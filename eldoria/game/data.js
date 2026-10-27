@@ -481,6 +481,8 @@ require('./mage').build(ITEMS, SHOPS, MONSTERS);
   require('./jade').build(ITEMS, MONSTERS, X.JADE.type);
   MONSTERS[X.ANGEL.type] = X.ANGEL.def;
   require('./angel').build(ITEMS, MONSTERS, X.ANGEL.type);
+  MONSTERS[X.SPIDER.type] = X.SPIDER.def; MONSTERS[X.SPIDER.minion.type] = X.SPIDER.minion.def;
+  require('./spider').build(ITEMS, MONSTERS, X.SPIDER.type);
   require('./bosspets').build(ITEMS, MONSTERS);
   require('./fishing').build(ITEMS, SHOPS);
   SHOPS.brisa.push('mascota_lobito', 'mascota_murcielago', 'mascota_goblin', 'montura_lobo', 'montura_oso');

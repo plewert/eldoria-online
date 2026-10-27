@@ -765,6 +765,10 @@
       case 'fr': AF.push({ k: 'fr', t: now, T: 1800, f, s: Math.random() * 99 }); X.burst(f.x, f.y, 'fire', 18, { sp: 4, up: 4, g: 5, life: 0.7, size: 3 }); X.ring(f.x, f.y, 'fire', 380, 30, 4); G.shake = { t: now, m: 3 }; break;
       case 'fqw': AF.push({ k: 'fqw', t: now, T: 1300, f }); G.shake = { t: now, m: 2 }; break;
       case 'fq': AF.push({ k: 'fq', t: now, T: 800, f }); X.ring(f.x, f.y, 'fire', 700, f.r * 32, 7); X.burst(f.x, f.y, 'dark', 40, { sp: 6, up: 3, g: 5, life: 0.9, size: 3.6, add: false }); G.shake = { t: now, m: 12 }; X.sfx && X.sfx('thunder'); break;
+      case 'wbw': AF.push({ k: 'wbw', t: now, T: 1100, f }); break;
+      case 'wb': AF.push({ k: 'wb', t: now, T: 2400, f, s: Math.random() * 9 }); X.burst(f.x, f.y, 'fire', 22, { sp: 4, up: 3, g: 4, life: 0.8, size: 3 }); X.ring(f.x, f.y, 'fire', 420, f.r * 26, 4); G.shake = { t: now, m: 3 }; break;
+      case 'spw': AF.push({ k: 'spw', t: now, T: 900, f }); break;
+      case 'sp': AF.push({ k: 'sp', t: now, T: 700, f }); X.burst(f.x, f.y, 'fire', 18, { sp: 4, up: 4, g: 5, life: 0.6, size: 3 }); X.ring(f.x, f.y, 'fire', 380, 24, 3); break;
       case 'tn': AF.push({ k: 'tn', t: now, T: 560, f }); break;
       case 'nvw': AF.push({ k: 'nvw', t: now, T: 1300, f }); break;
       case 'nv': AF.push({ k: 'nv', t: now, T: 700, f }); X.ring(f.x, f.y, 'arcane', 650, f.r * 36, 6); X.burst(f.x, f.y, 'arcane', 36, { sp: 6, up: 5, g: 3, life: 0.9, size: 3.4 }); G.shake = { t: now, m: 7 }; X.sfx && X.sfx('boss'); break;
@@ -775,7 +779,24 @@
     const TS = X.TS;
     for (const b of AF) {
       const p = Math.max(0, (now - b.t) / b.T); if (p >= 1) continue; const f = b.f, x = px(f.x), y = py(f.y);
-      if (b.k === 'frw') {
+      if (b.k === 'wbw') {                                    // aviso: red de fuego que se tensa
+        const r = f.r * TS; c.fillStyle = `rgba(255,100,20,${0.08 + 0.22 * p})`; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+        c.strokeStyle = `rgba(255,200,110,${0.5 + 0.4 * Math.abs(Math.sin(now / 60))})`; c.lineWidth = 2; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke();
+        c.strokeStyle = `rgba(255,220,160,${0.35 + 0.3 * p})`; c.lineWidth = 1;
+        for (let i = 0; i < 8; i++) { const a = i * 0.785; c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r * 0.8); c.stroke(); }
+        for (const k of [0.35, 0.7]) { c.beginPath(); c.arc(x, y, r * k * p, 0, 7); c.stroke(); }
+      } else if (b.k === 'wb') {                              // red de telaraña ardiendo en el suelo
+        const al = Math.min(1, (1 - p) * 2.2), r = f.r * TS;
+        const g = c.createRadialGradient(x, y, 2, x, y, r); g.addColorStop(0, `rgba(255,190,60,${0.55 * al})`); g.addColorStop(1, 'rgba(160,30,0,0)');
+        c.fillStyle = g; c.beginPath(); c.ellipse(x, y, r, r * 0.8, 0, 0, 7); c.fill();
+        c.strokeStyle = `rgba(255,${170 + Math.sin(now / 90 + b.s) * 60 | 0},60,${0.9 * al})`; c.lineWidth = 1.6;
+        for (let i = 0; i < 8; i++) { const a = i * 0.785; c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r * 0.8); c.stroke(); }
+        for (const k of [0.33, 0.66, 1]) { c.beginPath(); for (let i = 0; i <= 8; i++) { const a = i * 0.785; const px = x + Math.cos(a) * r * k, py = y + Math.sin(a) * r * 0.8 * k; if (i) c.lineTo(px, py); else c.moveTo(px, py); } c.stroke(); }
+        for (let i = 0; i < 5; i++) { const u = (now / 420 + i * 0.21 + b.s) % 1; c.fillStyle = `rgba(255,${190 - u * 90},40,${0.8 * al * (1 - u)})`; c.fillRect(x + Math.sin(i * 2.4 + b.s) * r * 0.7 - 2, y - u * 24, 4, 7); }
+      } else if (b.k === 'spw') {                             // grietas de lava de donde saldrá la araña
+        const r = 0.9 * TS; c.fillStyle = `rgba(255,90,20,${0.15 + 0.4 * p})`; c.beginPath(); c.ellipse(x, y, r, r * 0.6, 0, 0, 7); c.fill();
+        c.strokeStyle = `rgba(255,200,90,${0.5 + 0.4 * p})`; c.lineWidth = 2; c.beginPath(); c.ellipse(x, y, r * (1 - p * 0.4), r * 0.6 * (1 - p * 0.4), 0, 0, 7); c.stroke();
+      } else if (b.k === 'frw') {
         const r = f.r * TS; c.fillStyle = `rgba(255,110,20,${0.10 + 0.25 * p})`; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
         c.strokeStyle = `rgba(255,190,80,${0.5 + 0.4 * Math.abs(Math.sin(now / 60))})`; c.lineWidth = 2; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke();
       } else if (b.k === 'fr') {                              // charco de fuego que arde un momento

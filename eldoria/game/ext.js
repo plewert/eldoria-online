@@ -910,6 +910,53 @@ module.exports = function install(Game) {
       });
     }
   };
+  // Aracnídeo Fuego Negro: redes de telaraña de fuego y arañas de fuego invocadas (el tercer ataque es su zarpazo cuerpo a cuerpo)
+  P.spiderAI = function (m, now) {
+    if (now < (m.nextSp || 0)) return;
+    const t = m.target ? this.ents.get(m.target) : null; if (!t || t.kind !== 'pl' || t.hp <= 0) return;
+    const alive = () => !m.dead && this.monsters.includes(m);
+    const near = (cx, cy, r) => [...this.players.values()].filter((q) => q.hp > 0 && !inTownP(q) && Math.hypot(q.x - cx, q.y - cy) <= r);
+    const kids = () => this.monsters.filter((q) => q.parent === m && !q.dead);
+    const kind = ['web', 'summon', 'web', 'summon', 'web'][(m.spN || 0) % 5];
+    m.spN = (m.spN || 0) + 1; m.nextSp = now + 6000 + Math.random() * 3000;
+    m.nextMove = Math.max(m.nextMove, now + 1500); m.nextAtk = Math.max(m.nextAtk, now + 1500);
+    if (kind === 'web') {                                       // redes de fuego: aviso y caída; inmovilizan y queman
+      const tg = near(m.x, m.y, 14), n = Math.min(9, 4 + tg.length), spots = [];
+      for (let i = 0; i < n; i++) { const q = tg[i]; spots.push(q ? [q.x, q.y] : [Math.round(m.x + (Math.random() - 0.5) * 18), Math.round(m.y + (Math.random() - 0.5) * 18)]); }
+      for (const [x, y] of spots) this.fx.push({ k: 'wbw', x, y, r: 2.4 });
+      this.later(1100, () => {
+        if (!alive()) return;
+        for (const [x, y] of spots) {
+          this.fx.push({ k: 'wb', x, y, r: 2.4 });
+          const hit = near(x, y, 2.4);
+          for (const q of hit) {
+            this.hurtPlayer(q, rnd(300, 440), m, this.now, 'Red de fuego');
+            q.nextMove = Math.max(q.nextMove || 0, this.now + 2200);                                  // atrapado en la telaraña
+            for (let i = 1; i <= 3; i++) this.later(800 * i, () => { if (alive() && q.hp > 0 && this.players.get(q.key) === q) { this.fx.push({ k: 'burn', x: q.x, y: q.y }); this.hurtPlayer(q, rnd(45, 80), m, this.now, 'Telaraña ardiente'); } });
+          }
+        }
+      });
+    } else {                                                    // invoca arañas de fuego
+      const room = 8 - kids().length; if (room <= 0) return;
+      const n = Math.min(room, 3 + Math.floor(near(m.x, m.y, 14).length / 2)), MT = require('./data').MONSTERS.arana_fuego;
+      const spots = [];
+      for (let i = 0; i < n * 6 && spots.length < n; i++) { const x = Math.round(m.x + (Math.random() - 0.5) * 10), y = Math.round(m.y + 1 + Math.random() * 5); if (world.isWalkable(x, y) && !this.mgrid.has(y * world.W + x) && !this.pgrid.has(y * world.W + x) && !spots.some((s) => s[0] === x && s[1] === y)) spots.push([x, y]); }
+      for (const [x, y] of spots) this.fx.push({ k: 'spw', x, y });
+      this.later(900, () => {
+        if (!alive()) return;
+        for (const [x, y] of spots) {
+          if (this.mgrid.has(y * world.W + x) || this.pgrid.has(y * world.W + x)) continue;
+          const c = this.spawnMonster('arana_fuego', x, y); c.noRespawn = true; c.respawnAt = Infinity; c.parent = m; c.target = m.target; c.diesAt = this.now + 45000;
+          this.fx.push({ k: 'sp', x, y });
+        }
+        if (!m.sweep) { m.sweep = true; const sweep = () => {                                           // limpieza de arañas muertas o caducadas
+          const bossUp = alive(); const now2 = this.now;
+          for (const q of this.monsters.filter((z) => z.parent === m && (z.dead || !bossUp || now2 >= z.diesAt))) { this.mgrid.delete(q.y * world.W + q.x); this.monsters = this.monsters.filter((z) => z !== q); this.ents.delete(q.id); }
+          if (bossUp || this.monsters.some((z) => z.parent === m)) this.later(2000, sweep); else m.sweep = false;
+        }; this.later(2000, sweep); }
+      });
+    }
+  };
   G0.updateMonster = P.updateMonster;
   P.updateMonster = function (m, now) {
     G0.updateMonster.call(this, m, now);
@@ -917,6 +964,7 @@ module.exports = function install(Game) {
     else if (m.def.special === 'hydra' && !m.dead) this.hydraAI(m, now);
     else if (m.def.special === 'angel' && !m.dead) this.angelAI(m, now);
     else if (m.def.special === 'titan' && !m.dead) this.titanAI(m, now);
+    else if (m.def.special === 'spider' && !m.dead) this.spiderAI(m, now);
   };
 
   /* ============================ ENGANCHES DE COMBATE ============================ */
