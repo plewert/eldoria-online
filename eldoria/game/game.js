@@ -1220,4 +1220,5 @@ class Game {
 
 require('./ext')(Game);
 require('./fishing').install(Game);
+require('./mining').install(Game);
 module.exports = { Game, NAME_RE, levelFromXp, xpForLevel, skillFromXp };

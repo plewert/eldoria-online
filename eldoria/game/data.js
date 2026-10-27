@@ -487,6 +487,7 @@ require('./mage').build(ITEMS, SHOPS, MONSTERS);
   require('./leviatan').build(ITEMS, MONSTERS, X.LEVIATAN.type);
   require('./bosspets').build(ITEMS, MONSTERS);
   require('./fishing').build(ITEMS, SHOPS);
+  require('./mining').build(ITEMS, SHOPS);
   require('./tablets').build(ITEMS, SHOPS);
   SHOPS.brisa.push('mascota_lobito', 'mascota_murcielago', 'mascota_goblin', 'montura_lobo', 'montura_oso');
   const rare = [['lobo', 'mascota_lobito', 0.004], ['murcielago', 'mascota_murcielago', 0.003], ['goblin', 'mascota_goblin', 0.003], ['dragon', 'mascota_dragoncito', 0.01],

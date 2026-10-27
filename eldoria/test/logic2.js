@@ -143,7 +143,7 @@ ok('mercado: expira y devuelve el objeto por correo', () => {
   assert.equal(game.market().list.length, 0); assert.ok(s.p.inv.some((it) => it && it.id === 'arco_corto'));
 });
 ok('recolección y fabricación: nodos, recoger, receta, nivel de oficio', () => {
-  assert.ok(game.nodes.length > 100, 'hay puntos de recolección'); assert.ok(new Set(game.nodes.map((q) => q.type)).size === 4);
+  assert.ok(game.nodes.length > 100, 'hay puntos de recolección'); assert.ok(new Set(game.nodes.map((q) => q.type)).size === 12, 'oficios + 8 rocas');
   const { p } = login('Craft1'); const nd = game.nodes.find((q) => q.type === 'hierba');
   place(p, nd.x, nd.y); game.gather(p, nd.id);
   assert.ok(p.inv.some((it) => it && it.id === 'hierba_curativa')); assert.equal(p.ext.gather, 1);
@@ -485,6 +485,26 @@ ok('Leviatán Abisal: gruta inundada, set raro y sus 4 ataques (tornados, olas, 
   hp0 = p.hp; go(0); run(4000); assert.ok(game.fx.some((f) => f.k === 'bm') && p.hp < hp0, 'el rayo de agua golpea');
   go(3); assert.ok(m.shieldUntil > game.now, 'burbuja'); const h1 = m.hp; game.hurtMonster(m, 5000, p, game.now); assert.equal(m.hp, h1, 'inmune 5 s');
   run(5200); assert.ok(!m.shieldUntil); game.hurtMonster(m, 5000, p, game.now); assert.ok(m.hp < h1, 'la burbuja acaba');
+});
+
+ok('minería: picos, rocas por nivel, experiencia, gemas raras y colección', () => {
+  const M = require('../game/mining');
+  for (const id of M.ORDER) { assert.ok(ITEMS[id], id); assert.ok(game.nodes.some((q) => q.type === 'roca_' + id), 'hay rocas de ' + id); }
+  assert.equal(Object.keys(M.PICKS).length, 6); const SH = require('../game/data').SHOPS; assert.ok(SH.boris.includes('pico_piedra') && SH.boris.includes('pico_abismo'));
+  const sj = require('../public/sprites.json'), gj = require('../public/gear.json'); for (const id of M.ORDER) { assert.ok(sj['rock_' + id] && gj['i_k_' + id], 'gráficos de ' + id); } for (const k of Object.values(M.PICKS)) assert.ok(gj['i_' + k.spr]);
+  const { p, ws } = login('Mine1'); const nd = game.nodes.find((q) => q.type === 'roca_granito'); place(p, nd.x, nd.y); game.now += 5000;
+  game.gather(p, nd.id); assert.ok(!p.inv.some((it) => it && it.id === 'granito') && nd.at === 0, 'sin pico no se mina');
+  p.inv[0] = I.mk('pico_piedra', 1); const r0 = Math.random;
+  try {
+    Math.random = () => 0.5; game.gather(p, nd.id);
+    assert.ok(p.inv.some((it) => it && it.id === 'granito'), 'da granito'); assert.ok(p.ext.mine.xp > 0 && p.ext.mine.c.granito >= 1); assert.ok(nd.at > game.now, 'la roca se agota');
+    assert.ok(lastMsg(ws, 'mine').lv >= 1, 'se informa de la habilidad'); assert.ok(p.ext.col.mineria.granito, 'colección');
+    const ob = game.nodes.find((q) => q.type === 'roca_obsidiana'); place(p, ob.x, ob.y); game.now += 5000; game.gather(p, ob.id); assert.equal(ob.at, 0, 'nivel de minería insuficiente');
+    // con nivel y pico altos y suerte: sale gema rara y se anuncia
+    p.ext.mine.xp = 1e8; p.inv[1] = I.mk('pico_abismo', 1); Math.random = () => 0.0001; game.now += 5000; game.gather(p, ob.id);
+    assert.ok(['amatista', 'opalo', 'diamante'].some((g) => p.inv.some((it) => it && it.id === g)), 'gema rara'); assert.ok(p.ext.col.mineria.obsidiana);
+  } finally { Math.random = r0; }
+  assert.ok(game.extSave(p).mine.xp > 0 && game.extSave(p).col.mineria);
 });
 
 ok('tabletas de teletransporte: Boris las vende a 100k y llevan a la zona', () => {

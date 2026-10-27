@@ -63,17 +63,17 @@
       if (!n) return null; got += g; tot += n;
       const h = el('h3', '', `${d.icon} ${d.name} · nivel ${d.lv} `); h.append(el('small', '', `${g} / ${n}`)); sec.append(h, grid); return sec;
     }).filter(Boolean);
-    const fdef = G.fish && G.fish.defs && G.fish.defs.col;
-    if (fdef) {                                                                      // sección de pesca (peces, tesoros, mascotas y set raro)
-      const sec = el('div', 'colsec'), have3 = colData.pesca || {}, grid = el('div', 'colgrid'); let g = 0;
-      for (const [id, ch] of fdef) {
+    for (const [title, defsCol, key] of [['⛏️ Minería', G.mine && G.mine.defs && G.mine.defs.col, 'mineria'], ['🎣 Pesca', G.fish && G.fish.defs && G.fish.defs.col, 'pesca']]) {   // secciones de oficios (peces, rocas, gemas, mascotas...)
+      if (!defsCol) continue;
+      const sec = el('div', 'colsec'), have3 = colData[key] || {}, grid = el('div', 'colgrid'); let g = 0;
+      for (const [id, ch] of defsCol) {
         const it = G.items[id]; if (!it) continue; const c = have3[id], tile = el('div', 'coltile' + (c ? ' on' : ''));
         const ic = el('div', 'ico'); ic.append(X.iconNode ? X.iconNode(id) : it.icon || '?'); tile.append(ic, el('small', '', c ? it.name : '???'));
         if (c) { g++; tile.append(el('b', '', '×' + c)); }
-        tile.title = c ? `${it.name} — conseguido ${c} ${c === 1 ? 'vez' : 'veces'}` : ch >= 1 ? 'Aún no lo has pescado' : `Aún no te ha salido (${(ch * 100).toFixed(2)} % al pescar)`;
+        tile.title = c ? `${it.name} — conseguido ${c} ${c === 1 ? 'vez' : 'veces'}` : ch >= 1 ? 'Aún no lo has conseguido' : `Aún no te ha salido (${(ch * 100).toFixed(2)} %)`;
         grid.append(tile);
       }
-      const h = el('h3', '', '🎣 Pesca '); h.append(el('small', '', `${g} / ${fdef.length}`)); sec.append(h, grid); secs.unshift(sec);
+      const h = el('h3', '', title + ' '); h.append(el('small', '', `${g} / ${defsCol.length}`)); sec.append(h, grid); secs.unshift(sec);
     }
     b.append(el('p', 'colhead', `Objetos de jefes que ya te han salido: ${got} / ${tot}`), ...secs);
     if (!secs.length) b.append(el('p', '', 'Aún no hay jefes registrados.'));
@@ -87,7 +87,7 @@
     st.append(n); setTimeout(() => n.classList.add('out'), 4200); setTimeout(() => { n.remove(); colNext(); }, 4800);
   };
   X.handlers.colnew = (m) => { colQ.push(m); if (!colBusy) colNext(); };
-  wB.onOpen = () => { send({ t: 'col' }); send({ t: 'fish' }); renderCol(); };
+  wB.onOpen = () => { send({ t: 'col' }); send({ t: 'fish' }); send({ t: 'mine' }); renderCol(); };
   X.handlers.col = (m) => { colData = m.v || {}; if (!wB.m.hidden) renderCol(); };
 
   /* ============================ MISIONES ============================ */
@@ -449,7 +449,7 @@
   wF.onOpen = () => { send({ t: 'fish' }); renderFish(); };
 
   /* ---------- atajos ---------- */
-  const KEYS = { n: 'map', q: 'q', l: 'a', g: 's', r: 'r', p: 'm', f: 'c', b: 'b', o: 'o' };
+  const KEYS = { u: 'u', n: 'map', q: 'q', l: 'a', g: 's', r: 'r', p: 'm', f: 'c', b: 'b', o: 'o' };
   X.on('key', (k) => {
     if (KEYS[k]) { toggle(KEYS[k]); return true; }
     if (k === '1' || k === '2' || k === '3') { useSkill(+k - 1); return true; }
@@ -544,6 +544,11 @@
       const d = xi.nodes[type]; if (!d) continue;
       const cx = X.sxOf(x) + TS / 2, cy = X.syOf(y) + TS / 2, pulse = 1 + Math.sin(now / 420 + x * 3 + y) * 0.06;
       c.fillStyle = 'rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(cx, cy + 10, 10, 3.5, 0, 0, 7); c.fill();
+      if (d.spr && X.SPR[d.spr] && X.sprReady()) {                                   // rocas de minería (sprites)
+        X.drawSpriteS(c, d.spr, 0, cx, cy + 12, false, 1.1);
+        if (G.mine && d.lvl > G.mine.lv) { c.font = 'bold 9px sans-serif'; c.textAlign = 'center'; c.fillStyle = '#ffb4a0'; c.strokeStyle = '#000'; c.lineWidth = 2.5; c.strokeText('⛏️' + d.lvl, cx, cy - 8); c.fillText('⛏️' + d.lvl, cx, cy - 8); }
+        continue;
+      }
       c.save(); c.translate(cx, cy + 2); c.scale(pulse, pulse); c.font = '20px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(d.icon, 0, 0); c.restore();
       if (Math.sin(now / 300 + x * 7) > 0.88) { c.fillStyle = '#fff'; c.fillRect(cx + 7, cy - 9, 2, 2); }
     }
@@ -583,6 +588,66 @@
     if (cheb(G.me.x, G.me.y, gTarget.x, gTarget.y) <= 1) { send({ t: 'gather', id: gTarget.id }); gTarget.until = performance.now() + 900; }
   }
   setInterval(tickGather, 350);
+
+  /* ============================ MINERÍA ============================ */
+  const wMn = win('u', '⛏️ Minería', true); mkBtn('⛏️', 'Minería', 'u', 'u');
+  const msd = G.mine = { lv: 1, xp: 0, lo: 0, hi: 1, c: {}, defs: null };
+  const GEM_IC = { rubi: '🔴', zafiro: '🔵', esmeralda: '🟢', topacio: '🟡', amatista: '🟣', opalo: '🟠', diamante: '💎' };
+  const bestPickId = () => {
+    let best = '', rq = -1; const picks = (msd.defs && msd.defs.picks) || {};
+    for (const it of G.inv || []) { const r = it && picks[it[0]]; if (r && r.req <= msd.lv && r.req > rq) { rq = r.req; best = it[0]; } }
+    return best;
+  };
+  const mineLi = document.querySelector('#skills li[data-sk="mine"]');
+  function syncMineRow() {
+    if (!mineLi) return; const max = msd.defs ? msd.defs.max : 320, hi = msd.hi > msd.lo ? msd.hi : msd.lo + 1;
+    mineLi.querySelector('b').textContent = msd.lv; mineLi.title = `Nivel de minería ${msd.lv} / ${max} (clic para abrir la ventana de minería)`;
+    mineLi.querySelector('.bar i').style.width = (msd.lv >= max ? 100 : Math.max(0, Math.min(100, (msd.xp - msd.lo) / (hi - msd.lo) * 100))) + '%';
+  }
+  if (mineLi) { mineLi.style.cursor = 'pointer'; mineLi.addEventListener('click', () => toggle('u')); }
+  function renderMine() {
+    const b = wMn.body; b.textContent = ''; const d = msd.defs; if (!d) { b.append(el('p', '', 'Cargando…')); return; }
+    const pct = msd.lv >= d.max ? 100 : Math.max(0, Math.min(100, (msd.xp - msd.lo) / Math.max(1, msd.hi - msd.lo) * 100));
+    b.append(el('p', 'colhead', `Nivel de minería ${msd.lv} / ${d.max}  ·  ${fmt(msd.xp)} xp`));
+    const bar = el('div', 'fbarx'), fill = el('div', 'fbarf'); fill.style.width = pct + '%'; bar.append(fill); b.append(bar);
+    b.append(el('p', 'fhint', 'Compra un pico a Boris el Mercader (ciudad) y haz clic en una roca del mapa: caminarás hasta ella y la picarás. Cada roca pide un nivel de minería. Mejores picos minan más rápido, dan más piedra y atraen más gemas. Las gemas se engarzan en las ranuras de armas y armaduras (en una zona segura).'));
+    b.append(el('h3', '', 'Rocas y registro'));
+    const g = el('div', 'colgrid');
+    for (const id of d.order) {
+      const r = d.rocks[id], n = msd.c[id] || 0, ok = msd.lv >= r.lvl, tile = el('div', 'coltile' + (n ? ' on' : ''));
+      const ic = el('div', 'ico'); ic.append(X.iconNode ? X.iconNode(id) : '🪨'); tile.append(ic, el('small', '', n || ok ? r.name : '???'), el('small', '', ok ? `Nv ${r.lvl}` : `🔒 Nv ${r.lvl}`));
+      if (n) tile.append(el('b', '', '×' + n));
+      tile.title = `${r.name} · minería ${r.lvl} · ${r.xp} xp · gema ${(r.gem * 100).toFixed(1)}% (base) · ${r.zones.join(', ')}`;
+      g.append(tile);
+    }
+    b.append(g);
+    b.append(el('h3', '', 'Dónde minar'));
+    for (const id of d.order) {
+      const r = d.rocks[id], ok = msd.lv >= r.lvl, row = el('p', 'frow' + (ok ? '' : ' flock')), ic = el('span', 'fricon'); ic.append(X.iconNode ? X.iconNode(id) : '🪨');
+      row.append(ic, el('b', '', `${r.name} (Nv ${r.lvl}): `), r.zones.join(' · '), el('small', '', `  ·  gemas: ${r.pool.filter((v, i, a) => a.indexOf(v) === i).map((q) => GEM_IC[q] || q).join(' ')}`)); b.append(row);
+    }
+    b.append(el('h3', '', 'Gemas encontradas'));
+    const gg = el('div', 'colgrid');
+    for (const id of ['rubi', 'zafiro', 'esmeralda', 'topacio', 'amatista', 'opalo', 'diamante']) {
+      const n = msd.c[id] || 0, tile = el('div', 'coltile' + (n ? ' on' : '')), ic = el('div', 'ico'); ic.append(X.iconNode ? X.iconNode(id) : GEM_IC[id]);
+      tile.append(ic, el('small', '', n ? iname(id) : '???')); if (n) tile.append(el('b', '', '×' + n)); tile.title = (G.gems && G.gems[id] ? G.gems[id].desc : '') || iname(id); gg.append(tile);
+    }
+    b.append(gg);
+    b.append(el('h3', '', 'Picos'));
+    for (const [id, r] of Object.entries(d.picks)) { const ok = msd.lv >= r.req, row = el('p', 'frow' + (ok ? '' : ' flock')), ic = el('span', 'fricon'); ic.append(X.iconNode ? X.iconNode(id) : '⛏️'); row.append(ic, `${r.name} — minería ${r.req} · velocidad ${Math.round(100 / r.speed)}% · gemas +${Math.round(r.gem * 100)}% · piedra extra ${Math.round(r.extra * 100)}% · ${fmt(r.price)} 🪙${have(id) ? ' ✔ lo tienes' : ''}`); b.append(row); }
+  }
+  X.handlers.mine = (m) => { Object.assign(msd, m); if (m.defs) msd.defs = m.defs; syncMineRow(); if (!wMn.m.hidden) renderMine(); if (!wB.m.hidden) renderCol(); };
+  wMn.onOpen = () => { send({ t: 'mine' }); renderMine(); };
+  // al picar: polvo y esquirlas de la roca + el pico en la mano (se balancea mientras minas)
+  X.on('fx', (f) => { if (f.k === 'mn') { X.burst(f.x, f.y, 'stone', 16, { sp: 4, up: 3, g: 5, life: 0.55, size: 2.6 }); X.ring(f.x, f.y, 'stone', 300, 18, 3); } });
+  const pkIc = {};
+  X.on('draw', (c, now) => {
+    if (!gTarget || !G.me || performance.now() > gTarget.until || cheb(G.me.x, G.me.y, gTarget.x, gTarget.y) > 1) return;
+    const id = bestPickId(); if (!id || !X.iconNode) return; const me = G.ents.get(G.id); if (!me) return;
+    const ic = (pkIc[id] && pkIc[id].width ? pkIc[id] : (pkIc[id] = X.iconNode(id))); if (!ic || ic.tagName !== 'CANVAS' || !ic.width) return;
+    const TS = X.TS, dir = gTarget.x < me.x ? -1 : 1, cx = X.sxOf(me.rx) + TS / 2 + dir * 5, cy = X.syOf(me.ry) + TS / 2 + 3, ang = -0.5 + (Math.sin(now / 95) * 0.5 + 0.5) * 1.5, k = 0.8;
+    c.save(); c.translate(cx, cy); c.scale(dir, 1); c.rotate(ang); c.imageSmoothingEnabled = false; c.drawImage(ic, -4 * k, -31 * k, 36 * k, 36 * k); c.restore();
+  });
 
   /* ============================ EFECTOS DE HABILIDADES ============================ */
   X.on('fx', (f) => {

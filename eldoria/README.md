@@ -230,3 +230,7 @@ Boris vende 11 tabletas (100 000 de oro cada una, de un solo uso): Ciudad, Bosqu
 - Ataques especiales: **tornados marinos** que se multiplican y vagan por la cueva (15 s), **olas** que barren la cueva en franjas avisadas, **rayo de bolas de agua** por la boca (3 pulsos que re-apuntan) y **escudo burbuja** de 5 s en el que es inmune.
 - Botín raro: Yelmo, Coraza, Manoplas, Grebas, Botas y Cinto del Abismo Marino, 3 anillos (perla, alga, coral), Amuleto del Corazón Marino y el Tridente del Leviatán (agua), además de la cría del Leviatán (mascota).
 - Corregido: las casillas de muro de la guarida de la araña (WEBW) no bloqueaban en el servidor.
+
+## Minería
+
+Habilidad nueva (tecla **U**). Boris vende los picos (piedra, hierro, acero, cristal, obsidiana, abismo): mejor pico = más rápido, más gemas y a veces doble piedra. 8 rocas repartidas por zonas y nivel: Granito y Arenisca (1-30), Pizarra (30-60), Pedernal (60-90), Pómez (90-120), Mármol (120-170), Basalto (170-220), Obsidiana (220-320, cuevas). Cada roca puede dar gemas (rubí, zafiro, esmeralda, topacio, amatista, ópalo, diamante) para engarzar en armas y armaduras. Sección propia en el registro de colección y anuncio global de gemas raras.
