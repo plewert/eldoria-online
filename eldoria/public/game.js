@@ -469,6 +469,12 @@
       withTip(s, () => s._it);
       s.addEventListener('click', (ev) => { const it = G.inv[i]; if (!it) return; if (ev.shiftKey) send({ t: 'drop', s: i, q: it[1] }); else send({ t: 'use', s: i }); });
       s.addEventListener('contextmenu', (ev) => { ev.preventDefault(); if (G.inv[i]) invMenu(ev, i); });
+      // arrastrar y soltar para reorganizar la mochila
+      s.addEventListener('dragstart', (ev) => { if (!G.inv[i]) { ev.preventDefault(); return; } hideTip(); ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', String(i)); s.classList.add('dragging'); });
+      s.addEventListener('dragend', () => { s.classList.remove('dragging'); grid.querySelectorAll('.dragover').forEach((q) => q.classList.remove('dragover')); });
+      s.addEventListener('dragover', (ev) => { ev.preventDefault(); ev.dataTransfer.dropEffect = 'move'; s.classList.add('dragover'); });
+      s.addEventListener('dragleave', () => s.classList.remove('dragover'));
+      s.addEventListener('drop', (ev) => { ev.preventDefault(); s.classList.remove('dragover'); const a = parseInt(ev.dataTransfer.getData('text/plain'), 10); if (a >= 0 && a !== i) send({ t: 'swap', a, b: i }); });
       grid.append(s);
     }
     document.querySelectorAll('#equip .slot').forEach((s) => {
@@ -480,7 +486,7 @@
 
   function renderInv() {
     if (!$('#inv').children.length) buildInvGrid();
-    $('#inv').querySelectorAll('.slot').forEach((s) => { fillSlot(s, G.inv[+s.dataset.i]); });
+    $('#inv').querySelectorAll('.slot').forEach((s) => { fillSlot(s, G.inv[+s.dataset.i]); s.draggable = !!G.inv[+s.dataset.i]; });
     document.querySelectorAll('#equip .slot').forEach((s) => {
       const it = G.eq[s.dataset.eq]; fillSlot(s, it);
       if (!it) { s.textContent = EQ_GLYPH[s.dataset.eq]; s.title = 'Vacío: ' + EQ_NAME[s.dataset.eq]; } else s.removeAttribute('title');

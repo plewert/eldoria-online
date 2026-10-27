@@ -416,6 +416,18 @@ ok('Arcángel: cueva de nubes, set celestial raro y sus tres ataques', () => {
   assert.equal(typeof Game.prototype.angelAI, 'function');
 });
 
+ok('mochila: arrastrar y soltar intercambia casillas', () => {
+  const { p } = login('Swap1'); const A = p.inv[0], B = p.inv[1]; p.inv[5] = null;
+  game.handle(p, { t: 'swap', a: 0, b: 1 }); assert.equal(p.inv[0], B); assert.equal(p.inv[1], A);
+  game.handle(p, { t: 'swap', a: 0, b: 5 }); assert.equal(p.inv[5], B); assert.equal(p.inv[0], null);
+  game.handle(p, { t: 'swap', a: -1, b: 999 }); assert.equal(p.inv[5], B, 'índices inválidos se ignoran');
+});
+
+ok('Coloso del evento: lluvia de fuego y terremoto', () => {
+  assert.equal(MONSTERS.coloso_ancestral.special, 'titan'); assert.equal(typeof Game.prototype.titanAI, 'function');
+  const sp = require('../public/sprites.json').coloso_ancestral; assert.ok(sp.f.length >= 4 && sp.anim > 0, 'animado');
+});
+
 console.log(`\n${n} pruebas correctas`);
 try { require('fs').unlinkSync(store.file); } catch (e) { /* nada */ }
 

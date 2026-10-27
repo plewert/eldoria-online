@@ -577,6 +577,11 @@ class Game {
       }
       case 'equip': this.equip(p, msg.s | 0); break;
       case 'unequip': this.unequip(p, String(msg.slot)); p.dirty.stats = true; break;
+      case 'swap': {                                  // reorganizar la mochila: intercambia dos casillas
+        const a = msg.a | 0, b = msg.b | 0, n = p.inv.length;
+        if (a < 0 || b < 0 || a >= n || b >= n || a === b) break;
+        const t = p.inv[a]; p.inv[a] = p.inv[b]; p.inv[b] = t; p.dirty.inv = true; break;
+      }
       case 'use': this.use(p, msg.s | 0); break;
       case 'drop': this.drop(p, msg.s | 0, msg.q | 0); break;
       case 'pickup': this.pickup(p, false); break;

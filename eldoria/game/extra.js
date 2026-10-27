@@ -107,7 +107,7 @@ const NODES = {
 
 const BOSS = {
   type: 'coloso_ancestral',
-  def: { name: 'Coloso Ancestral', icon: '🗿', lv: 150, hp: 30000, dmg: [60, 110], exp: 9000, move: 520, atkCd: 1500, aggro: 12, respawn: 999999999, boss: true, gold: [3000, 6000], loot: [['trofeo_coloso', 1, 1, 2], ['pocion_vida_g', 1, 3, 6], ['pocion_mana_g', 1, 3, 6]] },
+  def: { name: 'Coloso Ancestral', icon: '🗿', lv: 150, hp: 30000, dmg: [60, 110], exp: 9000, move: 520, atkCd: 1500, aggro: 12, respawn: 999999999, boss: true, special: 'titan', gold: [3000, 6000], loot: [['trofeo_coloso', 1, 1, 2], ['pocion_vida_g', 1, 3, 6], ['pocion_mana_g', 1, 3, 6]] },
 };
 
 const DRAGON = {

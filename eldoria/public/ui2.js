@@ -761,6 +761,10 @@
     switch (f.k) {
       case 'lgw': AF.push({ k: 'lgw', t: now, T: 900, f }); break;
       case 'lg': AF.push({ k: 'lg', t: now, T: 420, f, s: Math.random() * 99 }); X.burst(f.x, f.y, 'storm', 14, { sp: 4, up: 3, g: 5, life: 0.5, size: 2.8 }); X.ring(f.x, f.y, 'storm', 360, 28, 3); G.shake = { t: now, m: 3 }; X.sfx && X.sfx('thunder'); break;
+      case 'frw': AF.push({ k: 'frw', t: now, T: 900, f }); break;
+      case 'fr': AF.push({ k: 'fr', t: now, T: 1800, f, s: Math.random() * 99 }); X.burst(f.x, f.y, 'fire', 18, { sp: 4, up: 4, g: 5, life: 0.7, size: 3 }); X.ring(f.x, f.y, 'fire', 380, 30, 4); G.shake = { t: now, m: 3 }; break;
+      case 'fqw': AF.push({ k: 'fqw', t: now, T: 1300, f }); G.shake = { t: now, m: 2 }; break;
+      case 'fq': AF.push({ k: 'fq', t: now, T: 800, f }); X.ring(f.x, f.y, 'fire', 700, f.r * 32, 7); X.burst(f.x, f.y, 'dark', 40, { sp: 6, up: 3, g: 5, life: 0.9, size: 3.6, add: false }); G.shake = { t: now, m: 12 }; X.sfx && X.sfx('thunder'); break;
       case 'tn': AF.push({ k: 'tn', t: now, T: 560, f }); break;
       case 'nvw': AF.push({ k: 'nvw', t: now, T: 1300, f }); break;
       case 'nv': AF.push({ k: 'nv', t: now, T: 700, f }); X.ring(f.x, f.y, 'arcane', 650, f.r * 36, 6); X.burst(f.x, f.y, 'arcane', 36, { sp: 6, up: 5, g: 3, life: 0.9, size: 3.4 }); G.shake = { t: now, m: 7 }; X.sfx && X.sfx('boss'); break;
@@ -771,7 +775,21 @@
     const TS = X.TS;
     for (const b of AF) {
       const p = Math.max(0, (now - b.t) / b.T); if (p >= 1) continue; const f = b.f, x = px(f.x), y = py(f.y);
-      if (b.k === 'lgw') {
+      if (b.k === 'frw') {
+        const r = f.r * TS; c.fillStyle = `rgba(255,110,20,${0.10 + 0.25 * p})`; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+        c.strokeStyle = `rgba(255,190,80,${0.5 + 0.4 * Math.abs(Math.sin(now / 60))})`; c.lineWidth = 2; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke();
+      } else if (b.k === 'fr') {                              // charco de fuego que arde un momento
+        const al = Math.min(1, (1 - p) * 2.2), g = c.createRadialGradient(x, y, 2, x, y, TS * 1.5); g.addColorStop(0, `rgba(255,200,60,${0.8 * al})`); g.addColorStop(0.6, `rgba(230,70,10,${0.5 * al})`); g.addColorStop(1, 'rgba(120,20,0,0)');
+        c.fillStyle = g; c.beginPath(); c.ellipse(x, y, TS * 1.5, TS, 0, 0, 7); c.fill();
+        for (let i = 0; i < 5; i++) { const u = (now / 420 + i * 0.21 + b.s) % 1; c.fillStyle = `rgba(255,${180 - u * 80},40,${0.8 * al * (1 - u)})`; c.beginPath(); c.moveTo(x + Math.sin(i * 2.4 + b.s) * TS * 0.9 - 4, y); c.lineTo(x + Math.sin(i * 2.4 + b.s) * TS * 0.9, y - 10 - u * 22); c.lineTo(x + Math.sin(i * 2.4 + b.s) * TS * 0.9 + 4, y); c.fill(); }
+      } else if (b.k === 'fqw') {                             // terremoto: onda que se cierra
+        const r = f.r * TS; c.fillStyle = `rgba(150,90,40,${0.08 + 0.22 * p})`; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+        c.strokeStyle = 'rgba(255,170,90,.9)'; c.lineWidth = 3; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke(); c.beginPath(); c.arc(x, y, r * p, 0, 7); c.stroke();
+        c.strokeStyle = `rgba(30,15,5,${0.5 * p})`; c.lineWidth = 2; for (let i = 0; i < 9; i++) { const a = i * 0.7 + 0.3; c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * r * p, y + Math.sin(a) * r * p * 0.8); c.stroke(); }
+      } else if (b.k === 'fq') {                              // grietas en el suelo
+        const r = f.r * TS, al = 1 - p; c.strokeStyle = `rgba(255,120,30,${0.9 * al})`; c.lineWidth = 3;
+        for (let i = 0; i < 10; i++) { const a = i * 0.63; c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * r * 0.5, y + Math.sin(a + 0.2) * r * 0.4); c.lineTo(x + Math.cos(a + 0.15) * r * 0.95, y + Math.sin(a) * r * 0.75); c.stroke(); }
+      } else if (b.k === 'lgw') {
         const r = 1.5 * TS; c.fillStyle = `rgba(255,240,120,${0.10 + 0.25 * p})`; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
         c.strokeStyle = `rgba(255,250,190,${0.5 + 0.4 * Math.abs(Math.sin(now / 60))})`; c.lineWidth = 2; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke();
       } else if (b.k === 'nvw') {
@@ -785,7 +803,13 @@
     const TS = X.TS;
     for (const b of AF) {
       const p = Math.max(0, (now - b.t) / b.T); if (p >= 1) continue; const f = b.f, x = px(f.x), y = py(f.y);
-      if (b.k === 'lg') {                                   // rayo zigzag desde arriba
+      if (b.k === 'frw') {                                  // bola de fuego que cae con estela
+        const fy = y - (1 - p) * 230 - 6;
+        c.save(); c.globalCompositeOperation = 'lighter';
+        const g = c.createLinearGradient(x + 18 * (1 - p), fy - 50, x, fy); g.addColorStop(0, 'rgba(255,80,0,0)'); g.addColorStop(1, 'rgba(255,170,40,.8)');
+        c.strokeStyle = g; c.lineWidth = 12; c.beginPath(); c.moveTo(x + 22 * (1 - p), fy - 56); c.lineTo(x, fy); c.stroke();
+        c.fillStyle = 'rgba(255,230,120,.95)'; c.beginPath(); c.arc(x, fy, 9, 0, 7); c.fill(); c.fillStyle = 'rgba(255,120,20,.7)'; c.beginPath(); c.arc(x, fy, 15, 0, 7); c.fill(); c.restore();
+      } else if (b.k === 'lg') {                                   // rayo zigzag desde arriba
         const al = 1 - p; c.save(); c.globalCompositeOperation = 'lighter';
         for (const [w, col] of [[9, `rgba(120,170,255,${0.5 * al})`], [3, `rgba(255,255,230,${al})`]]) {
           c.strokeStyle = col; c.lineWidth = w; c.beginPath(); c.moveTo(x, y);
