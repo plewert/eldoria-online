@@ -261,7 +261,7 @@ ok('comida: sardina 80, salmón 100, tiburón 150; se come con el mensaje eat y 
 });
 ok('mapa ampliado: Selva Esmeralda, Sabana Dorada y Aldea Pesquera con comida y banco', () => {
   assert.equal(world.W, 320);
-  assert.equal(world.zoneAt(220, 30).id, 'selva'); assert.equal(world.zoneAt(220, 110).id, 'sabana'); assert.equal(world.zoneAt(210, 77).id, 'aldea');
+  assert.equal(world.zoneAt(220, 30).id, 'selva'); assert.equal(world.zoneAt(240, 110).id, 'sabana'); assert.equal(world.zoneAt(210, 77).id, 'aldea');
   assert.ok(world.zoneAt(210, 77).kind === 'town' && !world.zoneAt(210, 77).pvp);
   for (const id of ['nilo', 'tomas']) { const n = world.NPCS.find((q) => q.id === id); assert.ok(n && world.reach[n.y * world.W + n.x], id + ' alcanzable'); }
   const nilo = require('../game/data').SHOPS.nilo; ['sardina', 'salmon', 'tiburon'].forEach((i) => assert.ok(nilo.includes(i)));
@@ -400,11 +400,20 @@ ok('pesca: caña, picada, minijuego de temporización, nivel y peces por zona', 
   assert.equal(lvl(0), 1); assert.ok(lvl(1e6) > 100); assert.equal(lvl(1e12), 320);
   for (const id of ['atun', 'cana_jade', 'cebo_dorado', 'perla_marina']) assert.ok(ITEMS[id], id);
   assert.equal(ITEMS.atun.heal, 120);
-  const SH = require('../game/data').SHOPS; assert.ok(F.build && SH.nilo.includes('cana_madera') && SH.nilo.includes('atun'));
+  const SH = require('../game/data').SHOPS; assert.ok(F.build && SH.nilo.includes('cana_madera') && SH.nilo.includes('atun') && SH.boris.includes('cana_jade') && SH.boris.includes('cebo'));
   // los peces valen más con el nivel
   a.p.ext.fish.xp = 1e6; assert.ok(game.fishMult(a.p, 'tiburon') > 2); assert.equal(game.fishMult(a.p, 'espada_hierro'), 1);
   // persistencia
   const back = game.extSave(a.p); assert.equal(back.fish.xp, 1e6);
+});
+
+ok('Arcángel: cueva de nubes, set celestial raro y sus tres ataques', () => {
+  assert.equal(MONSTERS.arcangel.special, 'angel');
+  const loot = MONSTERS.arcangel.loot.map((l) => l[0]);
+  ['angel_yelmo', 'angel_coraza', 'angel_guantes', 'angel_botas', 'angel_pantalon', 'angel_carcaj', 'angel_anillo', 'angel_cinturon', 'angel_amuleto', 'angel_cetro', 'angel_arco'].forEach((id) => { assert.ok(loot.includes(id), id); assert.ok(ITEMS[id], id); });
+  assert.equal(ITEMS.angel_cetro.style, 'magic'); assert.equal(ITEMS.angel_arco.style, 'ranged'); assert.equal(MONSTERS.arcangel.loot.find((l) => l[0] === 'angel_arco')[1], 0.005);
+  const sp = world.monsterSpawns.find((q) => q.type === 'arcangel'); assert.equal(zoneOf([sp.x, sp.y]).id, 'cueva_nube');
+  assert.equal(typeof Game.prototype.angelAI, 'function');
 });
 
 console.log(`\n${n} pruebas correctas`);

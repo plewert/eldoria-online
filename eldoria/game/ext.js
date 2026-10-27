@@ -849,11 +849,45 @@ module.exports = function install(Game) {
       });
     }
   };
+  // Arcángel del Santuario: ráfagas de rayos desde el cielo, tornado perseguidor y nova azul sobre los jugadores cercanos
+  P.angelAI = function (m, now) {
+    if (now < (m.nextSp || 0)) return;
+    const t = m.target ? this.ents.get(m.target) : null; if (!t || t.kind !== 'pl' || t.hp <= 0) return;
+    const order = ['bolt', 'twister', 'nova', 'bolt', 'nova', 'twister'];
+    const kind = order[(m.spN || 0) % order.length];
+    m.spN = (m.spN || 0) + 1; m.nextSp = now + 5500 + Math.random() * 3000;
+    m.nextMove = Math.max(m.nextMove, now + 1700); m.nextAtk = Math.max(m.nextAtk, now + 1700);
+    const alive = () => !m.dead && this.monsters.includes(m);
+    const near = (cx, cy, r) => [...this.players.values()].filter((q) => q.hp > 0 && !inTownP(q) && Math.hypot(q.x - cx, q.y - cy) <= r);
+    if (kind === 'bolt') {                                      // ráfagas de rayos: aviso y caída (se esquivan caminando)
+      for (let w = 0; w < 3; w++) this.later(w * 1100, () => {
+        if (!alive()) return;
+        const tg = near(m.x, m.y, 14), n = 6 + w, spots = [];
+        for (let i = 0; i < n; i++) { const q = tg[i]; spots.push(q ? [q.x, q.y] : [Math.round(m.x + (Math.random() - 0.5) * 20), Math.round(m.y + (Math.random() - 0.5) * 20)]); }
+        for (const [x, y] of spots) this.fx.push({ k: 'lgw', x, y, r: 1.5 });
+        this.later(900, () => { if (!alive()) return; for (const [x, y] of spots) { this.fx.push({ k: 'lg', x, y }); hitPlayers(this, this.now, m, (q) => Math.hypot(q.x - x, q.y - y) <= 1.5, 330, 480, 'Rayo celestial'); } });
+      });
+    } else if (kind === 'twister') {                            // tornado que persigue al objetivo 5 s
+      let x = m.x, y = m.y; const id = Math.random();
+      for (let i = 0; i < 10; i++) this.later(i * 500, () => {
+        if (!alive()) return;
+        const tg = near(x, y, 16).sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))[0];
+        if (tg) { const dx = tg.x - x, dy = tg.y - y, L = Math.hypot(dx, dy) || 1; x += (dx / L) * Math.min(1.1, L); y += (dy / L) * Math.min(1.1, L); }
+        this.fx.push({ k: 'tn', x, y, id });
+        hitPlayers(this, this.now, m, (q) => Math.hypot(q.x - x, q.y - y) <= 1.8, 150, 240, 'Tornado');
+      });
+    } else {                                                    // nova azul: potente hechizo sobre los jugadores cercanos
+      const tg = near(m.x, m.y, 12), spots = tg.map((q) => [q.x, q.y]); if (!spots.length) spots.push([t.x, t.y]);
+      for (const [x, y] of spots) this.fx.push({ k: 'nvw', x, y, r: 2.4 });
+      this.later(1300, () => { if (!alive()) return; for (const [x, y] of spots) { this.fx.push({ k: 'nv', x, y, r: 2.4 }); hitPlayers(this, this.now, m, (q) => Math.hypot(q.x - x, q.y - y) <= 2.4, 560, 780, 'Nova celestial'); } });
+    }
+  };
   G0.updateMonster = P.updateMonster;
   P.updateMonster = function (m, now) {
     G0.updateMonster.call(this, m, now);
     if (m.def.special === 'dragon' && !m.dead) this.dragonAI(m, now);
     else if (m.def.special === 'hydra' && !m.dead) this.hydraAI(m, now);
+    else if (m.def.special === 'angel' && !m.dead) this.angelAI(m, now);
   };
 
   /* ============================ ENGANCHES DE COMBATE ============================ */

@@ -52,7 +52,7 @@ function build(ITEMS_, SHOPS) {
   ITEMS_.perla_marina = { name: 'Perla Marina', icon: '🦪', type: 'misc', stack: true, sell: 2500 };
   ITEMS_.tesoro_hundido = { name: 'Cofre Hundido', icon: '🧰', type: 'misc', stack: true, sell: 6000 };
   SHOPS.nilo.push('cana_madera', 'cana_carpa', 'cana_hierro', 'cana_hielo', 'cana_acero', 'cana_jade', 'cebo', 'cebo_dorado', 'atun');
-  SHOPS.boris.push('atun'); SHOPS.brisa.push('atun');
+  SHOPS.boris.push('atun', 'cana_madera', 'cana_carpa', 'cana_hierro', 'cana_hielo', 'cana_acero', 'cana_jade', 'cebo', 'cebo_dorado'); SHOPS.brisa.push('atun');
 }
 
 const tri = (ph) => { const x = ph % 2; return x < 1 ? x : 2 - x; };       // onda triangular 0..1
