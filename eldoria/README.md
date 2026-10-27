@@ -198,3 +198,6 @@ Coloso Ancestral: vida 30 000 → 90 000 y daño ×1,8. Jefes de cueva (Dragón 
 
 ## Escarabajo Gigante
 Nueva imagen (escarabajo verde metálico con mandíbulas) animada (8 fotogramas: patas, mandíbulas y cuerpo) en `public/sprites.png` (`escarabajo_gigante`).
+
+## Golpes cuerpo a cuerpo animados
+Al atacar con un arma cuerpo a cuerpo, el personaje balancea el arma con una estela de corte (color del elemento del arma); lanza y daga hacen una estocada; martillos, mazas y armas pesadas añaden onda de choque y temblor; las hachas y mandobles, chispas. Ver `holdWeapon` y el caso `'s'` en `public/game.js`.

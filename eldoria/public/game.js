@@ -182,6 +182,8 @@
     baston_abismo: 'void', mandoble_runico: 'arcane', baston_tormenta: 'storm', baston_pantano: 'poison',
     cetro_faraon: 'sun', hoja_faraon: 'sun', cimitarra_desierto: 'sun',
   };
+  G.swings = new Map();                                      // golpes cuerpo a cuerpo en curso (por id de jugador)
+  const SWING_MS = 320;
   const HEAVY = new Set(['titan_martillo', 'hacha_acero', 'mandoble_runico', 'martillo_titan', 'maza_enana', 'hacha_hielo', 'colmillo_hidra']);
   const elemOf = (f) => (f.s === 'fire' || f.s === 'ice' ? f.s : WEAPON_ELEM[f.w] || (f.s === 'magic' ? 'magic' : null));
   G.parts = []; G.rings = []; G.bolts = []; G.casts = []; G.shake = { t: 0, m: 0 };
@@ -227,6 +229,9 @@
         break;
       }
       case 's': {
+        { const wd = f.w && G.items[f.w], kd = wd ? wKind(f.w, wd) : 'fist'; if (f.i != null) G.swings.set(f.i, { t: now, w: f.w, kd, cr: !!f.cr });
+          if (kd === 'hammer' || kd === 'mace' || HEAVY.has(f.w)) { ring(f.x, f.y, 'dark', 420, 30, 4); burst(f.x, f.y, 'dark', 10, { sp: 3.5, up: 2, g: 6, life: 0.5, size: 2.6, add: false }); G.shake = { t: now, m: f.cr ? 6 : 3 }; }
+          else if (kd === 'axe' || kd === 'daxe' || kd === 'great') { burst(f.x, f.y, WEAPON_ELEM[f.w] || null, 10, { sp: 5, g: 3, life: 0.4, size: 2.4 }); G.shake = { t: now, m: 2 }; } }
         G.flashes.push({ k: 's', x: f.x, y: f.y, t: now, el: WEAPON_ELEM[f.w] || null, heavy: HEAVY.has(f.w), cr: f.cr, ang: Math.random() * 0.8 - 0.4 });
         burst(f.x, f.y, WEAPON_ELEM[f.w] || null, f.cr ? 18 : 8, { sp: 4, g: 5, life: 0.35, size: 2 });
         if (f.cr) { burst(f.x, f.y, 'sun', 16, { sp: 6, life: 0.6, size: 3 }); ring(f.x, f.y, 'sun', 520, 38, 4); G.shake = { t: now, m: 4 }; }
@@ -1176,7 +1181,11 @@
     const d = G.items[id];
     if (d && d.spr && GJ['c_' + d.spr]) {
       const hood = /^hat1[234]$/.test(d.spr), boss = /^(t_helm|s_hood|j_helm|a_helm)$/.test(d.spr), dy = hood ? 7.5 : d.spr === 't_helm' ? 9.5 : d.spr === 'a_helm' ? 8.5 : boss ? 5.5 : 0.5;   // capuchas y cascos de jefe: cubren el rostro
-      if ((hood || boss) && view !== 'f') { drawLayer(c, d.spr, hx - side * 0.5, hy + dy, 0.5, 1, false, 0); return; }
+      if ((hood || boss) && view === 'b') { drawLayer(c, d.spr, hx, hy + dy, 0.5, 1, false, 0); return; }
+      if ((hood || boss) && view !== 'f') {                                       // de perfil: se estrecha y se voltea hacia donde mira el personaje
+        const f = GJ['c_' + d.spr]; c.save(); c.translate(hx + side * 1.4, hy + dy); if (side < 0) c.scale(-1, 1); c.scale(0.84, 1);
+        drawLayer(c, d.spr, 0, 0, 0.5, 1, false, 0); c.restore(); return;
+      }
       if (drawLayer(c, d.spr, hx - side * 1, hy + dy, 0.5, 1, false, side * 0.06)) return;
     }
     drawHelm(c, id, hx, hy, view, side, now);
@@ -1310,7 +1319,29 @@
     };
     const beltDraw = (y, wd) => { const b = G.items[gr.btid]; if (b && b.spr) { const f = GJ['c_' + b.spr]; if (f) drawLayer(c, b.spr, cx + lean, y, 0.5, 0.5, false, 0); } };
     const wdef = gr.w;
-    const holdWeapon = (hx, hy, dir, swing) => { if (wdef) drawWeaponItem(c, gr.wid, wdef, hx, hy, dir, now, swing); };
+    const holdWeapon = (hx, hy, dir, swing) => {
+      if (!wdef) return;
+      const sg = wdef.style === 'melee' ? G.swings.get(e.id) : null, pr = sg ? (now - sg.t) / SWING_MS : 2;
+      if (pr >= 1) { drawWeaponItem(c, gr.wid, wdef, hx, hy, dir, now, swing); return; }
+      const dr = dir || 1, kd = sg.kd, ea = 1 - Math.pow(1 - pr, 3);
+      if (kd === 'spear' || kd === 'dagger') {                                  // estocada: la mano se lanza hacia delante
+        const th = Math.sin(Math.min(1, pr * 1.4) * Math.PI) * (kd === 'spear' ? 7 : 4);
+        drawWeaponItem(c, gr.wid, wdef, hx + dr * th, hy - th * 0.35, dir, now, swing + dr * 1.3);
+        c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = `rgba(255,255,230,${0.7 * (1 - pr)})`; c.lineWidth = 2; c.lineCap = 'round';
+        c.beginPath(); c.moveTo(hx + dr * (th + 2), hy - 12 - th * 0.3); c.lineTo(hx + dr * (th + 14 + pr * 8), hy - 14 - th * 0.35); c.stroke(); c.restore();
+        return;
+      }
+      const a0 = -2.0, a1 = 1.5, ang = (a0 + (a1 - a0) * ea) * dr, hv = kd === 'hammer' || kd === 'mace' || kd === 'great' || kd === 'daxe';
+      drawWeaponItem(c, gr.wid, wdef, hx + dr * Math.sin(pr * Math.PI) * 2.5, hy, dir, now, swing + ang / (0.35 * dr));
+      const R = hv ? 26 : 20, pal = WEAPON_ELEM[gr.wid] ? ELEM[WEAPON_ELEM[gr.wid]] : null;                   // estela del corte
+      c.save(); c.translate(hx, hy - 2); c.globalCompositeOperation = 'lighter'; c.lineCap = 'round';
+      for (const [w, col] of [[hv ? 7 : 5, `rgba(${pal ? pal[2] : '180,200,230'},${0.45 * (1 - pr)})`], [hv ? 3 : 2, `rgba(${pal ? pal[0] : '255,255,240'},${0.9 * (1 - pr * 0.8)})`]]) {
+        c.strokeStyle = col; c.lineWidth = w; c.beginPath();
+        const s0 = Math.PI / 2 * -1 + a0 * dr, s1 = Math.PI / 2 * -1 + (a0 + (a1 - a0) * ea) * dr;
+        c.arc(0, 0, R, Math.min(s0, s1), Math.max(s0, s1)); c.stroke();
+      }
+      c.restore();
+    };
 
     if (side) {
       // ---------- perfil ----------
