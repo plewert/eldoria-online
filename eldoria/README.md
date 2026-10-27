@@ -219,3 +219,8 @@ Boris vende 11 tabletas (100 000 de oro cada una, de un solo uso): Ciudad, Bosqu
 - Sombrero, Chaleco, Pantalón y Botas del Maestro Pescador + Caña del Maestro Pescador (pesca 100): cada captura tiene un **0,5 %** de dar cada pieza.
 - Con las 4 piezas de armadura puestas, cada captura tiene un 25 % de traer **5 presas** de golpe.
 - Al pescar, el personaje sostiene en la mano la mejor caña que tenga (incluida la del Maestro Pescador) y el sedal sale de su punta.
+
+## Mascotas de pesca y colección de pesca
+- Pelícano Sombrerero (+20 % oro) y Pulpito Naranja (+25 % oro): **0,20 %** por captura cada uno.
+- La ventana 📖 (tecla B) ahora tiene una sección **🎣 Pesca** arriba: peces, perla, cofre, mascotas, set del Maestro Pescador y caña.
+- Cada objeto raro de pesca avisa con mensaje, texto flotante ★, aviso de "Nuevo en tu colección" y anuncio en el chat global.

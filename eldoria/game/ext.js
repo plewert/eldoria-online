@@ -36,7 +36,7 @@ function sanitizeExt(raw) {
   if (raw.ach && typeof raw.ach === 'object') for (const [id, t] of Object.entries(raw.ach)) if (ACH_BY[id]) e.ach[id] = num(t, 1e15) || 1;
   if (raw.kills && typeof raw.kills === 'object') for (const [m, n] of Object.entries(raw.kills)) if (MONSTERS[m]) e.kills[m] = num(n);
   if (raw.grave && Number.isInteger(raw.grave.x) && Number.isInteger(raw.grave.y)) e.grave = { x: raw.grave.x, y: raw.grave.y, t: num(raw.grave.t, 1e15) };
-  if (raw.col && typeof raw.col === 'object') for (const [b, items] of Object.entries(raw.col)) if (MONSTERS[b] && items && typeof items === 'object') { e.col[b] = {}; for (const [id, n] of Object.entries(items)) if (ITEMS[id]) e.col[b][id] = num(n, 1e9) || 1; }
+  if (raw.col && typeof raw.col === 'object') for (const [b, items] of Object.entries(raw.col)) if ((MONSTERS[b] || b === 'pesca') && items && typeof items === 'object') { e.col[b] = {}; for (const [id, n] of Object.entries(items)) if (ITEMS[id]) e.col[b][id] = num(n, 1e9) || 1; }
   if (raw.fish && typeof raw.fish === 'object') { e.fish.xp = num(raw.fish.xp, 1e9); if (raw.fish.c && typeof raw.fish.c === 'object') for (const [id, n] of Object.entries(raw.fish.c)) if (ITEMS[id]) e.fish.c[id] = num(n, 1e9); }
   e.title = typeof raw.title === 'string' ? raw.title.slice(0, 30) : '';
   e.pet = ITEMS[raw.pet] && ITEMS[raw.pet].type === 'pet' ? raw.pet : '';

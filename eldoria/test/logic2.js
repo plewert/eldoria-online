@@ -421,6 +421,10 @@ ok('pesca: set del Maestro Pescador (drop 0,5 %, 5 presas con el set completo)',
   try {
     Math.random = () => 0.001;                                        // todo sale: pieza rara en cada captura
     cast(); assert.ok(a.p.inv.some((it) => it && it.id === 'pesca_sombrero') && a.p.inv.some((it) => it && it.id === 'cana_maestra'), 'cae el set');
+    for (const id of ['pet_pelicano', 'pet_pulpo']) { assert.equal(ITEMS[id].type, 'pet'); assert.ok(a.p.inv.some((it) => it && it.id === id), 'cae ' + id); assert.ok(a.p.ext.col.pesca[id], 'registrada en la colección'); }
+    assert.ok(a.p.ext.col.pesca.sardina || a.p.ext.col.pesca.salmon, 'peces en la colección');
+    assert.ok(lastMsg(a.ws, 'colnew'), 'aviso de nuevo objeto');
+    assert.ok(game.extSave(a.p).col.pesca.pet_pulpo, 'se guarda');
     Math.random = () => 0.5;                                          // sin drop y sin set: 1 presa
     const n0 = count(); cast(); assert.equal(count() - n0, 1);
     for (const [s, id] of [['head', 'pesca_sombrero'], ['body', 'pesca_chaleco'], ['legs', 'pesca_pantalon'], ['boots', 'pesca_botas']]) a.p.eq[s] = I.mk(id, 1);

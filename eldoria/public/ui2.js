@@ -42,7 +42,7 @@
   document.addEventListener('DOMContentLoaded', mount); if (document.readyState !== 'loading') mount();
 
   /* ============================ COLECCIÓN DE JEFES ============================ */
-  const wB = win('b', '📖 Colección de jefes', true); mkBtn('📖', 'Colección de jefes', 'b', 'b');
+  const wB = win('b', '📖 Colección (jefes y pesca)', true); mkBtn('📖', 'Colección de jefes', 'b', 'b');
   let colData = {};
   function renderCol() {
     const b = wB.body; b.replaceChildren();
@@ -63,6 +63,18 @@
       if (!n) return null; got += g; tot += n;
       const h = el('h3', '', `${d.icon} ${d.name} · nivel ${d.lv} `); h.append(el('small', '', `${g} / ${n}`)); sec.append(h, grid); return sec;
     }).filter(Boolean);
+    const fdef = G.fish && G.fish.defs && G.fish.defs.col;
+    if (fdef) {                                                                      // sección de pesca (peces, tesoros, mascotas y set raro)
+      const sec = el('div', 'colsec'), have3 = colData.pesca || {}, grid = el('div', 'colgrid'); let g = 0;
+      for (const [id, ch] of fdef) {
+        const it = G.items[id]; if (!it) continue; const c = have3[id], tile = el('div', 'coltile' + (c ? ' on' : ''));
+        const ic = el('div', 'ico'); ic.append(X.iconNode ? X.iconNode(id) : it.icon || '?'); tile.append(ic, el('small', '', c ? it.name : '???'));
+        if (c) { g++; tile.append(el('b', '', '×' + c)); }
+        tile.title = c ? `${it.name} — conseguido ${c} ${c === 1 ? 'vez' : 'veces'}` : ch >= 1 ? 'Aún no lo has pescado' : `Aún no te ha salido (${(ch * 100).toFixed(2)} % al pescar)`;
+        grid.append(tile);
+      }
+      const h = el('h3', '', '🎣 Pesca '); h.append(el('small', '', `${g} / ${fdef.length}`)); sec.append(h, grid); secs.unshift(sec);
+    }
     b.append(el('p', 'colhead', `Objetos de jefes que ya te han salido: ${got} / ${tot}`), ...secs);
     if (!secs.length) b.append(el('p', '', 'Aún no hay jefes registrados.'));
   }
@@ -75,7 +87,7 @@
     st.append(n); setTimeout(() => n.classList.add('out'), 4200); setTimeout(() => { n.remove(); colNext(); }, 4800);
   };
   X.handlers.colnew = (m) => { colQ.push(m); if (!colBusy) colNext(); };
-  wB.onOpen = () => { send({ t: 'col' }); renderCol(); };
+  wB.onOpen = () => { send({ t: 'col' }); send({ t: 'fish' }); renderCol(); };
   X.handlers.col = (m) => { colData = m.v || {}; if (!wB.m.hidden) renderCol(); };
 
   /* ============================ MISIONES ============================ */
@@ -343,7 +355,7 @@
     fishLi.querySelector('.bar i').style.width = (fsd.lv >= max ? 100 : Math.max(0, Math.min(100, (fsd.xp - fsd.lo) / (hi - fsd.lo) * 100))) + '%';
   };
   if (fishLi) { fishLi.style.cursor = 'pointer'; fishLi.addEventListener('click', () => toggle('o')); }
-  X.handlers.fish = (m) => { Object.assign(fsd, m); if (m.defs) fsd.defs = m.defs; syncFishRow(); if (!wF.m.hidden) renderFish(); };
+  X.handlers.fish = (m) => { Object.assign(fsd, m); if (m.defs) fsd.defs = m.defs; syncFishRow(); if (!wF.m.hidden) renderFish(); if (!wB.m.hidden) renderCol(); };
 
   // barra del minijuego
   const fg = el('div', 'fishgame'); fg.hidden = true;

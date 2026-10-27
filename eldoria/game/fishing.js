@@ -49,14 +49,21 @@ const SET = [
   ['pesca_pantalon', 'Pantalón del Maestro Pescador',  'g_leg',   'legs',  43, 24, { hp: 170, atk: 3 }],
   ['pesca_botas',    'Botas del Maestro Pescador',     'g_boot',  'boots', 41, 18, { hp: 110, atk: 2 }],
 ];
+// mascotas raras de pesca (0,20 % por captura): [id, nombre, sprite, bonus de oro]
+const PETS = [['pet_pelicano', 'Pelícano Sombrerero', 'pet_pelicano', 0.2], ['pet_pulpo', 'Pulpito Naranja', 'pet_pulpo', 0.25]];
+const PET_DROP = 0.002;
+const RARE_LIST = () => PETS.map((x) => [x[0], PET_DROP, 1]).concat(SET.map((x) => [x[0], SET_DROP, 1]), [['cana_maestra', SET_DROP, 1]]);
+let RARE = [];
 const SET_ICON = { head: '🎩', body: '🦺', legs: '👖', boots: '🥾' };
 const BAITS = { cebo: { rare: 1.6, wait: 0.7 }, cebo_dorado: { rare: 2.6, wait: 0.5 } };
 const SLACK = 0.06, BITE_MS = 2600;
 
 function build(ITEMS_, SHOPS) {
+  RARE = RARE_LIST();
   for (const f of ['sardina', 'salmon', 'tiburon']) if (ITEMS_[f]) ITEMS_[f].spr = 'f_' + f;
   ITEMS_.atun = { spr: 'f_atun', name: 'Atún', icon: '🐠', type: 'consumable', food: 1, heal: 120, stack: true, price: 60, sell: 16 };
   for (const [id, r] of Object.entries(RODS)) ITEMS_[id] = { name: `${r.name} (pesca ${r.req})`, icon: '🎣', spr: r.spr, type: 'misc', rod: 1, price: r.rare ? undefined : r.price, sell: Math.round(r.price / 4) };
+  for (const [id, name, spr, gold] of PETS) ITEMS_[id] = { name, icon: '🐾', spr, type: 'pet', mon: spr, scale: 0.9, gold, sell: 40000, desc: `${name} te sigue y recoge el oro. +${Math.round(gold * 100)}% de oro. Solo se consigue pescando.` };
   for (const [id, name, spr, type, L, def, bonus] of SET) ITEMS_[id] = { name, icon: SET_ICON[type], spr, type, def, bonus, angler: 1, minLevel: L, sell: Math.round(8 + L * L * 3.4) * 5 };
   ITEMS_.cebo = { name: 'Cebo de Gusanos', icon: '🪱', type: 'misc', stack: true, bait: 1, price: 12, sell: 3 };
   ITEMS_.cebo_dorado = { name: 'Cebo Dorado', icon: '✨', type: 'misc', stack: true, bait: 1, price: 90, sell: 25 };
@@ -80,7 +87,7 @@ module.exports = { build, install(Game) {
 
   P.fishView = function (p) {
     const f = p.ext.fish, lv = lvOf(p);
-    return { t: 'fish', lv, xp: f.xp, lo: Math.ceil(skillXpFor(lv) / XP_SCALE), hi: lv >= FISH_MAX ? Math.ceil(skillXpFor(lv) / XP_SCALE) : Math.ceil(skillXpFor(lv + 1) / XP_SCALE), c: f.c, defs: { fish: FISH, zones: ZONE_FISH, rods: RODS, max: FISH_MAX, scale: XP_SCALE } };
+    return { t: 'fish', lv, xp: f.xp, lo: Math.ceil(skillXpFor(lv) / XP_SCALE), hi: lv >= FISH_MAX ? Math.ceil(skillXpFor(lv) / XP_SCALE) : Math.ceil(skillXpFor(lv + 1) / XP_SCALE), c: f.c, defs: { fish: FISH, zones: ZONE_FISH, rods: RODS, max: FISH_MAX, scale: XP_SCALE, col: [['sardina', 1], ['salmon', 1], ['atun', 1], ['tiburon', 1], ['perla_marina', 0.006], ['tesoro_hundido', 0.003]].concat(RARE.map((r) => [r[0], r[1]])) } };
   };
   P.sendFish = function (p) { this.send(p, this.fishView(p)); };
   P.fishMult = function (p, id) { return FISH[id] ? 1 + lvOf(p) * 0.01 : 1; };       // los peces valen más con el nivel
@@ -162,13 +169,18 @@ module.exports = { build, install(Game) {
     const tr = 0.006 * (f.bait === 'cebo_dorado' ? 3 : f.bait ? 1.5 : 1) * (1 + lvOf(p) / 200);
     if (Math.random() < tr) {
       const treasure = Math.random() < 0.7 ? 'perla_marina' : 'tesoro_hundido';
-      this.giveOrDrop(p, treasure, 1); e.c[treasure] = (e.c[treasure] || 0) + 1; this.msgC(p, `✨ ¡Encuentras ${ITEMS[treasure].name}!`, '#ffe08a');
+      this.giveOrDrop(p, treasure, 1); e.c[treasure] = (e.c[treasure] || 0) + 1; this.logDrop(p, 'pesca', treasure); this.msgC(p, `✨ ¡Encuentras ${ITEMS[treasure].name}!`, '#ffe08a');
     }
-    for (const [sid] of SET.concat([['cana_maestra']])) if (Math.random() < SET_DROP) { this.giveOrDrop(p, sid, 1); this.msgC(p, `🌟 ¡Pieza rara del Maestro Pescador: ${ITEMS[sid].name}!`, '#ffd96a'); this.fx.push({ k: 'd', x: f.x, y: f.y, v: '★', c: 'g' }); }
+    this.logDrop(p, 'pesca', id);
+    for (const [sid, ch, big] of RARE) if (Math.random() < ch) {
+      this.giveOrDrop(p, sid, 1); this.logDrop(p, 'pesca', sid);
+      this.msgC(p, `🌟 ¡RARO! Has pescado: ${ITEMS[sid].name}`, '#ffd96a'); this.fx.push({ k: 'd', x: f.x, y: f.y, v: '★ ' + ITEMS[sid].name, c: 'g' });
+      if (big) this.broadcastChat(`🎣 ¡${p.name} ha pescado un objeto raro: ${ITEMS[sid].name}!`, 'k');
+    }
     p.fishing = null; this.anglers.delete(p); p.dirty.inv = true;
     const after = lvOf(p); if (after > before) this.msgC(p, `🎣 ¡Tu nivel de pesca sube a ${after}!`, '#7fd0ff');
     this.send(p, { t: 'fend', ok: 1, fish: id, qty });
-    this.sendFish(p);
+    this.sendFish(p); this.sendCol(p);
     this.checkAch && this.checkAch(p);
   };
 
