@@ -16,10 +16,10 @@ const W = 320, H = 140;         // ampliado al este: Selva Esmeralda, Sabana Dor
 const T = {
   GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10,
   SAND: 11, SNOW: 12, SWAMP: 13, DUNE: 14, PALM: 15, PINE: 16, DEADTREE: 17, CACTUS: 18, ICEBLOCK: 19,
-  MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24, CFLOOR: 25, CWALL: 26, LAVA: 27, ASH: 28, CLOUDF: 29, CLOUDW: 30,
+  MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24, CFLOOR: 25, CWALL: 26, LAVA: 27, ASH: 28, CLOUDF: 29, CLOUDW: 30, WEBF: 31, WEBW: 32,
 };
 const BLOCKED = new Uint8Array(32);
-[T.WATER, T.TREE, T.WALL, T.ROCK, T.PALM, T.PINE, T.DEADTREE, T.CACTUS, T.ICEBLOCK, T.BOG, T.CWALL, T.LAVA, T.CLOUDW].forEach((t) => { BLOCKED[t] = 1; });
+[T.WATER, T.TREE, T.WALL, T.ROCK, T.PALM, T.PINE, T.DEADTREE, T.CACTUS, T.ICEBLOCK, T.BOG, T.CWALL, T.LAVA, T.CLOUDW, T.WEBW].forEach((t) => { BLOCKED[t] = 1; });
 
 // El orden importa: gana la primera zona cuyo rectángulo contiene la casilla.
 const ZONES = [
@@ -31,6 +31,7 @@ const ZONES = [
   { id: 'cueva',      name: 'Cueva del Dragón de las Sombras', pvp: false, kind: 'dungeon', dark: true, rect: [106, 80, 139, 99] },
   { id: 'cueva_jade', name: 'Cueva del Hidra de Jade', pvp: false, kind: 'dungeon', dark: true, rect: [36, 38, 69, 57] },
   { id: 'cueva_nube', name: 'Santuario de las Nubes', pvp: false, kind: 'dungeon', rect: [196, 96, 229, 115] },
+  { id: 'cueva_arana', name: 'Guarida del Aracnídeo Fuego Negro', pvp: false, kind: 'dungeon', tint: 'rgba(255,60,10,.12)', rect: [272, 96, 305, 115] },
   { id: 'abismo',     name: 'Abismo Carmesí',         pvp: true,  kind: 'dungeon', rect: [112, 40, 139, 74] },
   { id: 'piramide',   name: 'Pirámide Olvidada',      pvp: true,  kind: 'dungeon', rect: [148, 100, 175, 136] },
   { id: 'fortaleza',  name: 'Fortaleza de Hielo',     pvp: true,  kind: 'dungeon', rect: [148, 3, 175, 30] },
@@ -262,9 +263,30 @@ function carveCloud(C, seed) {
 }
 carveCloud(CAVE3, 2121);
 
+// Guarida del Aracnídeo Fuego Negro: cueva con forma de telaraña (anillo y radios), en las Tierras de Lava; puerta al norte
+const CAVE4 = { rect: zoneById('cueva_arana').rect, door: [288, 95], inside: [288, 100], exit: [288, 98], lair: [288, 107] };
+function carveWeb(C) {
+  const [x0, y0, x1, y1] = C.rect, cx = C.lair[0], cy = C.lair[1];
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) tiles[idx(x, y)] = T.WEBW;
+  const floor = (x, y) => { if (x > x0 && x < x1 && y > y0 && y < y1) tiles[idx(x, y)] = T.WEBF; };
+  for (let y = y0 + 1; y < y1; y++) for (let x = x0 + 1; x < x1; x++) {
+    const dx = x - cx, dy = (y - cy) * 1.15, r = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+    if (r < 4.6) floor(x, y);                                              // centro de la tela
+    if (Math.abs(r - 8) < 1.1) floor(x, y);                                // anillo
+    if (Math.abs(r - 12.5) < 0.9 && r < 14) floor(x, y);                   // anillo exterior
+    const sp = Math.PI / 4, d = Math.abs(((a % sp) + sp * 1.5) % sp - sp / 2);   // radios cada 45 grados
+    if (d < 0.2 && r < 15) floor(x, y);
+  }
+  for (let y = y0 + 1; y <= y0 + 6; y++) for (let x = C.inside[0] - 2; x <= C.inside[0] + 2; x++) tiles[idx(x, y)] = T.WEBF;   // vestíbulo
+  const seen = new Set([idx(C.inside[0], C.inside[1])]), q = [...seen];
+  for (let i = 0; i < q.length; i++) { const k = q[i], x = k % W, y = (k / W) | 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) { const nk = idx(x + dx, y + dy); if (inb(x + dx, y + dy) && tiles[nk] === T.WEBF && !seen.has(nk)) { seen.add(nk); q.push(nk); } } }
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (tiles[idx(x, y)] === T.WEBF && !seen.has(idx(x, y))) tiles[idx(x, y)] = T.WEBW;
+}
+carveWeb(CAVE4);
+
 /* 4) Caminos (despejan árboles, agua y rocas del trazado) */
 function carvePath(x0, y0, x1, y1) {
-  const put = (x, y) => { if (inb(x, y) && tiles[idx(x, y)] !== T.PORTAL && tiles[idx(x, y)] !== T.WALL && tiles[idx(x, y)] !== T.CWALL && tiles[idx(x, y)] !== T.CLOUDW) tiles[idx(x, y)] = T.ROAD; };
+  const put = (x, y) => { if (inb(x, y) && tiles[idx(x, y)] !== T.PORTAL && tiles[idx(x, y)] !== T.WALL && tiles[idx(x, y)] !== T.CWALL && tiles[idx(x, y)] !== T.CLOUDW && tiles[idx(x, y)] !== T.WEBW) tiles[idx(x, y)] = T.ROAD; };
   for (let x = Math.min(x0, x1); x <= Math.max(x0, x1); x++) put(x, y0);
   for (let y = Math.min(y0, y1); y <= Math.max(y0, y1); y++) put(x1, y);
 }
@@ -279,6 +301,7 @@ carvePath(150, 78, 150, 89);    // ramal al portal de la Pirámide
 carvePath(150, 78, 200, 78);    // camino largo al este: Aldea Pesquera
 carvePath(211, 70, 211, 36);    // camino de la aldea a la Selva Esmeralda
 carvePath(212, 84, 212, 94);    // camino de la aldea al Santuario de las Nubes
+carvePath(288, 78, 288, 94);    // camino a la Guarida del Aracnídeo
 carvePath(222, 78, 300, 78);    // y hacia el fondo de la sabana y las Tierras de Lava
 carvePath(90, 75, 90, 100);     // puerta sur -> colinas
 carvePath(90, 100, 67, 100);    // ramal al portal de las Minas
@@ -305,13 +328,15 @@ addPortal(CAVE2.door[0], CAVE2.door[1], CAVE2.inside[0], CAVE2.inside[1], 'Cueva
 addPortal(CAVE2.exit[0], CAVE2.exit[1], CAVE2.door[0], CAVE2.door[1] + 1, 'Salir al Prado');
 addPortal(CAVE3.door[0], CAVE3.door[1], CAVE3.inside[0], CAVE3.inside[1], 'Santuario de las Nubes (peligro extremo)');
 addPortal(CAVE3.exit[0], CAVE3.exit[1], CAVE3.door[0], CAVE3.door[1] - 1, 'Salir a la Sabana');
+addPortal(CAVE4.door[0], CAVE4.door[1], CAVE4.inside[0], CAVE4.inside[1], 'Guarida del Aracnídeo Fuego Negro (peligro extremo)');
+addPortal(CAVE4.exit[0], CAVE4.exit[1], CAVE4.door[0], CAVE4.door[1] - 1, 'Salir a las Tierras de Lava');
 
 function clearAround(cx, cy, r) {
   for (let y = cy - r; y <= cy + r; y++) {
     for (let x = cx - r; x <= cx + r; x++) {
       if (!inb(x, y)) continue;
       const t = tiles[idx(x, y)];
-      if (BLOCKED[t] && t !== T.WALL && t !== T.CWALL && t !== T.CLOUDW) tiles[idx(x, y)] = zoneAt(x, y).id === 'dunas' ? T.DUNE : zoneAt(x, y).id === 'cumbres' ? T.SNOW : T.GRASS;
+      if (BLOCKED[t] && t !== T.WALL && t !== T.CWALL && t !== T.CLOUDW && t !== T.WEBW) tiles[idx(x, y)] = zoneAt(x, y).id === 'dunas' ? T.DUNE : zoneAt(x, y).id === 'cumbres' ? T.SNOW : T.GRASS;
     }
   }
 }
@@ -404,6 +429,7 @@ const monsterSpawns = [];
   monsterSpawns.push({ type: 'dragon_sombra', x: CAVE.lair[0], y: CAVE.lair[1] });
   monsterSpawns.push({ type: 'hidra_jade', x: CAVE2.lair[0], y: CAVE2.lair[1] });
   monsterSpawns.push({ type: 'arcangel', x: CAVE3.lair[0], y: CAVE3.lair[1] });
+monsterSpawns.push({ type: 'aracnido_fuego', x: CAVE4.lair[0], y: CAVE4.lair[1] });
   const nearest = (zoneId, px, py) => {
     let best = null, bd = 1e9;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -420,7 +446,7 @@ const monsterSpawns = [];
 })();
 
 // Versión compacta del mapa para el cliente (un carácter por casilla)
-const CH = '0123456789abcdefghijklmnopqrstu';
+const CH = '0123456789abcdefghijklmnopqrstuvw';
 const rows = [];
 for (let y = 0; y < H; y++) {
   let s = '';

@@ -110,7 +110,7 @@
     joined = true;
     G.id = m.id; G.W = m.w; G.H = m.h; G.zones = m.zones; G.portals = m.portals; G.npcs = m.npcs; G.items = m.items; G.mons = m.mons; G.cfg = m.cfg; G.rar = m.rar; G.gems = m.gems;
     for (const [iid, idf] of Object.entries(m.items)) if (idf.el) WEAPON_ELEM[iid] = idf.el;
-    const CH = '0123456789abcdefghijklmnopqrstu';
+    const CH = '0123456789abcdefghijklmnopqrstuvw';
     G.tiles = new Uint8Array(G.W * G.H);
     m.rows.forEach((row, y) => { for (let x = 0; x < G.W; x++) G.tiles[y * G.W + x] = CH.indexOf(row[x]); });
     G.zoneGrid = new Uint8Array(G.W * G.H);
@@ -182,7 +182,9 @@
     baston_abismo: 'void', mandoble_runico: 'arcane', baston_tormenta: 'storm', baston_pantano: 'poison',
     cetro_faraon: 'sun', hoja_faraon: 'sun', cimitarra_desierto: 'sun',
   };
-  const HEAVY = new Set(['titan_martillo', 'hacha_acero', 'mandoble_runico', 'martillo_titan', 'maza_enana', 'hacha_hielo', 'colmillo_hidra']);
+  G.swings = new Map();                                      // golpes cuerpo a cuerpo en curso (por id de jugador)
+  const SWING_MS = 320;
+  const HEAVY = new Set(['titan_martillo', 'hacha_acero', 'mandoble_runico', 'martillo_titan', 'maza_enana', 'hacha_hielo', 'colmillo_hidra', 'fuego_mandoble']);
   const elemOf = (f) => (f.s === 'fire' || f.s === 'ice' ? f.s : WEAPON_ELEM[f.w] || (f.s === 'magic' ? 'magic' : null));
   G.parts = []; G.rings = []; G.bolts = []; G.casts = []; G.shake = { t: 0, m: 0 };
 
@@ -227,6 +229,9 @@
         break;
       }
       case 's': {
+        { const wd = f.w && G.items[f.w], kd = wd ? wKind(f.w, wd) : 'fist'; if (f.i != null) G.swings.set(f.i, { t: now, w: f.w, kd, cr: !!f.cr });
+          if (kd === 'hammer' || kd === 'mace' || HEAVY.has(f.w)) { ring(f.x, f.y, 'dark', 420, 30, 4); burst(f.x, f.y, 'dark', 10, { sp: 3.5, up: 2, g: 6, life: 0.5, size: 2.6, add: false }); G.shake = { t: now, m: f.cr ? 6 : 3 }; }
+          else if (kd === 'axe' || kd === 'daxe' || kd === 'great') { burst(f.x, f.y, WEAPON_ELEM[f.w] || null, 10, { sp: 5, g: 3, life: 0.4, size: 2.4 }); G.shake = { t: now, m: 2 }; } }
         G.flashes.push({ k: 's', x: f.x, y: f.y, t: now, el: WEAPON_ELEM[f.w] || null, heavy: HEAVY.has(f.w), cr: f.cr, ang: Math.random() * 0.8 - 0.4 });
         burst(f.x, f.y, WEAPON_ELEM[f.w] || null, f.cr ? 18 : 8, { sp: 4, g: 5, life: 0.35, size: 2 });
         if (f.cr) { burst(f.x, f.y, 'sun', 16, { sp: 6, life: 0.6, size: 3 }); ring(f.x, f.y, 'sun', 520, 38, 4); G.shake = { t: now, m: 4 }; }
@@ -671,7 +676,7 @@
   /* ======================================================================
    *  TEXTURAS DEL MAPA (generadas por código, estilo píxel)
    * ==================================================================== */
-  const TILE = { GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10, SAND: 11, SNOW: 12, SWAMP: 13, DUNE: 14, PALM: 15, PINE: 16, DEADTREE: 17, CACTUS: 18, ICEBLOCK: 19, MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24, CFLOOR: 25, CWALL: 26, LAVA: 27, ASH: 28, CLOUDF: 29, CLOUDW: 30 };
+  const TILE = { GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10, SAND: 11, SNOW: 12, SWAMP: 13, DUNE: 14, PALM: 15, PINE: 16, DEADTREE: 17, CACTUS: 18, ICEBLOCK: 19, MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24, CFLOOR: 25, CWALL: 26, LAVA: 27, ASH: 28, CLOUDF: 29, CLOUDW: 30, WEBF: 31, WEBW: 32 };
   const seeded = (s) => () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
   const mk = (fn) => { const c = document.createElement('canvas'); c.width = c.height = TS; const g = c.getContext('2d'); fn(g); return c; };
   const dot = (g, c, x, y, w = 2, h = 2) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
@@ -802,6 +807,24 @@
     for (let i = 0; i < 9; i++) { g.fillStyle = r() < 0.5 ? 'rgba(200,220,242,.55)' : 'rgba(255,255,255,.8)'; g.beginPath(); g.ellipse(r() * 32, r() * 32, 4 + r() * 6, 2 + r() * 4, 0, 0, 7); g.fill(); }
     for (let i = 0; i < 5; i++) dot(g, '#d3e3f4', (r() * 16 | 0) * 2, (r() * 16 | 0) * 2, 2, 2);
   }); };
+  const wfloor = (v) => { const r = seeded(2500 + v); return mk((g) => {
+    g.fillStyle = '#1d1a22'; g.fillRect(0, 0, TS, TS);
+    for (let i = 0; i < 14; i++) dot(g, r() < 0.5 ? '#2a2630' : '#14121a', (r() * 16 | 0) * 2, (r() * 16 | 0) * 2, 2, 2);
+    g.strokeStyle = 'rgba(210,205,200,.28)'; g.lineWidth = 1;                                   // telaraña
+    const cx = 4 + r() * 24, cy = 4 + r() * 24; g.beginPath();
+    for (let k = 0; k < 6; k++) { const a = k * 1.047 + r() * 0.3; g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a) * 20, cy + Math.sin(a) * 20); }
+    for (let rr = 5; rr <= 15; rr += 5) for (let k = 0; k < 6; k++) { const a = k * 1.047, b = a + 1.047; g.moveTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); g.lineTo(cx + Math.cos(b) * rr * 0.92, cy + Math.sin(b) * rr * 0.92); }
+    g.stroke();
+    if (r() < 0.35) dot(g, '#7a2a10', (r() * 14 | 0) * 2 + 2, (r() * 14 | 0) * 2 + 2, 2, 2);        // brasa fría
+  }); };
+  const wwall = (v) => { const r = seeded(2600 + v); return mk((g) => {
+    g.fillStyle = '#17121a'; g.fillRect(0, 0, TS, TS);
+    for (let i = 0; i < 10; i++) dot(g, r() < 0.5 ? '#241a26' : '#0f0b12', (r() * 16 | 0) * 2, (r() * 16 | 0) * 2, 4, 4);
+    g.strokeStyle = '#b8420f'; g.lineWidth = 1.5; g.beginPath();                                   // vetas de lava
+    let x = r() * 32, y = 0; g.moveTo(x, y); for (let i = 0; i < 5; i++) { x += (r() - 0.5) * 12; y += 7; g.lineTo(x, y); } g.stroke();
+    g.strokeStyle = 'rgba(225,220,215,.4)'; g.lineWidth = 1; g.beginPath();                        // hilos de seda
+    for (let i = 0; i < 3; i++) { g.moveTo(r() * 32, 0); g.quadraticCurveTo(r() * 32, 16, r() * 32, 32); } g.stroke();
+  }); };
   const nwall = (v) => { const r = seeded(2400 + v); return mk((g) => {
     g.fillStyle = '#a9bcd8'; g.fillRect(0, 0, TS, TS);
     const blob = (x, y, rad, c) => { g.fillStyle = c; g.beginPath(); g.arc(x, y, rad, 0, 7); g.fill(); };
@@ -853,7 +876,7 @@
     dfloor: [0, 1, 2, 3].map(dfloor), afloor: [0, 1, 2, 3].map(afloor), shop: [0, 1].map(shopFloor),
     sand: [0, 1, 2, 3].map(sand), snow: [0, 1, 2, 3].map(snow), dune: [0, 1, 2, 3].map(dune), swamp: [0, 1, 2, 3].map(swamp), bog: [bog(0), bog(1)], hill: [0, 1, 2, 3].map(hill),
     palm: [0, 1].map(palm), pine: [0, 1].map(pine), dead: [0, 1].map(dead), cactus: [0, 1].map(cactus), ice: [0, 1].map(ice),
-    mfloor: [0, 1, 2, 3].map(mfloor), pfloor: [0, 1, 2, 3].map(pfloor), ifloor: [0, 1, 2, 3].map(ifloor), cfloor: [0, 1, 2, 3].map(cfloor), lava: [lava(0), lava(1)], nfloor: [0, 1, 2, 3].map(nfloor), nwall: [0, 1, 2].map(nwall), obsid: [0, 1, 2].map(obsid), ash: [0, 1, 2, 3].map(ash), cwall: [0, 1, 2].map(cwall),
+    mfloor: [0, 1, 2, 3].map(mfloor), pfloor: [0, 1, 2, 3].map(pfloor), ifloor: [0, 1, 2, 3].map(ifloor), cfloor: [0, 1, 2, 3].map(cfloor), lava: [lava(0), lava(1)], wfloor: [0, 1, 2, 3].map(wfloor), wwall: [0, 1, 2].map(wwall), nfloor: [0, 1, 2, 3].map(nfloor), nwall: [0, 1, 2].map(nwall), obsid: [0, 1, 2].map(obsid), ash: [0, 1, 2, 3].map(ash), cwall: [0, 1, 2].map(cwall),
   });
   const buildFG = () => { FG = true; const o = { tree: [0, 1].map(tree), palm: [0, 1].map(palm), pine: [0, 1].map(pine), dead: [0, 1].map(dead) }; FG = false; return o; };
   let TEX = buildTEX(), TEXFG = buildFG();
@@ -902,6 +925,20 @@
     const t = now / 1000, ph = (x * 1.3 + y * 0.8);
     c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.arc(sx + 10 + Math.sin(t * 0.7 + ph) * 3, sy + 11, 6 + Math.sin(t * 0.9 + ph) * 1.6, 0, 7); c.fill();
     c.fillStyle = 'rgba(255,255,255,.28)'; c.beginPath(); c.arc(sx + 22, sy + 20 + Math.cos(t * 0.8 + ph) * 2, 7 + Math.cos(t * 0.6 + ph) * 1.4, 0, 7); c.fill();
+  }
+
+  /* ---- guarida del aracnídeo: brasas que flotan, lava que late en las vetas y hilos de seda que se mecen ---- */
+  function webFloorFx(c, x, y, sx, sy, now) {
+    const t = now / 1000, hs = hash(x * 7 + 3, y * 5 + ((now / 700) | 0));
+    const a = 0.10 + 0.08 * Math.sin(t * 1.6 + x * 0.8 + y * 0.5);
+    c.fillStyle = `rgba(255,90,20,${a})`; c.fillRect(sx, sy, 32, 32);
+    if ((hs & 7) === 0) { const px = sx + 3 + (hs >> 4) % 26, py = sy + 30 - ((now / 25 + (hs >> 3)) % 26); c.fillStyle = 'rgba(255,170,60,.95)'; c.fillRect(px, py, 2, 2); c.fillStyle = 'rgba(255,90,20,.6)'; c.fillRect(px, py + 2, 2, 2); }
+  }
+  function webWallFx(c, x, y, sx, sy, now) {
+    const t = now / 1000, a = 0.25 + 0.2 * Math.sin(t * 2.2 + x * 1.3 + y * 0.9);
+    c.fillStyle = `rgba(255,80,10,${a * 0.5})`; c.fillRect(sx, sy, 32, 32);
+    c.strokeStyle = `rgba(235,230,225,${0.35 + 0.2 * Math.sin(t + x + y)})`; c.lineWidth = 1; c.beginPath();
+    c.moveTo(sx + 4, sy); c.quadraticCurveTo(sx + 16 + Math.sin(t * 1.3 + x) * 4, sy + 16, sx + 28, sy + 32); c.stroke();
   }
 
   /* ---- agua viva: olas que fluyen, destellos y espuma en las orillas ---- */
@@ -972,6 +1009,8 @@
       case TILE.CFLOOR: return TEX.cfloor[h % 4];
       case TILE.CLOUDF: return TEX.nfloor[h % 4];
       case TILE.CLOUDW: return TEX.nwall[h % 3];
+      case TILE.WEBF: return TEX.wfloor[h % 4];
+      case TILE.WEBW: return TEX.wwall[h % 3];
       case TILE.CWALL: return G.zoneGrid && zoneAt(x, y).id === 'volcan' ? TEX.obsid[h % 3] : TEX.cwall[h % 3];
       default: return TEX.grass[0];
     }
@@ -980,7 +1019,7 @@
   /* ======================================================================
    *  MINIMAPA
    * ==================================================================== */
-  const MINI_COL = ['#3f6b3a', '#2b5d8a', '#234a2a', '#8a8271', '#59606e', '#3a3948', '#b07cff', '#77797f', '#3f6b3a', '#7a5634', '#4a2a2e', '#d6c188', '#e4ecf3', '#3f5a33', '#d2b878', '#2f7d3a', '#2d6a4a', '#5a4a3a', '#3f8a45', '#8fd0f0', '#3a342c', '#b89a5e', '#9fbfd6', '#2e4a2a', '#8d9a45', '#2a2833', '#0c0b10', '#d8480a', '#3b2e2a', '#e9f1fa', '#b4c6e0'];
+  const MINI_COL = ['#3f6b3a', '#2b5d8a', '#234a2a', '#8a8271', '#59606e', '#3a3948', '#b07cff', '#77797f', '#3f6b3a', '#7a5634', '#4a2a2e', '#d6c188', '#e4ecf3', '#3f5a33', '#d2b878', '#2f7d3a', '#2d6a4a', '#5a4a3a', '#3f8a45', '#8fd0f0', '#3a342c', '#b89a5e', '#9fbfd6', '#2e4a2a', '#8d9a45', '#2a2833', '#0c0b10', '#d8480a', '#3b2e2a', '#e9f1fa', '#b4c6e0', '#3a2a30', '#241418'];
   let miniBase = null;
   function buildMiniBase() {
     const c = document.createElement('canvas'); c.width = G.W; c.height = G.H;
@@ -1175,9 +1214,13 @@
   function drawHead(c, id, hx, hy, view, side, now) {
     const d = G.items[id];
     if (d && d.spr && GJ['c_' + d.spr]) {
-      const hood = /^hat1[234]$/.test(d.spr);
-      if (hood && view !== 'f') { drawLayer(c, d.spr, hx - side * 0.5, hy + 7.5, 0.5, 1, false, 0); return; }
-      if (drawLayer(c, d.spr, hx - side * 1, hood ? hy + 7.5 : hy + 0.5, 0.5, 1, false, side * 0.06)) return;
+      const hood = /^hat1[234]$/.test(d.spr), boss = /^(t_helm|s_hood|j_helm|a_helm|f_helm)$/.test(d.spr), dy = hood ? 7.5 : d.spr === 't_helm' ? 9.5 : d.spr === 'a_helm' || d.spr === 'f_helm' ? 8.5 : boss ? 5.5 : 0.5;   // capuchas y cascos de jefe: cubren el rostro
+      if ((hood || boss) && view === 'b') { drawLayer(c, d.spr, hx, hy + dy, 0.5, 1, false, 0); return; }
+      if ((hood || boss) && view !== 'f') {                                       // de perfil: se estrecha y se voltea hacia donde mira el personaje
+        const f = GJ['c_' + d.spr]; c.save(); c.translate(hx + side * 1.4, hy + dy); if (side < 0) c.scale(-1, 1); c.scale(0.84, 1);
+        drawLayer(c, d.spr, 0, 0, 0.5, 1, false, 0); c.restore(); return;
+      }
+      if (drawLayer(c, d.spr, hx - side * 1, hy + dy, 0.5, 1, false, side * 0.06)) return;
     }
     drawHelm(c, id, hx, hy, view, side, now);
   }
@@ -1216,6 +1259,7 @@
     const bd = G.items[gr.bid], rp = bd && bd.spr && ROBE_PAL[bd.spr];
     if (bd && bd.spr === 't_chest') return { id: gr.bid, m: ['#74594a', '#4c3a30'] };
     if (bd && bd.spr === 's_chest') return { id: gr.bid, m: ['#3a3548', '#262234'] };
+    if (bd && bd.spr === 'f_chest') return { id: gr.bid, m: ['#3a3640', '#201c24'] };
     if (bd && bd.spr === 'a_chest') return { id: gr.bid, m: ['#e9f1fa', '#a9c0e0'] };
     if (bd && bd.spr === 'j_chest') return { id: gr.bid, m: ['#2f8a4a', '#1c5a32'] };
     if (rp) return { id: gr.bid, m: [rp[0], rp[1]], robe: { trim: rp[2], kind: rp[3] } };
@@ -1310,7 +1354,29 @@
     };
     const beltDraw = (y, wd) => { const b = G.items[gr.btid]; if (b && b.spr) { const f = GJ['c_' + b.spr]; if (f) drawLayer(c, b.spr, cx + lean, y, 0.5, 0.5, false, 0); } };
     const wdef = gr.w;
-    const holdWeapon = (hx, hy, dir, swing) => { if (wdef) drawWeaponItem(c, gr.wid, wdef, hx, hy, dir, now, swing); };
+    const holdWeapon = (hx, hy, dir, swing) => {
+      if (!wdef) return;
+      const sg = wdef.style === 'melee' ? G.swings.get(e.id) : null, pr = sg ? (now - sg.t) / SWING_MS : 2;
+      if (pr >= 1) { drawWeaponItem(c, gr.wid, wdef, hx, hy, dir, now, swing); return; }
+      const dr = dir || 1, kd = sg.kd, ea = 1 - Math.pow(1 - pr, 3);
+      if (kd === 'spear' || kd === 'dagger') {                                  // estocada: la mano se lanza hacia delante
+        const th = Math.sin(Math.min(1, pr * 1.4) * Math.PI) * (kd === 'spear' ? 7 : 4);
+        drawWeaponItem(c, gr.wid, wdef, hx + dr * th, hy - th * 0.35, dir, now, swing + dr * 1.3);
+        c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = `rgba(255,255,230,${0.7 * (1 - pr)})`; c.lineWidth = 2; c.lineCap = 'round';
+        c.beginPath(); c.moveTo(hx + dr * (th + 2), hy - 12 - th * 0.3); c.lineTo(hx + dr * (th + 14 + pr * 8), hy - 14 - th * 0.35); c.stroke(); c.restore();
+        return;
+      }
+      const a0 = -2.0, a1 = 1.5, ang = (a0 + (a1 - a0) * ea) * dr, hv = kd === 'hammer' || kd === 'mace' || kd === 'great' || kd === 'daxe';
+      drawWeaponItem(c, gr.wid, wdef, hx + dr * Math.sin(pr * Math.PI) * 2.5, hy, dir, now, swing + ang / (0.35 * dr));
+      const R = hv ? 26 : 20, pal = WEAPON_ELEM[gr.wid] ? ELEM[WEAPON_ELEM[gr.wid]] : null;                   // estela del corte
+      c.save(); c.translate(hx, hy - 2); c.globalCompositeOperation = 'lighter'; c.lineCap = 'round';
+      for (const [w, col] of [[hv ? 7 : 5, `rgba(${pal ? pal[2] : '180,200,230'},${0.45 * (1 - pr)})`], [hv ? 3 : 2, `rgba(${pal ? pal[0] : '255,255,240'},${0.9 * (1 - pr * 0.8)})`]]) {
+        c.strokeStyle = col; c.lineWidth = w; c.beginPath();
+        const s0 = Math.PI / 2 * -1 + a0 * dr, s1 = Math.PI / 2 * -1 + (a0 + (a1 - a0) * ea) * dr;
+        c.arc(0, 0, R, Math.min(s0, s1), Math.max(s0, s1)); c.stroke();
+      }
+      c.restore();
+    };
 
     if (side) {
       // ---------- perfil ----------
@@ -1404,10 +1470,10 @@
     robe6: ['#b02a2a', '#6e1818', '#d4d9e0', 0], robe7: ['#40307a', '#251a4a', '#7a5ac0', 0], robe8: ['#5a3aa0', '#2e1f5c', '#ffe070', 1],
     robe9: ['#2f5a9a', '#1c3868', '#d8ecff', 1], robe10: ['#8a2a10', '#4a1208', '#ff8a2a', 2], robe11: ['#e06a10', '#8a2a08', '#ffd040', 2], robe12: ['#6ab0e0', '#3a78b0', '#f0fcff', 2],
   };
-  const GLOVE_COL = { glove0: '#b8a88a', glove1: '#b8a88a', glove2: '#8a5a30', glove3: '#7a4a28', glove4: '#6a3e20', glove5: '#6a3e20', t_glove1: '#7a5a48', t_glove2: '#7a5a48', s_gauntlet: '#2f2a3c', j_glove: '#2f7a4a', a_glove: '#e9f1fa' };
-  const BOOT_COL = { t_boot: ['#5d4637', '#ff8a1f'], s_boot: ['#2c2838', '#9a6ad8'], j_boot: ['#24603a', '#9ee85a'], a_boot: ['#e9f1fa', '#ffd96a'] };
-  const LEG_COL = { j_leg: ['#2f8a4a', '#1f5c33', '#9ee85a'], s_leg: ['#2c2838', '#1c1928', '#9a6ad8'], a_leg: ['#e9f1fa', '#a9c0e0', '#ffd96a'] };
-  const CHEST_SPR = new Set(['t_chest', 's_chest', 'j_chest', 'a_chest']);
+  const GLOVE_COL = { glove0: '#b8a88a', glove1: '#b8a88a', glove2: '#8a5a30', glove3: '#7a4a28', glove4: '#6a3e20', glove5: '#6a3e20', t_glove1: '#7a5a48', t_glove2: '#7a5a48', s_gauntlet: '#2f2a3c', j_glove: '#2f7a4a', a_glove: '#e9f1fa', f_glove: '#2f2a30' };
+  const BOOT_COL = { t_boot: ['#5d4637', '#ff8a1f'], s_boot: ['#2c2838', '#9a6ad8'], j_boot: ['#24603a', '#9ee85a'], a_boot: ['#e9f1fa', '#ffd96a'], f_boot: ['#26242a', '#ff6a1f'] };
+  const LEG_COL = { j_leg: ['#2f8a4a', '#1f5c33', '#9ee85a'], s_leg: ['#2c2838', '#1c1928', '#9a6ad8'], a_leg: ['#e9f1fa', '#a9c0e0', '#ffd96a'], f_leg: ['#2c2a30', '#18161a', '#ff6a1f'] };
+  const CHEST_SPR = new Set(['t_chest', 's_chest', 'j_chest', 'a_chest', 'f_chest']);
 
   /* ---------- sprites de píxel-art (monstruos y PNJ) ---------- */
   const SPR = {};
@@ -1715,7 +1781,7 @@
         c.save(); c.translate(sx + 16, sy + 29); c.transform(1, 0, k, 1 + Math.sin(now / 520 + ph) * 0.006, 0, 0); c.drawImage(TEXFG[sw[0]][v], -16, -29); c.restore();
         if (t === TILE.TREE && (h & 7) === 0 && now - lastLeaf > 380) { lastLeaf = now; G.leaves.push({ x: x + 0.3 + Math.random() * 0.4, y: y + 0.2 + Math.random() * 0.3, t: now, p: Math.random() * 6 }); }
       } else if (t === TILE.WATER) drawWater(c, x, y, sx, sy, now);
-      else { c.drawImage(texFor(t, x, y, frameW), sx, sy); if (t === TILE.CLOUDF) cloudFloorFx(c, x, y, sx, sy, now); else if (t === TILE.CLOUDW) cloudWallFx(c, x, y, sx, sy, now); }
+      else { c.drawImage(texFor(t, x, y, frameW), sx, sy); if (t === TILE.CLOUDF) cloudFloorFx(c, x, y, sx, sy, now); else if (t === TILE.CLOUDW) cloudWallFx(c, x, y, sx, sy, now); else if (t === TILE.WEBF) webFloorFx(c, x, y, sx, sy, now); else if (t === TILE.WEBW) webWallFx(c, x, y, sx, sy, now); }
     }
     for (let i = 0; i < treeList.length; i += 3) drawNewTree(c, treeList[i], treeList[i + 1], treeList[i + 2], now);
     drawLeaves(c, now);
@@ -1965,7 +2031,7 @@
     walkTo(t.x, t.y);
   });
 
-  const BLOCK = new Set([TILE.WATER, TILE.TREE, TILE.WALL, TILE.ROCK, TILE.PALM, TILE.PINE, TILE.DEADTREE, TILE.CACTUS, TILE.ICEBLOCK, TILE.BOG, TILE.CWALL, TILE.LAVA, TILE.CLOUDW]);
+  const BLOCK = new Set([TILE.WATER, TILE.TREE, TILE.WALL, TILE.ROCK, TILE.PALM, TILE.PINE, TILE.DEADTREE, TILE.CACTUS, TILE.ICEBLOCK, TILE.BOG, TILE.CWALL, TILE.LAVA, TILE.CLOUDW, TILE.WEBW]);
   function walkable(x, y) { return x >= 0 && y >= 0 && x < G.W && y < G.H && !BLOCK.has(G.tiles[y * G.W + x]) && !G.npcTiles.has(y * G.W + x); }
   function walkTo(gx, gy) {
     if (!walkable(gx, gy)) return;

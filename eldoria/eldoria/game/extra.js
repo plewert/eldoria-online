@@ -79,6 +79,7 @@ const EXTRA_ITEMS = {
   montura_dragon: { name: 'Dragón Joven', icon: '🐉', type: 'mount', mon: 'dragon', scale: 0.62, speed: 0.58, minLevel: 40, sell: 30000, desc: 'Vuelas un 42% más rápido.' },
   trofeo_hidra: { name: 'Escama de Jade', icon: '💚', type: 'misc', stack: true, sell: 22000 },
   trofeo_arcangel: { name: 'Pluma Celestial', icon: '🪽', type: 'misc', stack: true, sell: 24000 },
+  trofeo_aracnido: { name: 'Colmillo de Fuego Negro', icon: '🔥', type: 'misc', stack: true, sell: 26000 },
   trofeo_dragon: { name: 'Escama de las Sombras', icon: '🖤', type: 'misc', stack: true, sell: 20000 },
   trofeo_coloso: { name: 'Trofeo del Coloso', icon: '🏆', type: 'misc', stack: true, sell: 8000 },
 };
@@ -125,7 +126,13 @@ const ANGEL = {
   def: { name: 'Arcángel del Santuario', icon: '👼', lv: 600, hp: 360000, dmg: [210, 360], exp: 80000, move: 380, atkCd: 1300, aggro: 14, respawn: 60000, armor: 0.8, shared: true, boss: true, special: 'angel', dmgK: 1.5,
     gold: [14000, 24000], loot: [['trofeo_arcangel', 1, 1, 2], ['pocion_vida_g', 1, 5, 10], ['pocion_mana_g', 1, 5, 10], ['pluma_fenix', 0.5, 1, 2]] },
 };
+const SPIDER = {
+  type: 'aracnido_fuego',
+  def: { name: 'Aracnídeo Fuego Negro', icon: '🕷️', lv: 650, hp: 380000, dmg: [230, 400], dmgK: 1.5, exp: 90000, move: 400, atkCd: 1300, aggro: 14, respawn: 60000, armor: 0.8, shared: true, boss: true, special: 'spider',
+    gold: [16000, 26000], loot: [['trofeo_aracnido', 1, 1, 2], ['pocion_vida_g', 1, 5, 10], ['pocion_mana_g', 1, 5, 10], ['pluma_fenix', 0.5, 1, 2]] },
+  minion: { type: 'arana_fuego', def: { name: 'Araña de Fuego', icon: '🕷️', lv: 160, hp: 9000, dmg: [90, 150], exp: 400, move: 260, atkCd: 900, aggro: 16, respawn: 999999999, armor: 0.2, gold: [0, 0], loot: [] } },
+};
 BOSS.mins = 12; BOSS.arena = [100, 107]; BOSS.icon = '🗿';
 const BOSSES = [BOSS];   // el dragón vive en su cueva (no es jefe de evento)
 
-module.exports = { BOSSES, DRAGON, JADE, ANGEL, ACHS, SKILLS, EXTRA_ITEMS, RECIPES, NODES, BOSS };
+module.exports = { BOSSES, DRAGON, JADE, ANGEL, SPIDER, ACHS, SKILLS, EXTRA_ITEMS, RECIPES, NODES, BOSS };

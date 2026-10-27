@@ -428,6 +428,17 @@ ok('Coloso del evento: lluvia de fuego y terremoto', () => {
   const sp = require('../public/sprites.json').coloso_ancestral; assert.ok(sp.f.length >= 4 && sp.anim > 0, 'animado');
 });
 
+ok('Aracnídeo Fuego Negro: guarida de telarañas en la zona de lava, set raro y sus ataques', () => {
+  assert.equal(MONSTERS.aracnido_fuego.special, 'spider'); assert.ok(MONSTERS.arana_fuego, 'arañas invocadas');
+  const loot = MONSTERS.aracnido_fuego.loot.map((l) => l[0]);
+  ['fuego_yelmo', 'fuego_peto', 'fuego_guantes', 'fuego_pantalon', 'fuego_botas', 'fuego_cinturon', 'fuego_carcaj', 'fuego_mandoble', 'fuego_garras', 'fuego_arco'].forEach((id) => { assert.ok(loot.includes(id), id); assert.ok(ITEMS[id], id); });
+  assert.equal(ITEMS.fuego_arco.style, 'ranged'); assert.equal(ITEMS.fuego_mandoble.style, 'melee');
+  const sp = world.monsterSpawns.find((q) => q.type === 'aracnido_fuego'); assert.equal(zoneOf([sp.x, sp.y]).id, 'cueva_arana');
+  assert.ok(world.isWalkable(288, 100) && world.isWalkable(sp.x, sp.y), 'se puede llegar a la guarida');
+  assert.equal(typeof Game.prototype.spiderAI, 'function');
+  const sj = require('../public/sprites.json'); assert.ok(sj.aracnido_fuego.f.length >= 6 && sj.arana_fuego.f.length >= 4);
+});
+
 console.log(`\n${n} pruebas correctas`);
 try { require('fs').unlinkSync(store.file); } catch (e) { /* nada */ }
 
