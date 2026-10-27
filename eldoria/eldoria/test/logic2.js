@@ -407,6 +407,33 @@ ok('pesca: caña, picada, minijuego de temporización, nivel y peces por zona', 
   const back = game.extSave(a.p); assert.equal(back.fish.xp, 1e6);
 });
 
+ok('pesca: set del Maestro Pescador (drop 0,5 %, 5 presas con el set completo)', () => {
+  for (const id of ['pesca_sombrero', 'pesca_chaleco', 'pesca_pantalon', 'pesca_botas', 'cana_maestra']) assert.ok(ITEMS[id], id);
+  assert.deepEqual(['pesca_sombrero', 'pesca_chaleco', 'pesca_pantalon', 'pesca_botas'].map((i) => ITEMS[i].type), ['head', 'body', 'legs', 'boots']);
+  let wx = -1, wy = -1, lx = -1, ly = -1;
+  outer: for (let y = 2; y < world.H - 2; y++) for (let x = 2; x < 100; x++) {
+    if (world.tiles[y * world.W + x] === world.T.WATER && world.zoneAt(x, y).id === 'prado' && world.tiles[y * world.W + x - 1] === world.T.GRASS) { wx = x; wy = y; lx = x - 1; ly = y; break outer; }
+  }
+  const a = login('Pez2'); place(a.p, lx, ly); a.p.inv[0] = I.mk('cana_madera', 1);
+  const r0 = Math.random;
+  const cast = () => { T0 += 20000; game.now = T0; game.fishCast(a.p, wx, wy); T0 += 20000; game.now = T0; game.fishTick(T0); const f = a.p.fishing; const mid = (f.lo + f.hi) / 2; let tt = f.t0; for (let q = 0; q < 4000; q++) { const ph = ((tt - f.t0) / 1000 * f.speed) % 2, pos = ph < 1 ? ph : 2 - ph; if (Math.abs(pos - mid) < 0.01) break; tt += 1; } game.now = tt; game.fishReel(a.p); };
+  const count = () => a.p.inv.reduce((n, it) => n + (it && (it.id === 'sardina' || it.id === 'salmon') ? it.qty : 0), 0);
+  try {
+    Math.random = () => 0.001;                                        // todo sale: pieza rara en cada captura
+    cast(); assert.ok(a.p.inv.some((it) => it && it.id === 'pesca_sombrero') && a.p.inv.some((it) => it && it.id === 'cana_maestra'), 'cae el set');
+    for (const id of ['pet_pelicano', 'pet_pulpo']) { assert.equal(ITEMS[id].type, 'pet'); assert.ok(a.p.inv.some((it) => it && it.id === id), 'cae ' + id); assert.ok(a.p.ext.col.pesca[id], 'registrada en la colección'); }
+    assert.ok(a.p.ext.col.pesca.sardina || a.p.ext.col.pesca.salmon, 'peces en la colección');
+    assert.ok(lastMsg(a.ws, 'colnew'), 'aviso de nuevo objeto');
+    assert.ok(game.extSave(a.p).col.pesca.pet_pulpo, 'se guarda');
+    Math.random = () => 0.5;                                          // sin drop y sin set: 1 presa
+    const n0 = count(); cast(); assert.equal(count() - n0, 1);
+    for (const [s, id] of [['head', 'pesca_sombrero'], ['body', 'pesca_chaleco'], ['legs', 'pesca_pantalon'], ['boots', 'pesca_botas']]) a.p.eq[s] = I.mk(id, 1);
+    Math.random = () => 0.2;                                          // < 25 %: 5 presas
+    const n1 = count(); cast(); assert.equal(count() - n1, 5);
+    Math.random = () => 0.6; const n2 = count(); cast(); assert.equal(count() - n2, 1, 'sin suerte: 1 presa');
+  } finally { Math.random = r0; }
+});
+
 ok('Arcángel: cueva de nubes, set celestial raro y sus tres ataques', () => {
   assert.equal(MONSTERS.arcangel.special, 'angel');
   const loot = MONSTERS.arcangel.loot.map((l) => l[0]);
@@ -437,6 +464,36 @@ ok('Aracnídeo Fuego Negro: guarida de telarañas en la zona de lava, set raro y
   assert.ok(world.isWalkable(288, 100) && world.isWalkable(sp.x, sp.y), 'se puede llegar a la guarida');
   assert.equal(typeof Game.prototype.spiderAI, 'function');
   const sj = require('../public/sprites.json'); assert.ok(sj.aracnido_fuego.f.length >= 6 && sj.arana_fuego.f.length >= 4);
+});
+
+ok('Leviatán Abisal: gruta inundada, set raro y sus 4 ataques (tornados, olas, rayo y burbuja)', () => {
+  assert.equal(MONSTERS.leviatan.special, 'leviathan'); assert.equal(typeof Game.prototype.leviathanAI, 'function');
+  const loot = MONSTERS.leviatan.loot.map((l) => l[0]);
+  ['mar_yelmo', 'mar_coraza', 'mar_guantes', 'mar_grebas', 'mar_botas', 'mar_cinto', 'mar_anillo_perla', 'mar_anillo_alga', 'mar_anillo_coral', 'mar_amuleto', 'mar_tridente', 'pet_leviatan'].forEach((id) => { assert.ok(loot.includes(id), id); assert.ok(ITEMS[id], id); });
+  assert.equal(ITEMS.mar_tridente.style, 'melee'); assert.equal(ITEMS.mar_tridente.el, 'water');
+  const sj = require('../public/sprites.json'); assert.ok(sj.leviatan.f.length >= 8 && sj.leviatan.anim > 0, 'animado');
+  const sp = world.monsterSpawns.find((q) => q.type === 'leviatan'); assert.equal(zoneOf([sp.x, sp.y]).id, 'cueva_mar');
+  assert.ok(world.isWalkable(229, 44) && world.isWalkable(sp.x, sp.y), 'se puede llegar a la guarida');
+  assert.ok(world.BLOCKED[world.T.AQW] && world.BLOCKED[world.T.WEBW] && world.BLOCKED[world.T.WATER] && !world.BLOCKED[world.T.AQF], 'muros bloquean y el suelo de agua se camina');
+  const pt = world.PORTALS.find((q) => q.x === 229 && q.y === 39); assert.deepEqual([pt.tx, pt.ty], [229, 44]);
+  const run = (ms) => { for (let k = 0; k <= ms; k += 100) { game.now += 100; const due = game.sched.filter((e) => e.at <= game.now); game.sched = game.sched.filter((e) => e.at > game.now); due.forEach((e) => e.fn()); } };
+  const { p } = login('Lev1'); place(p, 229, 48); p.hp = p.maxHp = 1e7;
+  const m = game.spawnMonster('leviatan', sp.x, sp.y); m.target = p.id; game.fx.length = 0;
+  const go = (i) => { m.spN = i; m.nextSp = 0; game.now += 10; game.leviathanAI(m, game.now); };
+  go(1); run(16000); const ids = new Set(game.fx.filter((f) => f.k === 'wtn').map((f) => f.id)); assert.ok(ids.size >= 6, 'los tornados se multiplican: ' + ids.size);
+  m.nextSp = 0; let hp0 = p.hp; go(2); run(8000); assert.ok(game.fx.some((f) => f.k === 'olw') && game.fx.some((f) => f.k === 'ol') && p.hp < hp0, 'las olas golpean');
+  hp0 = p.hp; go(0); run(4000); assert.ok(game.fx.some((f) => f.k === 'bm') && p.hp < hp0, 'el rayo de agua golpea');
+  go(3); assert.ok(m.shieldUntil > game.now, 'burbuja'); const h1 = m.hp; game.hurtMonster(m, 5000, p, game.now); assert.equal(m.hp, h1, 'inmune 5 s');
+  run(5200); assert.ok(!m.shieldUntil); game.hurtMonster(m, 5000, p, game.now); assert.ok(m.hp < h1, 'la burbuja acaba');
+});
+
+ok('tabletas de teletransporte: Boris las vende a 100k y llevan a la zona', () => {
+  const SH = require('../game/data').SHOPS; assert.equal(ITEMS.tp_lava.price, 100000); assert.ok(SH.boris.includes('tp_lava') && SH.boris.includes('tp_ciudad'));
+  const { p, ws } = login('Tab1'); place(p, ...TOWN); p.inv[0] = I.mk('tp_lava', 2); p.pvpLock = 0; game.now = T0 + 5;
+  game.handle(p, { t: 'use', s: 0 });
+  assert.equal(zoneOf([p.x, p.y]).id, 'volcan'); assert.equal(p.inv[0].qty, 1, 'se gasta una');
+  place(p, ...TOWN); p.pvpLock = game.now + 5000; game.handle(p, { t: 'use', s: 0 });
+  assert.equal(zoneOf([p.x, p.y]).id, 'ciudad', 'no se puede usar en combate'); assert.equal(p.inv[0].qty, 1);
 });
 
 console.log(`\n${n} pruebas correctas`);

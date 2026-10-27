@@ -204,5 +204,29 @@ Al atacar con un arma cuerpo a cuerpo, el personaje balancea el arma con una est
 
 ## Aracnídeo Fuego Negro (jefe de cueva, Tierras de Lava)
 - **Guarida de telarañas** con forma de tela (anillos y radios) en las Tierras de Lava; entrada por el camino al sur del eje este (portal en 288,95). Suelo con telarañas y brasas animadas, paredes con vetas de lava.
-- Ataques: **zarpazo cuerpo a cuerpo**, **redes de telaraña de fuego** (círculo de aviso, daño, inmovilizan ~2 s y queman) e **invoca arañas de fuego** (hasta 8, desaparecen a los 45 s o al morir el jefe). Datos en `game/spider.js`, IA en `spiderAI` (`game/ext.js`).
+- Ataques: **zarpazo cuerpo a cuerpo (daño ×2 sobre el base)**, **redes de telaraña de fuego** (círculo de aviso, daño, inmovilizan ~2 s y queman) e **invoca arañas de fuego** (hasta 8, desaparecen a los 45 s o al morir el jefe). Datos en `game/spider.js`, IA en `spiderAI` (`game/ext.js`).
 - Botín raro: Rastreador Ciego, Silbato Silencioso, Brazal de Garra, Pantalón de Fuego Negro, Botas de Garra, Cierre de Garra, Reserva Ígnea (carcaj) (4–6 % base) y Llama del Viento (gran espada), Garras de Fuego Negro y Arco Largo Llama del Viento (0,5 %).
+
+## Tabletas de teletransporte
+Boris vende 11 tabletas (100 000 de oro cada una, de un solo uso): Ciudad, Bosque, Cumbres, Dunas, Aldea Pesquera, Selva, Sabana, Tierras de Lava, Pantano, Colinas y Puerto. Clic en la tableta para usarla; no funciona en combate. Ver `game/tablets.js`.
+
+## Mapa del mundo
+- Ábrelo con el botón 🗺️, la tecla **N** o haciendo clic en el minimapa.
+- Acerca/aleja con la rueda del ratón o los botones **+ / −**, arrastra para moverte; "Centrar en mí" y "Ver todo".
+- Muestra el nombre de cada zona (con etiqueta ⚔ PvP si aplica), ciudades y cuevas.
+
+## Set del Maestro Pescador (botín raro de pesca)
+- Sombrero, Chaleco, Pantalón y Botas del Maestro Pescador + Caña del Maestro Pescador (pesca 100): cada captura tiene un **0,5 %** de dar cada pieza.
+- Con las 4 piezas de armadura puestas, cada captura tiene un 25 % de traer **5 presas** de golpe.
+- Al pescar, el personaje sostiene en la mano la mejor caña que tenga (incluida la del Maestro Pescador) y el sedal sale de su punta.
+
+## Mascotas de pesca y colección de pesca
+- Pelícano Sombrerero (+20 % oro) y Pulpito Naranja (+25 % oro): **0,20 %** por captura cada uno.
+- La ventana 📖 (tecla B) ahora tiene una sección **🎣 Pesca** arriba: peces, perla, cofre, mascotas, set del Maestro Pescador y caña.
+- Cada objeto raro de pesca avisa con mensaje, texto flotante ★, aviso de "Nuevo en tu colección" y anuncio en el chat global.
+
+## Leviatán Abisal (jefe de la Gruta inundada)
+- Gruta del Leviatán Abisal: cueva de agua en la Selva Esmeralda (puerta al norte, entre la aldea y el camino de la selva). Suelo de agua poco profunda, lagos hondos y columnas de roca.
+- Ataques especiales: **tornados marinos** que se multiplican y vagan por la cueva (15 s), **olas** que barren la cueva en franjas avisadas, **rayo de bolas de agua** por la boca (3 pulsos que re-apuntan) y **escudo burbuja** de 5 s en el que es inmune.
+- Botín raro: Yelmo, Coraza, Manoplas, Grebas, Botas y Cinto del Abismo Marino, 3 anillos (perla, alga, coral), Amuleto del Corazón Marino y el Tridente del Leviatán (agua), además de la cría del Leviatán (mascota).
+- Corregido: las casillas de muro de la guarida de la araña (WEBW) no bloqueaban en el servidor.

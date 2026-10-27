@@ -36,7 +36,7 @@ function sanitizeExt(raw) {
   if (raw.ach && typeof raw.ach === 'object') for (const [id, t] of Object.entries(raw.ach)) if (ACH_BY[id]) e.ach[id] = num(t, 1e15) || 1;
   if (raw.kills && typeof raw.kills === 'object') for (const [m, n] of Object.entries(raw.kills)) if (MONSTERS[m]) e.kills[m] = num(n);
   if (raw.grave && Number.isInteger(raw.grave.x) && Number.isInteger(raw.grave.y)) e.grave = { x: raw.grave.x, y: raw.grave.y, t: num(raw.grave.t, 1e15) };
-  if (raw.col && typeof raw.col === 'object') for (const [b, items] of Object.entries(raw.col)) if (MONSTERS[b] && items && typeof items === 'object') { e.col[b] = {}; for (const [id, n] of Object.entries(items)) if (ITEMS[id]) e.col[b][id] = num(n, 1e9) || 1; }
+  if (raw.col && typeof raw.col === 'object') for (const [b, items] of Object.entries(raw.col)) if ((MONSTERS[b] || b === 'pesca') && items && typeof items === 'object') { e.col[b] = {}; for (const [id, n] of Object.entries(items)) if (ITEMS[id]) e.col[b][id] = num(n, 1e9) || 1; }
   if (raw.fish && typeof raw.fish === 'object') { e.fish.xp = num(raw.fish.xp, 1e9); if (raw.fish.c && typeof raw.fish.c === 'object') for (const [id, n] of Object.entries(raw.fish.c)) if (ITEMS[id]) e.fish.c[id] = num(n, 1e9); }
   e.title = typeof raw.title === 'string' ? raw.title.slice(0, 30) : '';
   e.pet = ITEMS[raw.pet] && ITEMS[raw.pet].type === 'pet' ? raw.pet : '';
@@ -606,6 +606,19 @@ module.exports = function install(Game) {
       p.ext.mount = p.ext.mount === it.id ? '' : it.id; if (p.ext.mount) p.ext.hadMount = 1;
       this.msg(p, p.ext.mount ? `Montas ${d.name}.` : 'Desmontas.', 's'); this.checkAch(p); return;
     }
+    if (d && d.type === 'tablet') {                                 // teletransporte de un solo uso
+      if (this.now < p.pvpLock) { this.msg(p, '¡Estás en combate! No puedes usar la tableta todavía.', 's'); return; }
+      const [tx, ty] = d.dest; const ox = p.x, oy = p.y;
+      const spots = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [2, 0], [-2, 0]]
+        .map(([dx, dy]) => [tx + dx, ty + dy]).filter(([x, y]) => world.isWalkable(x, y) && !this.pgrid.has(kxy(x, y)) && !this.mgrid.has(kxy(x, y)));
+      if (!spots.length) { this.msg(p, 'El destino está ocupado, inténtalo de nuevo.', 's'); return; }
+      this.fx.push({ k: 'tpo', x: ox, y: oy });
+      this.pgrid.delete(kxy(ox, oy)); p.x = spots[0][0]; p.y = spots[0][1]; this.pgrid.set(kxy(p.x, p.y), p);
+      p.tpSeq++; p.target = null; p.pend = null;
+      this.fx.push({ k: 'tpi', x: p.x, y: p.y });
+      it.qty--; if (it.qty <= 0) p.inv[slot | 0] = null; p.dirty.inv = true;
+      this.msg(p, `Te teletransportas: ${zoneAt(p.x, p.y).name}.`, 's'); return;
+    }
     if (d && d.buff) {
       if ((d.minLevel || 1) > p.level) { this.msg(p, `Necesitas nivel ${d.minLevel} para usar ${d.name}.`, 's'); return; }
       if (this.now < p.nextPotion) return;
@@ -930,9 +943,9 @@ module.exports = function install(Game) {
           this.fx.push({ k: 'wb', x, y, r: 2.4 });
           const hit = near(x, y, 2.4);
           for (const q of hit) {
-            this.hurtPlayer(q, rnd(300, 440), m, this.now, 'Red de fuego');
+            this.hurtPlayer(q, rnd(480, 700), m, this.now, 'Red de fuego');
             q.nextMove = Math.max(q.nextMove || 0, this.now + 2200);                                  // atrapado en la telaraña
-            for (let i = 1; i <= 3; i++) this.later(800 * i, () => { if (alive() && q.hp > 0 && this.players.get(q.key) === q) { this.fx.push({ k: 'burn', x: q.x, y: q.y }); this.hurtPlayer(q, rnd(45, 80), m, this.now, 'Telaraña ardiente'); } });
+            for (let i = 1; i <= 3; i++) this.later(800 * i, () => { if (alive() && q.hp > 0 && this.players.get(q.key) === q) { this.fx.push({ k: 'burn', x: q.x, y: q.y }); this.hurtPlayer(q, rnd(85, 130), m, this.now, 'Telaraña ardiente'); } });
           }
         }
       });
@@ -957,6 +970,78 @@ module.exports = function install(Game) {
       });
     }
   };
+  // Leviatán Abisal: tornados que se multiplican, olas que barren la cueva, rayo de bolas de agua por la boca y escudo burbuja de 5 s
+  P.leviathanAI = function (m, now) {
+    if (m.lpx !== undefined && m.x !== m.lpx) m.lf = m.x < m.lpx ? -1 : 1;       // hacia dónde mira (igual que el cliente: según el último paso)
+    m.lpx = m.x;
+    if (now < (m.nextSp || 0)) return;
+    const t = m.target ? this.ents.get(m.target) : null; if (!t || t.kind !== 'pl' || t.hp <= 0) return;
+    const order = ['ray', 'tornado', 'wave', 'bubble', 'ray', 'wave', 'tornado'];
+    const kind = order[(m.spN || 0) % order.length];
+    m.spN = (m.spN || 0) + 1; m.nextSp = now + 5500 + Math.random() * 2500;
+    if (kind === 'bubble' && m.shieldUntil > now) return;
+    m.nextMove = Math.max(m.nextMove, now + 1700); m.nextAtk = Math.max(m.nextAtk, now + 1700);
+    const alive = () => !m.dead && this.monsters.includes(m);
+    const near = (cx, cy, r) => [...this.players.values()].filter((q) => q.hp > 0 && !inTownP(q) && Math.hypot(q.x - cx, q.y - cy) <= r);
+    const R = world.zoneById('cueva_mar').rect;
+    if (kind === 'ray') {                                       // rayo de bolas de agua disparado por la boca (3 pulsos que re-apuntan)
+      const mouth = () => [m.x + (m.lf || 1) * 3.2, m.y - 2.5];                                       // la boca del leviatán
+      const aim = () => { const tg = this.ents.get(m.target); const tx = tg && tg.kind === 'pl' && tg.hp > 0 ? tg.x : t.x, ty = tg && tg.kind === 'pl' && tg.hp > 0 ? tg.y : t.y; const [ox, oy] = mouth(); let dx = tx - ox, dy = ty - oy; const L = Math.hypot(dx, dy) || 1; return [dx / L, dy / L]; };
+      let [dx, dy] = aim(); { const [ox, oy] = mouth(); this.fx.push({ k: 'bmw', x1: ox, y1: oy, x2: ox + dx * 18, y2: oy + dy * 18, fc: m.lf || 1 }); }
+      for (let i = 0; i < 3; i++) this.later(1000 + i * 520, () => {
+        if (!alive()) return; [dx, dy] = aim(); const [ox, oy] = mouth(), nw = this.now;
+        this.fx.push({ k: 'bm', x1: ox, y1: oy, x2: ox + dx * 18, y2: oy + dy * 18 });
+        for (const q of this.players.values()) { const rx = q.x - ox, ry = q.y - oy, sd = rx * dx + ry * dy, perp = Math.abs(rx * dy - ry * dx); if (q.hp > 0 && !inTownP(q) && sd >= 0.5 && sd <= 18.5 && perp <= 1.5) this.hurtPlayer(q, rnd(250, 370), m, nw, 'Rayo de agua'); }
+      });
+    } else if (kind === 'wave') {                               // olas: franjas de agua que cruzan la cueva (aviso y barrido)
+      for (let round = 0; round < 2; round++) this.later(round * 2600, () => {
+        if (!alive()) return;
+        const dir = Math.random() < 0.5 ? 1 : -1, x0 = dir > 0 ? R[0] + 1 : R[2] - 1, x1 = dir > 0 ? R[2] - 1 : R[0] + 1, rows = [];
+        const tg = near(m.x, m.y, 20), want = 3 + (tg.length > 2 ? 1 : 0);
+        if (tg[0]) rows.push(tg[0].y);
+        for (let k = 0; k < 40 && rows.length < want; k++) { const y = rnd(R[1] + 5, R[3] - 2); if (rows.every((r) => Math.abs(r - y) >= 4)) rows.push(y); }
+        for (const y of rows) this.fx.push({ k: 'olw', x1: x0, x2: x1, y, h: 3 });
+        this.later(1100, () => {
+          const hit = new Set(); const n = Math.abs(x1 - x0);
+          for (let st = 0; st <= n; st += 1.4) this.later((st / 1.4) * 100, () => {
+            if (!alive()) return; const wx = x0 + dir * st;
+            for (const y of rows) {
+              this.fx.push({ k: 'ol', x: wx, y, h: 3, d: dir });
+              for (const q of this.players.values()) if (q.hp > 0 && !inTownP(q) && !hit.has(q.key + ':' + y) && Math.abs(q.y - y) <= 1.6 && Math.abs(q.x - wx) <= 1.6) { hit.add(q.key + ':' + y); this.hurtPlayer(q, rnd(200, 300), m, this.now, 'Ola'); }
+            }
+          });
+        });
+      });
+    } else if (kind === 'tornado') {                            // tornados que se multiplican y vagan por la cueva 15 s
+      let tn = []; const born = this.now;
+      const spawn = (x, y, a) => tn.push({ x, y, a, id: Math.random() });
+      for (let i = 0; i < 2; i++) { const a = Math.random() * 6.28; spawn(m.x, m.y + 2, a); }
+      for (const q of tn) this.fx.push({ k: 'twn', x: q.x, y: q.y });
+      const lastHit = new Map(); let step = 0;
+      const tick = () => {
+        if (!alive() || step > 37) return; step++; const nw = this.now;
+        if (step > 2 && step % 7 === 0 && tn.length < 18) for (const q of tn.slice()) { if (tn.length >= 18) break; spawn(q.x, q.y, q.a + Math.PI * (0.6 + Math.random() * 0.8)); }   // se multiplican
+        for (const q of tn) {
+          q.a += (Math.random() - 0.5) * 0.9;
+          const nx = q.x + Math.cos(q.a) * 1.15, ny = q.y + Math.sin(q.a) * 1.15, ix = Math.round(nx), iy = Math.round(ny);
+          if (ix > R[0] && ix < R[2] && iy > R[1] && iy < R[3] && world.isWalkable(ix, iy)) { q.x = nx; q.y = ny; } else q.a += Math.PI * (0.5 + Math.random());
+          this.fx.push({ k: 'wtn', x: q.x, y: q.y, id: q.id });
+          for (const pl of this.players.values()) if (pl.hp > 0 && !inTownP(pl) && Math.hypot(pl.x - q.x, pl.y - q.y) <= 1.5 && nw - (lastHit.get(pl.key) || 0) > 700) { lastHit.set(pl.key, nw); this.hurtPlayer(pl, rnd(75, 120), m, nw, 'Tornado marino'); }
+        }
+        this.later(400, tick);
+      };
+      this.later(700, tick);
+    } else {                                                    // escudo burbuja: inmune 5 s
+      m.shieldUntil = now + 5000;
+      for (let i = 0; i < 10; i++) this.later(i * 500, () => { if (alive()) this.fx.push({ k: 'bub', x: m.x, y: m.y }); });
+      this.later(5000, () => { if (alive()) { this.fx.push({ k: 'bubx', x: m.x, y: m.y }); m.shieldUntil = 0; } });
+    }
+  };
+  G0.hurtMonster = P.hurtMonster;
+  P.hurtMonster = function (m, dmg, p, now) {
+    if (m.shieldUntil > now) { if (!(m.shMsg > now)) { m.shMsg = now + 600; this.fx.push({ k: 'd', x: m.x, y: m.y, v: '🛡️ ¡Inmune!', c: 'x' }); } return; }
+    return G0.hurtMonster.call(this, m, dmg, p, now);
+  };
   G0.updateMonster = P.updateMonster;
   P.updateMonster = function (m, now) {
     G0.updateMonster.call(this, m, now);
@@ -965,6 +1050,7 @@ module.exports = function install(Game) {
     else if (m.def.special === 'angel' && !m.dead) this.angelAI(m, now);
     else if (m.def.special === 'titan' && !m.dead) this.titanAI(m, now);
     else if (m.def.special === 'spider' && !m.dead) this.spiderAI(m, now);
+    else if (m.def.special === 'leviathan' && !m.dead) this.leviathanAI(m, now);
   };
 
   /* ============================ ENGANCHES DE COMBATE ============================ */
