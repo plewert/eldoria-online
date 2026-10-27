@@ -128,9 +128,9 @@ const ANGEL = {
 };
 const SPIDER = {
   type: 'aracnido_fuego',
-  def: { name: 'Aracnídeo Fuego Negro', icon: '🕷️', lv: 650, hp: 380000, dmg: [230, 400], dmgK: 1.5, exp: 90000, move: 400, atkCd: 1300, aggro: 14, respawn: 60000, armor: 0.8, shared: true, boss: true, special: 'spider',
+  def: { name: 'Aracnídeo Fuego Negro', icon: '🕷️', lv: 650, hp: 380000, dmg: [230, 400], dmgK: 2.0, exp: 90000, move: 400, atkCd: 1300, aggro: 14, respawn: 60000, armor: 0.8, shared: true, boss: true, special: 'spider',
     gold: [16000, 26000], loot: [['trofeo_aracnido', 1, 1, 2], ['pocion_vida_g', 1, 5, 10], ['pocion_mana_g', 1, 5, 10], ['pluma_fenix', 0.5, 1, 2]] },
-  minion: { type: 'arana_fuego', def: { name: 'Araña de Fuego', icon: '🕷️', lv: 160, hp: 9000, dmg: [90, 150], exp: 400, move: 260, atkCd: 900, aggro: 16, respawn: 999999999, armor: 0.2, gold: [0, 0], loot: [] } },
+  minion: { type: 'arana_fuego', def: { name: 'Araña de Fuego', icon: '🕷️', lv: 160, hp: 9000, dmg: [160, 250], exp: 400, move: 260, atkCd: 900, aggro: 16, respawn: 999999999, armor: 0.2, gold: [0, 0], loot: [] } },
 };
 BOSS.mins = 12; BOSS.arena = [100, 107]; BOSS.icon = '🗿';
 const BOSSES = [BOSS];   // el dragón vive en su cueva (no es jefe de evento)

@@ -204,7 +204,7 @@ Al atacar con un arma cuerpo a cuerpo, el personaje balancea el arma con una est
 
 ## Aracnídeo Fuego Negro (jefe de cueva, Tierras de Lava)
 - **Guarida de telarañas** con forma de tela (anillos y radios) en las Tierras de Lava; entrada por el camino al sur del eje este (portal en 288,95). Suelo con telarañas y brasas animadas, paredes con vetas de lava.
-- Ataques: **zarpazo cuerpo a cuerpo**, **redes de telaraña de fuego** (círculo de aviso, daño, inmovilizan ~2 s y queman) e **invoca arañas de fuego** (hasta 8, desaparecen a los 45 s o al morir el jefe). Datos en `game/spider.js`, IA en `spiderAI` (`game/ext.js`).
+- Ataques: **zarpazo cuerpo a cuerpo (daño ×2 sobre el base)**, **redes de telaraña de fuego** (círculo de aviso, daño, inmovilizan ~2 s y queman) e **invoca arañas de fuego** (hasta 8, desaparecen a los 45 s o al morir el jefe). Datos en `game/spider.js`, IA en `spiderAI` (`game/ext.js`).
 - Botín raro: Rastreador Ciego, Silbato Silencioso, Brazal de Garra, Pantalón de Fuego Negro, Botas de Garra, Cierre de Garra, Reserva Ígnea (carcaj) (4–6 % base) y Llama del Viento (gran espada), Garras de Fuego Negro y Arco Largo Llama del Viento (0,5 %).
 
 ## Tabletas de teletransporte

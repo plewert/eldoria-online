@@ -943,9 +943,9 @@ module.exports = function install(Game) {
           this.fx.push({ k: 'wb', x, y, r: 2.4 });
           const hit = near(x, y, 2.4);
           for (const q of hit) {
-            this.hurtPlayer(q, rnd(300, 440), m, this.now, 'Red de fuego');
+            this.hurtPlayer(q, rnd(480, 700), m, this.now, 'Red de fuego');
             q.nextMove = Math.max(q.nextMove || 0, this.now + 2200);                                  // atrapado en la telaraña
-            for (let i = 1; i <= 3; i++) this.later(800 * i, () => { if (alive() && q.hp > 0 && this.players.get(q.key) === q) { this.fx.push({ k: 'burn', x: q.x, y: q.y }); this.hurtPlayer(q, rnd(45, 80), m, this.now, 'Telaraña ardiente'); } });
+            for (let i = 1; i <= 3; i++) this.later(800 * i, () => { if (alive() && q.hp > 0 && this.players.get(q.key) === q) { this.fx.push({ k: 'burn', x: q.x, y: q.y }); this.hurtPlayer(q, rnd(85, 130), m, this.now, 'Telaraña ardiente'); } });
           }
         }
       });
