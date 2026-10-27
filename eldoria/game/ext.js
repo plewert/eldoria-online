@@ -991,7 +991,7 @@ module.exports = function install(Game) {
       for (let i = 0; i < 3; i++) this.later(1000 + i * 520, () => {
         if (!alive()) return; [dx, dy] = aim(); const [ox, oy] = mouth(), nw = this.now;
         this.fx.push({ k: 'bm', x1: ox, y1: oy, x2: ox + dx * 18, y2: oy + dy * 18 });
-        for (const q of this.players.values()) { const rx = q.x - ox, ry = q.y - oy, sd = rx * dx + ry * dy, perp = Math.abs(rx * dy - ry * dx); if (q.hp > 0 && !inTownP(q) && sd >= 0.5 && sd <= 18.5 && perp <= 1.5) this.hurtPlayer(q, rnd(190, 280), m, nw, 'Rayo de agua'); }
+        for (const q of this.players.values()) { const rx = q.x - ox, ry = q.y - oy, sd = rx * dx + ry * dy, perp = Math.abs(rx * dy - ry * dx); if (q.hp > 0 && !inTownP(q) && sd >= 0.5 && sd <= 18.5 && perp <= 1.5) this.hurtPlayer(q, rnd(250, 370), m, nw, 'Rayo de agua'); }
       });
     } else if (kind === 'wave') {                               // olas: franjas de agua que cruzan la cueva (aviso y barrido)
       for (let round = 0; round < 2; round++) this.later(round * 2600, () => {
@@ -1007,7 +1007,7 @@ module.exports = function install(Game) {
             if (!alive()) return; const wx = x0 + dir * st;
             for (const y of rows) {
               this.fx.push({ k: 'ol', x: wx, y, h: 3, d: dir });
-              for (const q of this.players.values()) if (q.hp > 0 && !inTownP(q) && !hit.has(q.key + ':' + y) && Math.abs(q.y - y) <= 1.6 && Math.abs(q.x - wx) <= 1.6) { hit.add(q.key + ':' + y); this.hurtPlayer(q, rnd(150, 230), m, this.now, 'Ola'); }
+              for (const q of this.players.values()) if (q.hp > 0 && !inTownP(q) && !hit.has(q.key + ':' + y) && Math.abs(q.y - y) <= 1.6 && Math.abs(q.x - wx) <= 1.6) { hit.add(q.key + ':' + y); this.hurtPlayer(q, rnd(200, 300), m, this.now, 'Ola'); }
             }
           });
         });
@@ -1026,7 +1026,7 @@ module.exports = function install(Game) {
           const nx = q.x + Math.cos(q.a) * 1.15, ny = q.y + Math.sin(q.a) * 1.15, ix = Math.round(nx), iy = Math.round(ny);
           if (ix > R[0] && ix < R[2] && iy > R[1] && iy < R[3] && world.isWalkable(ix, iy)) { q.x = nx; q.y = ny; } else q.a += Math.PI * (0.5 + Math.random());
           this.fx.push({ k: 'wtn', x: q.x, y: q.y, id: q.id });
-          for (const pl of this.players.values()) if (pl.hp > 0 && !inTownP(pl) && Math.hypot(pl.x - q.x, pl.y - q.y) <= 1.5 && nw - (lastHit.get(pl.key) || 0) > 700) { lastHit.set(pl.key, nw); this.hurtPlayer(pl, rnd(55, 90), m, nw, 'Tornado marino'); }
+          for (const pl of this.players.values()) if (pl.hp > 0 && !inTownP(pl) && Math.hypot(pl.x - q.x, pl.y - q.y) <= 1.5 && nw - (lastHit.get(pl.key) || 0) > 700) { lastHit.set(pl.key, nw); this.hurtPlayer(pl, rnd(75, 120), m, nw, 'Tornado marino'); }
         }
         this.later(400, tick);
       };
