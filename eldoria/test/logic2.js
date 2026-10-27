@@ -439,6 +439,15 @@ ok('Aracnídeo Fuego Negro: guarida de telarañas en la zona de lava, set raro y
   const sj = require('../public/sprites.json'); assert.ok(sj.aracnido_fuego.f.length >= 6 && sj.arana_fuego.f.length >= 4);
 });
 
+ok('tabletas de teletransporte: Boris las vende a 100k y llevan a la zona', () => {
+  const SH = require('../game/data').SHOPS; assert.equal(ITEMS.tp_lava.price, 100000); assert.ok(SH.boris.includes('tp_lava') && SH.boris.includes('tp_ciudad'));
+  const { p, ws } = login('Tab1'); place(p, ...TOWN); p.inv[0] = I.mk('tp_lava', 2); p.pvpLock = 0; game.now = T0 + 5;
+  game.handle(p, { t: 'use', s: 0 });
+  assert.equal(zoneOf([p.x, p.y]).id, 'volcan'); assert.equal(p.inv[0].qty, 1, 'se gasta una');
+  place(p, ...TOWN); p.pvpLock = game.now + 5000; game.handle(p, { t: 'use', s: 0 });
+  assert.equal(zoneOf([p.x, p.y]).id, 'ciudad', 'no se puede usar en combate'); assert.equal(p.inv[0].qty, 1);
+});
+
 console.log(`\n${n} pruebas correctas`);
 try { require('fs').unlinkSync(store.file); } catch (e) { /* nada */ }
 

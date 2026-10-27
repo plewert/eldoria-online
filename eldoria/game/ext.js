@@ -606,6 +606,19 @@ module.exports = function install(Game) {
       p.ext.mount = p.ext.mount === it.id ? '' : it.id; if (p.ext.mount) p.ext.hadMount = 1;
       this.msg(p, p.ext.mount ? `Montas ${d.name}.` : 'Desmontas.', 's'); this.checkAch(p); return;
     }
+    if (d && d.type === 'tablet') {                                 // teletransporte de un solo uso
+      if (this.now < p.pvpLock) { this.msg(p, '¡Estás en combate! No puedes usar la tableta todavía.', 's'); return; }
+      const [tx, ty] = d.dest; const ox = p.x, oy = p.y;
+      const spots = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [2, 0], [-2, 0]]
+        .map(([dx, dy]) => [tx + dx, ty + dy]).filter(([x, y]) => world.isWalkable(x, y) && !this.pgrid.has(kxy(x, y)) && !this.mgrid.has(kxy(x, y)));
+      if (!spots.length) { this.msg(p, 'El destino está ocupado, inténtalo de nuevo.', 's'); return; }
+      this.fx.push({ k: 'tpo', x: ox, y: oy });
+      this.pgrid.delete(kxy(ox, oy)); p.x = spots[0][0]; p.y = spots[0][1]; this.pgrid.set(kxy(p.x, p.y), p);
+      p.tpSeq++; p.target = null; p.pend = null;
+      this.fx.push({ k: 'tpi', x: p.x, y: p.y });
+      it.qty--; if (it.qty <= 0) p.inv[slot | 0] = null; p.dirty.inv = true;
+      this.msg(p, `Te teletransportas: ${zoneAt(p.x, p.y).name}.`, 's'); return;
+    }
     if (d && d.buff) {
       if ((d.minLevel || 1) > p.level) { this.msg(p, `Necesitas nivel ${d.minLevel} para usar ${d.name}.`, 's'); return; }
       if (this.now < p.nextPotion) return;

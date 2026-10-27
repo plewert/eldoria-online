@@ -769,6 +769,7 @@
       case 'wb': AF.push({ k: 'wb', t: now, T: 2400, f, s: Math.random() * 9 }); X.burst(f.x, f.y, 'fire', 22, { sp: 4, up: 3, g: 4, life: 0.8, size: 3 }); X.ring(f.x, f.y, 'fire', 420, f.r * 26, 4); G.shake = { t: now, m: 3 }; break;
       case 'spw': AF.push({ k: 'spw', t: now, T: 900, f }); break;
       case 'sp': AF.push({ k: 'sp', t: now, T: 700, f }); X.burst(f.x, f.y, 'fire', 18, { sp: 4, up: 4, g: 5, life: 0.6, size: 3 }); X.ring(f.x, f.y, 'fire', 380, 24, 3); break;
+      case 'tpo': case 'tpi': AF.push({ k: f.k, t: now, T: 900, f }); X.burst(f.x, f.y, 'arcane', 26, { sp: 4, up: 5, g: 2, life: 0.8, size: 3 }); X.ring(f.x, f.y, 'arcane', 600, 34, 5); break;
       case 'tn': AF.push({ k: 'tn', t: now, T: 560, f }); break;
       case 'nvw': AF.push({ k: 'nvw', t: now, T: 1300, f }); break;
       case 'nv': AF.push({ k: 'nv', t: now, T: 700, f }); X.ring(f.x, f.y, 'arcane', 650, f.r * 36, 6); X.burst(f.x, f.y, 'arcane', 36, { sp: 6, up: 5, g: 3, life: 0.9, size: 3.4 }); G.shake = { t: now, m: 7 }; X.sfx && X.sfx('boss'); break;
@@ -824,7 +825,12 @@
     const TS = X.TS;
     for (const b of AF) {
       const p = Math.max(0, (now - b.t) / b.T); if (p >= 1) continue; const f = b.f, x = px(f.x), y = py(f.y);
-      if (b.k === 'frw') {                                  // bola de fuego que cae con estela
+      if (b.k === 'tpo' || b.k === 'tpi') {                   // columna de luz del teletransporte
+        const al = b.k === 'tpo' ? 1 - p : Math.min(1, (1 - p) * 1.6), r = TS * (b.k === 'tpo' ? 0.7 + p * 0.6 : 1.3 - p * 0.6); c.save(); c.globalCompositeOperation = 'lighter';
+        const g = c.createLinearGradient(0, y - 130, 0, y + 6); g.addColorStop(0, 'rgba(160,120,255,0)'); g.addColorStop(1, `rgba(210,190,255,${0.8 * al})`);
+        c.fillStyle = g; c.fillRect(x - r * 0.45, y - 130, r * 0.9, 136);
+        c.strokeStyle = `rgba(230,215,255,${al})`; c.lineWidth = 2; c.beginPath(); c.ellipse(x, y + 4, r, r * 0.45, 0, 0, 7); c.stroke(); c.restore();
+      } else if (b.k === 'frw') {                                  // bola de fuego que cae con estela
         const fy = y - (1 - p) * 230 - 6;
         c.save(); c.globalCompositeOperation = 'lighter';
         const g = c.createLinearGradient(x + 18 * (1 - p), fy - 50, x, fy); g.addColorStop(0, 'rgba(255,80,0,0)'); g.addColorStop(1, 'rgba(255,170,40,.8)');
