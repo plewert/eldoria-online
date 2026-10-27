@@ -350,3 +350,26 @@ ol.rank li.me { color: #ffd96a; }
 .coltile.on { border-color: var(--brass); } .coltile.on .ico { filter: none; }
 .coltile small { color: var(--muted); line-height: 1.15; } .coltile.on small { color: var(--bone); }
 .coltile b { position: absolute; right: 4px; top: 2px; color: #f2d27a; font-size: 11px; }
+
+.colnew { position: absolute; top: 90px; left: 50%; transform: translateX(-50%); z-index: 8; display: flex; align-items: center; gap: 12px; padding: 10px 18px 10px 12px; background: linear-gradient(180deg, rgba(48, 36, 12, .95), rgba(24, 16, 6, .95)); border: 1px solid #e0b64a; color: #ffe9b0; box-shadow: 0 0 28px rgba(224, 182, 74, .55), 0 6px 24px rgba(0, 0, 0, .6); animation: colin .5s ease-out; pointer-events: none; transition: opacity .6s; }
+.colnew.out { opacity: 0; }
+.colnew .ico { width: 44px; height: 44px; display: grid; place-items: center; background: rgba(0, 0, 0, .4); border: 1px solid #a98532; font-size: 28px; }
+.colnew .ico canvas, .colnew .ico img { max-width: 40px; max-height: 40px; }
+.colnew .ct { display: grid; gap: 2px; text-align: left; }
+.colnew small { color: #ffd56b; font: 11px var(--sans); letter-spacing: .06em; text-transform: uppercase; }
+.colnew b { font: 15px var(--serif); color: #fff3cf; }
+@keyframes colin { from { opacity: 0; transform: translate(-50%, -16px) scale(.9); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+
+/* pesca */
+.fishgame { position: fixed; left: 50%; bottom: 120px; transform: translateX(-50%); z-index: 9; width: min(420px, 92vw); padding: 10px 14px 8px; display: grid; gap: 6px; text-align: center; background: rgba(10, 22, 34, .92); border: 1px solid #3f79a8; color: #cfe8ff; font: 13px var(--sans); box-shadow: 0 6px 24px rgba(0, 0, 0, .55); }
+.fishgame.bite { border-color: #ffd05a; box-shadow: 0 0 22px rgba(255, 208, 90, .45), 0 6px 24px rgba(0, 0, 0, .55); }
+.fishgame.won { border-color: #5ad08a; color: #bff5d0; } .fishgame.lost { border-color: #d0624a; color: #ffc9be; }
+.fishgame .fgt { font-weight: 600; } .fishgame .fgh { color: #86a9c4; }
+.fgbar { position: relative; height: 26px; background: #0a1520; border: 1px solid #3f79a8; cursor: pointer; overflow: hidden; }
+.fgzone { position: absolute; top: 0; bottom: 0; background: rgba(80, 220, 120, .55); border-left: 2px solid #8dffb0; border-right: 2px solid #8dffb0; }
+.fgmark { position: absolute; top: -2px; bottom: -2px; width: 4px; margin-left: -2px; background: #fff; box-shadow: 0 0 8px #fff; }
+.fbarx { height: 10px; background: var(--ink); border: 1px solid var(--edge); margin: 4px 0 8px; } .fbarf { height: 100%; background: linear-gradient(90deg, #2f86c9, #6fd0ff); }
+.fhint { color: var(--bone); opacity: .8; font-size: 12px; line-height: 1.45; } .frow { margin: 3px 0; font-size: 13px; } .fok { color: #9ee8b4; } .flock { color: #7d8794; }
+
+.fgico { display: inline-block; vertical-align: middle; margin-right: 6px; } .fgico canvas, .fgico img { width: 36px; height: 36px; image-rendering: auto; }
+.fricon { display: inline-block; vertical-align: middle; width: 30px; height: 22px; margin-right: 6px; } .fricon canvas, .fricon img { width: 30px; height: 30px; margin-top: -4px; }

@@ -19,13 +19,14 @@
   if (location.hash === '#debug') { window.__eld = G; G.renderInv = () => renderInv(); G.openShop = (m) => openShop(m); }
   let ws = null, joined = false, wantMode = 'login';
   /* Ganchos para los módulos extra (audio, clima, táctil, misiones, social...) */
-  const HK = { msg: [], fx: [], snap: [], draw: [], under: [], click: [], key: [], chat: [], inv: [], stats: [] };
+  const HK = { msg: [], fx: [], snap: [], draw: [], under: [], click: [], key: [], chat: [], inv: [], stats: [], ctx: [] };
   const EXT = (window.EldExt = {
     G, el, $, store, joy: { dx: 0, dy: 0 }, handlers: {},
     on(n, f) { HK[n].push(f); },
     msg(m) { for (const f of HK.msg) f(m); }, fx(f) { for (const h of HK.fx) h(f); }, snap(m) { for (const f of HK.snap) f(m); },
     draw(c, now, cw, ch, dt, tx, ty) { for (const f of HK.draw) f(c, now, cw, ch, dt, tx, ty); },
     under(c, now, cw, ch) { for (const f of HK.under) f(c, now, cw, ch); }, click(t, ev) { return HK.click.some((f) => f(t, ev)); },
+    ctx(t) { for (const f of HK.ctx) { const r = f(t); if (r) return r; } return null; },
     key(k, ev) { return HK.key.some((f) => f(k, ev)); }, chat(m) { for (const f of HK.chat) f(m); },
     inv(m) { for (const f of HK.inv) f(m); }, stats(m) { for (const f of HK.stats) f(m); },
   });
@@ -293,6 +294,7 @@
     } else tp.hidden = true;
   }
 
+  const fishRow = () => { const f = G.fish; return f ? [f.lv, f.xp, f.lo, f.hi > f.lo ? f.hi : f.lo + 1] : [1, 0, 0, 1]; };
   function renderStats() {
     const s = G.stats; if (!s) return;
     const me = G.ents.get(G.id);
@@ -302,10 +304,11 @@
     $('#txpTxt').textContent = `${fmt(s.xp - s.xpLo)} / ${fmt(s.xpHi - s.xpLo)}`;
     $('#gold').textContent = fmt(s.gold); $('#defTxt').textContent = `Defensa ${s.def}`;
     document.querySelectorAll('#skills li').forEach((li) => {
-      const k = li.dataset.sk, [lv, xp, lo, hi] = s.sk[k];
+      const k = li.dataset.sk, [lv, xp, lo, hi] = k === 'fish' ? fishRow() : s.sk[k];
       li.querySelector('b').textContent = lv;
       li.querySelector('.bar i').style.width = pct(xp - lo, hi - lo);
       li.classList.toggle('on', s.style === k);
+      if (k === 'fish') li.querySelector('.bar i').style.width = pct(Math.min(xp, hi) - lo, hi - lo);
     });
     document.querySelectorAll('#hotbar [data-style]').forEach((b) => b.classList.toggle('on', s.style === b.dataset.style));
     updateHud();
@@ -667,7 +670,10 @@
   const mk = (fn) => { const c = document.createElement('canvas'); c.width = c.height = TS; const g = c.getContext('2d'); fn(g); return c; };
   const dot = (g, c, x, y, w = 2, h = 2) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
 
+  const trImg = new Image(); let TJ = null;
+  const trReady = () => TJ && trImg.complete && trImg.naturalWidth > 0;
   const grass = (v) => mk((g) => {
+    if (trReady()) { const f = TJ['grass' + (v % 4)]; g.drawImage(trImg, f[0], f[1], f[2], f[3], 0, 0, TS, TS); return; }
     const r = seeded(100 + v); g.fillStyle = '#3d6a38'; g.fillRect(0, 0, TS, TS);
     for (let i = 0; i < 26; i++) dot(g, r() < 0.5 ? '#477a41' : '#335c31', (r() * 16 | 0) * 2, (r() * 16 | 0) * 2);
     for (let i = 0; i < 5; i++) dot(g, '#5c9552', (r() * 16 | 0) * 2, (r() * 14 | 0) * 2, 2, 4);
@@ -678,7 +684,8 @@
     for (let i = 0; i < 6; i++) { const x = ((r() * 12 | 0) * 2 + f * 6) % 28, y = (r() * 15 | 0) * 2; dot(g, '#3a77a3', x, y, 8, 2); }
     for (let i = 0; i < 3; i++) dot(g, '#1f4a6b', (r() * 14 | 0) * 2, (r() * 15 | 0) * 2, 6, 2);
   });
-  const withGrass = (v, fn) => mk((g) => { g.drawImage(grass(v), 0, 0); fn(g); });
+  let FG = false;      // true: genera solo la copa/tronco (sin fondo) para poder animarla
+  const withGrass = (v, fn) => mk((g) => { if (!FG) g.drawImage(grass(v), 0, 0); fn(g); });
   const tree = (v) => withGrass(v, (g) => {
     dot(g, 'rgba(0,0,0,.25)', 7, 25, 18, 5);
     dot(g, '#5a3b22', 14, 18, 4, 11); dot(g, '#46301b', 14, 18, 1, 11);
@@ -745,7 +752,7 @@
     g.drawImage(grass(v), 0, 0); g.fillStyle = 'rgba(190,170,70,.22)'; g.fillRect(0, 0, TS, TS);
     const r = seeded(1700 + v); for (let i = 0; i < 6; i++) dot(g, '#c9b14d', (r() * 16 | 0) * 2, (r() * 16 | 0) * 2, 2, 3);
   });
-  const onTile = (bg, v, fn) => mk((g) => { g.drawImage(bg(v), 0, 0); fn(g); });
+  const onTile = (bg, v, fn) => mk((g) => { if (!FG) g.drawImage(bg(v), 0, 0); fn(g); });
   const palm = (v) => onTile(sand, v, (g) => {
     dot(g, 'rgba(0,0,0,.2)', 8, 25, 16, 4);
     g.strokeStyle = '#7a5a30'; g.lineWidth = 3; g.beginPath(); g.moveTo(15, 28); g.quadraticCurveTo(19, 18, 16, 9); g.stroke();
@@ -820,7 +827,7 @@
     g.strokeStyle = 'rgba(255,255,255,.5)'; g.beginPath(); g.moveTo(4, 28); g.lineTo(14, 18); g.stroke();
   }); };
 
-  const TEX = {
+  const buildTEX = () => ({
     grass: [0, 1, 2, 3].map(grass), water: [water(0), water(1)],
     tree: [0, 1].map(tree), rock: [0, 1].map(rock),
     flower: [flower(0, '#e86a8a'), flower(1, '#f0d26a'), flower(2, '#b894f0')],
@@ -829,8 +836,77 @@
     sand: [0, 1, 2, 3].map(sand), snow: [0, 1, 2, 3].map(snow), dune: [0, 1, 2, 3].map(dune), swamp: [0, 1, 2, 3].map(swamp), bog: [bog(0), bog(1)], hill: [0, 1, 2, 3].map(hill),
     palm: [0, 1].map(palm), pine: [0, 1].map(pine), dead: [0, 1].map(dead), cactus: [0, 1].map(cactus), ice: [0, 1].map(ice),
     mfloor: [0, 1, 2, 3].map(mfloor), pfloor: [0, 1, 2, 3].map(pfloor), ifloor: [0, 1, 2, 3].map(ifloor), cfloor: [0, 1, 2, 3].map(cfloor), lava: [lava(0), lava(1)], obsid: [0, 1, 2].map(obsid), ash: [0, 1, 2, 3].map(ash), cwall: [0, 1, 2].map(cwall),
-  };
+  });
+  const buildFG = () => { FG = true; const o = { tree: [0, 1].map(tree), palm: [0, 1].map(palm), pine: [0, 1].map(pine), dead: [0, 1].map(dead) }; FG = false; return o; };
+  let TEX = buildTEX(), TEXFG = buildFG();
+  const FOREST = ['big1', 'big2', 'big3', 'oak', 'round', 'oak', 'big1', 'round', 'grove', 'apple', 'orange', 'blossom', 'big3', 'big2'];
+  trImg.onload = () => { if (TJ) { TEX = buildTEX(); TEXFG = buildFG(); } };
+  trImg.src = 'trees.png';
+  fetch('trees.json').then((r) => r.json()).then((j) => { TJ = j; if (trImg.complete && trImg.naturalWidth) { TEX = buildTEX(); TEXFG = buildFG(); } }).catch(() => {});
+  const SWAY = { [TILE.TREE]: ['tree', 'grass', 0.085], [TILE.PALM]: ['palm', 'sand', 0.12], [TILE.PINE]: ['pine', 'snow', 0.055], [TILE.DEADTREE]: ['dead', 'swamp', 0.035] };
   const hash = (x, y) => { let h = (x * 374761393 + y * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177; return (h ^ (h >>> 16)) >>> 0; };
+
+  /* ---- árboles nuevos (sprites) y pasto con viento ---- */
+  function drawNewTree(c, x, y, t, now) {
+    const h = hash(x, y), name = t === TILE.DEADTREE ? 'dead' : FOREST[h % FOREST.length], f = TJ[name]; if (!f) return;
+    const sx = sxOf(x), sy = syOf(y), bx = sx + TS / 2, by = sy + TS - 2;
+    c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(bx, by - 1, f[2] * 0.3, 4, 0, 0, 7); c.fill();
+    const ph = (h % 628) / 100, gust = Math.sin(now / 2300 + x * 0.35 + y * 0.2);
+    const k = (Math.sin(now / 780 + ph) * 0.55 + gust * 0.9) * (name === 'dead' ? 0.02 : name === 'grove' ? 0.045 : 0.05);
+    c.save(); c.translate(bx, by); c.transform(1, 0, k, 1 + Math.sin(now / 560 + ph) * 0.007, 0, 0);
+    c.drawImage(trImg, f[0], f[1], f[2], f[3], -Math.round(f[2] / 2), -f[3], f[2], f[3]); c.restore();
+    if (name !== 'dead' && (h & 7) === 0 && now - lastLeaf > 380) { lastLeaf = now; G.leaves.push({ x: x + 0.2 + Math.random() * 0.6, y: y - 0.6 + Math.random() * 0.4, t: now, p: Math.random() * 6 }); }
+  }
+  function grassBlades(c, x, y, sx, sy, now) {
+    const h = hash(x, y), n = 3 + (h & 1), g = Math.sin(now / 2100 + x * 0.4 + y * 0.25);
+    c.lineWidth = 1.5; c.lineCap = 'round';
+    for (let pass = 0; pass < 2; pass++) {
+      c.strokeStyle = pass ? '#7fbf5c' : '#2f6a33'; c.beginPath();
+      for (let i = pass; i < n; i += 2) {
+        const bx = sx + 4 + ((h >> (i * 3)) % 24), by = sy + 8 + ((h >> (i * 3 + 2)) % 20), bh = 4 + ((h >> i) & 3);
+        const sw = Math.sin(now / 600 + i * 1.7 + x + y * 0.7) * 1.3 + g * 2;
+        c.moveTo(bx, by); c.quadraticCurveTo(bx + sw * 0.4, by - bh * 0.6, bx + sw, by - bh);
+      }
+      c.stroke();
+    }
+    c.lineCap = 'butt';
+  }
+
+  /* ---- agua viva: olas que fluyen, destellos y espuma en las orillas ---- */
+  let lastLeaf = 0; G.leaves = [];
+  function drawWater(c, x, y, sx, sy, now) {
+    c.drawImage(TEX.water[0], sx, sy);
+    const T = G.tiles, W = G.W;
+    for (let k = 0; k < 3; k++) {
+      const dir = k === 1 ? -1 : 1, len = 10 + k * 3;
+      const px = (((x * 32 + y * 11 * (k + 1) + k * 37 + now * 0.014 * dir) % 64) + 64) % 64 - 16;
+      const py = 5 + k * 10 + ((y * 7 + x * 3 + k) % 3);
+      const a = 0.14 + 0.22 * Math.max(0, Math.sin(now / 900 + x * 0.9 + y * 0.6 + k * 2));
+      if (px > -len && px < TS) { const x0 = Math.max(0, px), x1 = Math.min(TS, px + len); c.fillStyle = `rgba(170,215,240,${a})`; c.fillRect(sx + x0, sy + py, x1 - x0, 2); c.fillStyle = `rgba(20,60,95,${a * 0.9})`; c.fillRect(sx + x0 + 2, sy + py + 2, Math.max(0, x1 - x0 - 3), 1); }
+    }
+    const hs = hash(x + (now / 520 | 0), y * 3);
+    if ((hs & 15) === 0) { c.fillStyle = 'rgba(255,255,255,.75)'; c.fillRect(sx + (hs >> 5) % 28 + 1, sy + (hs >> 9) % 28 + 1, 2, 2); }
+    const wt = (xx, yy) => xx >= 0 && yy >= 0 && xx < W && yy < G.H && T[yy * W + xx] === TILE.WATER;
+    const ph = now / 520 + x * 1.7 + y * 1.3;
+    c.fillStyle = 'rgba(235,248,255,.55)';
+    if (!wt(x, y - 1)) for (let i = 0; i < TS; i += 4) c.fillRect(sx + i, sy, 4, 1.5 + Math.sin(ph + i * 0.4) * 1.2 + 1.2);
+    if (!wt(x, y + 1)) for (let i = 0; i < TS; i += 4) c.fillRect(sx + i, sy + TS - 2.5 - Math.sin(ph + i * 0.4 + 2) * 1.2, 4, 2.5 + Math.sin(ph + i * 0.4 + 2) * 1.2);
+    if (!wt(x - 1, y)) for (let i = 0; i < TS; i += 4) c.fillRect(sx, sy + i, 1.5 + Math.sin(ph + i * 0.4 + 1) * 1.2 + 1.2, 4);
+    if (!wt(x + 1, y)) for (let i = 0; i < TS; i += 4) c.fillRect(sx + TS - 2.5 - Math.sin(ph + i * 0.4 + 3) * 1.2, sy + i, 2.5 + Math.sin(ph + i * 0.4 + 3) * 1.2, 4);
+  }
+  function drawLeaves(c, now) {
+    const L = G.leaves;
+    for (let i = L.length - 1; i >= 0; i--) {
+      const l = L[i], a = (now - l.t) / 1000;
+      if (a > 6) { L.splice(i, 1); continue; }
+      const lx = l.x + a * 0.55 + Math.sin(a * 2.2 + l.p) * 0.25, ly = l.y + a * 0.28 + Math.abs(Math.sin(a * 1.4 + l.p)) * 0.1;
+      c.globalAlpha = Math.min(1, (6 - a) / 1.5);
+      c.fillStyle = (i & 1) ? '#7fb85a' : '#c9b14d';
+      c.save(); c.translate(sxOf(lx), syOf(ly)); c.rotate(a * 3 + l.p); c.fillRect(-2, -1, 4, 2); c.restore();
+      c.globalAlpha = 1;
+    }
+    if (L.length > 40) L.splice(0, L.length - 40);
+  }
 
   function texFor(t, x, y, frame) {
     const h = hash(x, y);
@@ -951,7 +1027,7 @@
     const q = e.q || [], D = (i) => (q[i] && G.items[q[i]]) || null;
     return { wid: q[0] || '', hid: q[1] || '', bid: q[2] || '', sid: q[3] || '', aid: q[4] || '', r1: q[5] || '', r2: q[6] || '', btid: q[7] || '', glid: q[8] || '', lgid: q[9] || '', bootid: q[10] || '', w: D(0) };
   };
-  const JEWEL = { hueso: '#ece6d2', jade: '#4cd18a', vigor: '#e0503b', dragon: '#f08a2e', sol: '#ffd96a', abismo: '#9a4aff', faraon: '#4aa8ff', cobre: '#d98a4a', fuerza: '#e86a3a', vida: '#e0503b', mana: '#5aa8ff', plata: '#dfe6ee', rubi: '#ff3a4a', sangre: '#b0102a', hielo: '#9fe4ff' };
+  const JEWEL = { sombra: '#9a6ad8', hueso: '#ece6d2', jade: '#4cd18a', vigor: '#e0503b', dragon: '#f08a2e', sol: '#ffd96a', abismo: '#9a4aff', faraon: '#4aa8ff', cobre: '#d98a4a', fuerza: '#e86a3a', vida: '#e0503b', mana: '#5aa8ff', plata: '#dfe6ee', rubi: '#ff3a4a', sangre: '#b0102a', hielo: '#9fe4ff' };
   const jewelCol = (id) => { for (const k of Object.keys(JEWEL)) if (id.includes(k)) return JEWEL[k]; return '#ffd96a'; };
 
   function wKind(id, d) {
@@ -1585,11 +1661,29 @@
     const y0 = Math.floor(G.cam.y - ch / 2 / TS) - 1, y1 = Math.ceil(G.cam.y + ch / 2 / TS) + 1;
 
     // terreno
+    const treeList = [];
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
       if (x < 0 || y < 0 || x >= G.W || y >= G.H) continue;
       const t = G.tiles[y * G.W + x];
-      c.drawImage(texFor(t, x, y, frameW), sxOf(x), syOf(y));
+      const sx = sxOf(x), sy = syOf(y), sw = SWAY[t], nt = trReady() && (t === TILE.TREE || t === TILE.DEADTREE);
+      if (nt) {                                                   // árboles nuevos: se dibujan después, por encima del terreno
+        c.drawImage(t === TILE.TREE ? TEX.grass[hash(x, y) % 4] : TEX.swamp[hash(x, y) % 4], sx, sy);
+        treeList.push(x, y, t);
+      } else if (t === TILE.GRASS) {
+        c.drawImage(TEX.grass[hash(x, y) % 4], sx, sy);
+        if (hash(x * 3 + 1, y * 7) % 3 === 0) grassBlades(c, x, y, sx, sy, now);
+      } else if (sw) {                                                   // árboles que se mecen con el viento
+        const h = hash(x, y), v = h % 2;
+        c.drawImage(TEX[sw[1]][v], sx, sy);
+        const gust = Math.sin(now / 2300 + x * 0.35 + y * 0.2), ph = (h % 628) / 100;
+        const k = (Math.sin(now / 760 + ph) * 0.6 + gust * 0.9) * sw[2];
+        c.save(); c.translate(sx + 16, sy + 29); c.transform(1, 0, k, 1 + Math.sin(now / 520 + ph) * 0.006, 0, 0); c.drawImage(TEXFG[sw[0]][v], -16, -29); c.restore();
+        if (t === TILE.TREE && (h & 7) === 0 && now - lastLeaf > 380) { lastLeaf = now; G.leaves.push({ x: x + 0.3 + Math.random() * 0.4, y: y + 0.2 + Math.random() * 0.3, t: now, p: Math.random() * 6 }); }
+      } else if (t === TILE.WATER) drawWater(c, x, y, sx, sy, now);
+      else c.drawImage(texFor(t, x, y, frameW), sx, sy);
     }
+    for (let i = 0; i < treeList.length; i += 3) drawNewTree(c, treeList[i], treeList[i + 1], treeList[i + 2], now);
+    drawLeaves(c, now);
     // zonas PvP: velo rojizo y borde donde termina la zona segura
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
       if (x < 0 || y < 0 || x >= G.W || y >= G.H || !zoneAt(x, y).pvp) continue;
@@ -1812,7 +1906,7 @@
         }
         if (gt.n > gt.it.length) rows.push({ label: '… y más objetos (pisa la casilla)', fn: () => walkTo(gt.x, gt.y) });
         if (rows.length > 1) openCtx(ev, rows);
-      }
+      } else { const xr = EXT.ctx(tl); if (xr) openCtx(ev, xr); }
       return;
     }
     if (e.kind === 'mo') { const d = G.mons[e.t]; if (!d) return; openCtx(ev, [{ hdr: d.name, color: d.boss ? '#ff9c80' : null }, { label: 'Ver botín y datos', fn: () => showDrops(e.t) }, { label: 'Atacar', fn: () => send({ t: 'target', id: e.id }) }]); }

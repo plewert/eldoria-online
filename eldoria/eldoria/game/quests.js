@@ -16,6 +16,11 @@ const QUESTS = [
   { id: 'necro',     npc: 'orin',  lv: 10, title: 'Polvo de necrófago',     desc: 'Mata a 10 necrófagos y trae su polvo.', type: 'kill', mon: 'necrofago', n: 10, reward: { g: 900, xp: 2200, items: [['tunica_bruma', 1], ['libro_aprendiz', 1]] }, after: 'huesos' },
   { id: 'dragon',    npc: 'orin',  lv: 28, title: 'La escama del dragón',   desc: 'Entrégame 2 escamas de dragón: el mago que las posea será poderoso.', type: 'collect', item: 'escama_dragon', n: 2, reward: { g: 6000, xp: 9000, items: [['orbe_cristal', 1]] } },
   { id: 'reina',     npc: 'orin',  lv: 45, title: 'El corazón de la Reina', desc: 'Derrota a la Reina de Hielo en la Fortaleza helada.', type: 'kill', mon: 'reina_hielo', n: 1, reward: { g: 20000, xp: 40000, items: [['corona_gemas', 1], ['mascota_fantasma', 1]] } },
+  // ---- Nilo el Pescador ----
+  { id: 'pesca1', npc: 'nilo', lv: 1,  title: 'Primeras capturas',   desc: 'Cómprate una caña y pesca 10 sardinas en el río.', type: 'collect', item: 'sardina', n: 10, reward: { g: 150, xp: 120, items: [['cebo', 10]] } },
+  { id: 'pesca2', npc: 'nilo', lv: 12, title: 'Salmones del norte',  desc: 'Tráeme 8 salmones de los ríos del norte o la selva.', type: 'collect', item: 'salmon', n: 8, reward: { g: 900, xp: 1500, items: [['cana_hierro', 1], ['cebo', 15]] } },
+  { id: 'pesca3', npc: 'nilo', lv: 25, title: 'Atunes de la costa',  desc: 'Pesca 6 atunes en la costa y el mar abierto.', type: 'collect', item: 'atun', n: 6, reward: { g: 3000, xp: 5000, items: [['cebo_dorado', 10]] } },
+  { id: 'pesca4', npc: 'nilo', lv: 40, title: 'El rey del mar',      desc: 'Tráeme 3 tiburones. Cuidado: muerden.', type: 'collect', item: 'tiburon', n: 3, reward: { g: 9000, xp: 14000, items: [['cana_acero', 1], ['perla_marina', 1]] } },
   // ---- Capitán Brisa ----
   { id: 'orcos',     npc: 'brisa', lv: 10, title: 'Amenaza orca',           desc: 'Los orcos acampan al norte. Elimina a 10.', type: 'kill', mon: 'orco', n: 10, reward: { g: 1200, xp: 2600, items: [['guantes_cuero', 1]] } },
   { id: 'pinzas',    npc: 'brisa', lv: 12, title: 'Pinzas para la sopa',    desc: 'La cocina del puerto necesita 8 pinzas de cangrejo.', type: 'collect', item: 'pinza_cangrejo', n: 8, reward: { g: 800, xp: 1800, items: [['mascota_cangrejo', 1]] } },
