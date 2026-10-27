@@ -365,6 +365,48 @@ ok('nivel general congelado en 320: experiencia, vida y maná dejan de crecer', 
   assert.equal(hp, 100 + 20 * 319);
 });
 
+ok('pesca: caña, picada, minijuego de temporización, nivel y peces por zona', () => {
+  const F = require('../game/fishing');
+  // casilla de agua del prado con tierra adyacente
+  let wx = -1, wy = -1, lx = -1, ly = -1;
+  outer: for (let y = 2; y < world.H - 2; y++) for (let x = 2; x < 100; x++) {
+    if (world.tiles[y * world.W + x] === world.T.WATER && world.zoneAt(x, y).id === 'prado' && world.tiles[y * world.W + x - 1] === world.T.GRASS) { wx = x; wy = y; lx = x - 1; ly = y; break outer; }
+  }
+  assert.ok(wx > 0, 'hay agua en el prado');
+  const a = login('Pez1'); place(a.p, lx, ly);
+  game.fishCast(a.p, wx, wy); assert.ok(!a.p.fishing, 'sin caña no se pesca');
+  a.p.inv[0] = I.mk('cana_madera', 1); a.p.inv[1] = I.mk('cebo', 3);
+  T0 += 10; game.now = T0; game.fishCast(a.p, wx, wy);
+  assert.equal(a.p.fishing.state, 'wait'); assert.equal(lastMsg(a.ws, 'fcast').x, wx); assert.equal(a.p.inv[1].qty, 2, 'gasta un cebo');
+  // tirar antes de tiempo
+  game.fishReel(a.p); assert.ok(!a.p.fishing, 'pronto: se asusta');
+  // picada y recogida acertada
+  const r0 = Math.random; let got = 0;
+  for (let k = 0; k < 8; k++) {
+    T0 += 20000; game.now = T0; game.fishCast(a.p, wx, wy);
+    T0 += 20000; game.now = T0; game.fishTick(T0); const f = a.p.fishing; assert.equal(f.state, 'bite'); assert.ok(f.fish === 'sardina' || f.fish === 'salmon');
+    const mid = (f.lo + f.hi) / 2; // buscar el instante en el que el marcador está en el centro
+    let tt = f.t0; for (let q = 0; q < 4000; q++) { const ph = ((tt - f.t0) / 1000 * f.speed) % 2, pos = ph < 1 ? ph : 2 - ph; if (Math.abs(pos - mid) < 0.01) break; tt += 1; }
+    game.now = tt; game.fishReel(a.p); if (!a.p.fishing) got++;
+  }
+  assert.ok(got >= 6, 'capturas: ' + got); assert.ok(a.p.ext.fish.xp > 0); assert.ok(a.p.inv.some((it) => it && (it.id === 'sardina' || it.id === 'salmon')));
+  // fallo: marcador fuera de la zona
+  T0 += 20000; game.now = T0; game.fishCast(a.p, wx, wy); T0 += 20000; game.now = T0; game.fishTick(T0);
+  const f2 = a.p.fishing; game.now = f2.end + 1000; game.fishReel(a.p); assert.ok(!a.p.fishing && lastMsg(a.ws, 'fend').ok === 0, 'tarde: se escapa');
+  // moverse cancela
+  T0 += 20000; game.now = T0; game.fishCast(a.p, wx, wy); a.p.x += 0; place(a.p, lx, ly - 1); game.fishTick(T0 + 1); assert.ok(!a.p.fishing, 'moverse recoge el sedal');
+  // nivel y tablas
+  const lvl = (xp) => require('../game/skills').skillFromXp(xp * 20);
+  assert.equal(lvl(0), 1); assert.ok(lvl(1e6) > 100); assert.equal(lvl(1e12), 320);
+  for (const id of ['atun', 'cana_jade', 'cebo_dorado', 'perla_marina']) assert.ok(ITEMS[id], id);
+  assert.equal(ITEMS.atun.heal, 120);
+  const SH = require('../game/data').SHOPS; assert.ok(F.build && SH.nilo.includes('cana_madera') && SH.nilo.includes('atun'));
+  // los peces valen más con el nivel
+  a.p.ext.fish.xp = 1e6; assert.ok(game.fishMult(a.p, 'tiburon') > 2); assert.equal(game.fishMult(a.p, 'espada_hierro'), 1);
+  // persistencia
+  const back = game.extSave(a.p); assert.equal(back.fish.xp, 1e6);
+});
+
 console.log(`\n${n} pruebas correctas`);
 try { require('fs').unlinkSync(store.file); } catch (e) { /* nada */ }
 

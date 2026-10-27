@@ -310,8 +310,116 @@
   }
   wC.onOpen = () => { send({ t: 'xinfo' }); renderCraft(); };
 
+  /* ============================ PESCA ============================ */
+  const wF = win('o', '🎣 Pesca', true); mkBtn('🎣', 'Pesca', 'o', 'o');
+  const fsd = G.fish = { lv: 1, xp: 0, lo: 0, hi: 1, c: {}, defs: null };
+  const fs = { st: '', x: 0, y: 0, t0: 0, wait: 0, fish: '', lo: 0, hi: 0, speed: 1, dur: 0, ct: 0, res: null };
+  const FISH_ICON = { sardina: '🐟', salmon: '🍣', atun: '🐠', tiburon: '🦈', perla_marina: '🦪', tesoro_hundido: '🧰' };
+  const hasRod = () => (G.inv || []).some((it) => it && G.items[it[0]] && G.items[it[0]].rod);
+  const tri = (ph) => { const x = ph % 2; return x < 1 ? x : 2 - x; };
+  const isWater = (x, y) => x >= 0 && y >= 0 && x < G.W && y < G.H && G.tiles && G.tiles[y * G.W + x] === 1;
+  const castAt = (x, y) => {
+    if (!hasRod()) { X.toast('🎣 Necesitas una caña de pescar: Nilo el Pescador las vende en la aldea de pescadores.', null, 4000); return; }
+    if (!G.me || cheb(G.me.x, G.me.y, x, y) > 5) { X.toast('Acércate más al agua para lanzar la caña.', null, 2500); return; }
+    send({ t: 'fcast', x, y });
+  };
+  X.on('click', (t) => {
+    if (!isWater(t.x, t.y)) return false;
+    if (!hasRod() && !fs.st) { const n = performance.now(); if (!fs.hint || n - fs.hint > 12000) { fs.hint = n; X.toast('🎣 Para pescar necesitas una caña (Nilo el Pescador).', null, 3000); } return false; }
+    castAt(t.x, t.y); return true;
+  });
+  X.on('ctx', (t) => (isWater(t.x, t.y) ? [{ hdr: 'Agua' }, { label: '🎣 Pescar aquí', fn: () => castAt(t.x, t.y) }] : null));
+  X.handlers.fcast = (m) => { fs.st = 'wait'; fs.x = m.x; fs.y = m.y; fs.t0 = performance.now(); fs.wait = m.wait; fs.ct = performance.now(); fs.res = null; fs.bait = m.bait; showGame(); };
+  X.handlers.fbite = (m) => { fs.st = 'bite'; fs.fish = m.fish; fs.lo = m.lo; fs.hi = m.hi; fs.speed = m.speed; fs.dur = m.dur; fs.t0 = performance.now(); fs.bt = fs.t0; showGame(); };
+  X.handlers.fend = (m) => {
+    const was = fs.st; if (m.ok && m.fish) fs.jump = { cv: X.iconNode ? X.iconNode(m.fish) : null, x: fs.x, y: fs.y, t: performance.now() }; fs.st = ''; fs.res = m.ok ? { ok: 1, fish: m.fish, qty: m.qty, t: performance.now() } : (was && !m.silent ? { ok: 0, t: performance.now() } : null);
+    showGame(); if (m.ok && fs.res) setTimeout(() => { if (fs.res && performance.now() - fs.res.t > 1300) { fs.res = null; showGame(); } }, 1400);
+    if (!m.ok && fs.res) setTimeout(() => { if (fs.res && !fs.res.ok) { fs.res = null; showGame(); } }, 1400);
+  };
+  X.handlers.fish = (m) => { Object.assign(fsd, m); if (m.defs) fsd.defs = m.defs; if (!wF.m.hidden) renderFish(); };
+
+  // barra del minijuego
+  const fg = el('div', 'fishgame'); fg.hidden = true;
+  const fgT = el('div', 'fgt'), fgBar = el('div', 'fgbar'), fgZone = el('div', 'fgzone'), fgMark = el('div', 'fgmark'), fgHint = el('small', 'fgh');
+  fgBar.append(fgZone, fgMark); fg.append(fgT, fgBar, fgHint); document.body.append(fg);
+  const reel = () => { if (fs.st) send({ t: 'freel' }); };
+  fgBar.addEventListener('mousedown', (ev) => { ev.stopPropagation(); reel(); });
+  fgBar.addEventListener('touchstart', (ev) => { ev.preventDefault(); reel(); }, { passive: false });
+  fg.addEventListener('mousedown', (ev) => ev.stopPropagation());
+  function showGame() {
+    if (!fs.st && !fs.res) { fg.hidden = true; return; }
+    fg.hidden = false; fg.className = 'fishgame' + (fs.st === 'bite' ? ' bite' : '') + (fs.res ? (fs.res.ok ? ' won' : ' lost') : '');
+    if (fs.res) { fgT.textContent = ''; if (fs.res.ok && X.iconNode) { const ic = X.iconNode(fs.res.fish); ic.classList && ic.classList.add('fgico'); fgT.append(ic); } fgT.append(fs.res.ok ? `¡Pescaste ${fs.res.qty > 1 ? fs.res.qty + '× ' : ''}${iname(fs.res.fish)}!` : 'Se escapó…'); fgBar.style.visibility = 'hidden'; fgHint.textContent = ''; return; }
+    fgBar.style.visibility = fs.st === 'bite' ? 'visible' : 'hidden';
+    if (fs.st === 'bite') { fgT.textContent = `🎣 ¡Picó un pez! Pulsa ESPACIO cuando el marcador esté en verde`; fgZone.style.left = fs.lo * 100 + '%'; fgZone.style.width = (fs.hi - fs.lo) * 100 + '%'; fgHint.textContent = 'o haz clic en la barra'; }
+    else { fgT.textContent = fs.bait ? '🎣 Esperando… (con cebo)' : '🎣 Esperando a que pique…'; fgHint.textContent = 'No te muevas · tirar antes de tiempo asusta al pez'; }
+  }
+  X.on('key', (k, ev) => { if ((k === ' ' && fs.st) || (k === 'enter' && fs.st === 'bite')) { reel(); return true; } return false; });
+  X.on('draw', (c, now) => {
+    if (fs.st === 'bite') { fgMark.style.left = tri((performance.now() - fs.t0) / 1000 * fs.speed) * 100 + '%'; }
+  });
+
+  // el pez salta del agua hasta el pescador
+  X.on('draw', (c) => {
+    const j = fs.jump; if (!j) return; const k = (performance.now() - j.t) / 750; const me = G.ents.get(G.id);
+    if (k >= 1 || !me || !j.cv || !j.cv.width) { fs.jump = null; return; }
+    const TS = X.TS, ax = X.sxOf(j.x) + TS / 2, ay = X.syOf(j.y) + TS / 2, bx = X.sxOf(me.rx) + TS / 2, by = X.syOf(me.ry) + TS / 2 - 8;
+    const x = ax + (bx - ax) * k, y = ay + (by - ay) * k - Math.sin(k * Math.PI) * 38, sc = 0.9 + Math.sin(k * Math.PI) * 0.5;
+    c.save(); c.translate(x, y); c.rotate((k - 0.5) * 1.6 * (bx < ax ? -1 : 1)); c.globalAlpha = k > 0.85 ? (1 - k) / 0.15 : 1;
+    c.drawImage(j.cv, -j.cv.width * sc / 2, -j.cv.height * sc / 2, j.cv.width * sc, j.cv.height * sc); c.restore();
+  });
+
+  // sedal y corcho en el mundo
+  X.on('draw', (c, now) => {
+    if (!fs.st || !G.me) return;
+    const me = G.ents.get(G.id); if (!me) return; const TS = X.TS;
+    const tx = X.sxOf(fs.x) + TS / 2, ty = X.syOf(fs.y) + TS / 2, px = X.sxOf(me.rx) + TS / 2 + 6, py = X.syOf(me.ry) + TS / 2 - 10;
+    const k = Math.min(1, (performance.now() - fs.ct) / 380), bite = fs.st === 'bite';
+    const bx = px + (tx - px) * k, by = py + (ty - py) * k - Math.sin(k * Math.PI) * 26;
+    c.save();
+    c.strokeStyle = 'rgba(235,235,225,.85)'; c.lineWidth = 1; c.beginPath(); c.moveTo(px, py); c.quadraticCurveTo((px + bx) / 2, Math.min(py, by) + 10 * (1 - k * 0.7), bx, by); c.stroke();
+    if (k >= 1) {
+      for (let i = 0; i < 2; i++) { const ph = ((now / (bite ? 350 : 1100)) + i * 0.5) % 1; c.strokeStyle = `rgba(220,240,255,${(1 - ph) * (bite ? 0.9 : 0.5)})`; c.lineWidth = 1.5; c.beginPath(); c.ellipse(tx, ty + 4, 4 + ph * (bite ? 14 : 10), 2 + ph * (bite ? 6 : 4), 0, 0, 7); c.stroke(); }
+      const dip = bite ? 3 + Math.sin(now / 55) * 2.2 : Math.sin(now / 600) * 1;
+      c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(tx, ty + 5, 4, 1.8, 0, 0, 7); c.fill();
+      c.fillStyle = '#f4f1ea'; c.beginPath(); c.arc(tx, ty + dip, 3.6, 0, 7); c.fill();
+      c.fillStyle = '#e5483a'; c.beginPath(); c.arc(tx, ty + dip - 1.5, 3.6, Math.PI, 0); c.fill();
+      c.fillStyle = '#ff7f6a'; c.fillRect(tx - 1.5, ty + dip - 4, 1.5, 1.5);
+      if (bite) { c.fillStyle = '#ffe36a'; c.font = 'bold 16px "Segoe UI",sans-serif'; c.textAlign = 'center'; c.strokeStyle = '#3a2a00'; c.lineWidth = 3; c.strokeText('!', tx, ty - 12 + Math.sin(now / 90) * 2); c.fillText('!', tx, ty - 12 + Math.sin(now / 90) * 2); }
+    } else { c.fillStyle = '#e5483a'; c.beginPath(); c.arc(bx, by, 3, 0, 7); c.fill(); }
+    c.restore();
+  });
+
+  // ventana: nivel, peces por zona, cañas y registro de capturas
+  function renderFish() {
+    const b = wF.body; b.textContent = ''; const d = fsd.defs; if (!d) { b.append(el('p', '', 'Cargando…')); return; }
+    const pct = fsd.lv >= d.max ? 100 : Math.max(0, Math.min(100, (fsd.xp - fsd.lo) / Math.max(1, fsd.hi - fsd.lo) * 100));
+    b.append(el('p', 'colhead', `Nivel de pesca ${fsd.lv} / ${d.max}  ·  ${fmt(fsd.xp)} xp`));
+    const bar = el('div', 'fbarx'), fill = el('div', 'fbarf'); fill.style.width = pct + '%'; bar.append(fill); b.append(bar);
+    b.append(el('p', 'fhint', 'Compra una caña a Nilo el Pescador (aldea de pescadores) y haz clic en el agua (o clic derecho → Pescar). Quédate quieto, espera la picada y pulsa ESPACIO con el marcador en la zona verde. A más nivel: menos espera, zona verde más ancha y peces mejores. Cebos aceleran la picada y atraen peces raros.'));
+    b.append(el('h3', '', 'Registro de capturas'));
+    const g = el('div', 'colgrid');
+    for (const id of ['sardina', 'salmon', 'atun', 'tiburon', 'perla_marina', 'tesoro_hundido']) {
+      const n = fsd.c[id] || 0, F = d.fish[id], tile = el('div', 'coltile' + (n ? ' on' : ''));
+      const ic = el('div', 'ico'); ic.append(X.iconNode ? X.iconNode(id) : FISH_ICON[id] || '🐟'); tile.append(ic, el('small', '', n ? iname(id) : '???'));
+      if (n) tile.append(el('b', '', '×' + n));
+      tile.title = F ? `${iname(id)} · requiere pesca ${F.lvl} · cura ${(G.items[id] || {}).heal || 0}` : `${iname(id)} · tesoro raro`;
+      g.append(tile);
+    }
+    b.append(g);
+    b.append(el('h3', '', 'Dónde pescar'));
+    for (const z of Object.values(d.zones)) {
+      const row = el('p', 'frow'); row.append(el('b', '', z.name + (z.danger ? ' ⚠️' : '') + ': '));
+      z.fish.forEach(([id], i) => { const F = d.fish[id], ok = fsd.lv >= F.lvl; const s = el('span', ok ? 'fok' : 'flock', `${FISH_ICON[id]} ${iname(id)} (${F.lvl})`); row.append(i ? ' · ' : '', s); });
+      b.append(row);
+    }
+    b.append(el('h3', '', 'Cañas'));
+    for (const [id, r] of Object.entries(d.rods)) { const ok = fsd.lv >= r.req; { const row = el('p', 'frow' + (ok ? '' : ' flock')); const ic = el('span', 'fricon'); ic.append(X.iconNode ? X.iconNode(id) : '🎣'); row.append(ic, `${r.name} — pesca ${r.req} · espera ${Math.round(r.wait * 100)}% · zona verde +${Math.round(r.bar * 100)}%${have(id) ? ' ✔ la tienes' : ''}`); b.append(row); } }
+  }
+  wF.onOpen = () => { send({ t: 'fish' }); renderFish(); };
+
   /* ---------- atajos ---------- */
-  const KEYS = { q: 'q', l: 'a', g: 's', r: 'r', p: 'm', f: 'c', b: 'b' };
+  const KEYS = { q: 'q', l: 'a', g: 's', r: 'r', p: 'm', f: 'c', b: 'b', o: 'o' };
   X.on('key', (k) => {
     if (KEYS[k]) { toggle(KEYS[k]); return true; }
     if (k === '1' || k === '2' || k === '3') { useSkill(+k - 1); return true; }

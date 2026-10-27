@@ -19,13 +19,14 @@
   if (location.hash === '#debug') { window.__eld = G; G.renderInv = () => renderInv(); G.openShop = (m) => openShop(m); }
   let ws = null, joined = false, wantMode = 'login';
   /* Ganchos para los módulos extra (audio, clima, táctil, misiones, social...) */
-  const HK = { msg: [], fx: [], snap: [], draw: [], under: [], click: [], key: [], chat: [], inv: [], stats: [] };
+  const HK = { msg: [], fx: [], snap: [], draw: [], under: [], click: [], key: [], chat: [], inv: [], stats: [], ctx: [] };
   const EXT = (window.EldExt = {
     G, el, $, store, joy: { dx: 0, dy: 0 }, handlers: {},
     on(n, f) { HK[n].push(f); },
     msg(m) { for (const f of HK.msg) f(m); }, fx(f) { for (const h of HK.fx) h(f); }, snap(m) { for (const f of HK.snap) f(m); },
     draw(c, now, cw, ch, dt, tx, ty) { for (const f of HK.draw) f(c, now, cw, ch, dt, tx, ty); },
     under(c, now, cw, ch) { for (const f of HK.under) f(c, now, cw, ch); }, click(t, ev) { return HK.click.some((f) => f(t, ev)); },
+    ctx(t) { for (const f of HK.ctx) { const r = f(t); if (r) return r; } return null; },
     key(k, ev) { return HK.key.some((f) => f(k, ev)); }, chat(m) { for (const f of HK.chat) f(m); },
     inv(m) { for (const f of HK.inv) f(m); }, stats(m) { for (const f of HK.stats) f(m); },
   });
@@ -1903,7 +1904,7 @@
         }
         if (gt.n > gt.it.length) rows.push({ label: '… y más objetos (pisa la casilla)', fn: () => walkTo(gt.x, gt.y) });
         if (rows.length > 1) openCtx(ev, rows);
-      }
+      } else { const xr = EXT.ctx(tl); if (xr) openCtx(ev, xr); }
       return;
     }
     if (e.kind === 'mo') { const d = G.mons[e.t]; if (!d) return; openCtx(ev, [{ hdr: d.name, color: d.boss ? '#ff9c80' : null }, { label: 'Ver botín y datos', fn: () => showDrops(e.t) }, { label: 'Atacar', fn: () => send({ t: 'target', id: e.id }) }]); }

@@ -167,3 +167,13 @@ Drops del Dragón de las Sombras (4–5% base, ×0.5 por la reducción de equipo
 
 ## Joyas de la Hidra de Jade
 Drops de la Hidra de Jade (4–5% base, ×0.5 por la reducción de equipo): **Anillo del Rubí Dracónico** (nv 72, +10 ataque, +120 vida, +2% crít.), **Anillo de Hoja de Jade** (nv 70, +10 def, +160 vida), **Cinturón de Escamas de Jade** (nv 71, def 16, +180 vida, +5 ataque) y **Amuleto del Dragón de Jade** (nv 74, +350 vida, +100 maná, +8 ataque, +3% crít.). Salen en la colección de jefes.
+
+## Pesca 🎣
+- **Cómo se juega:** compra una caña a Nilo el Pescador (aldea de pescadores), haz clic en el agua (o clic derecho → *Pescar aquí*) a 5 casillas o menos y no te muevas. Tras unos segundos pica un pez: aparece una barra con una zona verde y un marcador que va y viene; pulsa **ESPACIO** (o clic en la barra) con el marcador dentro del verde. Tirar antes de tiempo asusta al pez; tardar o fallar lo deja escapar. Todo lo decide el servidor (el marcador depende del tiempo del servidor).
+- **Habilidad de pesca:** nivel 1–320 propio (`game/fishing.js`, la experiencia cuesta 1/20 de la de combate). Más nivel = menos espera, zona verde más ancha y peces mejores. Ventana de pesca con la tecla **O** (nivel, registro de capturas, peces por zona y cañas).
+- **Peces:** Sardina (nv 1, cura 80), Salmón (nv 30, 100), **Atún** (nv 60, 120), Tiburón (nv 100, 150). Zonas: ríos y lagos (sardina y salmón; salmón abunda en bosque, cumbres y selva), costa/playa (atún y tiburón), mar del volcán (peligroso). Los peces se venden por más con el nivel de pesca (+1 % por nivel).
+- **Cañas** (tienda de Nilo, dibujos en amarillo y azul): Trucha (nv 1, amarilla), Carpa (15, azul), Fly Fishing (25, amarilla), Hielo (40, azul), Surf Casting (60, azul), Mar Profundo (120, amarilla premium): menos espera, zona verde mayor y, desde Surf Casting, 12 % de capturar 2 peces. Se usa la mejor que tu nivel permita. Sardina, salmón, atún y tiburón tienen icono propio y el pez salta del agua al capturarlo.
+- **Cebos:** Cebo de Gusanos y Cebo Dorado (se gasta uno por lanzamiento): picada más rápida, más peces raros y más probabilidad de tesoro.
+- **Tesoros raros:** Perla Marina y Cofre Hundido (muy poca probabilidad; se venden caro).
+- **Tiburón:** si se escapa, se lleva un cebo o te muerde (8 % de tu vida, nunca te mata).
+- **Misiones de Nilo:** Primeras capturas, Salmones del norte (caña de hierro), Atunes de la costa, El rey del mar (caña de acero).

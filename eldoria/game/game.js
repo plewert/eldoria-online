@@ -682,7 +682,8 @@ class Game {
     const it = p.inv[slot];
     if (!it) return;
     if (!this.openShop(p)) { this.msg(p, 'Estás demasiado lejos del mercader.', 's'); return; }
-    const each = I.sellValue(it);
+    let each = I.sellValue(it);
+    if (each && this.fishMult) each = Math.round(each * this.fishMult(p, it.id));     // los peces valen más con el nivel de pesca
     if (!each) { this.msg(p, 'El mercader no quiere eso.', 's'); return; }
     qty = I.isGear(it.id) ? 1 : Math.max(1, Math.min(it.qty, qty || 1));
     const name = I.nameOf(it), col = I.colorOf(it);
@@ -1213,4 +1214,5 @@ class Game {
 }
 
 require('./ext')(Game);
+require('./fishing').install(Game);
 module.exports = { Game, NAME_RE, levelFromXp, xpForLevel, skillFromXp };

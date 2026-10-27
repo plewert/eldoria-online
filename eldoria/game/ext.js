@@ -26,7 +26,7 @@ const PARTY_MAX = 5;
 const MARKET_MAX = 8, MARKET_FEE = 0.05, MARKET_HOURS = 72;
 const EVENT_EVERY = (parseFloat(process.env.EVENT_MIN) || 35) * 60000;
 
-const defExt = () => ({ q: {}, ach: {}, title: '', kt: 0, kills: {}, bosses: 0, pvp: 0, deaths: 0, quests: 0, crafts: 0, gather: 0, cxp: 0, events: 0, sold: 0, pet: '', mount: '', hadPet: 0, hadMount: 0, partyKills: 0, guild: '', grole: '', mail: [], grave: null, col: {} });
+const defExt = () => ({ q: {}, ach: {}, title: '', kt: 0, kills: {}, bosses: 0, pvp: 0, deaths: 0, quests: 0, crafts: 0, gather: 0, cxp: 0, events: 0, sold: 0, pet: '', mount: '', hadPet: 0, hadMount: 0, partyKills: 0, guild: '', grole: '', mail: [], grave: null, col: {}, fish: { xp: 0, c: {} } });
 
 function sanitizeExt(raw) {
   const e = defExt();
@@ -37,6 +37,7 @@ function sanitizeExt(raw) {
   if (raw.kills && typeof raw.kills === 'object') for (const [m, n] of Object.entries(raw.kills)) if (MONSTERS[m]) e.kills[m] = num(n);
   if (raw.grave && Number.isInteger(raw.grave.x) && Number.isInteger(raw.grave.y)) e.grave = { x: raw.grave.x, y: raw.grave.y, t: num(raw.grave.t, 1e15) };
   if (raw.col && typeof raw.col === 'object') for (const [b, items] of Object.entries(raw.col)) if (MONSTERS[b] && items && typeof items === 'object') { e.col[b] = {}; for (const [id, n] of Object.entries(items)) if (ITEMS[id]) e.col[b][id] = num(n, 1e9) || 1; }
+  if (raw.fish && typeof raw.fish === 'object') { e.fish.xp = num(raw.fish.xp, 1e9); if (raw.fish.c && typeof raw.fish.c === 'object') for (const [id, n] of Object.entries(raw.fish.c)) if (ITEMS[id]) e.fish.c[id] = num(n, 1e9); }
   e.title = typeof raw.title === 'string' ? raw.title.slice(0, 30) : '';
   e.pet = ITEMS[raw.pet] && ITEMS[raw.pet].type === 'pet' ? raw.pet : '';
   e.mount = ITEMS[raw.mount] && ITEMS[raw.mount].type === 'mount' ? raw.mount : '';
