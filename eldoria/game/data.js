@@ -483,6 +483,8 @@ require('./mage').build(ITEMS, SHOPS, MONSTERS);
   require('./angel').build(ITEMS, MONSTERS, X.ANGEL.type);
   MONSTERS[X.SPIDER.type] = X.SPIDER.def; MONSTERS[X.SPIDER.minion.type] = X.SPIDER.minion.def;
   require('./spider').build(ITEMS, MONSTERS, X.SPIDER.type);
+  MONSTERS[X.LEVIATAN.type] = X.LEVIATAN.def;
+  require('./leviatan').build(ITEMS, MONSTERS, X.LEVIATAN.type);
   require('./bosspets').build(ITEMS, MONSTERS);
   require('./fishing').build(ITEMS, SHOPS);
   require('./tablets').build(ITEMS, SHOPS);

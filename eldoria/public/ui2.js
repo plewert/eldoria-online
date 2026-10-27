@@ -882,6 +882,90 @@
       }
     }
   });
+  /* ---------- Leviatán Abisal: tornados marinos, olas, rayo de bolas de agua y escudo burbuja ---------- */
+  const LF = [], TORN = new Map();
+  X.on('fx', (f) => {
+    const now = performance.now();
+    for (let i = LF.length - 1; i >= 0; i--) if (now - LF[i].t > LF[i].T) LF.splice(i, 1);
+    switch (f.k) {
+      case 'twn': LF.push({ k: 'twn', t: now, T: 800, f }); X.ring(f.x, f.y, 'water', 500, 40, 4); break;
+      case 'wtn': { const o = TORN.get(f.id); if (o) { o.x0 = o.x1; o.y0 = o.y1; o.x1 = f.x; o.y1 = f.y; o.t = now; } else TORN.set(f.id, { x0: f.x, y0: f.y, x1: f.x, y1: f.y, t: now, s: f.id * 99 }); break; }
+      case 'olw': LF.push({ k: 'olw', t: now, T: 1100, f }); break;
+      case 'ol': LF.push({ k: 'ol', t: now, T: 300, f, s: Math.random() * 9 }); if (Math.random() < 0.25) X.burst(f.x, f.y, 'water', 3, { sp: 3, up: 3, g: 4, life: 0.5, size: 2.4 }); break;
+      case 'bmw': LF.push({ k: 'bmw', t: now, T: 1000, f }); break;
+      case 'bm': LF.push({ k: 'bm', t: now, T: 560, f, s: Math.random() * 99 }); G.shake = { t: now, m: 3 }; X.sfx && X.sfx('boss'); X.burst(f.x1, f.y1, 'water', 18, { sp: 4, life: 0.6, size: 3 }); break;
+      case 'bub': LF.push({ k: 'bub', t: now, T: 620, f }); break;
+      case 'bubx': LF.push({ k: 'bubx', t: now, T: 500, f }); X.ring(f.x, f.y - 2, 'water', 500, 90, 5); X.burst(f.x, f.y - 2, 'water', 30, { sp: 6, up: 4, g: 3, life: 0.8, size: 3 }); break;
+      default: break;
+    }
+  });
+  const levMouth = (f) => [px(f.x1), py(f.y1)];
+  X.on('under', (c, now) => {
+    const TS = X.TS;
+    for (const b of LF) {
+      const p = (now - b.t) / b.T; if (p >= 1 || p < 0) continue; const f = b.f;
+      if (b.k === 'twn') {
+        const x = px(f.x), y = py(f.y), r = 1.6 * TS; c.strokeStyle = `rgba(150,235,255,${0.9 * (1 - p)})`; c.lineWidth = 3; c.beginPath(); c.ellipse(x, y, r * (0.4 + p), r * (0.3 + p * 0.7), 0, 0, 7); c.stroke();
+      } else if (b.k === 'olw') {                             // aviso: franja por la que pasará la ola
+        const xa = px(Math.min(f.x1, f.x2)), xb = px(Math.max(f.x1, f.x2)), y = py(f.y), h = f.h * TS, dir = f.x2 > f.x1 ? 1 : -1;
+        c.fillStyle = `rgba(60,170,230,${0.10 + 0.2 * p})`; c.fillRect(xa, y - h / 2, xb - xa, h);
+        c.strokeStyle = `rgba(170,235,255,${0.35 + 0.4 * Math.abs(Math.sin(now / 80))})`; c.lineWidth = 2; c.strokeRect(xa, y - h / 2, xb - xa, h);
+        c.fillStyle = `rgba(210,245,255,${0.25 + 0.3 * p})`; const off = (now / 14) % 48;
+        for (let xx = xa - 48 + (dir > 0 ? off : 48 - off); xx < xb; xx += 48) { if (xx < xa) continue; c.beginPath(); c.moveTo(xx, y - 7); c.lineTo(xx + 12 * dir, y); c.lineTo(xx, y + 7); c.lineTo(xx + 4 * dir, y); c.closePath(); c.fill(); }
+      } else if (b.k === 'bmw') {                             // aviso: la boca se carga y se marca la línea del rayo
+        const [x1, y1] = levMouth(f), x2 = px(f.x2), y2 = py(f.y2), a = Math.atan2(y2 - y1, x2 - x1), L = Math.hypot(x2 - x1, y2 - y1);
+        c.save(); c.translate(x1, y1); c.rotate(a); c.fillStyle = `rgba(80,190,240,${0.08 + 0.18 * p})`; c.fillRect(0, -TS * 1.5, L, TS * 3);
+        c.strokeStyle = `rgba(190,240,255,${0.3 + 0.4 * Math.abs(Math.sin(now / 80))})`; c.lineWidth = 2; c.strokeRect(0, -TS * 1.5, L, TS * 3); c.restore();
+      }
+    }
+  });
+  X.on('draw', (c, now) => {
+    const TS = X.TS;
+    for (const [id, o] of TORN) {                             // tornados: se mueven suavemente entre pasos y se desvanecen al terminar
+      const age = now - o.t; if (age > 900) { TORN.delete(id); continue; }
+      const k = Math.min(1, age / 400), tx = o.x0 + (o.x1 - o.x0) * k, ty = o.y0 + (o.y1 - o.y0) * k, x = px(tx), y = py(ty) + 8, al = age > 450 ? Math.max(0, 1 - (age - 450) / 450) : 1;
+      c.save(); c.globalAlpha = al;
+      c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(x, y + 2, 15, 5, 0, 0, 7); c.fill();
+      for (let i = 0; i < 16; i++) {
+        const u = i / 15, yy = y - u * 68, rw = 5 + u * 20, a = now / 80 + i * 1.15 + o.s;
+        c.fillStyle = `rgba(${90 + u * 120 | 0},${190 + u * 50 | 0},${225 + u * 25 | 0},${0.6})`; c.beginPath(); c.ellipse(x + Math.sin(a) * rw * 0.45 + Math.sin(now / 300 + o.s) * u * 5, yy, rw, 5, 0, 0, 7); c.fill();
+        c.strokeStyle = 'rgba(235,252,255,.6)'; c.lineWidth = 1.3; c.stroke();
+      }
+      for (let i = 0; i < 5; i++) { const a = now / 110 + i * 1.25 + o.s, u = (now / 500 + i * 0.2) % 1; c.fillStyle = 'rgba(210,245,255,.85)'; c.beginPath(); c.arc(x + Math.cos(a) * (10 + u * 16), y - u * 64, 1.8 + (i % 2), 0, 7); c.fill(); }
+      c.restore();
+    }
+    for (const b of LF) {
+      const p = (now - b.t) / b.T; if (p >= 1 || p < 0) continue; const f = b.f;
+      if (b.k === 'ol') {                                     // frente de ola con espuma
+        const x = px(f.x), y = py(f.y), h = f.h * TS, d = f.d, al = Math.min(1, (1 - p) * 1.7), w = 2.8 * TS;
+        c.save(); const g = c.createLinearGradient(x - d * w, 0, x + d * 0.4 * TS, 0); g.addColorStop(0, 'rgba(40,150,220,0)'); g.addColorStop(0.7, `rgba(70,185,235,${0.7 * al})`); g.addColorStop(1, `rgba(220,250,255,${0.95 * al})`);
+        c.fillStyle = g; c.beginPath(); c.moveTo(x - d * w, y - h / 2); c.lineTo(x + d * 0.4 * TS, y - h / 2 + 6);
+        for (let i = 0; i <= 6; i++) c.lineTo(x + d * (0.4 + Math.sin(now / 90 + i + b.s) * 0.12) * TS, y - h / 2 + 6 + (h - 12) * i / 6); c.lineTo(x + d * 0.4 * TS, y + h / 2 - 6); c.lineTo(x - d * w, y + h / 2); c.closePath(); c.fill();
+        c.fillStyle = `rgba(255,255,255,${0.85 * al})`; for (let i = 0; i < 7; i++) { c.beginPath(); c.arc(x + d * (0.3 + Math.sin(now / 70 + i * 2 + b.s) * 0.2) * TS, y - h / 2 + 8 + (h - 16) * i / 6, 3 + (i % 3), 0, 7); c.fill(); }
+        c.restore();
+      } else if (b.k === 'bm') {                              // rayo: chorro de bolas de agua desde la boca
+        const [x1, y1] = levMouth(f), x2 = px(f.x2), y2 = py(f.y2), a = Math.atan2(y2 - y1, x2 - x1), L = Math.hypot(x2 - x1, y2 - y1), reach = Math.min(1, p * 5), al = p < 0.7 ? 1 : (1 - p) / 0.3;
+        c.save(); c.translate(x1, y1); c.rotate(a);
+        const n = 26; for (let i = 0; i < n; i++) {
+          const s = (i / n) * L * reach, w = 4 + (s / L) * 14, off = Math.sin(now / 45 + i * 1.7 + b.s) * w * 0.45;
+          c.fillStyle = `rgba(${60 + (i % 3) * 20},${170 + (i % 3) * 25},235,${0.7 * al})`; c.beginPath(); c.arc(s, off, w, 0, 7); c.fill();
+          c.strokeStyle = `rgba(215,248,255,${0.7 * al})`; c.lineWidth = 1.2; c.stroke();
+        }
+        c.globalCompositeOperation = 'lighter'; for (let i = 0; i < 10; i++) { const s = Math.random() * L * reach; c.fillStyle = `rgba(200,245,255,${0.4 * al})`; c.beginPath(); c.arc(s, (Math.random() - 0.5) * (6 + s / L * 18), 2 + Math.random() * 3, 0, 7); c.fill(); }
+        c.restore();
+      } else if (b.k === 'bub') {                             // burbuja protectora alrededor del jefe
+        const x = px(f.x), y = py(f.y) - 2.3 * TS, rx = 4.6 * TS, ry = 3.1 * TS, wob = 1 + Math.sin(now / 160) * 0.025;
+        c.save(); const g = c.createRadialGradient(x - rx * 0.3, y - ry * 0.4, 6, x, y, rx);
+        g.addColorStop(0, 'rgba(210,248,255,.10)'); g.addColorStop(0.75, 'rgba(110,210,245,.14)'); g.addColorStop(1, 'rgba(180,240,255,.45)');
+        c.fillStyle = g; c.beginPath(); c.ellipse(x, y, rx * wob, ry / wob, 0, 0, 7); c.fill();
+        c.strokeStyle = `rgba(230,252,255,${0.7 + 0.2 * Math.sin(now / 90)})`; c.lineWidth = 2.5; c.beginPath(); c.ellipse(x, y, rx * wob, ry / wob, 0, 0, 7); c.stroke();
+        c.fillStyle = 'rgba(255,255,255,.55)'; c.beginPath(); c.ellipse(x - rx * 0.45, y - ry * 0.5, rx * 0.16, ry * 0.08, -0.6, 0, 7); c.fill();
+        c.restore();
+      } else if (b.k === 'bubx') {                            // la burbuja revienta
+        const x = px(f.x), y = py(f.y) - 2.3 * TS, al = 1 - p; c.strokeStyle = `rgba(230,252,255,${al})`; c.lineWidth = 3; c.beginPath(); c.ellipse(x, y, 4.6 * TS * (1 + p * 0.4), 3.1 * TS * (1 + p * 0.4), 0, 0, 7); c.stroke();
+      }
+    }
+  });
   /* ---------- mapa del mundo: zoom, arrastre y nombres de zona ---------- */
   const wMap = win('map', '🗺️ Mapa del mundo', true); mkBtn('🗺️', 'Mapa del mundo', 'n', 'map');
   {

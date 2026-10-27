@@ -224,3 +224,9 @@ Boris vende 11 tabletas (100 000 de oro cada una, de un solo uso): Ciudad, Bosqu
 - Pelícano Sombrerero (+20 % oro) y Pulpito Naranja (+25 % oro): **0,20 %** por captura cada uno.
 - La ventana 📖 (tecla B) ahora tiene una sección **🎣 Pesca** arriba: peces, perla, cofre, mascotas, set del Maestro Pescador y caña.
 - Cada objeto raro de pesca avisa con mensaje, texto flotante ★, aviso de "Nuevo en tu colección" y anuncio en el chat global.
+
+## Leviatán Abisal (jefe de la Gruta inundada)
+- Gruta del Leviatán Abisal: cueva de agua en la Selva Esmeralda (puerta al norte, entre la aldea y el camino de la selva). Suelo de agua poco profunda, lagos hondos y columnas de roca.
+- Ataques especiales: **tornados marinos** que se multiplican y vagan por la cueva (15 s), **olas** que barren la cueva en franjas avisadas, **rayo de bolas de agua** por la boca (3 pulsos que re-apuntan) y **escudo burbuja** de 5 s en el que es inmune.
+- Botín raro: Yelmo, Coraza, Manoplas, Grebas, Botas y Cinto del Abismo Marino, 3 anillos (perla, alga, coral), Amuleto del Corazón Marino y el Tridente del Leviatán (agua), además de la cría del Leviatán (mascota).
+- Corregido: las casillas de muro de la guarida de la araña (WEBW) no bloqueaban en el servidor.

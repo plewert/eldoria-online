@@ -466,6 +466,27 @@ ok('Aracnídeo Fuego Negro: guarida de telarañas en la zona de lava, set raro y
   const sj = require('../public/sprites.json'); assert.ok(sj.aracnido_fuego.f.length >= 6 && sj.arana_fuego.f.length >= 4);
 });
 
+ok('Leviatán Abisal: gruta inundada, set raro y sus 4 ataques (tornados, olas, rayo y burbuja)', () => {
+  assert.equal(MONSTERS.leviatan.special, 'leviathan'); assert.equal(typeof Game.prototype.leviathanAI, 'function');
+  const loot = MONSTERS.leviatan.loot.map((l) => l[0]);
+  ['mar_yelmo', 'mar_coraza', 'mar_guantes', 'mar_grebas', 'mar_botas', 'mar_cinto', 'mar_anillo_perla', 'mar_anillo_alga', 'mar_anillo_coral', 'mar_amuleto', 'mar_tridente', 'pet_leviatan'].forEach((id) => { assert.ok(loot.includes(id), id); assert.ok(ITEMS[id], id); });
+  assert.equal(ITEMS.mar_tridente.style, 'melee'); assert.equal(ITEMS.mar_tridente.el, 'water');
+  const sj = require('../public/sprites.json'); assert.ok(sj.leviatan.f.length >= 8 && sj.leviatan.anim > 0, 'animado');
+  const sp = world.monsterSpawns.find((q) => q.type === 'leviatan'); assert.equal(zoneOf([sp.x, sp.y]).id, 'cueva_mar');
+  assert.ok(world.isWalkable(229, 44) && world.isWalkable(sp.x, sp.y), 'se puede llegar a la guarida');
+  assert.ok(world.BLOCKED[world.T.AQW] && world.BLOCKED[world.T.WEBW] && world.BLOCKED[world.T.WATER] && !world.BLOCKED[world.T.AQF], 'muros bloquean y el suelo de agua se camina');
+  const pt = world.PORTALS.find((q) => q.x === 229 && q.y === 39); assert.deepEqual([pt.tx, pt.ty], [229, 44]);
+  const run = (ms) => { for (let k = 0; k <= ms; k += 100) { game.now += 100; const due = game.sched.filter((e) => e.at <= game.now); game.sched = game.sched.filter((e) => e.at > game.now); due.forEach((e) => e.fn()); } };
+  const { p } = login('Lev1'); place(p, 229, 48); p.hp = p.maxHp = 1e7;
+  const m = game.spawnMonster('leviatan', sp.x, sp.y); m.target = p.id; game.fx.length = 0;
+  const go = (i) => { m.spN = i; m.nextSp = 0; game.now += 10; game.leviathanAI(m, game.now); };
+  go(1); run(16000); const ids = new Set(game.fx.filter((f) => f.k === 'wtn').map((f) => f.id)); assert.ok(ids.size >= 6, 'los tornados se multiplican: ' + ids.size);
+  m.nextSp = 0; let hp0 = p.hp; go(2); run(8000); assert.ok(game.fx.some((f) => f.k === 'olw') && game.fx.some((f) => f.k === 'ol') && p.hp < hp0, 'las olas golpean');
+  hp0 = p.hp; go(0); run(4000); assert.ok(game.fx.some((f) => f.k === 'bm') && p.hp < hp0, 'el rayo de agua golpea');
+  go(3); assert.ok(m.shieldUntil > game.now, 'burbuja'); const h1 = m.hp; game.hurtMonster(m, 5000, p, game.now); assert.equal(m.hp, h1, 'inmune 5 s');
+  run(5200); assert.ok(!m.shieldUntil); game.hurtMonster(m, 5000, p, game.now); assert.ok(m.hp < h1, 'la burbuja acaba');
+});
+
 ok('tabletas de teletransporte: Boris las vende a 100k y llevan a la zona', () => {
   const SH = require('../game/data').SHOPS; assert.equal(ITEMS.tp_lava.price, 100000); assert.ok(SH.boris.includes('tp_lava') && SH.boris.includes('tp_ciudad'));
   const { p, ws } = login('Tab1'); place(p, ...TOWN); p.inv[0] = I.mk('tp_lava', 2); p.pvpLock = 0; game.now = T0 + 5;
