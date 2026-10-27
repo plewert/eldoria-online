@@ -195,3 +195,6 @@ Arrastra un objeto de la mochila a otra casilla (vacía u ocupada) para moverlo 
 
 ## Balance de jefes
 Coloso Ancestral: vida 30 000 → 90 000 y daño ×1,8. Jefes de cueva (Dragón de las Sombras, Hidra de Jade, Arcángel): daño ×1,5 extra (campo `dmgK` en `game/extra.js`, sobre el ×1,5 general de jefes).
+
+## Escarabajo Gigante
+Nueva imagen (escarabajo verde metálico con mandíbulas) animada (8 fotogramas: patas, mandíbulas y cuerpo) en `public/sprites.png` (`escarabajo_gigante`).
