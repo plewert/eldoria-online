@@ -385,3 +385,5 @@ ol.rank li.me { color: #ffd96a; }
 .mapz { margin-left: auto; color: var(--brass); font-size: 13px; }
 .mapcv { display: block; max-width: 100%; border: 1px solid var(--edge); background: #05070a; cursor: grab; touch-action: none; image-rendering: pixelated; }
 .mapcv.grab { cursor: grabbing; }
+
+.newver{position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:99999;background:#1b2a3a;border:2px solid #d8b24a;color:#ffe9a8;padding:8px 12px;border-radius:8px;font-size:14px;display:flex;gap:10px;align-items:center;box-shadow:0 4px 18px rgba(0,0,0,.6)}

@@ -966,6 +966,16 @@
       }
     }
   });
+  /* ---------- aviso de versión nueva: quien tenga el juego abierto con archivos viejos no ve los jefes nuevos ---------- */
+  {
+    let v0 = null, shown = false;
+    const check = () => fetch('/status', { cache: 'no-store' }).then((r) => r.json()).then((st) => {
+      if (!st.v) return; if (v0 === null) { v0 = st.v; return; }
+      if (st.v === v0 || shown) return; shown = true;
+      const bar = el('div', 'newver'); bar.append(el('span', '', '🔄 ¡Hay una versión nueva del juego! Recarga para ver los jefes y objetos nuevos. '), btn('Recargar ahora', () => location.reload())); document.body.append(bar);
+    }).catch(() => {});
+    check(); setInterval(check, 30000);
+  }
   /* ---------- mapa del mundo: zoom, arrastre y nombres de zona ---------- */
   const wMap = win('map', '🗺️ Mapa del mundo', true); mkBtn('🗺️', 'Mapa del mundo', 'n', 'map');
   {

@@ -23,13 +23,16 @@ const MIME = {
   '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json', '.svg': 'image/svg+xml',
 };
 
+// versión de los archivos del cliente (la fecha del más reciente): los navegadores abiertos con una versión vieja la comparan y avisan
+const BUILD = (() => { let m = 0; const walk = (d) => { for (const f of fs.readdirSync(d, { withFileTypes: true })) { const q = path.join(d, f.name); if (f.isDirectory()) walk(q); else m = Math.max(m, fs.statSync(q).mtimeMs); } }; try { walk(PUB); } catch (e) { /* nada */ } return String(Math.round(m)); })();
+
 const server = http.createServer((req, res) => {
   let u;
   try { u = decodeURIComponent((req.url || '/').split('?')[0]); } catch (e) { res.writeHead(400); return res.end(); }
   if (u === '/health') { res.writeHead(200, { 'Content-Type': 'text/plain' }); return res.end('ok'); }
   if (u === '/status') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    return res.end(JSON.stringify({ online: [...game.players.values()].filter((p) => p.ws).length, monsters: game.monsters.filter((m) => !m.dead).length }));
+    return res.end(JSON.stringify({ online: [...game.players.values()].filter((p) => p.ws).length, monsters: game.monsters.filter((m) => !m.dead).length, v: BUILD }));
   }
   if (u === '/') u = '/index.html';
   const fp = path.normalize(path.join(PUB, u));
