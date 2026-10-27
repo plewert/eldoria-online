@@ -180,3 +180,11 @@ Drops de la Hidra de Jade (4–5% base, ×0.5 por la reducción de equipo): **An
 
 - **Nivel de pesca a la vista:** aparece como cuarta habilidad (🎣 Pesca) bajo Magia en el panel del personaje, con su barra de experiencia; al hacer clic se abre la ventana de pesca.
 - Boris el Mercader también vende las cañas (todas) y los cebos, además de Nilo.
+
+## Arcángel del Santuario (jefe, Santuario de las Nubes)
+- Cueva con forma de nube en la Sabana (cerca de la aldea de pesca de Nilo), suelo blanco animado. Entrada por el camino al norte de la cueva.
+- Jefe compartido, reaparece cada 60 s. Tres ataques: **ráfagas de rayos** (círculos de aviso y caída: se esquivan caminando), **tornado** que persigue ~5 s y **nova azul** sobre los jugadores cercanos.
+- Botín raro: Yelmo, Coraza, Guanteletes, Pantalón Divino de Luz, Botas Aladas, Carcaj, Anillo, Cinturón de Plumaje Divino, Amuleto de la Gracia Celestial (4–6 % base) , Báculo Alado (~1 %) y Arco Arcangélico (0,5 %). Datos en `game/angel.js`, IA en `angelAI` (`game/ext.js`).
+
+## Mochila ordenable
+Arrastra un objeto de la mochila a otra casilla (vacía u ocupada) para moverlo o intercambiarlos. Mensaje `swap` en `game/game.js`.

@@ -261,7 +261,7 @@ ok('comida: sardina 80, salmón 100, tiburón 150; se come con el mensaje eat y 
 });
 ok('mapa ampliado: Selva Esmeralda, Sabana Dorada y Aldea Pesquera con comida y banco', () => {
   assert.equal(world.W, 320);
-  assert.equal(world.zoneAt(220, 30).id, 'selva'); assert.equal(world.zoneAt(220, 110).id, 'sabana'); assert.equal(world.zoneAt(210, 77).id, 'aldea');
+  assert.equal(world.zoneAt(220, 30).id, 'selva'); assert.equal(world.zoneAt(240, 110).id, 'sabana'); assert.equal(world.zoneAt(210, 77).id, 'aldea');
   assert.ok(world.zoneAt(210, 77).kind === 'town' && !world.zoneAt(210, 77).pvp);
   for (const id of ['nilo', 'tomas']) { const n = world.NPCS.find((q) => q.id === id); assert.ok(n && world.reach[n.y * world.W + n.x], id + ' alcanzable'); }
   const nilo = require('../game/data').SHOPS.nilo; ['sardina', 'salmon', 'tiburon'].forEach((i) => assert.ok(nilo.includes(i)));
@@ -405,6 +405,22 @@ ok('pesca: caña, picada, minijuego de temporización, nivel y peces por zona', 
   a.p.ext.fish.xp = 1e6; assert.ok(game.fishMult(a.p, 'tiburon') > 2); assert.equal(game.fishMult(a.p, 'espada_hierro'), 1);
   // persistencia
   const back = game.extSave(a.p); assert.equal(back.fish.xp, 1e6);
+});
+
+ok('Arcángel: cueva de nubes, set celestial raro y sus tres ataques', () => {
+  assert.equal(MONSTERS.arcangel.special, 'angel');
+  const loot = MONSTERS.arcangel.loot.map((l) => l[0]);
+  ['angel_yelmo', 'angel_coraza', 'angel_guantes', 'angel_botas', 'angel_pantalon', 'angel_carcaj', 'angel_anillo', 'angel_cinturon', 'angel_amuleto', 'angel_cetro', 'angel_arco'].forEach((id) => { assert.ok(loot.includes(id), id); assert.ok(ITEMS[id], id); });
+  assert.equal(ITEMS.angel_cetro.style, 'magic'); assert.equal(ITEMS.angel_arco.style, 'ranged'); assert.equal(MONSTERS.arcangel.loot.find((l) => l[0] === 'angel_arco')[1], 0.005);
+  const sp = world.monsterSpawns.find((q) => q.type === 'arcangel'); assert.equal(zoneOf([sp.x, sp.y]).id, 'cueva_nube');
+  assert.equal(typeof Game.prototype.angelAI, 'function');
+});
+
+ok('mochila: arrastrar y soltar intercambia casillas', () => {
+  const { p } = login('Swap1'); const A = p.inv[0], B = p.inv[1]; p.inv[5] = null;
+  game.handle(p, { t: 'swap', a: 0, b: 1 }); assert.equal(p.inv[0], B); assert.equal(p.inv[1], A);
+  game.handle(p, { t: 'swap', a: 0, b: 5 }); assert.equal(p.inv[5], B); assert.equal(p.inv[0], null);
+  game.handle(p, { t: 'swap', a: -1, b: 999 }); assert.equal(p.inv[5], B, 'índices inválidos se ignoran');
 });
 
 console.log(`\n${n} pruebas correctas`);

@@ -753,4 +753,59 @@
       }
     }
   });
+  /* ---------- Arcángel: rayos del cielo, tornado y nova azul ---------- */
+  const AF = [];
+  X.on('fx', (f) => {
+    const now = performance.now();
+    for (let i = AF.length - 1; i >= 0; i--) if (now - AF[i].t > AF[i].T) AF.splice(i, 1);
+    switch (f.k) {
+      case 'lgw': AF.push({ k: 'lgw', t: now, T: 900, f }); break;
+      case 'lg': AF.push({ k: 'lg', t: now, T: 420, f, s: Math.random() * 99 }); X.burst(f.x, f.y, 'storm', 14, { sp: 4, up: 3, g: 5, life: 0.5, size: 2.8 }); X.ring(f.x, f.y, 'storm', 360, 28, 3); G.shake = { t: now, m: 3 }; X.sfx && X.sfx('thunder'); break;
+      case 'tn': AF.push({ k: 'tn', t: now, T: 560, f }); break;
+      case 'nvw': AF.push({ k: 'nvw', t: now, T: 1300, f }); break;
+      case 'nv': AF.push({ k: 'nv', t: now, T: 700, f }); X.ring(f.x, f.y, 'arcane', 650, f.r * 36, 6); X.burst(f.x, f.y, 'arcane', 36, { sp: 6, up: 5, g: 3, life: 0.9, size: 3.4 }); G.shake = { t: now, m: 7 }; X.sfx && X.sfx('boss'); break;
+      default: break;
+    }
+  });
+  X.on('under', (c, now) => {
+    const TS = X.TS;
+    for (const b of AF) {
+      const p = Math.max(0, (now - b.t) / b.T); if (p >= 1) continue; const f = b.f, x = px(f.x), y = py(f.y);
+      if (b.k === 'lgw') {
+        const r = 1.5 * TS; c.fillStyle = `rgba(255,240,120,${0.10 + 0.25 * p})`; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+        c.strokeStyle = `rgba(255,250,190,${0.5 + 0.4 * Math.abs(Math.sin(now / 60))})`; c.lineWidth = 2; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke();
+      } else if (b.k === 'nvw') {
+        const r = f.r * TS; c.fillStyle = `rgba(70,140,255,${0.10 + 0.28 * p})`; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+        c.strokeStyle = 'rgba(150,200,255,.9)'; c.lineWidth = 3; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke(); c.beginPath(); c.arc(x, y, r * p, 0, 7); c.stroke();
+        for (let i = 0; i < 6; i++) { const a = now / 400 + i * 1.047; c.fillStyle = 'rgba(190,225,255,.8)'; c.fillRect(x + Math.cos(a) * r * 0.7 * (1 - p * 0.5) - 2, y + Math.sin(a) * r * 0.5 * (1 - p * 0.5) - 2, 4, 4); }
+      }
+    }
+  });
+  X.on('draw', (c, now) => {
+    const TS = X.TS;
+    for (const b of AF) {
+      const p = Math.max(0, (now - b.t) / b.T); if (p >= 1) continue; const f = b.f, x = px(f.x), y = py(f.y);
+      if (b.k === 'lg') {                                   // rayo zigzag desde arriba
+        const al = 1 - p; c.save(); c.globalCompositeOperation = 'lighter';
+        for (const [w, col] of [[9, `rgba(120,170,255,${0.5 * al})`], [3, `rgba(255,255,230,${al})`]]) {
+          c.strokeStyle = col; c.lineWidth = w; c.beginPath(); c.moveTo(x, y);
+          for (let i = 1; i <= 8; i++) c.lineTo(x + Math.sin(i * 2.3 + b.s) * 14 * (i / 8), y - i * 34); c.stroke();
+        }
+        c.fillStyle = `rgba(255,255,220,${0.6 * al})`; c.beginPath(); c.ellipse(x, y, TS * 1.4 * (0.4 + p), TS * 0.8 * (0.4 + p), 0, 0, 7); c.fill(); c.restore();
+      } else if (b.k === 'tn') {                            // tornado: espiral de aire blanco-azulado
+        const al = 1 - p * 0.6; c.save();
+        for (let i = 0; i < 14; i++) {
+          const u = i / 13, yy = y + 6 - u * 62, rw = 6 + u * 24, a = now / 90 + i * 1.1;
+          c.fillStyle = `rgba(${200 + u * 40},${225 + u * 20},255,${0.55 * al})`; c.beginPath(); c.ellipse(x + Math.sin(a) * rw * 0.5, yy, rw, 5, 0, 0, 7); c.fill();
+          c.strokeStyle = `rgba(255,255,255,${0.5 * al})`; c.lineWidth = 1.5; c.stroke();
+        }
+        c.restore();
+      } else if (b.k === 'nv') {                            // pilar azul de la nova
+        const al = 1 - p, r = f.r * TS; c.save(); c.globalCompositeOperation = 'lighter';
+        const g = c.createLinearGradient(0, y - 220, 0, y); g.addColorStop(0, 'rgba(70,140,255,0)'); g.addColorStop(1, `rgba(150,210,255,${0.85 * al})`);
+        c.fillStyle = g; c.fillRect(x - r * 0.55, y - 220, r * 1.1, 220);
+        c.fillStyle = `rgba(190,225,255,${0.55 * al})`; c.beginPath(); c.ellipse(x, y, r * (0.5 + p), r * (0.35 + p * 0.6), 0, 0, 7); c.fill(); c.restore();
+      }
+    }
+  });
 })();
