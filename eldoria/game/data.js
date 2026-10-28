@@ -27,7 +27,9 @@ const CFG = {
   FOOD_CD_MS: 1500,             // enfriamiento al comer
   HEAL_AMOUNT: 1000,            // hechizo de curar (V): vida por uso
   HEAL_CD_MS: 4000,             // y su enfriamiento
-  BANK_SIZE: 120,               // casillas del banco
+  BANK_SIZE: 120,
+  BANK_MAX: 480, BANK_PACK: 5, BANK_PACK_COST: 1000000,   // ampliar banco: +5 casillas por 1.000.000
+  CAVE_FEE: 2000,               // entrada a cada cueva de jefe               // casillas del banco
   TRADE_RANGE: 4,               // distancia máxima para comerciar
   TRADE_MAX_ITEMS: 8,
   TRADE_INVITE_MS: 20000,

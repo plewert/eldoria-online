@@ -302,3 +302,7 @@ Cueva nueva en las Tierras de Lava (puerta al norte, justo al sur de la Guarida 
 - **Líneas de fuego**: franjas horizontales y verticales que cruzan toda la cueva (con aviso).
 - **Marea de lava**: la caldera se llena de lava y solo las **rocas azules** son seguras.
 Los personajes arden al ser golpeados (llamas sobre el cuerpo) y se hunden en la lava. Botín raro: Yelmo, Coraza, Capa, Anillo, Arco Ígneo y Bastón del Orbe Ardiente, además del Corazón de Magma y la cría de mascota. Código: `game/magma.js` (servidor) y bloque «Ignaros» de `public/ui2.js` (animaciones).
+
+## Banco ampliable y entrada a las cuevas
+- En el banco, el botón **Comprar +5 espacios** cuesta **1.000.000** de oro (se paga con el oro en mano y, si falta, con el del banco). Se puede repetir hasta 480 espacios. Los espacios se guardan con el personaje (`bankSlots`). Ajustes en `CFG` (`BANK_PACK`, `BANK_PACK_COST`, `BANK_MAX`).
+- Entrar a cada **cueva de jefe** (Dragón, Hidra, Nubes, Araña, Leviatán, Caldera de Magma) cuesta **2.000** de oro en mano cada vez (`CFG.CAVE_FEE`). Las salidas son gratis; la Raid y las zonas normales no cobran. Los aventureros automáticos no pagan.

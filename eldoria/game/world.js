@@ -403,7 +403,8 @@ carvePath(30, 102, 30, 118);
 
 /* 5) Portales */
 const PORTALS = [];
-function addPortal(x, y, tx, ty, label) { tiles[idx(x, y)] = T.PORTAL; PORTALS.push({ x, y, tx, ty, label }); }
+function addPortal(x, y, tx, ty, label, fee) { tiles[idx(x, y)] = T.PORTAL; PORTALS.push({ x, y, tx, ty, label, fee: fee || 0 }); }
+const CAVE_FEE = 2000;
 function link(ox, oy, rooms, exitX, exitY, labelIn, labelOut) {
   const e = rooms[0];
   addPortal(ox, oy, e.cx + 1, e.cy, labelIn);
@@ -414,17 +415,17 @@ link(66, 100, minRooms, 67, 100, 'Minas Enanas (zona segura)', 'Salir a las Coli
 link(96, 28, abyRooms, 96, 30, 'Abismo Carmesí (¡PvP!)', 'Salir al Bosque');
 link(150, 90, pirRooms, 150, 89, 'Pirámide Olvidada (¡PvP!)', 'Salir al Desierto');
 link(130, 20, forRooms, 130, 22, 'Fortaleza de Hielo (¡PvP!)', 'Salir a las Cumbres');
-addPortal(CAVE.door[0], CAVE.door[1], CAVE.inside[0], CAVE.inside[1], 'Cueva del Dragón de las Sombras (peligro extremo)');
+addPortal(CAVE.door[0], CAVE.door[1], CAVE.inside[0], CAVE.inside[1], 'Cueva del Dragón de las Sombras (peligro extremo)', CAVE_FEE);
 addPortal(CAVE.exit[0], CAVE.exit[1], CAVE.door[0], CAVE.door[1] - 1, 'Salir al Desierto');
-addPortal(CAVE2.door[0], CAVE2.door[1], CAVE2.inside[0], CAVE2.inside[1], 'Cueva del Hidra de Jade (peligro extremo)');
+addPortal(CAVE2.door[0], CAVE2.door[1], CAVE2.inside[0], CAVE2.inside[1], 'Cueva del Hidra de Jade (peligro extremo)', CAVE_FEE);
 addPortal(CAVE2.exit[0], CAVE2.exit[1], CAVE2.door[0], CAVE2.door[1] + 1, 'Salir al Prado');
-addPortal(CAVE3.door[0], CAVE3.door[1], CAVE3.inside[0], CAVE3.inside[1], 'Santuario de las Nubes (peligro extremo)');
+addPortal(CAVE3.door[0], CAVE3.door[1], CAVE3.inside[0], CAVE3.inside[1], 'Santuario de las Nubes (peligro extremo)', CAVE_FEE);
 addPortal(CAVE3.exit[0], CAVE3.exit[1], CAVE3.door[0], CAVE3.door[1] - 1, 'Salir a la Sabana');
-addPortal(CAVE4.door[0], CAVE4.door[1], CAVE4.inside[0], CAVE4.inside[1], 'Guarida del Aracnídeo Fuego Negro (peligro extremo)');
+addPortal(CAVE4.door[0], CAVE4.door[1], CAVE4.inside[0], CAVE4.inside[1], 'Guarida del Aracnídeo Fuego Negro (peligro extremo)', CAVE_FEE);
 addPortal(CAVE4.exit[0], CAVE4.exit[1], CAVE4.door[0], CAVE4.door[1] - 1, 'Salir a las Tierras de Lava');
-addPortal(CAVE5.door[0], CAVE5.door[1], CAVE5.inside[0], CAVE5.inside[1], 'Gruta del Leviatán Abisal (peligro extremo)');
+addPortal(CAVE5.door[0], CAVE5.door[1], CAVE5.inside[0], CAVE5.inside[1], 'Gruta del Leviatán Abisal (peligro extremo)', CAVE_FEE);
 addPortal(CAVE5.exit[0], CAVE5.exit[1], CAVE5.door[0], CAVE5.door[1] - 1, 'Salir a la Selva Esmeralda');
-addPortal(CAVE6.door[0], CAVE6.door[1], CAVE6.inside[0], CAVE6.inside[1], 'Caldera del Soberano del Magma (peligro extremo)');
+addPortal(CAVE6.door[0], CAVE6.door[1], CAVE6.inside[0], CAVE6.inside[1], 'Caldera del Soberano del Magma (peligro extremo)', CAVE_FEE);
 addPortal(CAVE6.exit[0], CAVE6.exit[1], CAVE6.door[0], CAVE6.door[1] - 1, 'Salir a las Tierras de Lava');
 {
   const H1 = RAID_ROOMS[0];

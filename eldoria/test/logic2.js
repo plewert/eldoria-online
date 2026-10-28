@@ -596,6 +596,22 @@ ok('Raid: 5 cámaras, jefes, vidas, escalado por grupo, cofre final con botín r
   game.raidGo(first); assert.equal(game.raid.members.size, 10, 'máximo 10 jugadores'); game.raidReset();
 });
 
+ok('Banco ampliable (1M por 5 espacios) y entrada de 2k a las cuevas de jefe', () => {
+  const { p, ws } = login('Banquero'); const g = world.NPCS.find((q) => q.type === 'bank'); place(p, g.x + 1, g.y);
+  const n0 = p.bank.length; p.gold = 999999; p.bankGold = 0; game.bankBuy(p); assert.equal(p.bank.length, n0, 'sin oro no amplía');
+  p.gold = 600000; p.bankGold = 500000; game.bankBuy(p); assert.equal(p.bank.length, n0 + 5); assert.equal(p.gold + p.bankGold, 100000, 'cobra 1M (mano y banco)');
+  p.gold = 2e6; game.bankBuy(p); game.bankBuy(p); assert.equal(p.bank.length, n0 + 15, 'se puede seguir comprando'); assert.equal(lastMsg(ws, 'bank').size, n0 + 15);
+  p.bank[n0 + 14] = { id: 'pocion_vida', qty: 3 }; const d = game.serialize(p); assert.equal(d.bankSlots, n0 + 15);
+  const q = game.createPlayer({ key: 'x', name: 'x', data: d }); assert.equal(q.bank.length, n0 + 15); assert.ok(q.bank[n0 + 14]);
+  place(p, g.x + 40, g.y); p.gold = 2e6; game.bankBuy(p); assert.equal(p.bank.length, n0 + 15, 'hay que estar junto a la banquera');
+  const fees = world.PORTALS.filter((o) => o.fee); assert.equal(fees.length, 6, 'las 6 cuevas de jefe cobran'); assert.ok(fees.every((o) => o.fee === 2000));
+  const po = fees[5], z0 = [po.tx, po.ty];
+  const stepOn = (pl) => { const sx = po.x + 1, sy = po.y; place(pl, sx, sy); pl.pvpLock = 0; pl.nextMove = 0; game.tryStep(pl, -1, 0, game.now + 1e6); };
+  const { p: r } = login('Pobre'); r.gold = 1999; stepOn(r); assert.ok(!(r.x === z0[0] && r.y === z0[1]), 'sin 2k no entra'); assert.equal(r.gold, 1999);
+  const { p: u } = login('Rico'); u.gold = 5000; stepOn(u); assert.deepEqual([u.x, u.y], z0, 'con oro entra'); assert.equal(u.gold, 3000);
+  const ex = world.PORTALS.find((o) => !o.fee && o.tx === po.x && o.ty === po.y - 0) ; assert.ok(world.PORTALS.filter((o) => !o.fee).length > 6, 'las salidas son gratis');
+});
+
 console.log(`\n${n} pruebas correctas`);
 try { require('fs').unlinkSync(store.file); } catch (e) { /* nada */ }
 

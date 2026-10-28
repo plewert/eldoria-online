@@ -607,8 +607,10 @@
     G.inv.forEach((it, i) => inv.append(mkSlot(it, (ev) => { if (it) send({ t: 'bdep', s: i, q: ev.ctrlKey || ev.altKey ? 1 : it[1] }); })));
     const box = $('#bankBox'); box.replaceChildren();
     for (let i = 0; i < G.bank.size; i++) { const it = G.bank.bank[i]; box.append(mkSlot(it, (ev) => { if (it) send({ t: 'bwd', s: i, q: ev.ctrlKey || ev.altKey ? 1 : it[1] }); })); }
+    $('#bankSlots').textContent = G.bank.size; const bb = $('#bankBuy'); bb.textContent = G.bank.size + (G.bank.pack || 5) > (G.bank.max || 480) ? 'Banco al máximo' : `Comprar +${G.bank.pack || 5} espacios (${fmt(G.bank.cost || 1000000)} 💰)`; bb.disabled = G.bank.size + (G.bank.pack || 5) > (G.bank.max || 480);
     $('#bankHand').textContent = fmt(G.gold); $('#bankGold').textContent = fmt(G.bank.gold);
   }
+  $('#bankBuy').addEventListener('click', () => send({ t: 'bbuy' }));
   const amt = () => Math.max(0, Math.floor(Number($('#bankAmt').value) || 0));
   $('#bankDep').addEventListener('click', () => { send({ t: 'bgold', d: 'dep', q: amt() || G.gold }); $('#bankAmt').value = ''; });
   $('#bankWd').addEventListener('click', () => { send({ t: 'bgold', d: 'wd', q: amt() || G.bank.gold }); $('#bankAmt').value = ''; });
