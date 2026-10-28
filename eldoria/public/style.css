@@ -467,3 +467,9 @@ body.touch .sheet { max-height: calc(100dvh - 12px); }
 .s-cape { grid-column: 3; grid-row: 4; }
 
 @media (pointer: coarse) { #ctx button { padding: 12px 14px; font-size: 15px; } #ctx .hdr { font-size: 13px; } #ctx { min-width: 220px; } }
+
+/* trofeos y plumas de jefe: flotan y brillan */
+.trophy { display: inline-block; animation: trophyFloat 2.2s ease-in-out infinite, trophyGlow 1.6s ease-in-out infinite; }
+@keyframes trophyFloat { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-2px) scale(1.08); } }
+@keyframes trophyGlow { 0%, 100% { filter: drop-shadow(0 0 1px rgba(255,200,90,.4)); } 50% { filter: drop-shadow(0 0 6px rgba(255,210,100,.95)) brightness(1.2); } }
+@media (prefers-reduced-motion: reduce) { .trophy { animation: none; } }

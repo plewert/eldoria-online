@@ -1634,21 +1634,73 @@
     else if (spr === 'ig_bow') { fl(icon ? 0.86 : 0.9, icon ? 0.1 : 0.05, 11, 2.8, 10); fl(icon ? 0.22 : 0.2, icon ? 0.93 : 0.97, 10, 2.8, 11); }
     else if (spr === 'ig_staff') { if (icon) { orb(0.76, 0.2, 4.2, true); fl(0.58, 0.36, 8, 2.2, 12); } else { orb(0.5, 0.1, 4.2, true); fl(0.38, 0.22, 8, 2.2, 12); } }
   }
+
+  /* ---- equipo de los demás jefes: brillo que recorre la pieza + partículas según el tema (sombra, jade, ángel, fuego, mar, titán, Raid) ---- */
+  const THEMES = {
+    shadow: { glow: '140,60,255', mote: '200,130,255', sweep: 2600, rise: 1 },
+    jade:   { glow: '50,220,110', mote: '160,255,180', sweep: 2300, rise: 1 },
+    angel:  { glow: '255,215,110', mote: '255,248,205', sweep: 2000, star: 1 },
+    fire:   { glow: '255,100,25', mote: '255,175,60', sweep: 1900, rise: 1, ember: 1 },
+    sea:    { glow: '50,170,255', mote: '180,235,255', sweep: 2400, rise: 1 },
+    titan:  { glow: '255,120,30', mote: '255,205,90', sweep: 2200, rise: 1, ember: 1 },
+    forge:  { glow: '255,150,40', mote: '255,225,130', sweep: 1700, star: 1, ember: 1 },
+    ice:    { glow: '150,215,255', mote: '235,250,255', sweep: 2300, star: 1 },
+    blood:  { glow: '230,30,50', mote: '255,110,120', sweep: 2100, rise: 1 },
+  };
+  const THM_P = { s: 'shadow', j: 'jade', a: 'angel', f: 'fire', l: 'sea', t: 'titan', rv: 'jade', rk: 'fire', ra: 'forge', rx: 'angel', rm: 'shadow' };
+  const THM_S = { robe10: 'fire', robe11: 'fire', robe12: 'ice', hat12: 'blood', hat13: 'fire', hat14: 'ice', staff14: 'shadow', staff15: 'angel', staff16: 'forge', staff17: 'ice', staff18: 'sea', book5: 'angel' };
+  const themeOf = (spr) => { if (!spr || spr.startsWith('ig_')) return null; const m = /^([a-z]+)_/.exec(spr); return THM_S[spr] || (m && THM_P[m[1]]) || null; };
+  const SHM = new Map();
+  /** Dibujo de la pieza con una banda de luz que la recorre (solo sobre sus píxeles) y un latido de color. */
+  function shimmerCv(f, th, now) {
+    const T = THEMES[th], key = f.join(','); let o = SHM.get(key);
+    if (!o) { o = document.createElement('canvas'); o.width = f[2]; o.height = f[3]; SHM.set(key, o); }
+    if (o._t === now) return o; o._t = now;
+    const x = o.getContext('2d'), w = o.width, h = o.height;
+    x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, w, h); x.drawImage(gearImg, f[0], f[1], f[2], f[3], 0, 0, w, h);
+    x.globalCompositeOperation = 'source-atop';
+    const p = ((now / T.sweep) % 1.5) - 0.25, a = p * w * 1.7 - w * 0.5, g = x.createLinearGradient(a, 0, a + w * 0.55, h * 0.55);
+    g.addColorStop(0, `rgba(${T.mote},0)`); g.addColorStop(0.5, `rgba(${T.mote},.7)`); g.addColorStop(1, `rgba(${T.mote},0)`);
+    x.fillStyle = g; x.fillRect(0, 0, w, h);
+    x.fillStyle = `rgba(${T.glow},${0.07 + 0.07 * Math.sin(now / 420)})`; x.fillRect(0, 0, w, h);
+    x.globalCompositeOperation = 'source-over';
+    return o;
+  }
+  /** Partículas (motas que suben, brasas, destellos) sobre/alrededor de la pieza. (ox,oy,w,h) = su rectángulo, u = escala (36 = icono) */
+  function themeFx(c, th, ox, oy, w, h, u, now, seed) {
+    const T = THEMES[th], k = u / 36; c.save(); c.globalCompositeOperation = 'lighter';
+    const n = T.ember ? 6 : 5;
+    for (let i = 0; i < n; i++) {
+      const fr = (i * 0.6180339 + seed * 0.37) % 1, ph = (now / (1500 + i * 210) + i * 0.29 + seed) % 1, al = Math.sin(Math.PI * ph);
+      const x = ox + w * (0.12 + 0.76 * fr) + (T.ember ? Math.sin(now / 300 + i) * 1.4 * k : 0), y = oy + h * (T.rise ? 1.0 - ph * 1.1 : 0.15 + 0.7 * ((i * 0.37 + seed) % 1));
+      if (T.star && i % 2 === 0) {                                                  // destello de 4 puntas que centellea
+        const tw = Math.max(0, Math.sin(now / 230 + i * 2 + seed * 5)), L = (2.6 + 2.2 * tw) * k;
+        c.strokeStyle = `rgba(${T.mote},${0.35 + 0.6 * tw})`; c.lineWidth = Math.max(0.6, 0.8 * k);
+        c.beginPath(); c.moveTo(x - L, y); c.lineTo(x + L, y); c.moveTo(x, y - L); c.lineTo(x, y + L); c.stroke();
+      } else { c.fillStyle = `rgba(${T.mote},${0.85 * al})`; c.beginPath(); c.arc(x, y, (0.9 + 0.9 * (1 - ph)) * k * (T.ember ? 1.15 : 1), 0, 7); c.fill(); }
+    }
+    c.restore();
+  }
+  /** Pieza animada completa (brillo + partículas). */
+  function themedDraw(c, f, th, ox, oy, w, h, u, now, seed) {
+    c.drawImage(shimmerCv(f, th, Math.floor(now / 16)), 0, 0, f[2], f[3], ox, oy, w, h); themeFx(c, th, ox, oy, w, h, u, now, seed || 0);
+  }
   const IGA = new Set(); let igOn = false, igLast = 0;
   function igLoop(now) {
     if (now - igLast >= 33) {
       igLast = now;
-      for (const cv of IGA) { if (!cv.isConnected) { IGA.delete(cv); continue; } const x = cv.getContext('2d'), f = cv._f; x.clearRect(0, 0, f[2], f[3]); x.drawImage(gearImg, f[0], f[1], f[2], f[3], 0, 0, f[2], f[3]); igFx(x, cv._spr, 0, 0, f[2], f[3], 36, now, true); }
+      for (const cv of IGA) { if (!cv.isConnected) { IGA.delete(cv); continue; } const x = cv.getContext('2d'), f = cv._f; x.clearRect(0, 0, f[2], f[3]); if (cv._th) themedDraw(x, f, cv._th, 0, 0, f[2], f[3], 36, now, cv._seed); else { x.drawImage(gearImg, f[0], f[1], f[2], f[3], 0, 0, f[2], f[3]); igFx(x, cv._spr, 0, 0, f[2], f[3], 36, now, true); } }
     }
     if (IGA.size) requestAnimationFrame(igLoop); else igOn = false;
   }
-  const igAnimate = (cv, spr, f) => { cv._spr = spr; cv._f = f; IGA.add(cv); if (!igOn) { igOn = true; requestAnimationFrame(igLoop); } };
+  const igAnimate = (cv, spr, f, th) => { cv._spr = spr; cv._f = f; cv._th = th || null; cv._seed = (spr.length * 0.137) % 1; IGA.add(cv); if (!igOn) { igOn = true; requestAnimationFrame(igLoop); } };
   function iconNode(id) {
     const d = G.items[id], k = iconKey(id), f = GJ[k];
-    if (!f || !gearReady()) return el('span', '', d ? d.icon : '?');
+    if (!f || !gearReady()) return el('span', /^(trofeo_|pluma_fenix)/.test(id) ? 'trophy' : '', d ? d.icon : '?');
     const cv = document.createElement('canvas'); cv.width = f[2]; cv.height = f[3]; cv.className = 'gico';
     const x = cv.getContext('2d'); x.drawImage(gearImg, f[0], f[1], f[2], f[3], 0, 0, f[2], f[3]);
     if (d && /^ig_/.test(d.spr || '')) { igFx(x, d.spr, 0, 0, f[2], f[3], 36, performance.now(), true); igAnimate(cv, d.spr, f); }      // el equipo del Magma se anima
+    { const th = d && themeOf(d.spr); if (th) { themedDraw(x, f, th, 0, 0, f[2], f[3], 36, performance.now(), 0); igAnimate(cv, d.spr, f, th); } }      // equipo de los demás jefes: brillo y partículas
     return cv;
   }
   /** Capa sobre el personaje (c_<sprite>): ancla = (ax,ay) en fracción del dibujo. */
@@ -1656,7 +1708,8 @@
     const f = GJ['c_' + spr]; if (!f || !gearReady()) return false;
     c.save(); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high'; c.translate(x, y);
     if (rot) c.rotate(rot); if (flip) c.scale(-1, 1);
-    c.drawImage(gearImg, f[0], f[1], f[2], f[3], -f[2] * ax, -f[3] * ay, f[2], f[3]);
+    const th = themeOf(spr);
+    if (th) themedDraw(c, f, th, -f[2] * ax, -f[3] * ay, f[2], f[3], 24, performance.now(), (spr.length * 0.137) % 1); else c.drawImage(gearImg, f[0], f[1], f[2], f[3], -f[2] * ax, -f[3] * ay, f[2], f[3]);
     if (spr.startsWith('ig_')) igFx(c, spr, -f[2] * ax, -f[3] * ay, f[2], f[3], spr === 'ig_helm' ? 22 : spr === 'ig_chest' ? 19 : 26, performance.now(), false);
     c.restore(); return true;
   }
@@ -2019,9 +2072,11 @@
       if (gcol) { const gl = c.createRadialGradient(cx, cy, 2, cx, cy, 17); gl.addColorStop(0, gcol + 'cc'); gl.addColorStop(1, gcol + '00'); c.fillStyle = gl; c.beginPath(); c.arc(cx, cy, 17, 0, 7); c.fill(); c.fillStyle = '#fff'; }
       c.font = '20px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
       const gf = g.n === 1 && d && gearReady() && GJ[iconKey(top[0])];
-      if (gf) c.drawImage(gearImg, gf[0], gf[1], gf[2], gf[3], cx - 12, cy - 12, 24, 24);
+      const gth = gf && d && themeOf(d.spr);
+      if (gth) themedDraw(c, gf, gth, cx - 12, cy - 12, 24, 24, 24, now, (g.x * 7 + g.y * 3) % 1);
+      else if (gf) c.drawImage(gearImg, gf[0], gf[1], gf[2], gf[3], cx - 12, cy - 12, 24, 24);
       if (gf && /^ig_/.test((d || {}).spr || '')) igFx(c, d.spr, cx - 12, cy - 12, 24, 24, 24, now, true);      // el botín del Magma brilla en el suelo
-      else c.fillText(g.n > 1 ? '👝' : (d ? d.icon : '?'), cx, cy);
+      else if (!gf) c.fillText(g.n > 1 ? '👝' : (d ? d.icon : '?'), cx, cy);
       if (g.n === 1 && d && Math.abs(g.x - G.cam.x) < 4 && Math.abs(g.y - G.cam.y) < 3 && (top[3] > 0 || top[4] || !gcol)) {
         const nm = isGear(top[0]) ? itName([top[0], 1, top[3], top[4]]) : d.name;
         outlined(c, nm, cx, cy - 18, gcol || (isGear(top[0]) ? G.rar.normal : G.rar.none), 'bold 10px "Segoe UI", sans-serif');
