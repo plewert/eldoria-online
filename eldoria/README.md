@@ -276,6 +276,3 @@ Se controlan con el botón ✨ (básico / completo / cine). Básico: huellas en 
 
 ## Realismo de luz y terreno (fx3.js)
 Nivel ✨ completo o cine: oclusión ambiental junto a muros, rocas y árboles; sombras de copas con luz filtrada; bordes blandos entre hierba, camino, arena, nieve y pantano; agua con profundidad y brillo del cielo (reflejo de luna en cine); sombras de nubes; bruma baja al amanecer, atardecer, tras la lluvia y en pantanos; luz dinámica de hechizos, proyectiles, lava y jefes enfurecidos; vaho en el frío; parpadeo de personajes. Pendiente (requiere WebGL): luz por píxel sobre los sprites y normal maps.
-
-## Flechas
-Las flechas se dibujan como flechas: asta con veta, plumas con barbas, punta metálica y efecto elemental solo en la punta (llama, escarcha, gotas, runas). Vuelan en arco con sombra en el suelo, se clavan y vibran al impactar, con polvo y astillas. Se quitó el halo grande que las hacía parecer una bola de luz.

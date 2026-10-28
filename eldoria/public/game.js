@@ -189,7 +189,6 @@
   const SWING_MS = 320, SHOT_MS = 560, SHOT_DRAW = { ranged: 190, magic: 250 };
   const HEAVY = new Set(['titan_martillo', 'hacha_acero', 'mandoble_runico', 'martillo_titan', 'maza_enana', 'hacha_hielo', 'colmillo_hidra', 'fuego_mandoble']);
   const elemOf = (f) => (f.s === 'fire' || f.s === 'ice' ? f.s : WEAPON_ELEM[f.w] || (f.s === 'magic' ? 'magic' : null));
-  G.stuck = [];                                              // flechas clavadas en el blanco
   G.gone = new Map(); G.ghosts = [];                         // monstruos que acaban de desaparecer → se desintegran
   G.shots = new Map();                                       // disparos de arco/báculo en curso (por id de jugador)
   G.parts = []; G.rings = []; G.bolts = []; G.casts = []; G.shake = { t: 0, m: 0 };
@@ -1777,58 +1776,26 @@
     c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
   }
 
-  /* flecha: asta con veta, plumas con barbas, punta metálica y efecto elemental solo en la punta */
-  function drawArrow(c, x, y, ang, pal, now, drop, sc) {
-    const L = 40 * sc;
-    c.save(); c.fillStyle = 'rgba(0,0,0,.22)'; c.beginPath(); c.ellipse(x + 3, y + drop, L * 0.3, 2.4, ang * 0.2, 0, 7); c.fill(); c.restore();      // sombra en el suelo
-    c.save(); c.translate(x, y); c.rotate(ang);
-    const tr = c.createLinearGradient(-L * 2, 0, -L * 0.3, 0); tr.addColorStop(0, 'rgba(255,255,255,0)'); tr.addColorStop(1, pal ? `rgba(${pal[1]},.36)` : 'rgba(235,232,215,.3)');
-    c.fillStyle = tr; c.beginPath(); c.moveTo(-L * 2, 0); c.lineTo(-L * 0.3, -2); c.lineTo(-L * 0.3, 2); c.closePath(); c.fill();               // estela de aire
-    c.strokeStyle = 'rgba(255,255,255,.2)'; c.lineWidth = 1; for (let i = 0; i < 2; i++) { const o = (i ? 4 : -4); c.beginPath(); c.moveTo(-L * (1 + i * 0.25), o); c.lineTo(-L * (0.55 + i * 0.1), o); c.stroke(); }
-    const sh = c.createLinearGradient(0, -2, 0, 2); sh.addColorStop(0, '#d9b27a'); sh.addColorStop(0.5, '#a8794a'); sh.addColorStop(1, '#6d4a2a');
-    c.fillStyle = sh; c.fillRect(-L / 2, -1.5, L * 0.9, 3); c.fillStyle = 'rgba(255,255,255,.32)'; c.fillRect(-L / 2, -1.1, L * 0.9, 0.8);
-    for (const sd of [-1, 0, 1]) {                                                                                                         // plumas
-      c.fillStyle = sd === 0 ? (pal ? `rgb(${pal[1]})` : '#d04a3a') : (pal ? `rgb(${pal[2]})` : '#f0efe6');
-      c.beginPath(); c.moveTo(-L / 2 + 1, 0); c.lineTo(-L / 2 - 4, sd * 5); c.lineTo(-L / 2 + 9, sd * 3.2); c.lineTo(-L / 2 + 11, 0); c.closePath(); c.fill();
-    }
-    c.fillStyle = '#3a2a1a'; c.fillRect(-L / 2 - 1.5, -1.7, 2.4, 3.4);
-    const hx = L * 0.4, mg = c.createLinearGradient(0, -4, 0, 4); mg.addColorStop(0, pal ? `rgb(${pal[0]})` : '#f4f7fb'); mg.addColorStop(0.5, pal ? `rgb(${pal[1]})` : '#aab3bf'); mg.addColorStop(1, pal ? `rgb(${pal[2]})` : '#5b6470');
-    c.fillStyle = mg; c.beginPath(); c.moveTo(hx + 12, 0); c.lineTo(hx, -4); c.lineTo(hx + 3, 0); c.lineTo(hx, 4); c.closePath(); c.fill(); c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 0.7; c.stroke();
-    c.fillStyle = 'rgba(255,255,255,.65)'; c.beginPath(); c.moveTo(hx + 10, -0.2); c.lineTo(hx + 1.5, -3); c.lineTo(hx + 4, -0.5); c.closePath(); c.fill();
-    if (pal) {
-      const el = pal === ELEM.fire ? 'fire' : pal === ELEM.ice ? 'ice' : pal === ELEM.poison ? 'poison' : 'other', t = now / 1000;
-      c.globalCompositeOperation = 'lighter'; glow(c, hx + 8, 0, 8, pal[1], 0.5);
-      if (el === 'fire') for (let i = 0; i < 5; i++) { const u = i / 5; glow(c, hx + 4 - u * 28, Math.sin(t * 20 + i * 2) * 2 * (1 - u * 0.4) - 1.5 * u, 6.5 - u * 4.5, `255,${170 - u * 80 | 0},60`, 0.5 * (1 - u)); }
-      else if (el === 'ice') for (let i = 0; i < 5; i++) { c.fillStyle = `rgba(225,245,255,${0.8 - i * 0.14})`; c.fillRect(-L * 0.3 - i * 9 - 1.5, Math.sin(t * 14 + i * 5) * 5 - 1.5, 3, 3); }
-      else if (el === 'poison') for (let i = 0; i < 5; i++) { c.fillStyle = `rgba(150,215,70,${0.75 - i * 0.12})`; c.beginPath(); c.arc(-L * 0.2 - i * 8, Math.abs(Math.sin(t * 9 + i * 3)) * 6 + i, 2 - i * 0.25, 0, 7); c.fill(); }
-      else { for (let i = 0; i < 4; i++) { const a = t * 6 + i * 1.57; c.fillStyle = `rgba(${pal[1]},.8)`; c.fillRect(-L * 0.1 - i * 10 + Math.cos(a) * 2, Math.sin(a) * (6 + i) * 0.6 - 1, 2.2, 2.2); } c.strokeStyle = `rgba(${pal[1]},.5)`; c.lineWidth = 1; c.beginPath(); c.ellipse(hx - 6, 0, 4, 7, 0, 0, 7); c.stroke(); }
-    }
-    c.restore();
-  }
-  function drawStuck(c, now) {                                                          // flechas clavadas: vibran y se desvanecen
-    G.stuck = G.stuck.filter((s) => now - s.t < 900);
-    for (const s of G.stuck) {
-      const age = now - s.t, wob = Math.sin(age / 28) * 0.07 * Math.exp(-age / 160), a = age > 600 ? 1 - (age - 600) / 300 : 1;
-      c.save(); c.globalAlpha = a; drawArrow(c, px(s.x) - Math.cos(s.ang) * 8, py(s.y) - 6 - Math.sin(s.ang) * 8, s.ang + wob, null, now, 14, 0.7); c.restore();
-    }
-  }
   function drawProj(c, p, now, dt) {
     const age = now - p.t, k = Math.min(1, age / p.T), el = p.el, pal = ELEM[el] || null; if (age < 0) return;
     const wx = p.x1 + (p.x2 - p.x1) * k, wy = p.y1 + (p.y2 - p.y1) * k;
     const x = px(wx), y = py(wy) - 6, ang = Math.atan2(p.y2 - p.y1, p.x2 - p.x1);
     // estela de partículas
-    p.acc += dt * (pal ? (p.s === 'ranged' || p.s === 'arrow' ? 16 : 60) : 0);
+    p.acc += dt * (pal ? 60 : 0);
     while (p.acc >= 1) {
       p.acc -= 1;
       const col = pal[(Math.random() * 3) | 0];
       G.parts.push({ x: wx + (Math.random() - 0.5) * 0.15, y: wy - 0.18 + (Math.random() - 0.5) * 0.15, vx: (Math.random() - 0.5) * 0.8, vy: (el === 'fire' ? -1.2 : el === 'ice' ? 1.4 : -0.2) + (Math.random() - 0.5) * 0.8, g: 0, life: 0, max: 0.3 + Math.random() * 0.3, s: 1.5 + Math.random() * 2, c: col, add: true });
     }
     if (p.s === 'ranged' || p.s === 'arrow') {
-      const dist = Math.hypot(p.x2 - p.x1, p.y2 - p.y1), arcH = Math.min(22, 4 + dist * 4.5);
-      const sdx = (p.x2 - p.x1) * TS, sdy = (p.y2 - p.y1) * TS, ay = y - Math.sin(k * Math.PI) * arcH;
-      const aang = Math.atan2(sdy - arcH * Math.PI * Math.cos(k * Math.PI), sdx || 0.001);   // sube y baja en arco
-      drawArrow(c, x, ay, aang, pal, now, y + 6 - ay, 1);
-      p.ang = aang;
+      c.save(); c.translate(x, y); c.rotate(ang);
+      if (pal) { c.globalCompositeOperation = 'lighter'; glow(c, 8, 0, 14, pal[1], 0.7); c.globalCompositeOperation = 'source-over'; }
+      const tr = c.createLinearGradient(-34, 0, 0, 0); tr.addColorStop(0, 'rgba(255,255,255,0)'); tr.addColorStop(1, pal ? `rgba(${pal[1]},.65)` : 'rgba(230,225,205,.5)');
+      c.fillStyle = tr; c.fillRect(-34, -1, 34, 2);
+      c.strokeStyle = '#d8d2c0'; c.lineWidth = 2; c.beginPath(); c.moveTo(-10, 0); c.lineTo(7, 0); c.stroke();
+      c.fillStyle = pal ? `rgb(${pal[1]})` : '#c9453a'; c.beginPath(); c.moveTo(-11, 0); c.lineTo(-15, -3); c.lineTo(-8, 0); c.lineTo(-15, 3); c.closePath(); c.fill();      // plumas
+      c.fillStyle = pal ? `rgb(${pal[0]})` : '#cfd6df'; c.beginPath(); c.moveTo(11, 0); c.lineTo(5, -3.2); c.lineTo(5, 3.2); c.fill();
+      c.restore();
     } else {
       const pulse = 1 + Math.sin(now / 60) * 0.12, pc = pal || ELEM.magic, big = p.s === 'fire' ? 1.25 : 1;
       c.save(); c.globalCompositeOperation = 'lighter';
@@ -2010,12 +1977,11 @@
       }
   }
   function fxFlat(c, now, dt) {
-    for (const p of G.proj) if (!p.hit && now - p.t >= p.T) { p.hit = true; impact(p, now); if ((p.s === 'ranged' || p.s === 'arrow') && p.ang != null) { G.stuck.push({ x: p.x2, y: p.y2, ang: p.ang, t: now }); burst(p.x2, p.y2, null, 5, { sp: 1.6, up: 0.6, g: 4, life: 0.45, size: 2.2, add: false }); } }
+    for (const p of G.proj) if (!p.hit && now - p.t >= p.T) { p.hit = true; impact(p, now); }
     G.proj = G.proj.filter((p) => now - p.t < p.T + 20);
     G.casts = G.casts.filter((k) => now - k.t < 420); for (const k of G.casts) drawCast(c, k, now);
     G.bolts = G.bolts.filter((b) => now - b.t < 260); for (const b of G.bolts) drawBolt(c, b, now);
     for (const p of G.proj) drawProj(c, p, now, dt);
-    drawStuck(c, now);
     G.flashes = G.flashes.filter((f) => now - f.t < 1100); for (const f of G.flashes) drawFlash(c, f, now);
     drawRings(c, now); stepParts(c, dt);
   }
