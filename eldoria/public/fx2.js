@@ -223,9 +223,9 @@
       if (col && me) {
         const [x, y] = cen(cw, ch, me.rx, me.ry), r = 20 + pw * 14;
         c.save(); c.globalCompositeOperation = 'lighter';
-        c.strokeStyle = `rgba(${col},${0.3 + 0.3 * pw})`; c.lineWidth = 1.4; c.setLineDash([3, 5]); c.lineDashOffset = now / 50; c.beginPath(); c.ellipse(x, y + 12, r, r * 0.4, 0, 0, 7); c.stroke(); c.setLineDash([]);
+        c.strokeStyle = `rgba(${col},${0.18 + 0.2 * pw})`; c.lineWidth = 1.4; c.setLineDash([3, 5]); c.lineDashOffset = now / 50; c.beginPath(); c.ellipse(x, y + 12, r, r * 0.4, 0, 0, 7); c.stroke(); c.setLineDash([]);
         c.strokeStyle = `rgba(${col},${0.5 * pw + 0.1})`; c.lineWidth = 1; c.beginPath(); c.ellipse(x, y + 12, r * 0.6, r * 0.24, 0, 0, 7); c.stroke();
-        const g = c.createRadialGradient(x, y + 12, 2, x, y + 12, r); g.addColorStop(0, `rgba(${col},${0.18 * pw + 0.05})`); g.addColorStop(1, `rgba(${col},0)`); c.fillStyle = g; c.fillRect(x - r, y + 12 - r, r * 2, r * 2);
+        const g = c.createRadialGradient(x, y + 12, 2, x, y + 12, r); g.addColorStop(0, `rgba(${col},${0.08 * pw + 0.02})`); g.addColorStop(1, `rgba(${col},0)`); c.fillStyle = g; c.fillRect(x - r, y + 12 - r, r * 2, r * 2);
         c.restore();
         if (Math.random() < 0.18 + 0.4 * pw) add(me.rx + (Math.random() - 0.5) * 0.9, me.ry + 0.3, (Math.random() - 0.5) * 0.3, -0.6 - Math.random() * 0.8, 1.1, 1.6 + pw, col, { add: true });
         if (n >= 8) { const a = now / 600; add(me.rx + Math.cos(a) * 0.7, me.ry - 0.2 + Math.sin(a) * 0.25, 0, -0.3, 0.5, 2, col, { add: true }); }

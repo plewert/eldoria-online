@@ -137,7 +137,7 @@
     for (const cst of G.casts || []) { const u = (now - cst.t) / 420; if (u < 0 || u > 1) continue; lights.push([cst.x, cst.y - 0.2, LIGHT[cst.el] || LIGHT.magic, 0.55 * (1 - u), 80]); }
     for (const e of G.ents.values()) {
       if (e.kind === 'mo' && G.mons[e.t] && G.mons[e.t].boss && e.H && e.h / e.H <= 0.5) lights.push([e.rx, e.ry - 0.3, e.h / e.H <= 0.25 ? '255,50,30' : '255,110,40', 0.35 + 0.1 * Math.sin(now / 200), 110]);
-      if (e.id === G.id && G.eq && G.eq.weapon && G.items[G.eq.weapon[0]] && G.items[G.eq.weapon[0]].el) lights.push([e.rx, e.ry - 0.5, LIGHT[G.items[G.eq.weapon[0]].el] || LIGHT.magic, 0.25, 60]);
+      if (e.id === G.id && G.eq && G.eq.weapon && G.items[G.eq.weapon[0]] && G.items[G.eq.weapon[0]].el) lights.push([e.rx, e.ry - 0.5, LIGHT[G.items[G.eq.weapon[0]].el] || LIGHT.magic, 0.08, 40]);
     }
     if (lights.length) {
       c.save(); c.globalCompositeOperation = 'lighter';

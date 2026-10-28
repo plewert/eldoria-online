@@ -66,7 +66,7 @@
       };
       const px = (tx - G.cam.x) * TS + cw / 2, py = (ty - G.cam.y) * TS + ch / 2 - 6;
       const lit = cave || a0 > 0.12 ? 1 : 0.5 * (a0 / 0.12);
-      hole(px, py, (cave ? 200 : 150) + 16 * Math.min(4, G.me.v || 0), 0.95 * Math.max(0.2, lit));
+      hole(px, py, (cave ? 190 : 120) + 14 * Math.min(4, G.me.v || 0), 0.85 * Math.max(0.2, lit));
       for (const e of G.ents.values()) if (e.kind === 'pl' && e.id !== G.id) hole((e.rx - G.cam.x) * TS + cw / 2, (e.ry - G.cam.y) * TS + ch / 2 - 6, 70, 0.8 * lit);
       if (cave) for (const e of G.ents.values()) if (e.kind === 'mo' && G.mons[e.t] && G.mons[e.t].boss) hole((e.rx - G.cam.x) * TS + cw / 2, (e.ry - G.cam.y) * TS + ch / 2 - 30, 150, 0.9);   // el jefe de la cueva se ve de lejos
       for (const n of G.npcs) hole((n.x - G.cam.x) * TS + cw / 2 + TS / 2 - 16, (n.y - G.cam.y) * TS + ch / 2, 90, 0.85 * lit);

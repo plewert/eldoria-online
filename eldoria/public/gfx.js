@@ -60,7 +60,7 @@
         c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2);
       };
       const lit = dun ? 0.7 : 0.22 + 0.5 * n, fl = 1 + Math.sin(now / 130 + 1) * 0.04 + Math.sin(now / 53) * 0.03;
-      const [px, py] = cen(cw, ch, tx, ty); glow(px, py - 4, 120 * fl, '255,200,120', 0.42 * lit);
+      const [px, py] = cen(cw, ch, tx, ty); glow(px, py - 4, 84 * fl, '255,200,120', 0.15 * lit);
       for (const p of G.npcs) { const [x, y] = cen(cw, ch, p.x, p.y); glow(x, y - 6, 78 * fl, '255,190,110', 0.5 * lit); }
       for (const p of G.portals) { const [x, y] = cen(cw, ch, p.x, p.y); glow(x, y, 56, /PvP/.test(p.label) ? '255,90,70' : '140,160,255', 0.32 + 0.1 * Math.sin(now / 300)); }
       for (const e of G.ents.values()) if (e.kind === 'pl' && e.id !== G.id) { const [x, y] = cen(cw, ch, e.rx, e.ry); glow(x, y - 6, 60, '255,210,140', 0.2 * lit); }
