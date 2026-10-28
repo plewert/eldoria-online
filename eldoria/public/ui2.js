@@ -676,12 +676,12 @@
     const now = performance.now();
     switch (f.k) {
       case 'dkw': BF.push({ k: 'dkw', t: now, T: 1000, f }); break;
-      case 'dk': BF.push({ k: 'dk', t: now, T: 1000, f, seed: Math.random() * 99 }); G.shake = { t: now, m: 3 }; X.sfx && X.sfx('boss'); X.burst(f.x1, f.y1, 'dark', 26, { sp: 4, life: 0.7, size: 3.2, add: false }); break;
+      case 'dk': BF.push({ k: 'dk', t: now, T: 1000, f, seed: Math.random() * 99 }); G.shake = { t: now, m: 3 }; X.burst(f.x1, f.y1, 'dark', 26, { sp: 4, life: 0.7, size: 3.2, add: false }); break;
       case 'slw': BF.push({ k: 'slw', t: now, T: 1100, f }); break;
       case 'sl': BF.push({ k: 'crack', t: now, T: 9000, x: f.x, y: f.y, r: f.r, c: cracks(f.r) });
         X.ring(f.x, f.y, 'fire', 700, f.r * 32, 6); X.ring(f.x, f.y, 'dark', 520, f.r * 20, 4);
         X.burst(f.x, f.y, 'fire', 60, { sp: 7, up: 3, g: 5, life: 0.9, size: 3.4 }); X.burst(f.x, f.y, 'dark', 30, { sp: 5, life: 0.9, size: 3.5, add: false });
-        G.shake = { t: now, m: 9 }; X.sfx && X.sfx('thunder'); break;
+        G.shake = { t: now, m: 9 }; break;
       case 'fiw': BF.push({ k: 'fiw', t: now, T: 1000, f }); break;
       case 'fi': BF.push({ k: 'crack', t: now, T: 6000, x: f.x, y: f.y, r: 1.5, c: cracks(1.5) }); BF.push({ k: 'fi', t: now, T: 700, f });
         X.burst(f.x, f.y, 'fire', 34, { sp: 3, up: 6, g: 4, life: 0.9, size: 3.4 }); X.ring(f.x, f.y, 'fire', 500, 26, 4); break;
@@ -778,11 +778,11 @@
     const now = performance.now();
     switch (f.k) {
       case 'ykw': BF.push({ k: 'ykw', t: now, T: 1000, f }); break;
-      case 'yk': BF.push({ k: 'yk', t: now, T: 1000, f, seed: Math.random() * 99 }); G.shake = { t: now, m: 3 }; X.sfx && X.sfx('boss'); X.burst(f.x1, f.y1, 'storm', 26, { sp: 4, life: 0.7, size: 3.2 }); break;
+      case 'yk': BF.push({ k: 'yk', t: now, T: 1000, f, seed: Math.random() * 99 }); G.shake = { t: now, m: 3 }; X.burst(f.x1, f.y1, 'storm', 26, { sp: 4, life: 0.7, size: 3.2 }); break;
       case 'acw': BF.push({ k: 'acw', t: now, T: 900, f }); break;
       case 'ac': BF.push({ k: 'pool', t: now, T: 3500, x: f.x, y: f.y, seed: Math.random() * 9 }); X.burst(f.x, f.y, 'poison', 22, { sp: 3.5, up: 4, g: 5, life: 0.7, size: 3 }); X.ring(f.x, f.y, 'poison', 420, 34, 4); break;
       case 'hsw': BF.push({ k: 'hsw', t: now, T: 1100, f }); break;
-      case 'hs': X.ring(f.x, f.y, 'poison', 650, f.r * 32, 6); X.ring(f.x, f.y, 'dark', 520, f.r * 20, 4); X.burst(f.x, f.y, 'dark', 40, { sp: 6, up: 3, g: 5, life: 0.9, size: 3.6, add: false }); G.shake = { t: now, m: 9 }; X.sfx && X.sfx('thunder'); break;
+      case 'hs': X.ring(f.x, f.y, 'poison', 650, f.r * 32, 6); X.ring(f.x, f.y, 'dark', 520, f.r * 20, 4); X.burst(f.x, f.y, 'dark', 40, { sp: 6, up: 3, g: 5, life: 0.9, size: 3.6, add: false }); G.shake = { t: now, m: 9 }; break;
       case 'rcw': BF.push({ k: 'rcw', t: now, T: 1100, f, h: rnd(-6, 6) }); break;
       case 'rc': BF.push({ k: 'rubble', t: now, T: 5000, x: f.x, y: f.y, s: Math.random() * 99 }); X.burst(f.x, f.y, 'dark', 26, { sp: 5, up: 4, g: 6, life: 0.8, size: 3.4, add: false }); X.ring(f.x, f.y, 'dark', 380, 30, 4); G.shake = { t: now, m: 4 }; break;
       default: break;
@@ -848,11 +848,11 @@
     for (let i = AF.length - 1; i >= 0; i--) if (now - AF[i].t > AF[i].T) AF.splice(i, 1);
     switch (f.k) {
       case 'lgw': AF.push({ k: 'lgw', t: now, T: 900, f }); break;
-      case 'lg': AF.push({ k: 'lg', t: now, T: 420, f, s: Math.random() * 99 }); X.burst(f.x, f.y, 'storm', 14, { sp: 4, up: 3, g: 5, life: 0.5, size: 2.8 }); X.ring(f.x, f.y, 'storm', 360, 28, 3); G.shake = { t: now, m: 3 }; X.sfx && X.sfx('thunder'); break;
+      case 'lg': AF.push({ k: 'lg', t: now, T: 420, f, s: Math.random() * 99 }); X.burst(f.x, f.y, 'storm', 14, { sp: 4, up: 3, g: 5, life: 0.5, size: 2.8 }); X.ring(f.x, f.y, 'storm', 360, 28, 3); G.shake = { t: now, m: 3 }; break;
       case 'frw': AF.push({ k: 'frw', t: now, T: 900, f }); break;
       case 'fr': AF.push({ k: 'fr', t: now, T: 1800, f, s: Math.random() * 99 }); X.burst(f.x, f.y, 'fire', 18, { sp: 4, up: 4, g: 5, life: 0.7, size: 3 }); X.ring(f.x, f.y, 'fire', 380, 30, 4); G.shake = { t: now, m: 3 }; break;
       case 'fqw': AF.push({ k: 'fqw', t: now, T: 1300, f }); G.shake = { t: now, m: 2 }; break;
-      case 'fq': AF.push({ k: 'fq', t: now, T: 800, f }); X.ring(f.x, f.y, 'fire', 700, f.r * 32, 7); X.burst(f.x, f.y, 'dark', 40, { sp: 6, up: 3, g: 5, life: 0.9, size: 3.6, add: false }); G.shake = { t: now, m: 12 }; X.sfx && X.sfx('thunder'); break;
+      case 'fq': AF.push({ k: 'fq', t: now, T: 800, f }); X.ring(f.x, f.y, 'fire', 700, f.r * 32, 7); X.burst(f.x, f.y, 'dark', 40, { sp: 6, up: 3, g: 5, life: 0.9, size: 3.6, add: false }); G.shake = { t: now, m: 12 }; break;
       case 'wbw': AF.push({ k: 'wbw', t: now, T: 1100, f }); break;
       case 'wb': AF.push({ k: 'wb', t: now, T: 2400, f, s: Math.random() * 9 }); X.burst(f.x, f.y, 'fire', 22, { sp: 4, up: 3, g: 4, life: 0.8, size: 3 }); X.ring(f.x, f.y, 'fire', 420, f.r * 26, 4); G.shake = { t: now, m: 3 }; break;
       case 'spw': AF.push({ k: 'spw', t: now, T: 900, f }); break;
@@ -860,7 +860,7 @@
       case 'tpo': case 'tpi': AF.push({ k: f.k, t: now, T: 900, f }); X.burst(f.x, f.y, 'arcane', 26, { sp: 4, up: 5, g: 2, life: 0.8, size: 3 }); X.ring(f.x, f.y, 'arcane', 600, 34, 5); break;
       case 'tn': AF.push({ k: 'tn', t: now, T: 560, f }); break;
       case 'nvw': AF.push({ k: 'nvw', t: now, T: 1300, f }); break;
-      case 'nv': AF.push({ k: 'nv', t: now, T: 700, f }); X.ring(f.x, f.y, 'arcane', 650, f.r * 36, 6); X.burst(f.x, f.y, 'arcane', 36, { sp: 6, up: 5, g: 3, life: 0.9, size: 3.4 }); G.shake = { t: now, m: 7 }; X.sfx && X.sfx('boss'); break;
+      case 'nv': AF.push({ k: 'nv', t: now, T: 700, f }); X.ring(f.x, f.y, 'arcane', 650, f.r * 36, 6); X.burst(f.x, f.y, 'arcane', 36, { sp: 6, up: 5, g: 3, life: 0.9, size: 3.4 }); G.shake = { t: now, m: 7 }; break;
       default: break;
     }
   });
@@ -958,7 +958,7 @@
       case 'olw': LF.push({ k: 'olw', t: now, T: 1100, f }); break;
       case 'ol': LF.push({ k: 'ol', t: now, T: 300, f, s: Math.random() * 9 }); if (Math.random() < 0.25) X.burst(f.x, f.y, 'water', 3, { sp: 3, up: 3, g: 4, life: 0.5, size: 2.4 }); break;
       case 'bmw': LF.push({ k: 'bmw', t: now, T: 1000, f }); break;
-      case 'bm': LF.push({ k: 'bm', t: now, T: 560, f, s: Math.random() * 99 }); G.shake = { t: now, m: 3 }; X.sfx && X.sfx('boss'); X.burst(f.x1, f.y1, 'water', 18, { sp: 4, life: 0.6, size: 3 }); break;
+      case 'bm': LF.push({ k: 'bm', t: now, T: 560, f, s: Math.random() * 99 }); G.shake = { t: now, m: 3 }; X.burst(f.x1, f.y1, 'water', 18, { sp: 4, life: 0.6, size: 3 }); break;
       case 'bub': LF.push({ k: 'bub', t: now, T: 620, f }); break;
       case 'bubx': LF.push({ k: 'bubx', t: now, T: 500, f }); X.ring(f.x, f.y - 2, 'water', 500, 90, 5); X.burst(f.x, f.y - 2, 'water', 30, { sp: 6, up: 4, g: 3, life: 0.8, size: 3 }); break;
       default: break;
@@ -1047,14 +1047,14 @@
     const now = performance.now();
     for (let i = MG.length - 1; i >= 0; i--) if (now - MG[i].t > MG[i].T) MG.splice(i, 1);
     switch (f.k) {
-      case 'mcast': X.casts.set(f.id, now + f.T + 400); MG.push({ k: 'mcast', t: now, T: f.T + 400, f }); X.sfx && X.sfx('boss'); break;
-      case 'mgw': MG.push({ k: 'mgw', t: now, T: f.T, f }); X.sfx && X.sfx('boss'); break;
-      case 'mgf': MG.push({ k: 'mgf', t: now, T: f.T, f }); G.shake = { t: now, m: 5 }; X.sfx && X.sfx('boss'); break;
+      case 'mcast': X.casts.set(f.id, now + f.T + 400); MG.push({ k: 'mcast', t: now, T: f.T + 400, f }); break;
+      case 'mgw': MG.push({ k: 'mgw', t: now, T: f.T, f }); break;
+      case 'mgf': MG.push({ k: 'mgf', t: now, T: f.T, f }); G.shake = { t: now, m: 5 }; break;
       case 'mmw': MG.push({ k: 'mmw', t: now, T: f.T, f }); if (f.bx !== undefined) { const o = orbOf(f.bx, f.by); if (o) X.burst(o.wx, o.wy - 5.6, 'fire', 6, { sp: 3, up: 5, g: -2, life: 0.5, size: 2.8 }); } break;
-      case 'mmx': MG.push({ k: 'mmx', t: now, T: 900, f }); G.shake = { t: now, m: 4 }; X.sfx && X.sfx('boss'); X.burst(f.x, f.y, 'fire', 26, { sp: 5, up: 3, g: 3, life: 0.8, size: 3.4 }); X.ring(f.x, f.y, 'fire', 600, 60, 5); break;
+      case 'mmx': MG.push({ k: 'mmx', t: now, T: 900, f }); G.shake = { t: now, m: 4 }; X.burst(f.x, f.y, 'fire', 26, { sp: 5, up: 3, g: 3, life: 0.8, size: 3.4 }); X.ring(f.x, f.y, 'fire', 600, 60, 5); break;
       case 'mlw': MG.push({ k: 'mlw', t: now, T: f.T, f }); break;
       case 'ml': MG.push({ k: 'ml', t: now, T: f.T, f, s: Math.random() * 9 }); G.shake = { t: now, m: 3 }; break;
-      case 'mlw2': MG.push({ k: 'mlw2', t: now, T: f.T, f }); X.sfx && X.sfx('boss'); break;
+      case 'mlw2': MG.push({ k: 'mlw2', t: now, T: f.T, f }); break;
       case 'mlv': LAVA = { t: now, f, T: f.rise + f.hold + f.ebb }; G.shake = { t: now, m: 4 }; break;
       case 'brn': BRN.set(f.id, now + (f.ms || 1500)); break;
       default: break;

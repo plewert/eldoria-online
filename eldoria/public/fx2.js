@@ -96,7 +96,7 @@
         seenBoss.add(e.id);
         if (L >= 1 && G.me && Math.max(Math.abs(e.x - G.me.x), Math.abs(e.y - G.me.y)) <= 14 && now - lastIntro > 12000) {
           lastIntro = now; card('bossintro', `<div class="bar t"></div><div class="bar b"></div><div class="tt"><i>Jefe</i><b>${(d.name || '').replace(/[<>&]/g, '')}</b><u></u></div>`, 2700);
-          doPunch(1); G.shake = { t: now, m: 8 }; X.sfx && X.sfx('boss'); X.ring(e.x, e.y, 'dark', 800, 90, 5); X.burst(e.x, e.y, 'dark', 30, { sp: 5, up: 2, g: 3, life: 0.9, size: 3.4 });
+          doPunch(1); G.shake = { t: now, m: 8 }; X.bossVoice ? X.bossVoice(e.t) : X.sfx && X.sfx('boss'); X.ring(e.x, e.y, 'dark', 800, 90, 5); X.burst(e.x, e.y, 'dark', 30, { sp: 5, up: 2, g: 3, life: 0.9, size: 3.4 });
         }
       }
       const fr = e.H ? e.h / e.H : 1, ph = fr <= 0.25 ? 3 : fr <= 0.5 ? 2 : fr <= 0.75 ? 1 : 0, old = phase.get(e.id) || 0;
