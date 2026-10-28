@@ -127,7 +127,7 @@
       const p = Math.min(1, Math.max(0, (now - b.t) / b.T)), f = b.f, col = TH[f.th] || '176,100,255';
       if (b.k === 'w') {
         const x = px(f.x), y = py(f.y), r = f.r * TS;
-        c.fillStyle = `rgba(${col},${0.07 + 0.2 * p})`; c.beginPath(); c.ellipse(x, y, r, r * 0.82, 0, 0, 7); c.fill();
+        { const gw = c.createRadialGradient(x, y, r * 0.1, x, y, r); gw.addColorStop(0, `rgba(${col},${0.03 + 0.08 * p})`); gw.addColorStop(0.75, `rgba(${col},${0.12 + 0.2 * p})`); gw.addColorStop(1, `rgba(${col},${0.3 + 0.3 * p})`); c.fillStyle = gw; c.beginPath(); c.ellipse(x, y, r, r * 0.82, 0, 0, 7); c.fill(); }
         c.strokeStyle = `rgba(${col},${0.55 + 0.4 * Math.abs(Math.sin(now / 70))})`; c.lineWidth = 2; c.beginPath(); c.ellipse(x, y, r, r * 0.82, 0, 0, 7); c.stroke();
         c.strokeStyle = `rgba(255,255,255,${0.25 + 0.3 * p})`; c.lineWidth = 1; c.beginPath(); c.ellipse(x, y, r * p, r * 0.82 * p, 0, 0, 7); c.stroke();
         if (f.big) for (let i = 0; i < 10; i++) { const a = i * 0.628 + 0.2; c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * r * p, y + Math.sin(a) * r * p * 0.82); c.stroke(); }

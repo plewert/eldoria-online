@@ -146,7 +146,9 @@
       if (!e) { e = { kind: 'mo', id: q.i, rx: q.x, ry: q.y }; G.ents.set(q.i, e); }
       Object.assign(e, { t: q.t, x: q.x, y: q.y, h: q.h, H: q.H });
     }
-    for (const id of [...G.ents.keys()]) if (!seen.has(id) && !(G.keep && id >= 7000)) G.ents.delete(id);
+    { const tn = performance.now();
+      for (const id of [...G.ents.keys()]) if (!seen.has(id) && !(G.keep && id >= 7000)) { const o = G.ents.get(id); if (o.kind === 'mo') G.gone.set(id, Object.assign({}, o, { gt: tn })); G.ents.delete(id); }
+      for (const [id, o] of G.gone) if (tn - o.gt > 1500) G.gone.delete(id); }
     G.me = m.me; G.ground = m.gi; G.nodes = m.nd || [];
     if (G.me) {                                            // se cierran solos al alejarte del PNJ
       const far = (kind) => !G.npcs.some((n) => (kind === 'bank' ? n.type === 'bank' : n.type === 'shop') && Math.max(Math.abs(n.x - G.me.x), Math.abs(n.y - G.me.y)) <= 4);
@@ -186,6 +188,7 @@
   const SWING_MS = 320, SHOT_MS = 560, SHOT_DRAW = { ranged: 190, magic: 250 };
   const HEAVY = new Set(['titan_martillo', 'hacha_acero', 'mandoble_runico', 'martillo_titan', 'maza_enana', 'hacha_hielo', 'colmillo_hidra', 'fuego_mandoble']);
   const elemOf = (f) => (f.s === 'fire' || f.s === 'ice' ? f.s : WEAPON_ELEM[f.w] || (f.s === 'magic' ? 'magic' : null));
+  G.gone = new Map(); G.ghosts = [];                         // monstruos que acaban de desaparecer → se desintegran
   G.shots = new Map();                                       // disparos de arco/báculo en curso (por id de jugador)
   G.parts = []; G.rings = []; G.bolts = []; G.casts = []; G.shake = { t: 0, m: 0 };
 
@@ -240,7 +243,8 @@
         if (f.cr) { burst(f.x, f.y, 'sun', 16, { sp: 6, life: 0.6, size: 3 }); ring(f.x, f.y, 'sun', 520, 38, 4); G.shake = { t: now, m: 4 }; }
         break;
       }
-      case 'x': G.flashes.push({ k: 'x', x: f.x, y: f.y, t: now }); burst(f.x, f.y, null, 10, { sp: 3, life: 0.5, size: 2.2, add: false }); break;
+      case 'x': for (const [id, o] of G.gone) if (Math.abs(o.x - f.x) <= 1 && Math.abs(o.y - f.y) <= 1) { G.ghosts.push({ e: o, t: now }); G.gone.delete(id); break; }
+        G.flashes.push({ k: 'x', x: f.x, y: f.y, t: now }); burst(f.x, f.y, null, 10, { sp: 3, life: 0.5, size: 2.2, add: false }); break;
       case 'l': G.flashes.push({ k: 'l', x: f.x, y: f.y, t: now }); burst(f.x, f.y, 'sun', 30, { sp: 3, up: 4, life: 1.1, size: 2.6, fx: 0.5 }); ring(f.x, f.y, 'sun', 900, 40, 4); break;
       case 'h': G.flashes.push({ k: 'h', x: f.x, y: f.y, t: now }); burst(f.x, f.y, 'poison', 14, { sp: 1.3, up: 3.2, life: 0.9, size: 2.4, fx: 0.7 }); ring(f.x, f.y, 'poison', 650, 24); break;
       case 'c': G.bubbles.set(f.i, { v: f.v, t: now }); break;
@@ -389,7 +393,7 @@
 
   function fillSlot(node, it) {
     node.replaceChildren();
-    node.classList.remove('r-plus', 'r-ancient', 'r-gem', 'locked');
+    node.classList.remove('r-plus', 'r-ancient', 'r-gem', 'r-raid', 'locked');
     node.classList.toggle('empty', !it);
     node._it = it || null;
     if (!it) return;
@@ -398,6 +402,7 @@
     if (it[1] > 1) node.append(el('span', 'q', String(it[1])));
     const r = rarOf(it);
     if (r === 'plus' || r === 'ancient' || r === 'gem') node.classList.add('r-' + r);
+    if (/^rd_/.test(it[0])) node.classList.add('r-raid');
     if (isGear(it[0])) {
       if (it[2] > 0 || it[3]) { const u = el('span', 'up', it[3] ? 'A' + (it[2] > 0 ? '+' + it[2] : '') : '+' + it[2]); u.style.color = itColor(it); node.append(u); }
       if (it[4] > 0) {
@@ -1074,6 +1079,12 @@
       g.fillStyle = e.kind === 'pl' ? '#ffffff' : '#ff7a5c';
       g.fillRect(e.x * sx - 1, e.y * sy - 1, e.kind === 'pl' ? 3 : 2, e.kind === 'pl' ? 3 : 2);
     }
+    const nowM = performance.now();
+    for (const p of G.portals) {                                             // portales: rombo que late (rojo = PvP, dorado = mina/raid, azul = resto)
+      const hot = /PvP/.test(p.label || ''), gold = /Mina|Raid|Santuario|Sombras/i.test(p.label || ''), x = p.x * sx, y = p.y * sy, k = 4 + Math.sin(nowM / 350 + p.x) * 1;
+      g.fillStyle = hot ? '#ff5a4a' : gold ? '#ffd24a' : '#6ea8ff'; g.strokeStyle = '#000'; g.lineWidth = 1.5;
+      g.beginPath(); g.moveTo(x, y - k); g.lineTo(x + k, y); g.lineTo(x, y + k); g.lineTo(x - k, y); g.closePath(); g.stroke(); g.fill();
+    }
     if (G.grave && G.grave.x >= 0) {
       const gx = G.grave.x * sx, gy = G.grave.y * sy; g.strokeStyle = '#000'; g.lineWidth = 4; g.beginPath(); g.moveTo(gx, gy - 6); g.lineTo(gx, gy + 6); g.moveTo(gx - 4, gy - 2); g.lineTo(gx + 4, gy - 2); g.stroke();
       g.strokeStyle = '#ff5a4a'; g.lineWidth = 2; g.stroke();
@@ -1700,6 +1711,30 @@
     for (let i = 0; i < 1 + lv; i++) { const a = now / 700 + i * 6.28 / (1 + lv) + e.id; c.fillRect(Math.round(cx + Math.cos(a) * (r - 2)) - 1, Math.round(cy + Math.sin(a) * (r - 6)) - 1, 2, 2); }
   }
 
+  const GHOST_MS = 750;
+  function ghostOne(c, g, now, sx, sy) {
+    const p = (now - g.t) / GHOST_MS, e = g.e, d = G.mons[e.t] || {}, boss = !!d.boss, H = TS * (boss ? 2.8 : 1.7);
+    if (p >= 1) return;
+    c.save(); c.beginPath(); c.rect(sx - TS * 1.5, sy + TS - H + H * p * 0.9, TS * 4, H); c.clip();
+    c.globalAlpha = 1 - p * 0.55; drawMonster(c, e, sx, sy, now); c.restore();
+  }
+  function ghostsDraw(c, now, sxy) {                                                  // desintegración de monstruos: se borran de arriba abajo con chispas
+    G.ghosts = G.ghosts.filter((g) => now - g.t < GHOST_MS);
+    for (const g of G.ghosts) {
+      const p = (now - g.t) / GHOST_MS, e = g.e, boss = !!(G.mons[e.t] || {}).boss, H = TS * (boss ? 2.8 : 1.7), [sx, sy] = sxy(e);
+      ghostOne(c, g, now, sx, sy);
+      if (Math.random() < 0.8) burst(e.rx + (Math.random() - 0.5) * (boss ? 1.6 : 0.8), e.ry - 0.55 + (H / TS) * p * 0.63, boss ? 'dark' : null, boss ? 3 : 2, { sp: 0.9, up: 1.4, g: -1, life: 0.7, size: boss ? 3 : 2, add: boss });
+    }
+  }
+  function txtDraw(c, t, now) {                                                      // números de daño: suben con rebote y los críticos «explotan»
+    const p = (now - t.t) / 1000, a = 1 - p; if (a <= 0) return;
+    const lift = 34 * (1 - Math.pow(1 - Math.min(1, p * 1.5), 3)) + (p < 0.35 ? 0 : Math.sin((p - 0.35) * 9) * 1.5 * a);
+    const pop = 1 + (t.big ? 0.7 : 0.25) * Math.max(0, 1 - p * 6), px = Math.round((t.big ? 20 : 14) * pop);
+    c.globalAlpha = Math.min(1, a * 1.6);
+    outlined(c, t.v, sxOf(t.x) + TS / 2 + t.dx * p, syOf(t.y) - 4 - lift, TXT_COL[t.c] || '#fff', `bold ${px}px "Segoe UI", sans-serif`);
+    c.globalAlpha = 1;
+  }
+
   function drawFlash(c, f, now) {
     const age = now - f.t, cx = sxOf(f.x) + TS / 2, cy = syOf(f.y) + TS / 2;
     if (f.k === 's') {
@@ -2058,10 +2093,10 @@
     }
     for (const e of G.ents.values()) objs.push([e.ry + 0.45, () => bb(e.rx, e.ry + 0.45, () => { const sx = Math.round((e.rx - tx) * TS + cw / 2 - TS / 2), sy = Math.round((e.ry - ty) * TS + ch / 2 - TS / 2); entOne(c, e, sx, sy, now, tgId); })]);
     G.texts = G.texts.filter((t) => now - t.t < 1000);
-    for (const t of G.texts) objs.push([t.y + 5, () => bb(t.x, t.y + 0.5, () => {
-      const a = 1 - (now - t.t) / 1000; c.globalAlpha = Math.min(1, a * 1.6);
-      outlined(c, t.v, sxOf(t.x) + TS / 2 + t.dx * (1 - a), syOf(t.y) - 4 - (1 - a) * 30, TXT_COL[t.c] || '#fff', t.big ? 'bold 20px "Segoe UI", sans-serif' : 'bold 14px "Segoe UI", sans-serif'); c.globalAlpha = 1;
-    })]);
+    for (const t of G.texts) objs.push([t.y + 5, () => bb(t.x, t.y + 0.5, () => txtDraw(c, t, now))]);
+    G.ghosts = G.ghosts.filter((g) => now - g.t < GHOST_MS);
+    for (const g of G.ghosts) { if (Math.random() < 0.8) burst(g.e.rx + (Math.random() - 0.5) * 0.8, g.e.ry - 0.2, null, 2, { sp: 0.9, up: 1.4, g: -1, life: 0.7, size: 2, add: false }); }
+    for (const g of G.ghosts) objs.push([g.e.ry + 0.45, () => bb(g.e.rx, g.e.ry + 0.45, () => ghostOne(c, g, now, Math.round((g.e.rx - tx) * TS + cw / 2 - TS / 2), Math.round((g.e.ry - ty) * TS + ch / 2 - TS / 2)))]);
     objs.sort((a, b) => a[0] - b[0]);
     for (const o of objs) o[1]();
     c.setTransform(dpr * zoom, 0, 0, dpr * zoom, 0, 0);
@@ -2116,14 +2151,10 @@
       if (sx < -TS * 2 || sy < -TS * 2 || sx > cw + TS || sy > ch + TS) continue;
       entOne(c, e, sx, sy, now, tgId);
     }
+    ghostsDraw(c, now, (e) => [Math.round((e.rx - G.cam.x) * TS + cw / 2 - TS / 2), Math.round((e.ry - G.cam.y) * TS + ch / 2 - TS / 2)]);
     fxFlat(c, now, dt);
     G.texts = G.texts.filter((t) => now - t.t < 1000);
-    for (const t of G.texts) {
-      const a = 1 - (now - t.t) / 1000;
-      c.globalAlpha = Math.min(1, a * 1.6);
-      outlined(c, t.v, sxOf(t.x) + TS / 2 + t.dx * (1 - a), syOf(t.y) - 4 - (1 - a) * 30, TXT_COL[t.c] || '#fff', t.big ? 'bold 20px "Segoe UI", sans-serif' : 'bold 14px "Segoe UI", sans-serif');
-      c.globalAlpha = 1;
-    }
+    for (const t of G.texts) txtDraw(c, t, now);
     EXT.draw(c, now, cw, ch, dt, tx, ty);
     // oscuridad en mazmorras
     const zk = zoneAt(G.me.x, G.me.y).kind;

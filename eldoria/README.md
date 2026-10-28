@@ -270,3 +270,6 @@ Botón junto al de sonido (PC y teléfono) que cambia entre **Completo** (luces 
 
 ## Animación de arcos y báculos
 Al disparar, el arco tensa la cuerda con la flecha encajada (brillo elemental), la suelta con vibración y retroceso; los báculos se alzan, cargan un orbe con chispas que convergen y lanzan con destello y onda. El proyectil sale al terminar la carga (~190 ms arco, ~250 ms magia). Funciona en 2D y 3D.
+
+## Extras gráficos (fx2.js)
+Se controlan con el botón ✨ (básico / completo / cine). Básico: huellas en arena, nieve y barro, polvo al caminar, golpes con peso (zoom y destello en críticos, bordes rojos al recibir daño, números con rebote), desintegración de monstruos, tarjeta de entrada de jefe con barras de cine, fases de furia con aura, banner de subida de nivel e iris al cruzar portales. Completo: charcos con ondas y salpicaduras de lluvia, nieve acumulada, espuma y brillos en el agua, hojas con viento (arena en el desierto), ventanas encendidas de noche, auras del equipo (sets de raid, Ancient, +N altos), estela de capa y brillo animado en ítems raros. Cine: reflejos en el agua y relámpagos dibujados. El minimapa marca los portales (rojo PvP, dorado raid/mina, azul resto).

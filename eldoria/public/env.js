@@ -123,7 +123,7 @@
       // relámpagos en tormentas fuertes
       if (kind === 'rain' && inten > 0.7) {
         const t = performance.now();
-        if (t > nextBolt) { flash = 1; nextBolt = t + 9000 + Math.random() * 14000; setTimeout(() => X.sfx && X.sfx('thunder'), 400 + Math.random() * 600); }
+        if (t > nextBolt) { flash = 1; X.bolt && X.bolt(); nextBolt = t + 9000 + Math.random() * 14000; setTimeout(() => X.sfx && X.sfx('thunder'), 400 + Math.random() * 600); }
       }
     }
     if (flash > 0.02) { c.fillStyle = `rgba(235,240,255,${flash * 0.55})`; c.fillRect(0, 0, cw, ch); flash *= Math.pow(0.04, dt); }
