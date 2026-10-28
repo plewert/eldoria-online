@@ -387,3 +387,5 @@ ol.rank li.me { color: #ffd96a; }
 .mapcv.grab { cursor: grabbing; }
 
 .newver{position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:99999;background:#1b2a3a;border:2px solid #d8b24a;color:#ffe9a8;padding:8px 12px;border-radius:8px;font-size:14px;display:flex;gap:10px;align-items:center;box-shadow:0 4px 18px rgba(0,0,0,.6)}
+.gfxbtn { left: 52px; }
+body.touch .gfxbtn { top: 62px; left: 52px; }

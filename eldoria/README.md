@@ -234,3 +234,7 @@ Boris vende 11 tabletas (100 000 de oro cada una, de un solo uso): Ciudad, Bosqu
 ## Minería
 
 Habilidad nueva (tecla **U**). Boris vende los picos (piedra, hierro, acero, cristal, obsidiana, abismo): mejor pico = más rápido, más gemas y a veces doble piedra. 8 rocas repartidas por zonas y nivel: Granito y Arenisca (1-30), Pizarra (30-60), Pedernal (60-90), Pómez (90-120), Mármol (120-170), Basalto (170-220), Obsidiana (220-320, cuevas). Cada roca puede dar gemas (rubí, zafiro, esmeralda, topacio, amatista, ópalo, diamante) para engarzar en armas y armaduras. Sección propia en el registro de colección y anuncio global de gemas raras.
+
+## Efectos visuales (✨)
+
+Botón junto al de sonido (PC y teléfono) que cambia entre **Completo** (luces cálidas, rayos de sol, polvo de luz y luciérnagas), **Básico** (sombras según la hora, viñeta y color) y **Apagado**. Se guarda en el navegador; en teléfono arranca en Básico. Código en `public/gfx.js`.

@@ -309,7 +309,8 @@
     $('#txpTxt').textContent = `${fmt(s.xp - s.xpLo)} / ${fmt(s.xpHi - s.xpLo)}`;
     $('#gold').textContent = fmt(s.gold); $('#defTxt').textContent = `Defensa ${s.def}`;
     document.querySelectorAll('#skills li').forEach((li) => {
-      const k = li.dataset.sk, [lv, xp, lo, hi] = k === 'fish' ? fishRow() : s.sk[k];
+      const k = li.dataset.sk; if (k === 'mine') return;   // la minería la dibuja ui2.js
+      const [lv, xp, lo, hi] = k === 'fish' ? fishRow() : s.sk[k];
       li.querySelector('b').textContent = lv;
       li.querySelector('.bar i').style.width = pct(xp - lo, hi - lo);
       li.classList.toggle('on', s.style === k);
