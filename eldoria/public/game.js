@@ -183,9 +183,10 @@
     cetro_faraon: 'sun', hoja_faraon: 'sun', cimitarra_desierto: 'sun',
   };
   G.swings = new Map();                                      // golpes cuerpo a cuerpo en curso (por id de jugador)
-  const SWING_MS = 320;
+  const SWING_MS = 320, SHOT_MS = 560, SHOT_DRAW = { ranged: 190, magic: 250 };
   const HEAVY = new Set(['titan_martillo', 'hacha_acero', 'mandoble_runico', 'martillo_titan', 'maza_enana', 'hacha_hielo', 'colmillo_hidra', 'fuego_mandoble']);
   const elemOf = (f) => (f.s === 'fire' || f.s === 'ice' ? f.s : WEAPON_ELEM[f.w] || (f.s === 'magic' ? 'magic' : null));
+  G.shots = new Map();                                       // disparos de arco/báculo en curso (por id de jugador)
   G.parts = []; G.rings = []; G.bolts = []; G.casts = []; G.shake = { t: 0, m: 0 };
 
   function burst(x, y, el, n, o = {}) {
@@ -218,13 +219,15 @@
       case 'd': G.texts.push({ x: f.x, y: f.y, v: String(f.v), c: f.c, t: now, dx: (Math.random() - 0.5) * 14, big: f.v === '¡CRÍTICO!' }); break;
       case 'p': {
         const el = elemOf(f), dist = Math.hypot(f.x2 - f.x1, f.y2 - f.y1), T = Math.min(430, 140 + dist * 42);
-        G.proj.push({ x1: f.x1, y1: f.y1, x2: f.x2, y2: f.y2, s: f.s, el, T, t: now, cr: f.cr, hit: false, acc: 0 });
+        const mine = f.i != null && f.w && G.items[f.w] && (f.s === 'ranged' || f.s === 'magic'), D = mine ? (f.s === 'ranged' ? SHOT_DRAW.ranged : SHOT_DRAW.magic) : 0;   // el proyectil sale cuando acaba de tensar/cargar
+        if (mine) G.shots.set(f.i, { t: now, s: f.s, el: el || WEAPON_ELEM[f.w] || null, D, w: f.w });
+        G.proj.push({ x1: f.x1, y1: f.y1, x2: f.x2, y2: f.y2, s: f.s, el, T, t: now + D, cr: f.cr, hit: false, acc: 0 });
         const casty = f.s === 'magic' || f.s === 'fire' || f.s === 'ice';
-        if (casty) { G.casts.push({ x: f.x1, y: f.y1, el: el || 'magic', t: now }); burst(f.x1, f.y1 - 0.2, el || 'magic', 6, { sp: 1.8, up: 1.2, life: 0.4 }); }
+        if (casty) { G.casts.push({ x: f.x1, y: f.y1, el: el || 'magic', t: now + D }); setTimeout(() => burst(f.x1, f.y1 - 0.2, el || 'magic', 6, { sp: 1.8, up: 1.2, life: 0.4 }), D); }
         if (el === 'storm') {                                                    // rayo instantáneo
           const pts = [], n = 9;
           for (let i = 0; i <= n; i++) { const k = i / n, j = i === 0 || i === n ? 0 : (Math.random() - 0.5) * 0.7; pts.push([f.x1 + (f.x2 - f.x1) * k + j, f.y1 + (f.y2 - f.y1) * k + (Math.random() - 0.5) * 0.7 * (i % 2 ? 1 : -1)]); }
-          G.bolts.push({ pts, t: now }); G.proj[G.proj.length - 1].T = 90;
+          G.bolts.push({ pts, t: now + D }); G.proj[G.proj.length - 1].T = 90;
         }
         break;
       }
@@ -1152,6 +1155,7 @@
   }
 
   /** Dibuja el arma equipada. (hx,hy) = mano; dir = lado hacia el que mira; swing = balanceo. */
+  let BOWPULL = null;                                                // tensado del arco durante el disparo (lo fija holdWeapon)
   function drawWeaponItem(c, id, d, hx, hy, dir, now, swing) {
     const kind = wKind(id, d), m = matOf(id.replace(/^(espada|hacha|arco|baston|ballesta|cetro|baculo|vara|mandoble|martillo|maza|lanza|daga|hoja|cimitarra|colmillo)_?/, '') || id, d.style === 'melee' ? 'hierro' : 'madera');
     const el = WEAPON_ELEM[id], pal = el ? ELEM[el] : null, big = d.atk >= 40;
@@ -1192,8 +1196,16 @@
     } else if (kind === 'bow') {
       const col = pal ? `rgb(${pal[1]})` : /marfil/.test(id) ? '#efe6cc' : /dragon/.test(id) ? '#c8402a' : /sol/.test(id) ? '#f0c85a' : /sombras/.test(id) ? '#4a3a60' : /celestial/.test(id) ? '#cfe4ff' : '#8a5a2b';
       if (pal) { c.save(); c.globalCompositeOperation = 'lighter'; glow(c, dir * -3, -3, 16, pal[1], 0.3); c.restore(); }
-      c.strokeStyle = col; c.lineWidth = d.atk >= 27 ? 2.6 : 2; c.beginPath(); c.arc(dir * -3, -3, d.atk >= 27 ? 12 : 10, -1.25, 1.25); c.stroke();
-      c.strokeStyle = '#d8d2c0'; c.lineWidth = 1; c.beginPath(); c.moveTo(dir * -3 + 5.5, -13); c.lineTo(dir * -3 + 5.5, 7); c.stroke();
+      const R = d.atk >= 27 ? 12 : 10, bx = dir * -3, a0 = dir > 0 ? -1.25 : Math.PI - 1.25, tx = bx + dir * R * 0.315, ty = R * 0.949;
+      c.strokeStyle = col; c.lineWidth = d.atk >= 27 ? 2.6 : 2; c.beginPath(); c.arc(bx, -3, R, a0, a0 + 2.5); c.stroke();
+      const pull = BOWPULL ? BOWPULL.pull : 0, mx = tx - dir * pull + (BOWPULL ? BOWPULL.vib : 0);
+      c.strokeStyle = '#d8d2c0'; c.lineWidth = 1; c.beginPath(); c.moveTo(tx, -3 - ty); c.lineTo(mx, -3); c.lineTo(tx, -3 + ty); c.stroke();
+      if (BOWPULL && BOWPULL.arrow) {                                                                      // flecha encajada
+        const ax = mx, L = 17; c.strokeStyle = '#a8845a'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(ax, -3); c.lineTo(ax + dir * L, -3); c.stroke();
+        c.fillStyle = pal ? `rgb(${pal[0]})` : '#e8edf2'; c.beginPath(); c.moveTo(ax + dir * (L + 4), -3); c.lineTo(ax + dir * (L - 1), -5); c.lineTo(ax + dir * (L - 1), -1); c.fill();
+        c.fillStyle = '#d04a3a'; c.fillRect(Math.min(ax, ax + dir * 3), -4.2, 3, 2.4);
+        if (pal) { c.save(); c.globalCompositeOperation = 'lighter'; glow(c, ax + dir * (L + 2), -3, 3 + pull * 0.5, pal[1], 0.6); c.restore(); }
+      }
     } else if (kind === 'xbow') {
       c.fillStyle = '#6b4a2e'; c.fillRect(-1.5, -4, 3, 12); c.fillStyle = id.includes('pesada') ? '#8a8d98' : '#a8763f'; c.fillRect(-9, -6, 18, 2.4);
       c.strokeStyle = '#d8d2c0'; c.lineWidth = 1; c.beginPath(); c.moveTo(-9, -5); c.lineTo(0, -1); c.lineTo(9, -5); c.stroke(); c.fillStyle = '#cfd6df'; c.fillRect(-0.6, -12, 1.4, 9);
@@ -1401,8 +1413,38 @@
     };
     const beltDraw = (y, wd) => { const b = G.items[gr.btid]; if (b && b.spr) { const f = GJ['c_' + b.spr]; if (f) drawLayer(c, b.spr, cx + lean, y, 0.5, 0.5, false, 0); } };
     const wdef = gr.w;
+    const shotAnim = (c, sh, hx, hy, dr, swing) => {
+      const t = now - sh.t, D = sh.D, rel = t - D, ease = (x) => x * x * (3 - 2 * x), pal = sh.el && ELEM[sh.el] ? ELEM[sh.el] : null;
+      if (sh.s === 'ranged') {
+        const k = ease(Math.min(1, t / D)), fl = rel > 0 ? Math.exp(-rel / 110) : 0;
+        BOWPULL = { pull: rel > 0 ? 7 * fl : 7 * k, vib: rel > 0 ? Math.sin(rel / 14) * 2.6 * fl : 0, arrow: rel <= 0 };
+        const kick = rel > 0 ? fl * 2.2 : -k * 0.8;                                                        // retroceso al soltar
+        drawWeaponItem(c, gr.wid, wdef, hx - dr * kick, hy, dr, now, swing - dr * (k * 0.25) * (rel > 0 ? 0 : 1));
+        BOWPULL = null;
+        if (rel > 0 && rel < 160) { c.save(); c.globalCompositeOperation = 'lighter'; const a = 1 - rel / 160; glow(c, hx + dr * (10 + rel * 0.12), hy - 3, 9 * a + 3, pal ? pal[1] : '255,240,200', 0.5 * a); c.restore(); }
+        return;
+      }
+      // báculo: se alza y carga, luego empuja hacia delante al lanzar
+      const k = ease(Math.min(1, t / D)), rr = rel > 0 ? Math.min(1, rel / 220) : 0;
+      const tilt = rel <= 0 ? -k * 0.7 : -0.7 + 1.6 * Math.sin(Math.min(1, rel / 130) * Math.PI / 2) - 0.9 * Math.max(0, (rel - 130) / 230);
+      const lift = rel <= 0 ? k * 4 : 4 * (1 - rr), thr = rel > 0 ? Math.sin(Math.min(1, rel / 200) * Math.PI) * 3.5 : 0;
+      const ang = swing * 0.35 * dr + tilt * dr, L = 21, px = hx + dr * thr, py = hy - lift;
+      const tipX = px + Math.sin(ang) * L, tipY = py - Math.cos(ang) * L, rgb = pal ? pal[1] : ELEM.magic[1];
+      drawWeaponItem(c, gr.wid, wdef, px, py, dr, now, ang / (0.35 * dr));
+      c.save(); c.globalCompositeOperation = 'lighter';
+      if (rel <= 0) {                                                                                      // carga: orbe creciente y chispas que convergen
+        glow(c, tipX, tipY, 4 + k * 10 + Math.sin(now / 45) * 1, rgb, 0.35 + 0.5 * k);
+        for (let i = 0; i < 6; i++) { const a = now / 160 + i * 1.047, rd = (1 - ((t / 260 + i / 6) % 1)) * 16 + 2; glow(c, tipX + Math.cos(a) * rd, tipY + Math.sin(a) * rd * 0.8, 1.8, rgb, 0.5 * k); }
+      } else if (rel < 360) {                                                                              // destello y onda al soltar
+        const a = 1 - rel / 360; glow(c, tipX, tipY, 6 + 12 * (1 - a), rgb, 0.7 * a);
+        c.strokeStyle = `rgba(${rgb},${0.7 * a})`; c.lineWidth = 2; c.beginPath(); c.ellipse(tipX, tipY, 4 + (1 - a) * 20, 3 + (1 - a) * 14, 0, 0, 7); c.stroke();
+      }
+      c.restore();
+    };
     const holdWeapon = (hx, hy, dir, swing) => {
       if (!wdef) return;
+      const sh = (wdef.style === 'ranged' || wdef.style === 'magic') ? G.shots.get(e.id) : null;
+      if (sh && sh.s === wdef.style && now - sh.t < SHOT_MS) { shotAnim(c, sh, hx, hy, dir || 1, swing); return; }
       const sg = wdef.style === 'melee' ? G.swings.get(e.id) : null, pr = sg ? (now - sg.t) / SWING_MS : 2;
       if (pr >= 1) { drawWeaponItem(c, gr.wid, wdef, hx, hy, dir, now, swing); return; }
       const dr = dir || 1, kd = sg.kd, ea = 1 - Math.pow(1 - pr, 3);
@@ -1698,7 +1740,7 @@
   }
 
   function drawProj(c, p, now, dt) {
-    const age = now - p.t, k = Math.min(1, age / p.T), el = p.el, pal = ELEM[el] || null;
+    const age = now - p.t, k = Math.min(1, age / p.T), el = p.el, pal = ELEM[el] || null; if (age < 0) return;
     const wx = p.x1 + (p.x2 - p.x1) * k, wy = p.y1 + (p.y2 - p.y1) * k;
     const x = px(wx), y = py(wy) - 6, ang = Math.atan2(p.y2 - p.y1, p.x2 - p.x1);
     // estela de partículas
@@ -1740,7 +1782,7 @@
   }
 
   function drawCast(c, k, now) {
-    const age = now - k.t, T = 420; if (age > T) return; const a = 1 - age / T, pc = ELEM[k.el] || ELEM.magic;
+    const age = now - k.t, T = 420; if (age > T || age < 0) return; const a = 1 - age / T, pc = ELEM[k.el] || ELEM.magic;
     const x = px(k.x), y = py(k.y) + TS / 2 - 4, r = 14 + (1 - a) * 10;
     c.save(); c.globalCompositeOperation = 'lighter'; c.translate(x, y); c.scale(1, 0.42);
     c.strokeStyle = `rgba(${pc[1]},${a})`; c.lineWidth = 2.2; c.beginPath(); c.arc(0, 0, r, 0, 7); c.stroke();

@@ -1089,7 +1089,7 @@ class Game {
     p.nextAtk = now + w.cd;
     const wid = p.eq.weapon ? p.eq.weapon.id : null;
     if (w.style === 'melee') this.fx.push({ k: 's', x: t.x, y: t.y, w: wid, cr: crit, i: p.id });
-    else this.fx.push({ k: 'p', x1: p.x, y1: p.y, x2: t.x, y2: t.y, s: w.style, w: wid, cr: crit });
+    else this.fx.push({ k: 'p', x1: p.x, y1: p.y, x2: t.x, y2: t.y, s: w.style, w: wid, cr: crit, i: p.id });
     this.addSkillXp(p, w.style, 1 + Math.floor(dmg / 3));
     p.dir = Math.abs(t.x - p.x) >= Math.abs(t.y - p.y) ? (t.x > p.x ? 1 : 3) : (t.y > p.y ? 2 : 0);
     if (t.kind === 'pl') this.hurtPlayer(t, dmg, p, now, p.name);

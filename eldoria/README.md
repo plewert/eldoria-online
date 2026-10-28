@@ -267,3 +267,6 @@ Botón junto al de sonido (PC y teléfono) que cambia entre **Completo** (luces 
 ## Efectos 🎬 (nivel Cinematográfico)
 - El botón ✨ ahora tiene 4 niveles: 🚫 apagados · 🔅 básicos · ✨ completos · 🎬 cinematográficos (bloom, gradación de color, luz de jefes sobre el suelo y, en vista 3D, reflejo de jefes y profundidad de campo). Es el más exigente: en teléfono arranca en 🔅 y conviene probarlo antes de dejarlo.
 - En 3D los teléfonos usan menos resolución en el suelo para ir más fluidos.
+
+## Animación de arcos y báculos
+Al disparar, el arco tensa la cuerda con la flecha encajada (brillo elemental), la suelta con vibración y retroceso; los báculos se alzan, cargan un orbe con chispas que convergen y lanzan con destello y onda. El proyectil sale al terminar la carga (~190 ms arco, ~250 ms magia). Funciona en 2D y 3D.
