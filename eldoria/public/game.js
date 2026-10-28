@@ -414,11 +414,27 @@
     }
     if (G.stats && (d.minLevel || 1) > G.stats.lv) node.classList.add('locked');
   }
+  // móvil/tableta: no hay clic derecho, así que un toque largo abre el mismo menú y, en la mochila y el equipo, un toque normal también
+  const TOUCH = ('ontouchstart' in window) || (window.matchMedia && matchMedia('(pointer: coarse)').matches);
+  const anchorOf = (node) => { const r = node.getBoundingClientRect(); return { clientX: r.left + 6, clientY: r.bottom - 4, preventDefault() {} }; };
+  function addLongPress(node, fn) {
+    let timer = 0, fired = false, sx = 0, sy = 0;
+    const cancel = () => { clearTimeout(timer); timer = 0; };
+    node.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) { cancel(); return; }
+      fired = false; sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+      timer = setTimeout(() => { timer = 0; fired = true; fn(anchorOf(node)); }, 450);
+    }, { passive: true });
+    node.addEventListener('touchmove', (e) => { const t = e.touches[0]; if (timer && Math.hypot(t.clientX - sx, t.clientY - sy) > 10) cancel(); }, { passive: true });
+    node.addEventListener('touchend', cancel, { passive: true });
+    node.addEventListener('touchcancel', cancel, { passive: true });
+    node.addEventListener('click', (e) => { if (fired) { fired = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true);
+  }
   function mkSlot(it, onClick, onCtx) {
     const s = el('div', 'slot empty'); fillSlot(s, it);
     withTip(s, () => s._it);
     if (onClick) s.addEventListener('click', onClick);
-    if (onCtx) s.addEventListener('contextmenu', (ev) => { ev.preventDefault(); onCtx(ev); });
+    if (onCtx) { s.addEventListener('contextmenu', (ev) => { ev.preventDefault(); onCtx(ev); }); addLongPress(s, onCtx); }
     return s;
   }
 
@@ -442,7 +458,7 @@
     ctxEl.style.top = Math.max(4, Math.min(ev.clientY, innerHeight - h - 6)) + 'px';
     const f = ctxEl.querySelector('button:not(:disabled)'); if (f) f.focus();
   }
-  document.addEventListener('mousedown', (ev) => { if (!ctxEl.hidden && !ctxEl.contains(ev.target)) closeCtx(); });
+  for (const n of ['mousedown', 'touchstart']) document.addEventListener(n, (ev) => { if (!ctxEl.hidden && !ctxEl.contains(ev.target)) closeCtx(); }, { passive: true });
 
   function gemTargets() {
     const out = [];
@@ -482,8 +498,9 @@
     for (let i = 0; i < G.cfg.invSize; i++) {
       const s = el('div', 'slot empty'); s.dataset.i = i;
       withTip(s, () => s._it);
-      s.addEventListener('click', (ev) => { const it = G.inv[i]; if (!it) return; if (ev.shiftKey) send({ t: 'drop', s: i, q: it[1] }); else send({ t: 'use', s: i }); });
+      s.addEventListener('click', (ev) => { const it = G.inv[i]; if (!it) return; if (ev.shiftKey) send({ t: 'drop', s: i, q: it[1] }); else if (TOUCH) invMenu(anchorOf(s), i); else send({ t: 'use', s: i }); });
       s.addEventListener('contextmenu', (ev) => { ev.preventDefault(); if (G.inv[i]) invMenu(ev, i); });
+      addLongPress(s, (ev) => { if (G.inv[i]) invMenu(ev, i); });
       // arrastrar y soltar para reorganizar la mochila
       s.addEventListener('dragstart', (ev) => { if (!G.inv[i]) { ev.preventDefault(); return; } hideTip(); ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', String(i)); s.classList.add('dragging'); });
       s.addEventListener('dragend', () => { s.classList.remove('dragging'); grid.querySelectorAll('.dragover').forEach((q) => q.classList.remove('dragover')); });
@@ -494,8 +511,9 @@
     }
     document.querySelectorAll('#equip .slot').forEach((s) => {
       withTip(s, () => s._it);
-      s.addEventListener('click', () => { if (G.eq[s.dataset.eq]) send({ t: 'unequip', slot: s.dataset.eq }); });
+      s.addEventListener('click', () => { if (!G.eq[s.dataset.eq]) return; if (TOUCH) eqMenu(anchorOf(s), s.dataset.eq); else send({ t: 'unequip', slot: s.dataset.eq }); });
       s.addEventListener('contextmenu', (ev) => { ev.preventDefault(); if (G.eq[s.dataset.eq]) eqMenu(ev, s.dataset.eq); });
+      addLongPress(s, (ev) => { if (G.eq[s.dataset.eq]) eqMenu(ev, s.dataset.eq); });
     });
   }
 
