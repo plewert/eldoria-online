@@ -1086,10 +1086,14 @@
   let cw = 0, ch = 0, dpr = 1;
   function resize() {
     dpr = window.devicePixelRatio || 1;
-    const r = cv.getBoundingClientRect(); cw = r.width; ch = r.height;
-    cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
+    const r = cv.getBoundingClientRect(); cw = r.width / zoom; ch = r.height / zoom;    // zoom < 1 = se ve más mapa
+    cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
   }
+  let zoom = parseFloat(store.get('eldoria.zoom')) || 1; if (!(zoom >= 0.5 && zoom <= 2.2)) zoom = 1;
+  EXT.zoom = () => zoom;
+  EXT.setZoom = (z, live) => { zoom = Math.max(0.55, Math.min(2.2, z)); if (!live) { zoom = Math.round(zoom * 20) / 20; store.set('eldoria.zoom', String(zoom)); } resize(); };
   window.addEventListener('resize', resize);
+  window.addEventListener('orientationchange', () => setTimeout(resize, 250));
 
   const sxOf = (tx) => Math.round((tx - G.cam.x) * TS + cw / 2 - TS / 2);
   const syOf = (ty) => Math.round((ty - G.cam.y) * TS + ch / 2 - TS / 2);
@@ -1762,7 +1766,7 @@
     requestAnimationFrame(frame);
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
     if (!G.me) return;
-    const c = ctx; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.imageSmoothingEnabled = false;
+    const c = ctx; c.setTransform(dpr * zoom, 0, 0, dpr * zoom, 0, 0); c.imageSmoothingEnabled = false;
 
     // Movimiento continuo: la velocidad sigue el ritmo real de pasos del servidor (sin arrancar/parar en cada casilla)
     for (const e of G.ents.values()) {
@@ -2009,7 +2013,7 @@
   /* ---- clic en el mapa: atacar, hablar o caminar ---- */
   const tileAt = (ev) => {
     const r = cv.getBoundingClientRect();
-    return { x: Math.round((ev.clientX - r.left - cw / 2) / TS + G.cam.x), y: Math.round((ev.clientY - r.top - ch / 2) / TS + G.cam.y) };
+    return { x: Math.round(((ev.clientX - r.left) / zoom - cw / 2) / TS + G.cam.x), y: Math.round(((ev.clientY - r.top) / zoom - ch / 2) / TS + G.cam.y) };
   };
   const entAtTile = (t) => {
     let best = null;

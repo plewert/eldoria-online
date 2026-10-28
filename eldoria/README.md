@@ -238,3 +238,11 @@ Habilidad nueva (tecla **U**). Boris vende los picos (piedra, hierro, acero, cri
 ## Efectos visuales (✨)
 
 Botón junto al de sonido (PC y teléfono) que cambia entre **Completo** (luces cálidas, rayos de sol, polvo de luz y luciérnagas), **Básico** (sombras según la hora, viñeta y color) y **Apagado**. Se guarda en el navegador; en teléfono arranca en Básico. Código en `public/gfx.js`.
+
+## Teléfono
+
+- **Horizontal:** mapa a pantalla completa, joystick a la izquierda, acciones (estilos, pociones, hechizos) en cuadrícula a la derecha, chat compacto y mochila en dos columnas. Las ventanas se adaptan a pantallas bajas.
+- **Vertical:** acciones abajo en dos filas, joystick encima y chat compacto.
+- **⛶ Pantalla completa** (bloquea horizontal donde el navegador lo permita), zonas seguras para muescas y bordes redondeados.
+- **Zoom:** pellizco con dos dedos o botones ＋/－ (se guarda); en teléfono arranca alejado para ver más mapa.
+- La pantalla de acceso se desplaza si el teléfono está en horizontal.

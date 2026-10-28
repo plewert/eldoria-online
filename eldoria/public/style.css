@@ -389,3 +389,73 @@ ol.rank li.me { color: #ffd96a; }
 .newver{position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:99999;background:#1b2a3a;border:2px solid #d8b24a;color:#ffe9a8;padding:8px 12px;border-radius:8px;font-size:14px;display:flex;gap:10px;align-items:center;box-shadow:0 4px 18px rgba(0,0,0,.6)}
 .gfxbtn { left: 52px; }
 body.touch .gfxbtn { top: 62px; left: 52px; }
+
+/* ---------- teléfono: zonas seguras, pantalla completa, zoom y modo horizontal ---------- */
+.fsBtn, .zoomBtns { display: none; }
+body.touch .fsBtn { display: block; left: auto; right: calc(62px + env(safe-area-inset-right)); top: 10px; }
+body.touch .zoomBtns { display: grid; gap: 6px; position: absolute; right: calc(10px + env(safe-area-inset-right)); top: 64px; z-index: 6; }
+.zoomBtns button { width: 40px; height: 40px; border-radius: 8px; background: rgba(14, 18, 24, .78); border: 1px solid var(--edge); color: var(--bone); font-size: 18px; }
+body.touch .drawerBtn { right: calc(10px + env(safe-area-inset-right)); top: calc(10px + env(safe-area-inset-top)); }
+body.touch .joy { left: calc(22px + env(safe-area-inset-left)); bottom: calc(26px + env(safe-area-inset-bottom)); }
+body.touch #hotbar { right: calc(10px + env(safe-area-inset-right)); bottom: calc(12px + env(safe-area-inset-bottom)); }
+body.touch #side { padding-right: calc(14px + env(safe-area-inset-right)); }
+body.touch .sheet { max-height: calc(100dvh - 12px); }
+
+@media (orientation: landscape) and (max-height: 520px) {
+  body.touch #game { grid-template-columns: minmax(0, 1fr); }
+  /* barra superior: sonido, efectos y menús en una sola fila */
+  body.touch .sndbtn { top: calc(8px + env(safe-area-inset-top)); left: calc(8px + env(safe-area-inset-left)); width: 36px; height: 36px; }
+  body.touch .gfxbtn { top: calc(8px + env(safe-area-inset-top)); left: calc(48px + env(safe-area-inset-left)); }
+  body.touch .clock { top: calc(48px + env(safe-area-inset-top)); left: calc(8px + env(safe-area-inset-left)); }
+  body.touch .menu2 { top: calc(8px + env(safe-area-inset-top)); left: calc(92px + env(safe-area-inset-left)); right: calc(122px + env(safe-area-inset-right)); display: flex; flex-wrap: wrap; gap: 4px; }
+  body.touch .menu2 button { width: 36px; height: 36px; }
+  body.touch .hud2 { left: calc(8px + env(safe-area-inset-left)); top: calc(76px + env(safe-area-inset-top)); }
+  body.touch #zone { top: calc(54px + env(safe-area-inset-top)); padding: 4px 12px 4px 8px; }
+  body.touch #zone .zname { font-size: 13px; } body.touch #zone .zrule { display: none; }
+  body.touch .sndbtn.fsBtn { left: auto; right: calc(62px + env(safe-area-inset-right)); top: calc(10px + env(safe-area-inset-top)); }
+  body.touch .zoomBtns { top: calc(60px + env(safe-area-inset-top)); grid-auto-flow: row; }
+  /* pulgares: movimiento a la izquierda, acciones a la derecha */
+  body.touch .joy { width: 104px; height: 104px; left: calc(18px + env(safe-area-inset-left)); bottom: calc(14px + env(safe-area-inset-bottom)); }
+  body.touch .joy .knob { left: 28px; top: 28px; }
+  body.touch #hotbar { display: grid; grid-template-columns: repeat(4, 46px); gap: 5px; padding: 5px; max-width: none; }
+  body.touch #hotbar .gap { display: none; }
+  body.touch #hotbar .skbox { display: contents; }
+  body.touch #hotbar .skb { width: 46px; height: 46px; }
+  body.touch #hotbar button { width: 46px; height: 46px; }
+  /* chat compacto, a la derecha del joystick */
+  body.touch #chat { left: calc(136px + env(safe-area-inset-left)); bottom: calc(8px + env(safe-area-inset-bottom)); width: min(300px, 34vw); min-width: 0; }
+  body.touch #log { height: 64px; font-size: 12px; }
+  body.touch #chatIn { padding: 5px 7px; font-size: 12px; }
+  /* mochila: dos columnas para ver todo sin desplazarse tanto */
+  body.touch #side { width: min(620px, 72vw); display: grid; grid-template-columns: 1fr 1fr; column-gap: 14px; align-content: start; padding-left: 12px; }
+  body.touch #side section { padding: 8px 0; min-width: 0; }
+  body.touch #side > section:first-child { display: none; }        /* el minimapa está en el mapa del mundo (N) */
+  body.touch #side > section:last-child { grid-column: 1 / -1; }
+  body.touch #side { align-content: start; }
+  body.touch #skills li { padding-top: 3px; padding-bottom: 3px; font-size: 13px; }
+  body.touch #equip { grid-template-columns: repeat(3, 38px); grid-template-rows: repeat(5, 38px); gap: 4px; }
+  body.touch #equip .slot { width: 38px; height: 38px; }
+  body.touch #inv { grid-template-columns: repeat(10, 1fr); gap: 3px; }
+  /* ventanas bajas y anchas */
+  .modal { padding: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) 6px max(6px, env(safe-area-inset-left)); }
+  .sheet { padding: 10px 14px; width: min(900px, 100%); }
+  .sheet.narrow { width: min(420px, 100%); }
+  .sheet h2 { font-size: 17px; } .sheet header { margin-bottom: 6px; }
+  .sheet header button { width: 38px; height: 34px; }
+  .cols { grid-template-columns: 1fr 1fr; }
+  .cols.three { grid-template-columns: 1fr 1fr 1fr; }
+  .list { max-height: calc(100dvh - 130px); }
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  /* vertical: acciones abajo en dos filas, joystick encima a la izquierda y chat compacto */
+  body.touch #hotbar { left: calc(10px + env(safe-area-inset-left)); right: calc(10px + env(safe-area-inset-right)); flex-wrap: wrap; justify-content: center; }
+  body.touch #hotbar .skbox { display: contents; }
+  body.touch #hotbar button, body.touch #hotbar .skb { width: 42px; height: 42px; }
+  body.touch .joy { width: 104px; height: 104px; bottom: calc(112px + env(safe-area-inset-bottom)); }
+  body.touch .joy .knob { left: 28px; top: 28px; }
+  body.touch #chat { left: calc(56px + env(safe-area-inset-left)); right: 10px; width: auto; bottom: calc(224px + env(safe-area-inset-bottom)); }
+  body.touch #log { height: 86px; font-size: 12px; }
+  body.touch #side { width: min(330px, 92vw); }
+}
+#login { overflow-y: auto; place-items: safe center; }
+@media (max-height: 520px) { #loginForm { padding: 14px 20px 12px; } #loginForm h1 { font-size: 28px; } #loginForm label { margin-top: 6px; } }
