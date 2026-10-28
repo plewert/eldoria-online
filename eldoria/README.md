@@ -290,3 +290,6 @@ Dieciséis personajes controlados por el servidor (`game/bots.js`) juegan como u
 - **Raid con jugadores:** las élites forman grupo y hacen la Raid esquivando los avisos de ataque. Si un jugador real espera en la antecámara, **van con él** y la inician juntos; si la iniciaron ellas, el jugador puede **unirse en cualquier momento**. Abren el cofre final como cualquiera.
 - **Límites:** tienen tope de nivel y de habilidad, no atacan primero a nadie, no comercian de jugador a jugador ni forman grupo social, no salen en `/top` y no se guardan (al reiniciar el servidor empiezan de nuevo).
 - `BOTS=0` los desactiva; `BOTS=8` cambia la cantidad (máx. 16). Prueba: `node test/bots.js`.
+
+## Mascotas que recogen el botín
+Con una mascota activa (usa el objeto de mascota de la mochila), el oro y los objetos que dejan tus presas llegan solos a tu mochila (`game/petloot.js`): radio de 8 casillas, un montón cada ~0,45 s, con el bonus de oro de la mascota. Solo recoge lo tuyo (o lo sin dueño de tus kills en zonas PvP), nunca el botín protegido de otros jugadores ni lo que se suelta al morir. Si la mochila está llena, el objeto se queda en el suelo. Prueba: `node test/pet.js`.

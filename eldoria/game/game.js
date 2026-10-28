@@ -1223,4 +1223,5 @@ require('./fishing').install(Game);
 require('./mining').install(Game);
 require('./raid').install(Game);
 require('./bots').install(Game);
+require('./petloot').install(Game);
 module.exports = { Game, NAME_RE, levelFromXp, xpForLevel, skillFromXp };
