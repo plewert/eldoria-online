@@ -1775,35 +1775,8 @@
   }
 
   let last = performance.now();
-  function frame(now) {
-    requestAnimationFrame(frame);
-    const dt = Math.min(0.1, (now - last) / 1000); last = now;
-    if (!G.me) return;
-    const c = ctx; c.setTransform(dpr * zoom, 0, 0, dpr * zoom, 0, 0); c.imageSmoothingEnabled = false;
-
-    // Movimiento continuo: la velocidad sigue el ritmo real de pasos del servidor (sin arrancar/parar en cada casilla)
-    for (const e of G.ents.values()) {
-      const dx = e.x - e.rx, dy = e.y - e.ry, d = Math.hypot(dx, dy);
-      if (d > 4) { e.rx = e.x; e.ry = e.y; e.amp = 0; continue; }
-      if (d > 0.02) {
-        const v = speedOf(e);
-        const sp = v * (1 + 0.35 * Math.max(0, Math.min(d, 3) - 1));   // velocidad fija; solo acelera un poco si va muy atrasado
-        const st = Math.min(d, sp * dt);
-        e.rx += (dx / d) * st; e.ry += (dy / d) * st;
-        e.phase = (e.phase || 0) + st * (Math.PI * 2 / (e.kind === 'pl' ? 3.0 : 2.2)); e.moveT = now;
-        if (Math.abs(dx) > 0.02) e.face = dx < 0 ? -1 : 1;
-      } else { e.rx = e.x; e.ry = e.y; }
-      const moving = now - (e.moveT || 0) < 260;
-      e.amp = (e.amp || 0) + ((moving ? 1 : 0) - (e.amp || 0)) * (1 - Math.exp(-dt * (moving ? 12 : 10)));
-      if (e.kind === 'pl') e.fd = e.d;                       // dirección que manda el servidor: no parpadea en diagonales
-    }
-    const me = G.ents.get(G.id);
-    const tx = me ? me.rx : G.me.x, ty = me ? me.ry : G.me.y;
-    G.dbg = { tx, ty, amp: me && me.amp, phase: me && me.phase };
-    G.cam.x = tx; G.cam.y = ty;     // cámara fija al jugador: el paisaje se desplaza al mismo ritmo que el paso
-
-    c.fillStyle = '#05070a'; c.fillRect(0, 0, cw, ch);
-    if (now - G.shake.t < 150) c.translate((Math.random() - 0.5) * G.shake.m, (Math.random() - 0.5) * G.shake.m);
+  /* ---- piezas de dibujo (las usan el modo 2D y el modo 3D) ---- */
+  function paintTerrain(c, now) {
     const frameW = Math.floor(now / 650) % 2;
     const x0 = Math.floor(G.cam.x - cw / 2 / TS) - 1, x1 = Math.ceil(G.cam.x + cw / 2 / TS) + 1;
     const y0 = Math.floor(G.cam.y - ch / 2 / TS) - 1, y1 = Math.ceil(G.cam.y + ch / 2 / TS) + 1;
@@ -1861,8 +1834,8 @@
       for (let i = 0; i < 2; i++) { c.beginPath(); c.arc(cx, cy, 9 + i * 4, now / (500 + i * 300) * (i ? -1 : 1), now / (500 + i * 300) * (i ? -1 : 1) + 4.2); c.stroke(); }
       if (Math.abs(p.x - G.cam.x) < 6 && Math.abs(p.y - G.cam.y) < 5) outlined(c, p.label, cx, cy - 26, pvp ? '#f0b3a6' : '#cfd6ff');
     }
-    // objetos del suelo
-    for (const g of G.ground) {
+  }
+  function itemOne(c, g, now) {
       const cx = sxOf(g.x) + TS / 2, cy = syOf(g.y) + TS / 2 + 3 + Math.sin(now / 400 + g.x * 3 + g.y) * 1.2;
       c.fillStyle = 'rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(cx, cy + 8, 8, 3, 0, 0, 7); c.fill();
       c.font = '20px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#fff';
@@ -1880,10 +1853,8 @@
       if (g.n > 1) outlined(c, '×' + g.n, cx + 11, cy + 9, '#f2d27a', 'bold 10px sans-serif');
       else if (top[1] > 1) outlined(c, String(top[1]), cx + 10, cy + 9, '#f2d27a', 'bold 10px sans-serif');
       if (top[2]) c.fillText('🔒', cx - 9, cy - 9);
-    }
-    // PNJ
-    for (const n of G.npcs) {
-      if (n.x < x0 || n.x > x1 || n.y < y0 || n.y > y1) continue;
+  }
+  function npcOne(c, n, now) {
       const cx = sxOf(n.x) + TS / 2, cy = syOf(n.y) + TS / 2;
       c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.ellipse(cx, cy + 12, 11, 4, 0, 0, 7); c.fill();
       const ns = sprReady() && SPR['npc_' + n.id];
@@ -1895,14 +1866,8 @@
         c.fillText(n.icon, cx, cy - 1);
         outlined(c, n.name, cx, cy - 26, '#c9a24b');
       }
-    }
-    EXT.under(c, now, cw, ch);
-    // entidades ordenadas por fila
-    const list = [...G.ents.values()].sort((a, b) => a.ry - b.ry);
-    const tgId = G.me.tg;
-    for (const e of list) {
-      const sx = Math.round((e.rx - G.cam.x) * TS + cw / 2 - TS / 2), sy = Math.round((e.ry - G.cam.y) * TS + ch / 2 - TS / 2);
-      if (sx < -TS * 2 || sy < -TS * 2 || sx > cw + TS || sy > ch + TS) continue;
+  }
+  function entOne(c, e, sx, sy, now, tgId) {
       if (e.id === tgId) {
         c.strokeStyle = `rgba(255,70,50,${0.7 + 0.3 * Math.sin(now / 150)})`; c.lineWidth = 2; c.strokeRect(sx + 1, sy + 1, TS - 2, TS - 2);
       }
@@ -1930,8 +1895,8 @@
           c.fillStyle = '#e8e2d0'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(bub.v, cx, by);
         }
       }
-    }
-    // efectos
+  }
+  function fxFlat(c, now, dt) {
     for (const p of G.proj) if (!p.hit && now - p.t >= p.T) { p.hit = true; impact(p, now); }
     G.proj = G.proj.filter((p) => now - p.t < p.T + 20);
     G.casts = G.casts.filter((k) => now - k.t < 420); for (const k of G.casts) drawCast(c, k, now);
@@ -1939,6 +1904,126 @@
     for (const p of G.proj) drawProj(c, p, now, dt);
     G.flashes = G.flashes.filter((f) => now - f.t < 1100); for (const f of G.flashes) drawFlash(c, f, now);
     drawRings(c, now); stepParts(c, dt);
+  }
+
+  /* ======================================================================
+   *  MODO 3D (opcional): el suelo se dibuja en perspectiva y las figuras (jugadores, jefes, PNJ, objetos)
+   *  se quedan de pie mirando a la cámara, más grandes cuanto más cerca. Todo es visual: el juego es el mismo.
+   * ==================================================================== */
+  let mode3d = store.get('eldoria.3d') === '1';
+  EXT.mode3d = () => mode3d;
+  EXT.set3d = (v) => { mode3d = !!v; store.set('eldoria.3d', mode3d ? '1' : '0'); G.path = G.path || []; };
+  let gcv = null, gx = null, shk = [0, 0];
+  const K_TOP = 0.5;                                          // escala del borde superior (el inferior ronda 1,35)
+  function geo3() { const yc = ch * 0.56, h = K_TOP * yc / (1 - K_TOP), hor = -h; return { yc, hor, Zp: yc - hor }; }
+  function proj3(wx, wy) {                                     // casilla del mundo (con decimales) → pantalla
+    const { hor, Zp } = geo3(), dy = (wy - G.cam.y) * TS, Z = Zp - dy;
+    if (Z < 0.12 * Zp) return null;
+    const k = Zp / Z; return { x: cw / 2 + (wx - G.cam.x) * TS * k, y: hor + Zp * k, k };
+  }
+  function unproj3(mx, my) {                                   // pantalla → casilla del suelo
+    const { hor, Zp } = geo3(), k = (my - hor) / Zp; if (k <= 0.05) return { x: Math.round(G.cam.x), y: Math.round(G.cam.y) };
+    const Z = Zp / k;
+    return { x: Math.round(G.cam.x + (mx - cw / 2) / (k * TS)), y: Math.round(G.cam.y + (Zp - Z) / TS) };
+  }
+  function pick3(mx, my) {                                     // ¿hay una figura bajo el cursor? devuelve su casilla
+    const objs = [];
+    for (const e of G.ents.values()) objs.push({ x: e.rx, y: e.ry + 0.45, tx: Math.round(e.x), ty: Math.round(e.y), h: e.kind === 'mo' && SPR[e.t] ? SPR[e.t].h : 44, w: e.kind === 'mo' && SPR[e.t] && SPR[e.t].h >= 100 ? SPR[e.t].f[0][2] * 0.3 : 15 });
+    for (const n of G.npcs) objs.push({ x: n.x, y: n.y + 0.45, tx: n.x, ty: n.y, h: SPR['npc_' + n.id] ? SPR['npc_' + n.id].h : 40, w: 15 });
+    objs.sort((a, b) => b.y - a.y);
+    for (const o of objs) { const P = proj3(o.x, o.y); if (P && Math.abs(mx - P.x) <= o.w * P.k && my >= P.y - (o.h + 6) * P.k && my <= P.y + 6 * P.k) return { x: o.tx, y: o.ty }; }
+    return null;
+  }
+  function frame3d(c, now, dt, tx, ty) {
+    const cw0 = cw, ch0 = ch, gs = Math.min(dpr * zoom, 1.25), Wg = Math.ceil(cw0 / K_TOP * 1.05), Hg = Math.ceil(2 * (ch0 * 0.56 / (1 - K_TOP) * (1 / K_TOP - 1) + ch0 * 0.08));
+    if (!gcv) { gcv = document.createElement('canvas'); gx = gcv.getContext('2d'); }
+    const pw = Math.ceil(Wg * gs), ph = Math.ceil(Hg * gs);
+    if (gcv.width !== pw || gcv.height !== ph) { gcv.width = pw; gcv.height = ph; }
+    cw = Wg; ch = Hg;                                           // el suelo se pinta plano en un lienzo mayor (centrado en el jugador)
+    try {
+      gx.setTransform(gs, 0, 0, gs, 0, 0); gx.imageSmoothingEnabled = false;
+      gx.fillStyle = '#05070a'; gx.fillRect(0, 0, Wg, Hg);
+      paintTerrain(gx, now); EXT.under(gx, now, Wg, Hg); fxFlat(gx, now, dt); EXT.draw(gx, now, Wg, Hg, dt, tx, ty);
+    } finally { cw = cw0; ch = ch0; }
+    const { hor, Zp, yc } = geo3();
+    shk = now - G.shake.t < 150 ? [(Math.random() - 0.5) * G.shake.m, (Math.random() - 0.5) * G.shake.m] : [0, 0];
+    c.fillStyle = '#05070a'; c.fillRect(0, 0, cw, ch);
+    c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'low';
+    for (let yd = 0; yd < ch; yd += 2) {                        // proyección en perspectiva fila a fila
+      const k = (yd + 1 - hor) / Zp, Z = Zp / k, dy = Zp - Z;
+      c.drawImage(gcv, (Wg / 2 - cw / 2 / k) * gs, (Hg / 2 + dy) * gs, (cw / k) * gs, Math.max(1, 2 / (k * k) * gs), shk[0], yd + shk[1], cw, 2);
+    }
+    c.imageSmoothingEnabled = false;
+    const fg = c.createLinearGradient(0, 0, 0, ch * 0.4); fg.addColorStop(0, 'rgba(5,7,10,.75)'); fg.addColorStop(1, 'rgba(5,7,10,0)'); c.fillStyle = fg; c.fillRect(0, 0, cw, ch * 0.4);
+    // figuras de pie, de lejos a cerca
+    const tgId = G.me.tg, objs = [];
+    const bb = (wx, wy, fn) => {
+      const P = proj3(wx, wy); if (!P || P.x < -120 || P.x > cw + 120 || P.y < -60 || P.y > ch + 160) return;
+      const fx = cw / 2 + (wx - tx) * TS, fy = ch / 2 + (wy - ty) * TS, s = dpr * zoom * P.k;
+      c.setTransform(s, 0, 0, s, dpr * zoom * (P.x + shk[0]) - fx * s, dpr * zoom * (P.y + shk[1]) - fy * s); fn();
+    };
+    for (const g of G.ground) objs.push([g.y + 0.3, () => bb(g.x, g.y + 0.3, () => itemOne(c, g, now))]);
+    for (const n of G.npcs) objs.push([n.y + 0.45, () => bb(n.x, n.y + 0.45, () => npcOne(c, n, now))]);
+    for (const e of G.ents.values()) objs.push([e.ry + 0.45, () => bb(e.rx, e.ry + 0.45, () => { const sx = Math.round((e.rx - tx) * TS + cw / 2 - TS / 2), sy = Math.round((e.ry - ty) * TS + ch / 2 - TS / 2); entOne(c, e, sx, sy, now, tgId); })]);
+    G.texts = G.texts.filter((t) => now - t.t < 1000);
+    for (const t of G.texts) objs.push([t.y + 5, () => bb(t.x, t.y + 0.5, () => {
+      const a = 1 - (now - t.t) / 1000; c.globalAlpha = Math.min(1, a * 1.6);
+      outlined(c, t.v, sxOf(t.x) + TS / 2 + t.dx * (1 - a), syOf(t.y) - 4 - (1 - a) * 30, TXT_COL[t.c] || '#fff', t.big ? 'bold 20px "Segoe UI", sans-serif' : 'bold 14px "Segoe UI", sans-serif'); c.globalAlpha = 1;
+    })]);
+    objs.sort((a, b) => a[0] - b[0]);
+    for (const o of objs) o[1]();
+    c.setTransform(dpr * zoom, 0, 0, dpr * zoom, 0, 0);
+    if (zoneAt(G.me.x, G.me.y).kind === 'dungeon') {            // oscuridad de mazmorra alrededor del jugador
+      const px = cw / 2, py = yc, lit = 90 + 26 * Math.min(4, G.me.v || 0);
+      const g = c.createRadialGradient(px, py, lit, px, py, Math.max(cw, ch) * 0.62 + lit * 0.4);
+      g.addColorStop(0, 'rgba(4,5,9,0)'); g.addColorStop(0.55, 'rgba(4,5,9,.62)'); g.addColorStop(1, 'rgba(4,5,9,.9)');
+      c.fillStyle = g; c.fillRect(0, 0, cw, ch);
+    }
+  }
+
+  function frame(now) {
+    requestAnimationFrame(frame);
+    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (!G.me) return;
+    const c = ctx; c.setTransform(dpr * zoom, 0, 0, dpr * zoom, 0, 0); c.imageSmoothingEnabled = false;
+
+    // Movimiento continuo: la velocidad sigue el ritmo real de pasos del servidor (sin arrancar/parar en cada casilla)
+    for (const e of G.ents.values()) {
+      const dx = e.x - e.rx, dy = e.y - e.ry, d = Math.hypot(dx, dy);
+      if (d > 4) { e.rx = e.x; e.ry = e.y; e.amp = 0; continue; }
+      if (d > 0.02) {
+        const v = speedOf(e);
+        const sp = v * (1 + 0.35 * Math.max(0, Math.min(d, 3) - 1));   // velocidad fija; solo acelera un poco si va muy atrasado
+        const st = Math.min(d, sp * dt);
+        e.rx += (dx / d) * st; e.ry += (dy / d) * st;
+        e.phase = (e.phase || 0) + st * (Math.PI * 2 / (e.kind === 'pl' ? 3.0 : 2.2)); e.moveT = now;
+        if (Math.abs(dx) > 0.02) e.face = dx < 0 ? -1 : 1;
+      } else { e.rx = e.x; e.ry = e.y; }
+      const moving = now - (e.moveT || 0) < 260;
+      e.amp = (e.amp || 0) + ((moving ? 1 : 0) - (e.amp || 0)) * (1 - Math.exp(-dt * (moving ? 12 : 10)));
+      if (e.kind === 'pl') e.fd = e.d;                       // dirección que manda el servidor: no parpadea en diagonales
+    }
+    const me = G.ents.get(G.id);
+    const tx = me ? me.rx : G.me.x, ty = me ? me.ry : G.me.y;
+    G.dbg = { tx, ty, amp: me && me.amp, phase: me && me.phase };
+    G.cam.x = tx; G.cam.y = ty;     // cámara fija al jugador: el paisaje se desplaza al mismo ritmo que el paso
+
+    if (mode3d) { frame3d(c, now, dt, tx, ty); walkTick(now); followTick(now); return; }
+    c.fillStyle = '#05070a'; c.fillRect(0, 0, cw, ch);
+    if (now - G.shake.t < 150) c.translate((Math.random() - 0.5) * G.shake.m, (Math.random() - 0.5) * G.shake.m);
+    paintTerrain(c, now);
+    { const x0 = Math.floor(G.cam.x - cw / 2 / TS) - 1, x1 = Math.ceil(G.cam.x + cw / 2 / TS) + 1, y0 = Math.floor(G.cam.y - ch / 2 / TS) - 1, y1 = Math.ceil(G.cam.y + ch / 2 / TS) + 1;
+      for (const g of G.ground) itemOne(c, g, now);
+      for (const n of G.npcs) { if (n.x < x0 || n.x > x1 || n.y < y0 || n.y > y1) continue; npcOne(c, n, now); } }
+    EXT.under(c, now, cw, ch);
+    const list = [...G.ents.values()].sort((a, b) => a.ry - b.ry);
+    const tgId = G.me.tg;
+    for (const e of list) {
+      const sx = Math.round((e.rx - G.cam.x) * TS + cw / 2 - TS / 2), sy = Math.round((e.ry - G.cam.y) * TS + ch / 2 - TS / 2);
+      if (sx < -TS * 2 || sy < -TS * 2 || sx > cw + TS || sy > ch + TS) continue;
+      entOne(c, e, sx, sy, now, tgId);
+    }
+    fxFlat(c, now, dt);
     G.texts = G.texts.filter((t) => now - t.t < 1000);
     for (const t of G.texts) {
       const a = 1 - (now - t.t) / 1000;
@@ -2026,6 +2111,7 @@
   /* ---- clic en el mapa: atacar, hablar o caminar ---- */
   const tileAt = (ev) => {
     const r = cv.getBoundingClientRect();
+    if (mode3d) { const mx = (ev.clientX - r.left) / zoom, my = (ev.clientY - r.top) / zoom; return pick3(mx, my) || unproj3(mx, my); }
     return { x: Math.round(((ev.clientX - r.left) / zoom - cw / 2) / TS + G.cam.x), y: Math.round(((ev.clientY - r.top) / zoom - ch / 2) / TS + G.cam.y) };
   };
   const entAtTile = (t) => {

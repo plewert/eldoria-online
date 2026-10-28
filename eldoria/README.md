@@ -258,3 +258,8 @@ Botón junto al de sonido (PC y teléfono) que cambia entre **Completo** (luces 
 ## Seguir compañero y auto golpe
 - Clic derecho sobre un jugador → **🚶 Seguir**: tu personaje lo sigue solo por el camino. Se cancela al moverte tú, pulsar Esc, hacer clic en el suelo o perderlo de vista 6 s. Funciona también en la Raid.
 - Botón **🗡️ Auto** en la barra inferior (junto a Z/X/C): si está activo, cuando algo te ataca y no tienes objetivo, lo atacas automáticamente (a jugadores solo si hay PvP). Se recuerda entre sesiones.
+
+## Vista 3D (opcional)
+- Botón **🧊** (debajo del reloj, junto a ✨) o tecla **Y**: activa/desactiva la vista 3D. Se recuerda entre sesiones; por defecto está desactivada.
+- El suelo se dibuja en perspectiva (más cerca = más grande) y jugadores, jefes, PNJ y objetos quedan de pie mirando a la cámara. Los avisos de ataque de la Raid se ven proyectados en el suelo. Clic, menú contextual, seguir y auto golpe funcionan igual.
+- Es solo visual (`public/game.js`, función `frame3d`): el servidor y el juego no cambian. En teléfonos modestos puede ir más justo; basta con desactivarlo.
