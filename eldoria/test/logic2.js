@@ -298,7 +298,7 @@ ok('mazmorras y cuevas: nadie ataca a través de la entrada', () => {
   game.hurtMonster(m, 500, a.p, T0); assert.equal(m.hp, hp0, 'desde fuera no daña');
   m.target = a.p.id; m.nextAtk = 0; for (let i = 0; i < 40; i++) { T0 += CFG.TICK_MS; game.tick(T0); }
   assert.equal(a.p.hp, 5000, 'el dragón no daña hacia fuera'); assert.notEqual(m.target, a.p.id);
-  place(a.p, 122, 86); game.hurtMonster(m, 500, a.p, T0); assert.equal(m.hp, hp0 - 100, 'dentro sí, con 80% de defensa');
+  place(a.p, 122, 86); game.hurtMonster(m, 500, a.p, T0); assert.equal(m.hp, hp0 - 250, 'dentro sí, con 50% de defensa');
   assert.equal(MONSTERS.dragon_sombra.respawn, 60000);
   game.mgrid.delete(m.y * world.W + m.x); game.monsters = game.monsters.filter((q) => q !== m); game.ents.delete(m.id);
 });

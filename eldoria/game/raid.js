@@ -80,7 +80,7 @@ function build(ITEMS, MONSTERS) {
   for (const def of Object.values(BOSS_DEFS)) {
     const S = SETS[def.set];
     const loot = Object.keys(SLOT_TYPE).map((s) => [itemId(def.set, s), CHEST_CHANCE(def.set, s), 1, 1]);
-    MONSTERS[def.type] = { name: def.name, icon: def.icon, lv: def.lv, hp: def.hp, dmg: def.dmg, dmgK: def.dmgK, exp: def.exp, move: def.move, atkCd: def.atkCd, aggro: 24, respawn: 999999999, armor: 0.7,
+    MONSTERS[def.type] = { name: def.name, icon: def.icon, lv: def.lv, hp: def.hp, dmg: def.dmg, dmgK: def.dmgK, exp: def.exp, move: def.move, atkCd: def.atkCd, aggro: 24, respawn: 999999999, armor: 0.5,
       shared: true, boss: true, special: 'raid', raidId: def.type, gold: [0, 0], loot, minLevelHint: S.L };
   }
   for (const def of Object.values(MINIONS)) MONSTERS[def.type] = def.def;
@@ -90,23 +90,23 @@ function build(ITEMS, MONSTERS) {
 // ataques: c = círculos sobre jugadores, s = golpe en torno al jefe, l = línea, p = charco persistente, u = invoca, h = escudo, v = atrae, r = lluvia aleatoria
 const BOSS_DEFS = {
   raid_slyvra: {
-    type: 'raid_slyvra', set: 'rv', name: 'Slyvra, Reina Venenosa', icon: '🐍', lv: 700, hp: 520000, dmg: [260, 430], dmgK: 2.0, exp: 120000, move: 380, atkCd: 1300, th: 'poison',
+    type: 'raid_slyvra', set: 'rv', name: 'Slyvra, Reina Venenosa', icon: '🐍', lv: 700, hp: 520000, dmg: [260, 430], dmgK: 2.6, exp: 120000, move: 380, atkCd: 1300, th: 'poison',
     seq: [{ k: 'p', n: 4, r: 2.6, dmg: [90, 140], life: 7 }, { k: 'u', t: 'raid_vibora', n: 3 }, { k: 'c', n: 5, r: 2.2, dmg: [520, 760], warn: 1300 }, { k: 'l', w: 1.7, len: 15, dmg: [700, 980], warn: 1400 }, { k: 'p', n: 5, r: 2.6, dmg: [100, 150], life: 8 }, { k: 'u', t: 'raid_vibora', n: 4 }],
   },
   raid_koros: {
-    type: 'raid_koros', set: 'rk', name: 'Koros, el Rompetierras', icon: '🗿', lv: 720, hp: 600000, dmg: [290, 470], dmgK: 2.0, exp: 140000, move: 420, atkCd: 1400, th: 'quake',
+    type: 'raid_koros', set: 'rk', name: 'Koros, el Rompetierras', icon: '🗿', lv: 720, hp: 600000, dmg: [290, 470], dmgK: 2.6, exp: 140000, move: 420, atkCd: 1400, th: 'quake',
     seq: [{ k: 's', r: 6.5, dmg: [820, 1150], warn: 1500 }, { k: 'c', n: 6, r: 2.0, dmg: [560, 820], warn: 1300 }, { k: 'p', n: 4, r: 2.4, dmg: [110, 160], life: 7 }, { k: 's', r: 8, dmg: [900, 1250], warn: 1700 }, { k: 'r', n: 10, r: 1.7, dmg: [480, 700], warn: 1200 }],
   },
   raid_aranak: {
-    type: 'raid_aranak', set: 'ra', name: 'Aranak, el Escorpión Mecanizado', icon: '🦂', lv: 740, hp: 680000, dmg: [310, 500], dmgK: 2.0, exp: 160000, move: 400, atkCd: 1300, th: 'fire',
+    type: 'raid_aranak', set: 'ra', name: 'Aranak, el Escorpión Mecanizado', icon: '🦂', lv: 740, hp: 680000, dmg: [310, 500], dmgK: 2.6, exp: 160000, move: 400, atkCd: 1300, th: 'fire',
     seq: [{ k: 'l', w: 1.8, len: 16, dmg: [780, 1080], warn: 1300 }, { k: 'u', t: 'raid_escorpion', n: 4 }, { k: 'c', n: 6, r: 2.2, dmg: [560, 820], warn: 1300 }, { k: 'l', w: 1.8, len: 16, dmg: [800, 1100], warn: 1100, multi: 3 }, { k: 's', r: 7, dmg: [850, 1200], warn: 1600 }],
   },
   raid_xaelis: {
-    type: 'raid_xaelis', set: 'rx', name: 'Xaelis, Ira del Alba', icon: '⚡', lv: 760, hp: 760000, dmg: [330, 530], dmgK: 2.0, exp: 180000, move: 360, atkCd: 1200, th: 'light',
+    type: 'raid_xaelis', set: 'rx', name: 'Xaelis, Ira del Alba', icon: '⚡', lv: 760, hp: 760000, dmg: [330, 530], dmgK: 2.6, exp: 180000, move: 360, atkCd: 1200, th: 'light',
     seq: [{ k: 'r', n: 12, r: 1.8, dmg: [520, 760], warn: 1100 }, { k: 'l', w: 1.8, len: 18, dmg: [820, 1150], warn: 1300 }, { k: 'h', ms: 4500 }, { k: 'c', n: 7, r: 2.2, dmg: [600, 880], warn: 1200 }, { k: 's', r: 7.5, dmg: [900, 1250], warn: 1500 }],
   },
   raid_malgathor: {
-    type: 'raid_malgathor', set: 'rm', name: 'Malgathor, Segador del Vacío', icon: '🌀', lv: 800, hp: 1100000, dmg: [380, 600], dmgK: 2.0, exp: 300000, move: 360, atkCd: 1100, th: 'void', final: true,
+    type: 'raid_malgathor', set: 'rm', name: 'Malgathor, Segador del Vacío', icon: '🌀', lv: 800, hp: 1100000, dmg: [380, 600], dmgK: 2.6, exp: 300000, move: 360, atkCd: 1100, th: 'void', final: true,
     seq: [{ k: 'v', r: 12, pull: 4 }, { k: 's', r: 6, dmg: [1000, 1400], warn: 1100 }, { k: 'c', n: 8, r: 2.2, dmg: [650, 940], warn: 1200 }, { k: 'l', w: 2, len: 18, dmg: [950, 1300], warn: 1200, multi: 3 }, { k: 'p', n: 6, r: 2.6, dmg: [120, 180], life: 8 }, { k: 'r', n: 14, r: 1.8, dmg: [600, 880], warn: 1100 }, { k: 'h', ms: 4000 }],
   },
 };
