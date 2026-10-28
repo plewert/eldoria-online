@@ -21,7 +21,7 @@
 .raidhud .tm{display:grid;grid-template-columns:70px 1fr;gap:5px;align-items:center;font-size:11px}
 .raidhud .tm i{display:block;height:5px;background:#2a1b44}.raidhud .tm i b{display:block;height:100%;background:#58d868}
 .raidhud .tm.dead{opacity:.4;text-decoration:line-through}
-.raidhud.min .more{display:none}
+.raidhud .more{display:grid;gap:6px}.raidhud.min .more{display:none}
 .rdboss{position:absolute;top:56px;left:50%;transform:translateX(-50%);z-index:7;width:min(460px,70%);text-align:center;color:#f1e6ff;font:700 13px var(--serif);text-shadow:0 1px 3px #000;pointer-events:none}
 .rdboss .bar{height:12px;margin-top:3px;background:rgba(10,4,20,.85);border:1px solid #b98aff;box-shadow:0 0 12px rgba(160,90,255,.5)}
 .rdboss .bar b{display:block;height:100%;background:linear-gradient(180deg,#e8506a,#8a1630);transition:width .6s}
@@ -57,10 +57,10 @@
 
   function render() {
     if (!R || !R.on || !G.me || G.me.y < RAID_Y0) { hud.hidden = true; bossBox.hidden = true; return; }
-    hud.hidden = false; hud.classList.toggle('min', minimised);
+    hud.hidden = false; hud.classList.toggle('min', minimised); hud.style.cursor = minimised ? 'pointer' : '';
     const head = el('h4', '', ''); head.append(el('span', '', '🔮 Santuario de las Cinco Sombras'), el('span', '', minimised ? '▸' : '▾'));
     head.addEventListener('click', () => { minimised = !minimised; render(); });
-    const more = el('div', 'more'); more.style.display = 'grid'; more.style.gap = '6px';
+    const more = el('div', 'more'); 
     const btn = (txt, fn, cls) => { const b = el('button', cls || '', txt); b.type = 'button'; b.addEventListener('click', fn); return b; };
     if (R.hall && !R.run) {
       more.append(el('small', '', 'Raid de 1 a 10 jugadores: 5 cámaras, 5 jefes y un cofre con botín raro al final. Quienes estén ahora en la antecámara entrarán juntos.'),
