@@ -1934,8 +1934,39 @@
     for (const o of objs) { const P = proj3(o.x, o.y); if (P && Math.abs(mx - P.x) <= o.w * P.k && my >= P.y - (o.h + 6) * P.k && my <= P.y + 6 * P.k) return { x: o.tx, y: o.ty }; }
     return null;
   }
+  /* ---- nivel 🎬 de los efectos: bloom, gradación de color y (en 3D) profundidad de campo ---- */
+  let pfx = null;
+  function postFx(c, now, is3d) {
+    const lv = EXT.gfx ? EXT.gfx.level() : 0; if (lv < 3) return;
+    const W = cv.width, Hh = cv.height; if (!W || !Hh) return;
+    if (!pfx || pfx.W !== W || pfx.H !== Hh) {
+      const mk = (w, h) => { const k = document.createElement('canvas'); k.width = Math.max(2, w | 0); k.height = Math.max(2, h | 0); return k; };
+      pfx = { W, H: Hh, a: mk(W / 4, Hh / 4), b: mk(W / 12, Hh / 12), d: mk(W / 2, Hh / 2) };
+      pfx.ax = pfx.a.getContext('2d'); pfx.bx = pfx.b.getContext('2d'); pfx.dx = pfx.d.getContext('2d');
+    }
+    const { a, b, ax, bx } = pfx;
+    ax.imageSmoothingEnabled = true; bx.imageSmoothingEnabled = true;
+    ax.globalCompositeOperation = 'copy'; ax.drawImage(cv, 0, 0, a.width, a.height);
+    bx.globalCompositeOperation = 'copy'; bx.drawImage(a, 0, 0, b.width, b.height);
+    bx.globalCompositeOperation = 'multiply'; bx.drawImage(b, 0, 0);          // realza solo lo brillante
+    c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.imageSmoothingEnabled = true;
+    if (is3d) {                                                                  // profundidad de campo: arriba y abajo desenfocados
+      const { d, dx } = pfx;
+      dx.globalCompositeOperation = 'copy'; dx.drawImage(a, 0, 0, d.width, d.height);
+      dx.globalCompositeOperation = 'destination-in';
+      const mg = dx.createLinearGradient(0, 0, 0, d.height); mg.addColorStop(0, 'rgba(0,0,0,.95)'); mg.addColorStop(0.24, 'rgba(0,0,0,0)'); mg.addColorStop(0.8, 'rgba(0,0,0,0)'); mg.addColorStop(1, 'rgba(0,0,0,.9)');
+      dx.fillStyle = mg; dx.fillRect(0, 0, d.width, d.height);
+      c.drawImage(d, 0, 0, W, Hh);
+    }
+    c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.28; c.drawImage(b, 0, 0, W, Hh);
+    c.globalAlpha = 1; c.globalCompositeOperation = 'soft-light';
+    const h = EXT.env ? EXT.env.hour() : 12, night = h < 6 || h > 19.5;
+    c.fillStyle = night ? 'rgba(70,60,160,.22)' : 'rgba(255,190,120,.14)'; c.fillRect(0, 0, W, Hh);
+    c.restore();
+  }
+
   function frame3d(c, now, dt, tx, ty) {
-    const cw0 = cw, ch0 = ch, gs = Math.min(dpr * zoom, 1.25), Wg = Math.ceil(cw0 / K_TOP * 1.05), Hg = Math.ceil(2 * (ch0 * 0.56 / (1 - K_TOP) * (1 / K_TOP - 1) + ch0 * 0.08));
+    const tch = document.body.classList.contains('touch'), cw0 = cw, ch0 = ch, gs = Math.min(dpr * zoom, tch ? 0.8 : 1.25), Wg = Math.ceil(cw0 / K_TOP * 1.05), Hg = Math.ceil(2 * (ch0 * 0.56 / (1 - K_TOP) * (1 / K_TOP - 1) + ch0 * 0.08));
     if (!gcv) { gcv = document.createElement('canvas'); gx = gcv.getContext('2d'); }
     const pw = Math.ceil(Wg * gs), ph = Math.ceil(Hg * gs);
     if (gcv.width !== pw || gcv.height !== ph) { gcv.width = pw; gcv.height = ph; }
@@ -1943,15 +1974,26 @@
     try {
       gx.setTransform(gs, 0, 0, gs, 0, 0); gx.imageSmoothingEnabled = false;
       gx.fillStyle = '#05070a'; gx.fillRect(0, 0, Wg, Hg);
-      paintTerrain(gx, now); EXT.under(gx, now, Wg, Hg); fxFlat(gx, now, dt); EXT.draw(gx, now, Wg, Hg, dt, tx, ty);
+      paintTerrain(gx, now); EXT.under(gx, now, Wg, Hg);
+      if (EXT.gfx && EXT.gfx.level() >= 3) {                      // luces sobre el suelo: aura de jefes y luz cálida de los jugadores
+        gx.save(); gx.globalCompositeOperation = 'lighter';
+        for (const e of G.ents.values()) {
+          const boss = e.kind === 'mo' && G.mons[e.t] && G.mons[e.t].boss, r = (boss ? 7 : e.kind === 'pl' ? 3 : 0) * TS; if (!r) continue;
+          const fx0 = Wg / 2 + (e.rx - tx) * TS, fy0 = Hg / 2 + (e.ry - ty) * TS, g = gx.createRadialGradient(fx0, fy0, 2, fx0, fy0, r);
+          g.addColorStop(0, boss ? 'rgba(170,110,255,.20)' : 'rgba(255,220,160,.10)'); g.addColorStop(1, 'rgba(0,0,0,0)'); gx.fillStyle = g; gx.fillRect(fx0 - r, fy0 - r, r * 2, r * 2);
+        }
+        gx.restore();
+      }
+      fxFlat(gx, now, dt); EXT.draw(gx, now, Wg, Hg, dt, tx, ty);
     } finally { cw = cw0; ch = ch0; }
     const { hor, Zp, yc } = geo3();
     shk = now - G.shake.t < 150 ? [(Math.random() - 0.5) * G.shake.m, (Math.random() - 0.5) * G.shake.m] : [0, 0];
     c.fillStyle = '#05070a'; c.fillRect(0, 0, cw, ch);
     c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'low';
-    for (let yd = 0; yd < ch; yd += 2) {                        // proyección en perspectiva fila a fila
-      const k = (yd + 1 - hor) / Zp, Z = Zp / k, dy = Zp - Z;
-      c.drawImage(gcv, (Wg / 2 - cw / 2 / k) * gs, (Hg / 2 + dy) * gs, (cw / k) * gs, Math.max(1, 2 / (k * k) * gs), shk[0], yd + shk[1], cw, 2);
+    const stp = tch ? 4 : 2;
+    for (let yd = 0; yd < ch; yd += stp) {                      // proyección en perspectiva fila a fila
+      const k = (yd + stp / 2 - hor) / Zp, Z = Zp / k, dy = Zp - Z;
+      c.drawImage(gcv, (Wg / 2 - cw / 2 / k) * gs, (Hg / 2 + dy) * gs, (cw / k) * gs, Math.max(1, stp / (k * k) * gs), shk[0], yd + shk[1], cw, stp);
     }
     c.imageSmoothingEnabled = false;
     const fg = c.createLinearGradient(0, 0, 0, ch * 0.4); fg.addColorStop(0, 'rgba(5,7,10,.75)'); fg.addColorStop(1, 'rgba(5,7,10,0)'); c.fillStyle = fg; c.fillRect(0, 0, cw, ch * 0.4);
@@ -1964,6 +2006,14 @@
     };
     for (const g of G.ground) objs.push([g.y + 0.3, () => bb(g.x, g.y + 0.3, () => itemOne(c, g, now))]);
     for (const n of G.npcs) objs.push([n.y + 0.45, () => bb(n.x, n.y + 0.45, () => npcOne(c, n, now))]);
+    if (EXT.gfx && EXT.gfx.level() >= 3) for (const e of G.ents.values()) {      // reflejo de los jefes en el suelo
+      if (!(e.kind === 'mo' && G.mons[e.t] && G.mons[e.t].boss)) continue;
+      objs.push([e.ry + 0.44, () => {
+        const P = proj3(e.rx, e.ry + 0.45); if (!P) return;
+        const fx = cw / 2 + (e.rx - tx) * TS, fy = ch / 2 + (e.ry + 0.45 - ty) * TS, s = dpr * zoom * P.k, sx = Math.round((e.rx - tx) * TS + cw / 2 - TS / 2), sy = Math.round((e.ry - ty) * TS + ch / 2 - TS / 2);
+        c.save(); c.globalAlpha = 0.22; c.setTransform(s, 0, 0, -s * 0.42, dpr * zoom * (P.x + shk[0]) - fx * s, dpr * zoom * (P.y + shk[1]) + fy * s * 0.42); drawMonster(c, e, sx, sy, now); c.restore();
+      }]);
+    }
     for (const e of G.ents.values()) objs.push([e.ry + 0.45, () => bb(e.rx, e.ry + 0.45, () => { const sx = Math.round((e.rx - tx) * TS + cw / 2 - TS / 2), sy = Math.round((e.ry - ty) * TS + ch / 2 - TS / 2); entOne(c, e, sx, sy, now, tgId); })]);
     G.texts = G.texts.filter((t) => now - t.t < 1000);
     for (const t of G.texts) objs.push([t.y + 5, () => bb(t.x, t.y + 0.5, () => {
@@ -1979,6 +2029,7 @@
       g.addColorStop(0, 'rgba(4,5,9,0)'); g.addColorStop(0.55, 'rgba(4,5,9,.62)'); g.addColorStop(1, 'rgba(4,5,9,.9)');
       c.fillStyle = g; c.fillRect(0, 0, cw, ch);
     }
+    postFx(c, now, true);
   }
 
   function frame(now) {
@@ -2041,6 +2092,7 @@
       g.addColorStop(0, 'rgba(4,5,9,0)'); g.addColorStop(0.55, 'rgba(4,5,9,.72)'); g.addColorStop(1, 'rgba(4,5,9,.94)');
       c.fillStyle = g; c.fillRect(0, 0, cw, ch);
     }
+    postFx(c, now, false);
     walkTick(now); followTick(now);
   }
 

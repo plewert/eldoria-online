@@ -43,7 +43,7 @@
 @keyframes rdcard{from{opacity:0;transform:translateY(60px) scale(.3) rotate(-8deg)}}
 @keyframes rdglow{50%{filter:brightness(1.5)}}
 @media (max-width:760px){.raidhud{top:auto;bottom:150px;width:200px;font-size:11px}.rdboss{top:52px}}
-@media (max-height:520px){.raidhud{top:60px;width:196px}}`;
+@media (max-height:520px){.raidhud{top:78px;left:8px;width:176px}.rdboss{top:84px;width:min(300px,38%)}}`;
   document.head.append(st);
 
   /* ---------- panel ---------- */
@@ -51,7 +51,7 @@
   const bossBox = el('div', 'rdboss'); bossBox.hidden = true;
   const mount = () => { const s = $('#stage'); if (s && !hud.parentNode) s.append(hud, bossBox); };
   document.addEventListener('DOMContentLoaded', mount); if (document.readyState !== 'loading') mount();
-  let minimised = false;
+  let minimised = document.body.classList.contains('touch');      // en el teléfono empieza plegado
   const ROOM_NAMES = ['', 'Ciénaga de Slyvra', 'Cráter de Koros', 'Forja de Aranak', 'Templo de Xaelis', 'Abismo de Malgathor'];
   const near = () => { const e = G.me; return R && R.chest && e && Math.max(Math.abs(e.x - R.chest.x), Math.abs(e.y - R.chest.y)) <= 3; };
 

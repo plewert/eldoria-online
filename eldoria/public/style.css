@@ -409,7 +409,7 @@ body.touch .sheet { max-height: calc(100dvh - 12px); }
   /* barra superior: sonido, efectos y menús en una sola fila */
   body.touch .sndbtn { top: calc(8px + env(safe-area-inset-top)); left: calc(8px + env(safe-area-inset-left)); width: 36px; height: 36px; }
   body.touch .gfxbtn { top: calc(8px + env(safe-area-inset-top)); left: calc(48px + env(safe-area-inset-left)); }
-  body.touch .v3dbtn { top: calc(8px + env(safe-area-inset-top)); left: calc(88px + env(safe-area-inset-left)); }
+  body.touch .v3dbtn { top: calc(50px + env(safe-area-inset-top)); left: calc(84px + env(safe-area-inset-left)); width: 36px; height: 36px; }
   body.touch .clock { top: calc(48px + env(safe-area-inset-top)); left: calc(8px + env(safe-area-inset-left)); }
   body.touch .menu2 { top: calc(8px + env(safe-area-inset-top)); left: calc(92px + env(safe-area-inset-left)); right: calc(122px + env(safe-area-inset-right)); display: flex; flex-wrap: wrap; gap: 4px; }
   body.touch .menu2 button { width: 36px; height: 36px; }

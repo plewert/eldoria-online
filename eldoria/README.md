@@ -263,3 +263,7 @@ Botón junto al de sonido (PC y teléfono) que cambia entre **Completo** (luces 
 - Botón **🧊** (debajo del reloj, junto a ✨) o tecla **Y**: activa/desactiva la vista 3D. Se recuerda entre sesiones; por defecto está desactivada.
 - El suelo se dibuja en perspectiva (más cerca = más grande) y jugadores, jefes, PNJ y objetos quedan de pie mirando a la cámara. Los avisos de ataque de la Raid se ven proyectados en el suelo. Clic, menú contextual, seguir y auto golpe funcionan igual.
 - Es solo visual (`public/game.js`, función `frame3d`): el servidor y el juego no cambian. En teléfonos modestos puede ir más justo; basta con desactivarlo.
+
+## Efectos 🎬 (nivel Cinematográfico)
+- El botón ✨ ahora tiene 4 niveles: 🚫 apagados · 🔅 básicos · ✨ completos · 🎬 cinematográficos (bloom, gradación de color, luz de jefes sobre el suelo y, en vista 3D, reflejo de jefes y profundidad de campo). Es el más exigente: en teléfono arranca en 🔅 y conviene probarlo antes de dejarlo.
+- En 3D los teléfonos usan menos resolución en el suelo para ir más fluidos.

@@ -7,12 +7,12 @@
   const { G, el, $, store } = X;
   const TS = 32;
   const touch = (() => { try { return 'ontouchstart' in window || matchMedia('(pointer:coarse)').matches; } catch (e) { return false; } })();
-  let lvl = store.get('eldoria.gfx'); lvl = lvl === '0' || lvl === '1' || lvl === '2' ? +lvl : (touch ? 1 : 2);
-  const NAMES = ['Apagados', 'Básicos (sombras, viñeta y color)', 'Completos (luces, rayos de sol y partículas)'], ICON = ['🚫', '🔅', '✨'];
+  let lvl = store.get('eldoria.gfx'); lvl = lvl === '0' || lvl === '1' || lvl === '2' || lvl === '3' ? +lvl : (touch ? 1 : 2);
+  const NAMES = ['Apagados', 'Básicos (sombras, viñeta y color)', 'Completos (luces, rayos de sol y partículas)', 'Cinematográficos (además: bloom, reflejos, profundidad de campo y color; exigente)'], ICON = ['🚫', '🔅', '✨', '🎬'];
 
   const btn = el('button', 'sndbtn gfxbtn'); btn.type = 'button';
   const label = () => { btn.textContent = ICON[lvl]; btn.title = 'Efectos visuales: ' + NAMES[lvl] + ' — pulsa para cambiar'; btn.setAttribute('aria-label', btn.title); };
-  btn.addEventListener('click', () => { lvl = (lvl + 2) % 3; store.set('eldoria.gfx', String(lvl)); label(); });
+  btn.addEventListener('click', () => { lvl = (lvl + 3) % 4; store.set('eldoria.gfx', String(lvl)); label(); });
   label();
   const mount = () => { const st = $('#stage'); if (st && !btn.parentNode) st.append(btn); };
   document.addEventListener('DOMContentLoaded', mount); if (document.readyState !== 'loading') mount();
@@ -52,7 +52,7 @@
     const k = scale(c, cw);
     c.save(); c.setTransform(k, 0, 0, k, 0, 0);
     // --- luces cálidas (solo completo): jugador, PNJ, portales y otros jugadores; más fuertes al anochecer ---
-    if (lvl === 2) {
+    if (lvl >= 2) {
       c.globalCompositeOperation = 'screen';
       const glow = (x, y, r, col, a) => {
         if (x < -r || y < -r || x > cw + r || y > ch + r) return;
