@@ -276,3 +276,6 @@ Se controlan con el botón ✨ (básico / completo / cine). Básico: huellas en 
 
 ## Realismo de luz y terreno (fx3.js)
 Nivel ✨ completo o cine: oclusión ambiental junto a muros, rocas y árboles; sombras de copas con luz filtrada; bordes blandos entre hierba, camino, arena, nieve y pantano; agua con profundidad y brillo del cielo (reflejo de luna en cine); sombras de nubes; bruma baja al amanecer, atardecer, tras la lluvia y en pantanos; luz dinámica de hechizos, proyectiles, lava y jefes enfurecidos; vaho en el frío; parpadeo de personajes. Pendiente (requiere WebGL): luz por píxel sobre los sprites y normal maps.
+
+## Tutorial inicial (tutorial.js)
+Los personajes nuevos (nivel menor a 5) reciben un tutorial de 4 pasos: moverse, hablar con Orin el Sabio, equipar un arma (el objeto recomendado brilla en la mochila) y matar un monstruo. Una flecha dorada rebota sobre el objetivo (o se pega al borde de la pantalla apuntando hacia él), y el panel muestra una brújula con la distancia, útil también en la vista 3D. Se guarda por personaje en el navegador; «Saltar» lo cierra y F1 lo repite.
