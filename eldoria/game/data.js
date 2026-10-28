@@ -485,6 +485,7 @@ require('./mage').build(ITEMS, SHOPS, MONSTERS);
   require('./spider').build(ITEMS, MONSTERS, X.SPIDER.type);
   MONSTERS[X.LEVIATAN.type] = X.LEVIATAN.def;
   require('./leviatan').build(ITEMS, MONSTERS, X.LEVIATAN.type);
+  require('./raid').build(ITEMS, MONSTERS);
   require('./bosspets').build(ITEMS, MONSTERS);
   require('./fishing').build(ITEMS, SHOPS);
   require('./mining').build(ITEMS, SHOPS);

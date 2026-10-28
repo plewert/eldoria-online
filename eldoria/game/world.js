@@ -12,7 +12,8 @@
 const { SPAWN_PLAN } = require('./data');
 
 const W0 = 180;                 // el mapa original (se genera igual que siempre)
-const W = 320, H = 140;         // ampliado al este: Selva Esmeralda, Sabana Dorada, Aldea Pesquera y las Tierras de Lava
+const W = 320, H0 = 140;        // mundo exterior: Selva Esmeralda, Sabana Dorada, Aldea Pesquera y las Tierras de Lava
+const H = 200;                  // + 60 filas al sur con las salas de la Raid (el exterior se genera igual que siempre con H0)
 const T = {
   GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10,
   SAND: 11, SNOW: 12, SWAMP: 13, DUNE: 14, PALM: 15, PINE: 16, DEADTREE: 17, CACTUS: 18, ICEBLOCK: 19,
@@ -22,7 +23,18 @@ const BLOCKED = new Uint8Array(64);   // (con 32 casillas, WEBW=32 quedaba fuera
 [T.WATER, T.TREE, T.WALL, T.ROCK, T.PALM, T.PINE, T.DEADTREE, T.CACTUS, T.ICEBLOCK, T.BOG, T.CWALL, T.LAVA, T.CLOUDW, T.WEBW, T.AQW].forEach((t) => { BLOCKED[t] = 1; });
 
 // El orden importa: gana la primera zona cuyo rectángulo contiene la casilla.
+const RAID_Y0 = 146, RAID_Y1 = 170, RAID_W = 36;
+const RAID_ROOMS = [
+  { id: 'raid_hall',      name: 'Antecámara del Santuario de las Cinco Sombras', x0: 2 },
+  { id: 'raid_slyvra',    name: 'Cámara 1: Ciénaga de Slyvra',       x0: 42, tint: 'rgba(80,200,90,.10)' },
+  { id: 'raid_koros',     name: 'Cámara 2: Cráter de Koros',         x0: 82, tint: 'rgba(255,90,20,.12)' },
+  { id: 'raid_aranak',    name: 'Cámara 3: Forja de Aranak',         x0: 122, tint: 'rgba(255,120,40,.08)' },
+  { id: 'raid_xaelis',    name: 'Cámara 4: Templo de Xaelis',        x0: 162, tint: 'rgba(255,230,150,.08)' },
+  { id: 'raid_malgathor', name: 'Cámara 5: Abismo de Malgathor',     x0: 202, tint: 'rgba(150,60,255,.12)' },
+];
+for (const r of RAID_ROOMS) { r.x1 = r.x0 + RAID_W - 1; r.y0 = RAID_Y0; r.y1 = RAID_Y1; r.cx = Math.floor((r.x0 + r.x1) / 2); r.cy = Math.floor((r.y0 + r.y1) / 2); }
 const ZONES = [
+  ...RAID_ROOMS.map((r) => ({ id: r.id, name: r.name, pvp: false, kind: 'dungeon', tint: r.tint, rect: [r.x0, r.y0, r.x1, r.y1] })),
   { id: 'ciudad',     name: 'Ciudad de Aldea Real',   pvp: false, kind: 'town',    rect: [78, 58, 102, 74] },
   { id: 'puerto',     name: 'Puerto Marea',           pvp: false, kind: 'town',    rect: [90, 120, 108, 131] },
   { id: 'aldea',      name: 'Aldea Pesquera de Coral', pvp: false, kind: 'town',    rect: [200, 70, 222, 84] },
@@ -94,7 +106,7 @@ const inb = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
 const SPAWN_POINT = { x: 90, y: 66 };
 
 /* 1) Terreno exterior por zona */
-for (let y = 0; y < H; y++) {
+for (let y = 0; y < H0; y++) {
   for (let x = 0; x < W0; x++) {            // (solo el mapa original: así el generador aleatorio produce lo mismo de siempre)
     const z = zoneAt(x, y).id;
     const a = n1(x / 6, y / 6), b = n2(x / 9, y / 9);
@@ -133,7 +145,7 @@ for (let y = 0; y < H; y++) {
 // ampliación al este (generador propio, no altera el mapa original)
 {
   const r2 = mulberry32(8675309), n4 = makeNoise(31), n5 = makeNoise(63);
-  for (let y = 0; y < H; y++) {
+  for (let y = 0; y < H0; y++) {
     for (let x = W0; x < W; x++) {
       const a = n4(x / 6, y / 6), b = n5(x / 8, y / 8), z = zoneAt(x, y).id;
       let t;
@@ -145,9 +157,9 @@ for (let y = 0; y < H; y++) {
   }
 }
 // costa de agua alrededor del mapa
-for (let y = 0; y < H; y++) {
+for (let y = 0; y < H0; y++) {
   for (let x = 0; x < W; x++) {
-    const d = Math.min(x, y, W - 1 - x, H - 1 - y);
+    const d = Math.min(x, y, W - 1 - x, H0 - 1 - y);
     if (d < 1 + Math.floor(n3(x / 5, y / 5) * 3)) tiles[idx(x, y)] = T.WATER;
   }
 }
@@ -308,6 +320,37 @@ function carveAqua(C, seed) {
 }
 carveAqua(CAVE5, 5151);
 
+/* Santuario de las Cinco Sombras (Raid): 6 salas en fila al sur del mundo. Todo el sur se cierra con roca y se talla cada sala. */
+for (let y = H0; y < H; y++) for (let x = 0; x < W; x++) tiles[idx(x, y)] = T.CWALL;
+const RAID = { rooms: RAID_ROOMS, enter: { x: 85, y: 72 } };
+(function carveRaid() {
+  const rr = mulberry32(777001), nz = makeNoise(9091);
+  for (const R of RAID_ROOMS) {
+    const wall = R.id === 'raid_xaelis' ? T.CLOUDW : R.id === 'raid_aranak' || R.id === 'raid_hall' ? T.WALL : T.CWALL;
+    const floor = { raid_hall: T.DFLOOR, raid_slyvra: T.SWAMP, raid_koros: T.ASH, raid_aranak: T.MFLOOR, raid_xaelis: T.CLOUDF, raid_malgathor: T.AFLOOR }[R.id];
+    for (let y = R.y0; y <= R.y1; y++) for (let x = R.x0; x <= R.x1; x++) tiles[idx(x, y)] = wall;
+    const ax = (R.x1 - R.x0) / 2 - 1.2, ay = (R.y1 - R.y0) / 2 - 1.2, mid = R.id === 'raid_hall' || R.id === 'raid_aranak';
+    for (let y = R.y0 + 1; y < R.y1; y++) for (let x = R.x0 + 1; x < R.x1; x++) {
+      const dx = (x - (R.x0 + R.x1) / 2) / ax, dy = (y - (R.y0 + R.y1) / 2) / ay;
+      const inside = mid ? true : (Math.pow(Math.abs(dx), 3.2) + Math.pow(Math.abs(dy), 3.2) < 1 + (nz(x / 3, y / 3) - 0.5) * 0.25);   // sala casi rectangular con esquinas redondeadas
+      if (inside) tiles[idx(x, y)] = floor;
+    }
+    // decoración de cada sala (lejos de la entrada al oeste, del centro y de la guarida al este)
+    const free = (x, y) => Math.abs(x - R.cx) > 3 && Math.abs(y - R.cy) > 3 && x > R.x0 + 8 && x < R.x1 - 3 && y > R.y0 + 2 && y < R.y1 - 2 && tiles[idx(x, y)] === floor;
+    const blob = (bx, by, rad, t) => { for (let y = Math.floor(by - rad - 1); y <= Math.ceil(by + rad + 1); y++) for (let x = Math.floor(bx - rad - 1); x <= Math.ceil(bx + rad + 1); x++) if (Math.hypot(x - bx, y - by) <= rad && free(x, y)) tiles[idx(x, y)] = t; };
+    if (R.id === 'raid_slyvra') { for (let i = 0; i < 7; i++) blob(R.x0 + 10 + rr() * 22, R.y0 + 3 + rr() * 18, 1.4 + rr() * 1.6, T.BOG); for (let i = 0; i < 12; i++) { const x = R.x0 + 9 + Math.floor(rr() * 24), y = R.y0 + 3 + Math.floor(rr() * 19); if (free(x, y)) tiles[idx(x, y)] = T.DEADTREE; } }
+    else if (R.id === 'raid_koros') { for (let i = 0; i < 6; i++) blob(R.x0 + 10 + rr() * 22, R.y0 + 3 + rr() * 18, 1.5 + rr() * 1.8, T.LAVA); for (let i = 0; i < 10; i++) { const x = R.x0 + 9 + Math.floor(rr() * 24), y = R.y0 + 3 + Math.floor(rr() * 19); if (free(x, y)) tiles[idx(x, y)] = T.ROCK; } }
+    else if (R.id === 'raid_aranak') { for (let i = 0; i < 9; i++) { const x = R.x0 + 9 + Math.floor(rr() * 24), y = R.y0 + 3 + Math.floor(rr() * 19); if (free(x, y)) tiles[idx(x, y)] = T.ROCK; } for (const yy of [R.y0 + 4, R.y1 - 4]) for (let x = R.x0 + 10; x < R.x1 - 4; x++) if (free(x, yy) && (x % 7)) tiles[idx(x, yy)] = T.LAVA; }
+    else if (R.id === 'raid_xaelis') { for (let i = 0; i < 8; i++) { const x = R.x0 + 9 + Math.floor(rr() * 24), y = R.y0 + 3 + Math.floor(rr() * 19); if (free(x, y)) tiles[idx(x, y)] = T.CLOUDW; } }
+    else if (R.id === 'raid_malgathor') { for (let i = 0; i < 6; i++) blob(R.x0 + 10 + rr() * 22, R.y0 + 3 + rr() * 18, 1.2 + rr() * 1.4, T.LAVA); for (let i = 0; i < 8; i++) { const x = R.x0 + 9 + Math.floor(rr() * 24), y = R.y0 + 3 + Math.floor(rr() * 19); if (free(x, y)) tiles[idx(x, y)] = T.CWALL; } }
+    R.start = [R.x0 + 5, R.cy]; R.lair = [R.x1 - 9, R.cy];
+    // entrada de jugadores siempre libre
+    for (let y = R.cy - 2; y <= R.cy + 2; y++) for (let x = R.x0 + 2; x <= R.x0 + 8; x++) tiles[idx(x, y)] = floor;
+    for (let y = R.cy - 3; y <= R.cy + 3; y++) for (let x = R.lair[0] - 3; x <= R.lair[0] + 3; x++) tiles[idx(x, y)] = floor;
+  }
+})();
+
+
 /* 4) Caminos (despejan árboles, agua y rocas del trazado) */
 function carvePath(x0, y0, x1, y1) {
   const put = (x, y) => { if (inb(x, y) && tiles[idx(x, y)] !== T.PORTAL && tiles[idx(x, y)] !== T.WALL && tiles[idx(x, y)] !== T.CWALL && tiles[idx(x, y)] !== T.CLOUDW && tiles[idx(x, y)] !== T.WEBW && tiles[idx(x, y)] !== T.AQW) tiles[idx(x, y)] = T.ROAD; };
@@ -357,6 +400,11 @@ addPortal(CAVE4.door[0], CAVE4.door[1], CAVE4.inside[0], CAVE4.inside[1], 'Guari
 addPortal(CAVE4.exit[0], CAVE4.exit[1], CAVE4.door[0], CAVE4.door[1] - 1, 'Salir a las Tierras de Lava');
 addPortal(CAVE5.door[0], CAVE5.door[1], CAVE5.inside[0], CAVE5.inside[1], 'Gruta del Leviatán Abisal (peligro extremo)');
 addPortal(CAVE5.exit[0], CAVE5.exit[1], CAVE5.door[0], CAVE5.door[1] - 1, 'Salir a la Selva Esmeralda');
+{
+  const H1 = RAID_ROOMS[0];
+  addPortal(RAID.enter.x, RAID.enter.y, H1.start[0] + 3, H1.cy, 'Santuario de las Cinco Sombras (Raid de 1 a 10 jugadores)');
+  addPortal(H1.start[0] - 2, H1.cy, RAID.enter.x, RAID.enter.y - 1, 'Salir a la Ciudad de Aldea Real');
+}
 
 function clearAround(cx, cy, r) {
   for (let y = cy - r; y <= cy + r; y++) {
@@ -484,5 +532,5 @@ for (let y = 0; y < H; y++) {
 
 module.exports = {
   W, H, T, BLOCKED, tiles, ZONES, zoneAt, zoneById, PORTALS, portalAt, NPCS, SPAWN_POINT,
-  isWalkable, reach, monsterSpawns, rows, catRooms, abyRooms, minRooms, pirRooms, forRooms,
+  RAID, isWalkable, reach, monsterSpawns, rows, catRooms, abyRooms, minRooms, pirRooms, forRooms,
 };

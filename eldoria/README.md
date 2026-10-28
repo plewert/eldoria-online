@@ -246,3 +246,11 @@ Botón junto al de sonido (PC y teléfono) que cambia entre **Completo** (luces 
 - **⛶ Pantalla completa** (bloquea horizontal donde el navegador lo permita), zonas seguras para muescas y bordes redondeados.
 - **Zoom:** pellizco con dos dedos o botones ＋/－ (se guarda); en teléfono arranca alejado para ver más mapa.
 - La pantalla de acceso se desplaza si el teléfono está en horizontal.
+
+## Raid: Santuario de las Cinco Sombras (1 a 10 jugadores)
+- Entrada: portal del Santuario en la Ciudad de Aldea Real (cerca de la plaza). En la antecámara pulsa **Iniciar la Raid** (o `/raid`): entran juntos quienes estén allí (máx. 10). Durante el primer minuto de la cámara 1 se puede unir más gente.
+- 5 cámaras seguidas: **Slyvra → Koros → Aranak → Xaelis → Malgathor**. La vida de cada jefe escala con el grupo (+75 % por jugador extra). Cada jefe tiene ataques con aviso en el suelo (círculos, líneas, charcos, golpes, invocaciones, escudo, singularidad) y se enfurece por debajo del 35 % de vida.
+- Cada jugador tiene 3 vidas: si cae, vuelve por el portal a la cámara actual. Si todos mueren, la Raid se sella. `/raid salir` te saca.
+- Jefes intermedios: oro y 22 % de una pieza de su set. **Cofre final** (cámara 5): cada participante lo abre una vez (clic, tecla E o botón) y recibe botín raro de los 5 sets (casco, peto, guantes, grebas, botas, cinto, anillo, amuleto, **capa**, arma), oro, pluma de fénix y, con suerte, la cría de un jefe. Más aporte de daño = más opciones de un segundo objeto. Animación de apertura con rayos y tarjetas (dorado = raro).
+- Nueva ranura **Capa** en el equipo (las capas de la Raid tienen color propio; la de Xaelis lleva alas doradas).
+- Todo el botín sale en la **Colección** de cada jefe. Archivos: `game/raid.js` (servidor), `public/raid.js` (cliente), sprites `raid_*` y `gear.png`.

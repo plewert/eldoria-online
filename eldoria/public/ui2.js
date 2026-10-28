@@ -53,7 +53,7 @@
       const grid = el('div', 'colgrid');
       for (const [id, ch] of d.loot) {
         const it = G.items[id]; if (!it) continue;
-        if (!(it.type === 'weapon' || it.type === 'shield' || ['head', 'body', 'gloves', 'legs', 'boots', 'amulet', 'ring', 'belt', 'pet', 'mount'].includes(it.type) || /^trofeo/.test(id)) && ch >= 0.2) continue;   // solo lo "coleccionable": equipo, mascotas y objetos raros
+        if (!(it.type === 'weapon' || it.type === 'shield' || ['head', 'body', 'gloves', 'legs', 'boots', 'cape', 'amulet', 'ring', 'belt', 'pet', 'mount'].includes(it.type) || /^trofeo/.test(id)) && ch >= 0.2) continue;   // solo lo "coleccionable": equipo, mascotas y objetos raros
         n++; const c = have2[id], tile = el('div', 'coltile' + (c ? ' on' : ''));
         const ic = el('div', 'ico'); ic.append(X.iconNode ? X.iconNode(id) : it.icon || '?'); tile.append(ic, el('small', '', c ? it.name : '???'));
         if (c) { g++; tile.append(el('b', '', '×' + c)); }

@@ -322,11 +322,11 @@
 
   /* ---------- objetos: nombre, color de rareza y tooltip ----------
    * Objeto empaquetado: [id, qty]  o  equipo [id, 1, +N, ancient, nRanuras, gemas[], poder]  */
-  const GEAR = new Set(['weapon', 'head', 'body', 'shield', 'amulet', 'ring', 'belt', 'gloves', 'legs', 'boots']);
-  const ALL_SLOTS = ['weapon', 'head', 'body', 'shield', 'amulet', 'ring1', 'ring2', 'belt', 'gloves', 'legs', 'boots'];
+  const GEAR = new Set(['weapon', 'head', 'body', 'shield', 'amulet', 'ring', 'belt', 'gloves', 'legs', 'boots', 'cape']);
+  const ALL_SLOTS = ['weapon', 'head', 'body', 'shield', 'amulet', 'ring1', 'ring2', 'belt', 'gloves', 'legs', 'boots', 'cape'];
   const bonusTxt = (b) => { const o = []; if (b.atk) o.push(`+${b.atk} ataque`); if (b.def) o.push(`+${b.def} defensa`); if (b.hp) o.push(`+${b.hp} vida`); if (b.mana) o.push(`+${b.mana} maná`); if (b.crit) o.push(`${Math.round(b.crit * 100)}% crítico`); if (b.steal) o.push(`${Math.round(b.steal * 100)}% robo de vida`); return o.join(' · '); };
   const isGear = (id) => !!G.items[id] && GEAR.has(G.items[id].type);
-  const TYPE_NAME = { weapon: 'Arma', head: 'Casco', body: 'Armadura', shield: 'Escudo', amulet: 'Amuleto', ring: 'Anillo', belt: 'Cinto', gloves: 'Guantes', legs: 'Grebas', boots: 'Botas', pet: 'Mascota', mount: 'Montura', gem: 'Gema', consumable: 'Consumible', misc: 'Trofeo' };
+  const TYPE_NAME = { weapon: 'Arma', head: 'Casco', body: 'Armadura', shield: 'Escudo', amulet: 'Amuleto', ring: 'Anillo', belt: 'Cinto', gloves: 'Guantes', legs: 'Grebas', boots: 'Botas', cape: 'Capa', pet: 'Mascota', mount: 'Montura', gem: 'Gema', consumable: 'Consumible', misc: 'Trofeo' };
   const itName = (it) => {
     const d = G.items[it[0]]; if (!d) return String(it[0]);
     return isGear(it[0]) ? `${it[3] ? 'Ancient ' : ''}${d.name}${it[2] > 0 ? ' +' + it[2] : ''}` : d.name;
@@ -466,8 +466,8 @@
   }
 
   /* ---------- inventario y equipo ---------- */
-  const EQ_GLYPH = { head: '⛑', weapon: '⚔', body: '👕', shield: '🛡', amulet: '📿', ring1: '💍', ring2: '💍', belt: '🎗', gloves: '🧤', legs: '🦿', boots: '🥾' };
-  const EQ_NAME = { head: 'casco', weapon: 'arma', body: 'armadura', shield: 'escudo', amulet: 'amuleto', ring1: 'anillo', ring2: 'anillo', belt: 'cinto', gloves: 'guantes', legs: 'grebas', boots: 'botas' };
+  const EQ_GLYPH = { head: '⛑', weapon: '⚔', body: '👕', shield: '🛡', amulet: '📿', ring1: '💍', ring2: '💍', belt: '🎗', gloves: '🧤', legs: '🦿', boots: '🥾', cape: '🧥' };
+  const EQ_NAME = { head: 'casco', weapon: 'arma', body: 'armadura', shield: 'escudo', amulet: 'amuleto', ring1: 'anillo', ring2: 'anillo', belt: 'cinto', gloves: 'guantes', legs: 'grebas', boots: 'botas', cape: 'capa' };
   function buildInvGrid() {
     const grid = $('#inv'); grid.replaceChildren();
     for (let i = 0; i < G.cfg.invSize; i++) {
@@ -1132,7 +1132,7 @@
   const matOf = (id, dflt = 'hierro') => { for (const k of Object.keys(MATS)) if (id.includes(k)) return MATS[k]; return MATS[dflt]; };
   const itemGear = (e) => {
     const q = e.q || [], D = (i) => (q[i] && G.items[q[i]]) || null;
-    return { wid: q[0] || '', hid: q[1] || '', bid: q[2] || '', sid: q[3] || '', aid: q[4] || '', r1: q[5] || '', r2: q[6] || '', btid: q[7] || '', glid: q[8] || '', lgid: q[9] || '', bootid: q[10] || '', w: D(0) };
+    return { wid: q[0] || '', hid: q[1] || '', bid: q[2] || '', sid: q[3] || '', aid: q[4] || '', r1: q[5] || '', r2: q[6] || '', btid: q[7] || '', glid: q[8] || '', lgid: q[9] || '', bootid: q[10] || '', cpid: q[11] || '', w: D(0) };
   };
   const JEWEL = { angel: '#bfe4ff', sombra: '#9a6ad8', hueso: '#ece6d2', jade: '#4cd18a', vigor: '#e0503b', dragon: '#f08a2e', sol: '#ffd96a', abismo: '#9a4aff', faraon: '#4aa8ff', cobre: '#d98a4a', fuerza: '#e86a3a', vida: '#e0503b', mana: '#5aa8ff', plata: '#dfe6ee', rubi: '#ff3a4a', sangre: '#b0102a', hielo: '#9fe4ff' };
   const jewelCol = (id) => { for (const k of Object.keys(JEWEL)) if (id.includes(k)) return JEWEL[k]; return '#ffd96a'; };
@@ -1248,7 +1248,7 @@
   function drawHead(c, id, hx, hy, view, side, now) {
     const d = G.items[id];
     if (d && d.spr && GJ['c_' + d.spr]) {
-      const hood = /^hat1[234]$/.test(d.spr), boss = /^(t_helm|s_hood|j_helm|a_helm|f_helm|l_helm)$/.test(d.spr), dy = hood ? 7.5 : d.spr === 't_helm' ? 9.5 : d.spr === 'a_helm' || d.spr === 'f_helm' || d.spr === 'l_helm' ? 8.5 : d.spr === 'g_helm' ? 3.5 : boss ? 5.5 : 0.5;   // capuchas y cascos de jefe: cubren el rostro
+      const hood = /^hat1[234]$/.test(d.spr), boss = /^(t_helm|s_hood|j_helm|a_helm|f_helm|l_helm|r[mvxka]_helm)$/.test(d.spr), dy = hood ? 7.5 : d.spr === 't_helm' ? 9.5 : d.spr === 'a_helm' || d.spr === 'f_helm' || d.spr === 'l_helm' || /^r[mvxka]_helm$/.test(d.spr) ? 8.5 : d.spr === 'g_helm' ? 3.5 : boss ? 5.5 : 0.5;   // capuchas y cascos de jefe: cubren el rostro
       if ((hood || boss) && view === 'b') { drawLayer(c, d.spr, hx, hy + dy, 0.5, 1, false, 0); return; }
       if ((hood || boss) && view !== 'f') {                                       // de perfil: se estrecha y se voltea hacia donde mira el personaje
         const f = GJ['c_' + d.spr]; c.save(); c.translate(hx + side * 1.4, hy + dy); if (side < 0) c.scale(-1, 1); c.scale(0.84, 1);
@@ -1371,10 +1371,23 @@
 
     const leg = (x, len, col) => { c.fillStyle = col; c.fillRect(Math.round(x - 2), hipY + bob * 0.4, 4, len); if (gr.lgid) { c.fillStyle = LG[2]; c.fillRect(Math.round(x - 1.5), hipY + bob * 0.4 + 3, 3, 1); } const bc = gr.bootid && BOOT_COL[(G.items[gr.bootid] || {}).spr] || ['#5d4637', '#ff8a1f']; c.fillStyle = gr.bootid ? bc[0] : '#15181f'; c.fillRect(Math.round(x - 2.5), hipY + bob * 0.4 + len - 2, 5 + (side ? 1 : 0), 2.5); if (gr.bootid) { c.fillStyle = bc[1]; c.fillRect(Math.round(x - 2.5), hipY + bob * 0.4 + len - 1.2, 5 + (side ? 1 : 0), 0.8); } };
     const arm = (x, y, dx, dy, col) => { c.strokeStyle = col; c.lineWidth = 3.4; c.lineCap = 'round'; c.beginPath(); c.moveTo(x, y); c.lineTo(x + dx, y + dy); c.stroke(); c.fillStyle = handCol; c.beginPath(); c.arc(x + dx, y + dy, 2, 0, 7); c.fill(); };
+    const CP = gr.cpid && G.items[gr.cpid] && G.items[gr.cpid].cc ? G.items[gr.cpid] : null;     // capa equipada: colores propios (y alas)
     const cape = (hem, wide) => {
-      c.fillStyle = capeCol; c.beginPath();
+      if (CP && CP.wings) {                                                                       // alas doradas detrás del personaje
+        const flap = Math.sin(now / 420) * 1.6 + amp * 1.5;
+        for (const sd of [-1, 1]) {
+          c.save(); c.translate(cx + lean + sd * 3, shY + 2); c.scale(sd, 1);
+          const wg = c.createLinearGradient(0, 0, 16, -4); wg.addColorStop(0, CP.cc[0]); wg.addColorStop(1, CP.cc[2]);
+          c.fillStyle = wg; c.globalAlpha = 0.92;
+          c.beginPath(); c.moveTo(0, 2); c.quadraticCurveTo(10, -9 - flap, 19, -7 - flap); c.quadraticCurveTo(15, -2, 18, 2 - flap * 0.4); c.quadraticCurveTo(12, 3, 14, 8); c.quadraticCurveTo(7, 6, 2, 9); c.closePath(); c.fill();
+          c.restore();
+        }
+      }
+      if (CP) { const g2 = c.createLinearGradient(0, shY, 0, base - 6); g2.addColorStop(0, CP.cc[0]); g2.addColorStop(1, CP.cc[1]); c.fillStyle = g2; } else c.fillStyle = capeCol;
+      c.beginPath();
       c.moveTo(cx - wide + lean, shY + 1); c.lineTo(cx + wide + lean, shY + 1);
       c.lineTo(cx + wide + 1 + hem, base - 7); c.lineTo(cx - wide - 1 + hem, base - 7); c.closePath(); c.fill();
+      if (CP) { c.fillStyle = CP.cc[2]; c.fillRect(cx - wide - 1 + hem, base - 8.4, wide * 2 + 2, 1.6); if (CP.glow) { c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = CP.glow; c.globalAlpha = 0.35 + 0.2 * Math.sin(now / 300); c.fillRect(cx - wide + lean, shY + 2, 2, base - shY - 10); c.fillRect(cx + wide - 2 + lean, shY + 2, 2, base - shY - 10); c.restore(); } }
     };
     const handCol = GLOVE_COL[(G.items[gr.glid] || {}).spr] || skin;
     const skirt = (wide, sway) => {
@@ -1447,7 +1460,7 @@
       leg(cx - 3, 10 - l1, legCol); leg(cx + 3, 10 - l2, legCol);
       const sway = Math.sin(ph) * amp;
       skirt(7, sway * 2.2);
-      if (!front) cape(sway * 2.5 + Math.sin(now / 240) * 0.6, 7);
+      if (!front || (CP && CP.wings)) cape(sway * 2.5 + Math.sin(now / 240) * 0.6, 7);
       if (!front && gr.sid) drawShieldItem(c, gr.sid, cx + sway * 0.8, shY + 7, 'b', 0);                    // escudo a la espalda
       c.fillStyle = front ? body : mid; c.fillRect(Math.round(cx - 7 + sway * 0.8), shY, 14, 12);
       if (front) {
@@ -1504,10 +1517,10 @@
     robe6: ['#b02a2a', '#6e1818', '#d4d9e0', 0], robe7: ['#40307a', '#251a4a', '#7a5ac0', 0], robe8: ['#5a3aa0', '#2e1f5c', '#ffe070', 1],
     robe9: ['#2f5a9a', '#1c3868', '#d8ecff', 1], robe10: ['#8a2a10', '#4a1208', '#ff8a2a', 2], robe11: ['#e06a10', '#8a2a08', '#ffd040', 2], robe12: ['#6ab0e0', '#3a78b0', '#f0fcff', 2],
   };
-  const GLOVE_COL = { glove0: '#b8a88a', glove1: '#b8a88a', glove2: '#8a5a30', glove3: '#7a4a28', glove4: '#6a3e20', glove5: '#6a3e20', t_glove1: '#7a5a48', t_glove2: '#7a5a48', s_gauntlet: '#2f2a3c', j_glove: '#2f7a4a', a_glove: '#e9f1fa', f_glove: '#2f2a30', l_glove: '#2a7a8a' };
-  const BOOT_COL = { t_boot: ['#5d4637', '#ff8a1f'], s_boot: ['#2c2838', '#9a6ad8'], j_boot: ['#24603a', '#9ee85a'], a_boot: ['#e9f1fa', '#ffd96a'], f_boot: ['#26242a', '#ff6a1f'], g_boot: ['#3e4a30', '#8a7a50'], l_boot: ['#234f5c', '#7fe3f2'] };
-  const LEG_COL = { j_leg: ['#2f8a4a', '#1f5c33', '#9ee85a'], s_leg: ['#2c2838', '#1c1928', '#9a6ad8'], a_leg: ['#e9f1fa', '#a9c0e0', '#ffd96a'], f_leg: ['#2c2a30', '#18161a', '#ff6a1f'], g_leg: ['#6b5a34', '#4a3d22', '#3f5a30'], l_leg: ['#2a6a78', '#1a4452', '#8be8f5'] };
-  const CHEST_SPR = new Set(['t_chest', 's_chest', 'j_chest', 'a_chest', 'f_chest', 'g_chest', 'l_chest']);
+  const GLOVE_COL = { glove0: '#b8a88a', glove1: '#b8a88a', glove2: '#8a5a30', glove3: '#7a4a28', glove4: '#6a3e20', glove5: '#6a3e20', t_glove1: '#7a5a48', t_glove2: '#7a5a48', s_gauntlet: '#2f2a3c', j_glove: '#2f7a4a', a_glove: '#e9f1fa', f_glove: '#2f2a30', l_glove: '#2a7a8a', rm_glove: '#3a1a66', rv_glove: '#2f7a3a', rx_glove: '#e8c860', rk_glove: '#5a3a2a', ra_glove: '#7a5a3a' };
+  const BOOT_COL = { t_boot: ['#5d4637', '#ff8a1f'], s_boot: ['#2c2838', '#9a6ad8'], j_boot: ['#24603a', '#9ee85a'], a_boot: ['#e9f1fa', '#ffd96a'], f_boot: ['#26242a', '#ff6a1f'], g_boot: ['#3e4a30', '#8a7a50'], l_boot: ['#234f5c', '#7fe3f2'], rm_boot: ['#241040', '#b070ff'], rv_boot: ['#1f4a2a', '#7dff7a'], rx_boot: ['#e8d49a', '#ffe27a'], rk_boot: ['#3a2418', '#ff7a20'], ra_boot: ['#5a4630', '#ff9a40'] };
+  const LEG_COL = { j_leg: ['#2f8a4a', '#1f5c33', '#9ee85a'], s_leg: ['#2c2838', '#1c1928', '#9a6ad8'], a_leg: ['#e9f1fa', '#a9c0e0', '#ffd96a'], f_leg: ['#2c2a30', '#18161a', '#ff6a1f'], g_leg: ['#6b5a34', '#4a3d22', '#3f5a30'], l_leg: ['#2a6a78', '#1a4452', '#8be8f5'], rm_leg: ['#2a1250', '#160a2c', '#b070ff'], rv_leg: ['#2a6a38', '#174022', '#7dff7a'], rx_leg: ['#f0dca0', '#c9a24a', '#ffe27a'], rk_leg: ['#5a3a28', '#34200f', '#ff7a20'], ra_leg: ['#7a5a38', '#4a3620', '#ff9a40'] };
+  const CHEST_SPR = new Set(['t_chest', 's_chest', 'j_chest', 'a_chest', 'f_chest', 'g_chest', 'l_chest', 'rm_chest', 'rv_chest', 'rx_chest', 'rk_chest', 'ra_chest']);
 
   /* ---------- sprites de píxel-art (monstruos y PNJ) ---------- */
   const SPR = {};

@@ -516,6 +516,53 @@ ok('tabletas de teletransporte: Boris las vende a 100k y llevan a la zona', () =
   assert.equal(zoneOf([p.x, p.y]).id, 'ciudad', 'no se puede usar en combate'); assert.equal(p.inv[0].qty, 1);
 });
 
+ok('Raid: 5 cámaras, jefes, vidas, escalado por grupo, cofre final con botín raro y capa equipada', () => {
+  const R = require('../game/raid'), RAID = world.RAID;
+  assert.equal(R.ALL_ITEMS.length, 50); for (const [p, s] of R.ALL_ITEMS) assert.ok(ITEMS[R.itemId(p, s)], p + s);
+  const gj = require('../public/gear.json'), sj = require('../public/sprites.json');
+  for (const [p, s] of R.ALL_ITEMS) assert.ok(gj['i_' + p + '_' + s], 'icono ' + p + s);
+  for (const id of R.BOSS_ORDER) { assert.ok(sj[id] && MONSTERS[id].special === 'raid' && MONSTERS[id].loot.length === 11, id); }
+  assert.ok(ITEMS.rd_rx_cape.wings && ITEMS.rd_rm_cape.type === 'cape' && ITEMS.rd_rm_weapon.style === 'melee');
+  assert.equal(RAID.rooms.length, 6);
+  const A = login('RaidA'), B = login('RaidB'); const H = RAID.rooms[0];
+  for (const q of [A.p, B.p]) { q.level = 150; q.hp = q.maxHp = 5e6; place(q, H.start[0] + 3, H.cy); q.dead = false; }
+  A.p.eq.cape = I.mk('rd_rm_cape'); assert.ok(I.isGear('rd_rm_cape'));
+  game.raidGo(A.p); const r = game.raid; assert.ok(r && r.members.size === 2 && r.room === 1 && r.boss);
+  const m = r.boss, base = MONSTERS.raid_slyvra.hp; assert.equal(m.maxHp, Math.round(base * 1.75), 'vida escalada a 2 jugadores');
+  assert.ok(m.shieldUntil > game.now, 'inmune al despertar');
+  assert.equal(world.zoneAt(A.p.x, A.p.y).id, 'raid_slyvra');
+  const run = (ms) => { for (let k = 0; k <= ms; k += 100) { game.now += 100; game.tickN += 0; const due = game.sched.filter((e) => e.at <= game.now); game.sched = game.sched.filter((e) => e.at > game.now); due.forEach((e) => e.fn()); } };
+  // ataques
+  m.shieldUntil = 0; place(A.p, m.x - 3, m.y); place(B.p, m.x - 4, m.y + 2); m.target = A.p.id;
+  for (let i = 0; i < 6; i++) { game.fx.length = 0; m.nextSp = 0; game.now += 10; const hp0 = A.p.hp + B.p.hp; game.raidAI(m, game.now); run(9000); if (i === 0) assert.ok(game.fx.some((f) => f.k === 'rd_w'), 'aviso'); }
+  assert.ok(game.monsters.some((q) => q.type === 'raid_vibora'), 'invoca víboras');
+  // matar jefes uno a uno
+  const kill = (b) => { b.shieldUntil = 0; b.dmgBy.set(A.p.id, { dmg: 7e5, t: game.now }); b.dmgBy.set(B.p.id, { dmg: 3e5, t: game.now }); game.hurtMonster(b, b.hp + 99999999, A.p, game.now); };
+  for (let i = 1; i <= 4; i++) { assert.equal(r.room, i); kill(r.boss); assert.equal(r.phase, 'transition'); game.now += 15000; T0 = game.now; advance(1100); }
+  assert.equal(r.room, 5, 'llegan a la cámara 5'); assert.equal(world.zoneAt(A.p.x, A.p.y).id, 'raid_malgathor');
+  assert.equal(r.boss.maxHp, Math.round(MONSTERS.raid_malgathor.hp * 1.75));
+  // vidas: morir y volver
+  A.p.hp = 1; game.hurtPlayer(A.p, 1e7, r.boss, game.now); assert.ok(world.zoneAt(A.p.x, A.p.y).id !== 'raid_malgathor'); assert.equal(r.deaths[A.p.key], 1);
+  place(A.p, H.start[0] + 3, H.cy); A.p.hp = A.p.maxHp = 5e6; game.raidGo(A.p); assert.equal(world.zoneAt(A.p.x, A.p.y).id, 'raid_malgathor', 'vuelve a la cámara actual');
+  // jefe final → cofre
+  const fin = r.boss; fin.shieldUntil = 0; fin.dmgBy.set(A.p.id, { dmg: 6e5, t: game.now }); fin.dmgBy.set(B.p.id, { dmg: 4e5, t: game.now }); r.contrib[A.p.key] = 9e5; r.contrib[B.p.key] = 5e5;
+  game.hurtMonster(fin, fin.hp + 99999999, A.p, game.now);
+  assert.equal(r.phase, 'chest'); assert.ok(r.chest && world.isWalkable(r.chest.x, r.chest.y));
+  place(A.p, r.chest.x - 1, r.chest.y); game.raidOpenChest(A.p);
+  const loot = lastMsg(A.ws, 'raid_loot'); assert.ok(loot && loot.items.length >= 1 && loot.gold > 0, 'el cofre da botín');
+  assert.ok(loot.items.every((o) => ITEMS[o.id] && (ITEMS[o.id].raid || ITEMS[o.id].type === 'pet')) && A.p.inv.some((it) => it && /^(rd_|pet_)/.test(it.id)) , 'objetos en el inventario');
+  assert.ok(game.fx.some((f) => f.k === 'rd_chest'), 'animación');
+  const before = A.ws.got.filter((q) => q.t === 'raid_loot').length; game.raidOpenChest(A.p); assert.equal(A.ws.got.filter((q) => q.t === 'raid_loot').length, before, 'solo se abre una vez');
+  place(B.p, r.chest.x + 40, r.chest.y); game.raidOpenChest(B.p); assert.ok(!r.opened.has(B.p.key), 'hay que estar junto al cofre');
+  assert.ok(A.p.ext.col.raid_malgathor || A.p.ext.col.raid_slyvra || A.p.ext.col.raid_koros || A.p.ext.col.raid_aranak || A.p.ext.col.raid_xaelis, 'colección');
+  game.raidFinish(); assert.equal(game.raid, null); assert.ok(!game.monsters.some((q) => q.raidRun));
+  // derrota total
+  place(A.p, H.start[0] + 3, H.cy); A.p.hp = A.p.maxHp; game.raidGo(A.p); const r2 = game.raid; assert.equal(r2.members.size, 1); assert.equal(r2.boss.maxHp, MONSTERS.raid_slyvra.hp);
+  game.now += 5000; A.p.hp = 0; place(A.p, 3, 3); T0 = game.now; advance(1100); assert.equal(game.raid, null, 'sin supervivientes la Raid termina');
+  for (let i = 0; i < 12; i++) { const { p } = login('RaidX' + i); place(p, H.start[0] + 2 + (i % 3), H.cy + (i % 5)); p.hp = p.maxHp = 1e6; if (i === 0) var first = p; }
+  game.raidGo(first); assert.equal(game.raid.members.size, 10, 'máximo 10 jugadores'); game.raidReset();
+});
+
 console.log(`\n${n} pruebas correctas`);
 try { require('fs').unlinkSync(store.file); } catch (e) { /* nada */ }
 

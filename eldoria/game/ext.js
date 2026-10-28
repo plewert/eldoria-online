@@ -235,7 +235,7 @@ module.exports = function install(Game) {
   P.addBuff = function (p, k, m, secs, extra) { p.buffs[k] = Object.assign({ m, until: this.now + secs * 1000 }, extra || {}); this.sendBuffs(p); };
   P.sendBuffs = function (p) {
     const now = this.now, b = {};
-    for (const [k, v] of Object.entries(p.buffs)) if (v.until > now && (k !== 'shield' || v.hp > 0)) b[k] = { s: Math.ceil((v.until - now) / 1000), m: v.m, hp: v.hp };
+    for (const [k, v] of Object.entries(p.buffs)) if (v && v.until > now && (k !== 'shield' || v.hp > 0)) b[k] = { s: Math.ceil((v.until - now) / 1000), m: v.m, hp: v.hp };
     const txt = JSON.stringify(b);
     p.lastBuffTxt = txt;
     this.send(p, { t: 'buffs', b });
@@ -540,7 +540,7 @@ module.exports = function install(Game) {
   P.marketSend = function (p, filter) {
     const m = this.market(), now = Date.now(), f = filter || {};
     const q = String(f.q || '').toLowerCase().slice(0, 30);
-    const kinds = { weapon: ['weapon'], armor: ['head', 'body', 'shield', 'belt', 'gloves', 'legs', 'boots'], jewel: ['ring', 'amulet'], other: null };
+    const kinds = { weapon: ['weapon'], armor: ['head', 'body', 'shield', 'belt', 'gloves', 'legs', 'boots', 'cape'], jewel: ['ring', 'amulet'], other: null };
     let list = m.list.filter((l) => {
       const d = ITEMS[l.it.id]; if (!d) return false;
       if (q && !d.name.toLowerCase().includes(q)) return false;
@@ -1053,6 +1053,7 @@ module.exports = function install(Game) {
     else if (m.def.special === 'titan' && !m.dead) this.titanAI(m, now);
     else if (m.def.special === 'spider' && !m.dead) this.spiderAI(m, now);
     else if (m.def.special === 'leviathan' && !m.dead) this.leviathanAI(m, now);
+    else if (m.def.special === 'raid' && !m.dead) this.raidAI(m, now);
   };
 
   /* ============================ ENGANCHES DE COMBATE ============================ */
