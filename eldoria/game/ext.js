@@ -1058,6 +1058,7 @@ module.exports = function install(Game) {
     else if (m.def.special === 'titan' && !m.dead) this.titanAI(m, now);
     else if (m.def.special === 'spider' && !m.dead) this.spiderAI(m, now);
     else if (m.def.special === 'leviathan' && !m.dead) this.leviathanAI(m, now);
+    else if (m.def.special === 'magma' && !m.dead) this.magmaAI(m, now);
     else if (m.def.special === 'raid' && !m.dead) this.raidAI(m, now);
   };
 

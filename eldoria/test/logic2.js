@@ -487,6 +487,39 @@ ok('Leviatán Abisal: gruta inundada, set raro y sus 4 ataques (tornados, olas, 
   run(5200); assert.ok(!m.shieldUntil); game.hurtMonster(m, 5000, p, game.now); assert.ok(m.hp < h1, 'la burbuja acaba');
 });
 
+ok('Ignaros, Soberano del Magma: caldera, botín (6 objetos) y sus 4 ataques (infierno con refugio, meteoritos, líneas y lava)', () => {
+  assert.equal(MONSTERS.ignaros.special, 'magma'); assert.equal(typeof Game.prototype.magmaAI, 'function');
+  const loot = MONSTERS.ignaros.loot.map((l) => l[0]);
+  ['ig_casco', 'ig_pecho', 'ig_capa', 'ig_anillo', 'ig_arco', 'ig_baston', 'trofeo_magma', 'pet_ignaros'].forEach((id) => { assert.ok(loot.includes(id), id); assert.ok(ITEMS[id], id); });
+  assert.equal(ITEMS.ig_arco.style, 'ranged'); assert.equal(ITEMS.ig_baston.style, 'magic'); assert.ok(ITEMS.ig_capa.cc && ITEMS.ig_capa.type === 'cape');
+  const sj = require('../public/sprites.json'), gj = require('../public/gear.json');
+  assert.ok(sj.ignaros.f.length >= 8 && sj.ignaros.anim > 0 && sj.ignaros_cast.f.length >= 4, 'animado y con pose de lanzamiento');
+  for (const k of ['ig_helm', 'ig_chest', 'ig_cape', 'ig_ring', 'ig_bow', 'ig_staff']) assert.ok(gj['i_' + k], 'icono ' + k);
+  for (const k of ['ig_helm', 'ig_chest', 'ig_bow', 'ig_staff']) assert.ok(gj['c_' + k], 'personaje ' + k);
+  const sp = world.monsterSpawns.find((q) => q.type === 'ignaros'); assert.equal(zoneOf([sp.x, sp.y]).id, 'cueva_magma'); assert.equal(zoneOf([288, 118]).id, 'volcan');
+  assert.ok(world.isWalkable(288, 123) && world.isWalkable(sp.x, sp.y) && world.BLOCKED[world.T.MAGW] && !world.BLOCKED[world.T.MAGF]);
+  const pt = world.PORTALS.find((q) => q.x === 288 && q.y === 118); assert.deepEqual([pt.tx, pt.ty], [288, 123]);
+  const run = (ms) => { for (let k = 0; k <= ms; k += 100) { game.now += 100; const due = game.sched.filter((e) => e.at <= game.now); game.sched = game.sched.filter((e) => e.at > game.now); due.forEach((e) => e.fn()); } };
+  const a = login('Mag1'), b = login('Mag2'); place(a.p, 288, 126); place(b.p, 284, 126); for (const q of [a.p, b.p]) q.hp = q.maxHp = 1e7;
+  const m = game.spawnMonster('ignaros', sp.x, sp.y); m.target = a.p.id; game.fx.length = 0;
+  // 1) infierno: quien está en el cuadro azul no recibe daño
+  game.magmaCast(m, 'inferno'); const w = game.fx.find((f) => f.k === 'mgw'); assert.ok(w && w.w >= 3, 'se marca el refugio');
+  for (let y = w.sy; y < w.sy + w.w; y++) for (let x = w.sx; x < w.sx + w.w; x++) assert.ok(world.isWalkable(x, y), 'el refugio es suelo libre');
+  place(a.p, w.sx + 1, w.sy + 1); place(b.p, w.sx > 280 ? w.sx - 4 : w.sx + w.w + 3, w.sy); const hpA = a.p.hp, hpB = b.p.hp;
+  run(12000); assert.ok(game.fx.some((f) => f.k === 'mgf'), 'el suelo arde'); assert.equal(a.p.hp, hpA, 'el refugio protege'); assert.ok(b.p.hp < hpB, 'fuera del refugio quema');
+  assert.ok(game.fx.some((f) => f.k === 'brn' && f.id === b.p.id), 'el personaje arde');
+  // 2) meteoritos con onda explosiva
+  place(a.p, 288, 126); place(b.p, 284, 127); let h0 = a.p.hp + b.p.hp; game.fx.length = 0; game.magmaCast(m, 'meteoros'); run(14000);
+  assert.ok(game.fx.filter((f) => f.k === 'mmw').length >= 12 && game.fx.some((f) => f.k === 'mmx') && a.p.hp + b.p.hp < h0, 'los meteoritos hacen daño');
+  // 3) líneas de fuego por toda la cueva
+  place(a.p, 288, 126); h0 = a.p.hp; game.fx.length = 0; game.magmaCast(m, 'lineas'); run(9000);
+  assert.ok(game.fx.some((f) => f.k === 'mlw') && game.fx.some((f) => f.k === 'ml') && a.p.hp < h0, 'las líneas golpean');
+  // 4) lava: las rocas azules protegen
+  place(a.p, 288, 126); place(b.p, 284, 127); game.fx.length = 0; game.magmaCast(m, 'lava'); const lw = game.fx.find((f) => f.k === 'mlw2'); assert.ok(lw && lw.isl.length >= 3, 'se marcan rocas');
+  const isl = lw.isl[0]; place(a.p, isl.x, isl.y); const far = [[284, 127], [292, 124], [279, 131], [296, 132], [288, 133]].find(([x, y]) => world.isWalkable(x, y) && lw.isl.every((i) => Math.hypot(x - i.x, y - i.y) > i.r + 0.5)); place(b.p, far[0], far[1]);
+  const hA = a.p.hp, hB = b.p.hp; run(16000); assert.ok(game.fx.some((f) => f.k === 'mlv'), 'sube la lava'); assert.ok(game.fx.filter((f) => /^m(g|l|m)/.test(f.k)).every((f) => Number.isFinite(f.x ?? f.x1) && Number.isFinite(f.y ?? f.y1)), 'los efectos llevan posición (si no, el servidor no los envía)'); assert.ok(game.fx.filter((f) => ['mgw', 'mgf', 'mlw2', 'mlv', 'mlw', 'ml'].includes(f.k)).every((f) => f.x === 289 && f.y === 128), 'anclados al centro de la caldera'); assert.equal(a.p.hp, hA, 'la roca protege'); assert.ok(b.p.hp < hB, 'la lava quema');
+});
+
 ok('minería: picos, rocas por nivel, experiencia, gemas raras y colección', () => {
   const M = require('../game/mining');
   for (const id of M.ORDER) { assert.ok(ITEMS[id], id); assert.ok(game.nodes.some((q) => q.type === 'roca_' + id), 'hay rocas de ' + id); }

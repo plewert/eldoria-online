@@ -1031,6 +1031,183 @@
       }
     }
   });
+  /* ---------- Ignaros, Soberano del Magma: infierno con refugio azul, meteoritos, líneas de fuego y marea de lava ---------- */
+  const MG = [], BRN = new Map(); let LAVA = null;
+  const flameAt = (c, x, y, h, w, now, s) => {                                        // llama con parpadeo (capas roja, naranja y amarilla)
+    for (const [col, k] of [['rgba(255,60,10,.85)', 1], ['rgba(255,150,30,.9)', 0.72], ['rgba(255,235,130,.92)', 0.42]]) {
+      const fl = Math.sin(now / 90 + s * 1.7) * 0.18 + Math.sin(now / 53 + s * 3.1) * 0.12, hh = h * k * (1 + fl), ww = w * k;
+      c.fillStyle = col; c.beginPath(); c.moveTo(x - ww, y); c.quadraticCurveTo(x - ww * 0.9, y - hh * 0.5, x + fl * ww * 2, y - hh); c.quadraticCurveTo(x + ww * 0.9, y - hh * 0.5, x + ww, y); c.closePath(); c.fill();
+    }
+  };
+  // el orbe flotante del jefe (para que los ataques salgan de él)
+  const orbOf = (bx, by) => { for (const e of G.ents.values()) if (e.kind === 'mo' && e.t === 'ignaros') return { id: e.id, x: X.sxOf(e.rx) + X.TS / 2, y: X.syOf(e.ry) + X.TS - 2 - 180, wx: e.rx, wy: e.ry }; return null; };
+  const caveBox = (R) => ({ x: X.sxOf(R[0]), y: X.syOf(R[1]), w: (R[2] - R[0] + 1) * X.TS, h: (R[3] - R[1] + 1) * X.TS });
+  const sqPath = (c, f) => { c.rect(X.sxOf(f.sx), X.syOf(f.sy), f.w * X.TS, f.w * X.TS); };
+  X.on('fx', (f) => {
+    const now = performance.now();
+    for (let i = MG.length - 1; i >= 0; i--) if (now - MG[i].t > MG[i].T) MG.splice(i, 1);
+    switch (f.k) {
+      case 'mcast': X.casts.set(f.id, now + f.T + 400); MG.push({ k: 'mcast', t: now, T: f.T + 400, f }); X.sfx && X.sfx('boss'); break;
+      case 'mgw': MG.push({ k: 'mgw', t: now, T: f.T, f }); X.sfx && X.sfx('boss'); break;
+      case 'mgf': MG.push({ k: 'mgf', t: now, T: f.T, f }); G.shake = { t: now, m: 5 }; X.sfx && X.sfx('boss'); break;
+      case 'mmw': MG.push({ k: 'mmw', t: now, T: f.T, f }); if (f.bx !== undefined) { const o = orbOf(f.bx, f.by); if (o) X.burst(o.wx, o.wy - 5.6, 'fire', 6, { sp: 3, up: 5, g: -2, life: 0.5, size: 2.8 }); } break;
+      case 'mmx': MG.push({ k: 'mmx', t: now, T: 900, f }); G.shake = { t: now, m: 4 }; X.sfx && X.sfx('boss'); X.burst(f.x, f.y, 'fire', 26, { sp: 5, up: 3, g: 3, life: 0.8, size: 3.4 }); X.ring(f.x, f.y, 'fire', 600, 60, 5); break;
+      case 'mlw': MG.push({ k: 'mlw', t: now, T: f.T, f }); break;
+      case 'ml': MG.push({ k: 'ml', t: now, T: f.T, f, s: Math.random() * 9 }); G.shake = { t: now, m: 3 }; break;
+      case 'mlw2': MG.push({ k: 'mlw2', t: now, T: f.T, f }); X.sfx && X.sfx('boss'); break;
+      case 'mlv': LAVA = { t: now, f, T: f.rise + f.hold + f.ebb }; G.shake = { t: now, m: 4 }; break;
+      case 'brn': BRN.set(f.id, now + (f.ms || 1500)); break;
+      default: break;
+    }
+  });
+  const islandDraw = (c, f, now, al) => {                                                       // rocas azules seguras
+    for (const i of f.isl) {
+      const x = px(i.x), y = py(i.y), r = i.r * X.TS, pu = 0.5 + 0.5 * Math.sin(now / 170);
+      c.fillStyle = `rgba(26,28,50,${0.8 * al})`; c.beginPath(); c.ellipse(x, y, r, r * 0.85, 0, 0, 7); c.fill();
+      c.fillStyle = `rgba(60,120,255,${(0.22 + 0.14 * pu) * al})`; c.beginPath(); c.ellipse(x, y, r, r * 0.85, 0, 0, 7); c.fill();
+      c.strokeStyle = `rgba(150,200,255,${(0.7 + 0.3 * pu) * al})`; c.lineWidth = 3; c.stroke();
+      c.strokeStyle = `rgba(210,235,255,${0.5 * al})`; c.lineWidth = 1.2; c.beginPath(); c.ellipse(x, y, r * 0.7, r * 0.6, 0, 0, 7); c.stroke();
+    }
+  };
+  const lavaFill = (c, b, now) => {                                                               // textura animada de lava
+    c.fillStyle = '#a82208'; c.fillRect(b.x, b.y, b.w, b.h);
+    c.fillStyle = 'rgba(255,110,20,.8)'; c.fillRect(b.x, b.y, b.w, b.h);
+    const t = now / 700;
+    for (let yy = b.y; yy < b.y + b.h; yy += 14) {
+      c.strokeStyle = `rgba(255,${190 + ((yy / 14) | 0) % 3 * 20},70,.55)`; c.lineWidth = 3; c.beginPath();
+      for (let xx = b.x; xx <= b.x + b.w; xx += 10) { const yv = yy + Math.sin(xx / 37 + t + yy / 20) * 4; if (xx === b.x) c.moveTo(xx, yv); else c.lineTo(xx, yv); } c.stroke();
+    }
+    c.fillStyle = 'rgba(90,20,6,.55)';
+    for (let k = 0; k < 90; k++) { const hx = (k * 131 + 17) % 997 / 997, hy = (k * 197 + 43) % 991 / 991; const ox = (Math.sin(t * 0.6 + k) * 6), oy = Math.cos(t * 0.5 + k * 1.3) * 4; c.beginPath(); c.ellipse(b.x + hx * b.w + ox, b.y + hy * b.h + oy, 9 + (k % 4) * 3, 4 + (k % 3) * 2, 0, 0, 7); c.fill(); }
+  };
+  X.on('under', (c, now) => {
+    const TS = X.TS;
+    for (const b of MG) {
+      const p = (now - b.t) / b.T; if (p >= 1 || p < 0) continue; const f = b.f;
+      if (b.k === 'mgw') {                                                            // aviso: la cueva se calienta y aparece el refugio azul
+        const B = caveBox(f.r), pu = 0.5 + 0.5 * Math.sin(now / 120 * (1 + p * 2));
+        c.save(); c.fillStyle = `rgba(255,60,10,${0.06 + 0.18 * p * (0.6 + 0.4 * pu)})`; c.fillRect(B.x, B.y, B.w, B.h);
+        const sx = X.sxOf(f.sx), sy = X.syOf(f.sy), w = f.w * TS;
+        const g = c.createRadialGradient(sx + w / 2, sy + w / 2, 4, sx + w / 2, sy + w / 2, w * 1.6); g.addColorStop(0, 'rgba(80,150,255,.35)'); g.addColorStop(1, 'rgba(80,150,255,0)'); c.fillStyle = g; c.fillRect(sx - w, sy - w, w * 3, w * 3);
+        c.fillStyle = `rgba(50,120,255,${0.35 + 0.2 * pu})`; c.fillRect(sx, sy, w, w);
+        c.strokeStyle = `rgba(170,215,255,${0.8 + 0.2 * pu})`; c.lineWidth = 3; c.strokeRect(sx + 1.5, sy + 1.5, w - 3, w - 3);
+        c.strokeStyle = 'rgba(220,240,255,.7)'; c.lineWidth = 1; for (let i = 1; i < f.w; i++) { c.beginPath(); c.moveTo(sx + i * TS, sy); c.lineTo(sx + i * TS, sy + w); c.moveTo(sx, sy + i * TS); c.lineTo(sx + w, sy + i * TS); c.stroke(); }
+        c.fillStyle = 'rgba(235,245,255,.95)'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center'; c.fillText('REFUGIO', sx + w / 2, sy - 6);
+        c.strokeStyle = `rgba(255,200,120,${0.5 * (1 - p)})`; c.lineWidth = 2; c.beginPath(); c.arc(sx + w / 2, sy + w / 2, w * (1.1 + 1.3 * (1 - p)), 0, 7); c.stroke();     // cuenta atrás
+        c.restore();
+      } else if (b.k === 'mgf') {                                                     // el suelo arde (menos el refugio)
+        const B = caveBox(f.r), al = p < 0.12 ? p / 0.12 : p > 0.8 ? (1 - p) / 0.2 : 1;
+        c.save(); c.beginPath(); c.rect(B.x, B.y, B.w, B.h); sqPath(c, f); c.clip('evenodd');
+        c.fillStyle = `rgba(255,70,10,${0.4 * al})`; c.fillRect(B.x, B.y, B.w, B.h);
+        c.fillStyle = `rgba(255,170,40,${0.18 * al * (0.6 + 0.4 * Math.sin(now / 70))})`; c.fillRect(B.x, B.y, B.w, B.h);
+        c.restore();
+        c.save(); const sx = X.sxOf(f.sx), sy = X.syOf(f.sy), w = f.w * TS; c.strokeStyle = `rgba(170,215,255,${al})`; c.lineWidth = 3; c.strokeRect(sx + 1.5, sy + 1.5, w - 3, w - 3); c.fillStyle = `rgba(60,130,255,${0.3 * al})`; c.fillRect(sx, sy, w, w); c.restore();
+      } else if (b.k === 'mmw') {                                                     // aviso del meteorito
+        const x = px(f.x), y = py(f.y), r = f.r * TS * 1.1;
+        c.fillStyle = `rgba(255,50,10,${0.12 + 0.25 * p})`; c.beginPath(); c.ellipse(x, y, r, r * 0.8, 0, 0, 7); c.fill();
+        c.strokeStyle = `rgba(255,170,90,${0.5 + 0.4 * Math.abs(Math.sin(now / 70))})`; c.lineWidth = 2; c.stroke();
+        c.strokeStyle = 'rgba(255,230,160,.8)'; c.beginPath(); c.ellipse(x, y, r * (1 - p), r * 0.8 * (1 - p), 0, 0, 7); c.stroke();
+      } else if (b.k === 'mmx') {                                                     // cráter y onda explosiva
+        const x = px(f.x), y = py(f.y), al = 1 - p;
+        c.fillStyle = `rgba(40,12,6,${0.55 * al})`; c.beginPath(); c.ellipse(x, y, f.r * TS * 0.9, f.r * TS * 0.7, 0, 0, 7); c.fill();
+        const R2 = 5 * TS * Math.min(1, p * 2.6);
+        c.strokeStyle = `rgba(255,190,90,${al})`; c.lineWidth = 6 * al + 1; c.beginPath(); c.ellipse(x, y, R2, R2 * 0.8, 0, 0, 7); c.stroke();
+        c.strokeStyle = `rgba(255,90,20,${0.7 * al})`; c.lineWidth = 3; c.beginPath(); c.ellipse(x, y, R2 * 0.8, R2 * 0.64, 0, 0, 7); c.stroke();
+      } else if (b.k === 'mlw') {                                                     // aviso de la línea de fuego
+        const x1 = px(f.x1), y1 = py(f.y1), x2 = px(f.x2), y2 = py(f.y2), a = Math.atan2(y2 - y1, x2 - x1), L = Math.hypot(x2 - x1, y2 - y1), th = f.w * TS;
+        c.save(); if (f.r) { const B = caveBox(f.r); c.beginPath(); c.rect(B.x, B.y, B.w, B.h); c.clip(); } c.translate(x1, y1); c.rotate(a); c.fillStyle = `rgba(255,60,10,${0.08 + 0.2 * p})`; c.fillRect(0, -th / 2, L, th);
+        c.strokeStyle = `rgba(255,190,110,${0.35 + 0.4 * Math.abs(Math.sin(now / 80))})`; c.lineWidth = 2; c.strokeRect(0, -th / 2, L, th); c.restore();
+      } else if (b.k === 'mlw2') {                                                    // aviso de la lava: rocas seguras
+        const B = caveBox(f.r), pu = 0.5 + 0.5 * Math.sin(now / 130);
+        c.fillStyle = `rgba(255,60,10,${0.05 + 0.15 * p * (0.6 + 0.4 * pu)})`; c.fillRect(B.x, B.y, B.w, B.h);
+        islandDraw(c, f, now, 1);
+        c.fillStyle = 'rgba(235,245,255,.95)'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center'; for (const i of f.isl) c.fillText('ROCA', px(i.x), py(i.y) - i.r * TS - 4);
+      }
+    }
+    if (LAVA) {                                                                       // marea de lava
+      const age = now - LAVA.t, f = LAVA.f; if (age > LAVA.T) { LAVA = null; return; }
+      const rise = Math.min(1, age / f.rise), ebb = age > f.rise + f.hold ? (age - f.rise - f.hold) / f.ebb : 0, B = caveBox(f.r);
+      const cx = f.bx !== undefined ? px(f.bx) : B.x + B.w / 2, cy = f.bx !== undefined ? py(f.by) : B.y + B.h / 2, maxR = Math.hypot(B.w, B.h) + 20, rad = maxR * (ebb > 0 ? 1 - ebb : rise);
+      c.save(); c.beginPath(); c.rect(B.x, B.y, B.w, B.h); c.clip();
+      c.beginPath(); c.arc(cx, cy, rad, 0, 7);
+      for (const i of f.isl) { c.moveTo(px(i.x) + i.r * TS, py(i.y)); c.ellipse(px(i.x), py(i.y), i.r * TS, i.r * TS * 0.85, 0, 0, 7); }
+      c.clip('evenodd'); lavaFill(c, B, now); c.restore();
+      c.strokeStyle = `rgba(255,220,120,${0.7 * (1 - ebb)})`; c.lineWidth = 3; c.save(); c.beginPath(); c.rect(B.x, B.y, B.w, B.h); c.clip(); c.beginPath(); c.arc(cx, cy, rad, 0, 7); c.stroke(); c.restore();    // frente de lava
+      islandDraw(c, f, now, 1 - ebb * 0.6);
+    }
+  });
+  X.on('draw', (c, now) => {
+    const TS = X.TS;
+    for (const b of MG) {
+      const p = (now - b.t) / b.T; if (p >= 1 || p < 0) continue; const f = b.f;
+      if (b.k === 'mgf') {                                                            // llamas altas en todo el suelo
+        const R = f.r, al = p < 0.1 ? p / 0.1 : p > 0.75 ? (1 - p) / 0.25 : 1;
+        for (let y = R[1] + 1; y <= R[3]; y++) for (let x = R[0] + 1; x <= R[2]; x++) {
+          if (x >= f.sx && x < f.sx + f.w && y >= f.sy && y < f.sy + f.w) continue;
+          const sx = X.sxOf(x), sy = X.syOf(y); if (sx < -TS || sy < -TS || sx > innerWidth + TS || sy > innerHeight + TS) continue;
+          const hs = (x * 73856093 ^ y * 19349663) >>> 0; if (hs % 3 === 0) continue;
+          if (f.bx !== undefined && Math.hypot(x - f.bx, y - f.by) > (now - b.t) / 650 * 46) continue;        // se extiende en ola desde Ignaros
+          c.save(); c.globalAlpha = al; flameAt(c, sx + 8 + (hs % 17), sy + TS - 2, 18 + (hs % 14), 5 + (hs % 3), now, hs % 11); c.restore();
+        }
+      } else if (b.k === 'mmw') {                                                     // el meteorito cae con estela
+        const x = px(f.x), y = py(f.y), fy = y - (1 - p) * 340 - 6, fx = x + (1 - p) * 170;
+        c.save(); c.globalCompositeOperation = 'lighter';
+        const g = c.createLinearGradient(fx + 70, fy - 60, fx, fy); g.addColorStop(0, 'rgba(255,80,0,0)'); g.addColorStop(1, 'rgba(255,170,40,.85)');
+        c.strokeStyle = g; c.lineWidth = 16; c.lineCap = 'round'; c.beginPath(); c.moveTo(fx + 72, fy - 62); c.lineTo(fx, fy); c.stroke();
+        c.fillStyle = 'rgba(255,120,20,.8)'; c.beginPath(); c.arc(fx, fy, 15, 0, 7); c.fill(); c.fillStyle = 'rgba(255,235,150,.95)'; c.beginPath(); c.arc(fx, fy, 9, 0, 7); c.fill(); c.restore();
+      } else if (b.k === 'mmx') {
+        const x = px(f.x), y = py(f.y), al = 1 - p;
+        c.save(); c.globalCompositeOperation = 'lighter'; const g = c.createRadialGradient(x, y - 10, 2, x, y - 10, 70 * (0.5 + p)); g.addColorStop(0, `rgba(255,240,170,${0.9 * al})`); g.addColorStop(0.5, `rgba(255,120,20,${0.6 * al})`); g.addColorStop(1, 'rgba(255,60,0,0)');
+        c.fillStyle = g; c.fillRect(x - 90, y - 100, 180, 180); c.restore();
+      } else if (b.k === 'ml') {                                                      // línea de fuego
+        const x1 = px(f.x1), y1 = py(f.y1), x2 = px(f.x2), y2 = py(f.y2), L = Math.hypot(x2 - x1, y2 - y1), a = Math.atan2(y2 - y1, x2 - x1), th = f.w * TS, al = p < 0.2 ? p / 0.2 : (1 - p) / 0.8;
+        c.save(); if (f.r) { const B = caveBox(f.r); c.beginPath(); c.rect(B.x, B.y, B.w, B.h); c.clip(); } c.translate(x1, y1); c.rotate(a); c.globalCompositeOperation = 'lighter';
+        const g = c.createLinearGradient(0, -th / 2, 0, th / 2); g.addColorStop(0, 'rgba(255,60,0,0)'); g.addColorStop(0.5, `rgba(255,190,70,${0.85 * al})`); g.addColorStop(1, 'rgba(255,60,0,0)');
+        c.fillStyle = g; c.fillRect(0, -th / 2, L, th); c.restore();
+        c.save(); if (f.r) { const B = caveBox(f.r); c.beginPath(); c.rect(B.x, B.y, B.w, B.h); c.clip(); }
+        for (let s = 0; s < L; s += 26) { const wx = x1 + Math.cos(a) * s, wy = y1 + Math.sin(a) * s; if (wx < -30 || wy < -60 || wx > innerWidth + 30 || wy > innerHeight + 60) continue; c.save(); c.globalAlpha = Math.max(0, al); flameAt(c, wx, wy + 8, 26 + (s % 5) * 4, 8, now, s / 26 + b.s); c.restore(); }
+        c.restore();
+      }
+    }
+    for (const b of MG) {
+      const p = (now - b.t) / b.T; if (p >= 1 || p < 0) continue; const f = b.f;
+      if (b.k === 'mcast') {                                                          // el orbe se carga: anillos que convergen, chispas en espiral y destello
+        const o = orbOf(); if (!o) continue;
+        const pal = { inferno: ['255,90,30', '255,210,120'], meteoros: ['255,150,40', '255,240,170'], lineas: ['255,200,60', '255,255,210'], lava: ['255,60,20', '255,170,60'] }[f.kind] || ['255,120,30', '255,230,150'];
+        const charge = Math.min(1, p * b.T / Math.max(600, f.T)), fade = p > 0.85 ? (1 - p) / 0.15 : 1;
+        c.save(); c.globalCompositeOperation = 'lighter';
+        const gr = c.createRadialGradient(o.x, o.y, 4, o.x, o.y, 40 + 90 * charge); gr.addColorStop(0, `rgba(${pal[1]},${0.75 * fade})`); gr.addColorStop(0.45, `rgba(${pal[0]},${0.4 * fade})`); gr.addColorStop(1, `rgba(${pal[0]},0)`);
+        c.fillStyle = gr; c.fillRect(o.x - 140, o.y - 140, 280, 280);
+        for (let k = 0; k < 3; k++) { const u = ((now / 520 + k / 3) % 1), r = 120 * (1 - u) + 14; c.strokeStyle = `rgba(${pal[1]},${0.7 * u * fade})`; c.lineWidth = 2.5; c.beginPath(); c.ellipse(o.x, o.y, r, r * 0.8, 0, 0, 7); c.stroke(); }
+        for (let k = 0; k < 14; k++) { const u = ((now / 700 + k * 0.071) % 1), a = k * 0.9 + now / 400, r = 110 * (1 - u); c.fillStyle = `rgba(${pal[1]},${0.9 * u * fade})`; c.beginPath(); c.arc(o.x + Math.cos(a) * r, o.y + Math.sin(a) * r * 0.8, 1.8 + 2 * u, 0, 7); c.fill(); }
+        c.restore();
+      } else if (b.k === 'mmw' && f.bx !== undefined && p < 0.25) {                  // meteorito lanzado: haz que sale del orbe hacia el cielo
+        const o = orbOf(); if (!o) continue; const al = 1 - p / 0.25;
+        c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = `rgba(255,170,60,${0.8 * al})`; c.lineWidth = 6 * al + 1; c.lineCap = 'round'; c.beginPath(); c.moveTo(o.x, o.y); c.lineTo(o.x + 60, o.y - 320); c.stroke();
+        c.strokeStyle = `rgba(255,240,190,${al})`; c.lineWidth = 2; c.stroke(); c.restore();
+      }
+    }
+    for (const [id, until] of BRN) {                                                  // el personaje arde: llamas y brasas sobre su cuerpo
+      if (now > until) { BRN.delete(id); continue; } const e = G.ents.get(id); if (!e) { BRN.delete(id); continue; }
+      const x = X.sxOf(e.rx) + TS / 2, y = X.syOf(e.ry) + TS - 2, al = Math.min(1, (until - now) / 400);
+      c.save(); c.globalAlpha = al; c.globalCompositeOperation = 'lighter'; c.fillStyle = 'rgba(255,90,20,.22)'; c.beginPath(); c.ellipse(x, y - 14, 14, 20, 0, 0, 7); c.fill(); c.restore();
+      c.save(); c.globalAlpha = al; for (let i = 0; i < 5; i++) flameAt(c, x - 10 + i * 5, y - 2 - (i % 2) * 8, 20 + (i % 3) * 5, 4, now, id + i); c.restore();
+      if (Math.random() < 0.5) X.burst(e.rx, e.ry - 0.4, 'fire', 1, { sp: 0.8, up: 2.4, g: -1, life: 0.6, size: 2.2 });
+    }
+    if (LAVA) {                                                                       // quien pisa lava se hunde hasta la cintura
+      const age = now - LAVA.t, f = LAVA.f, rise = Math.min(1, age / f.rise), ebb = age > f.rise + f.hold ? (age - f.rise - f.hold) / f.ebb : 0, B = caveBox(f.r);
+      const rad = (Math.hypot(B.w, B.h) + 20) * (ebb > 0 ? 1 - ebb : rise), cx = f.bx !== undefined ? px(f.bx) : B.x + B.w / 2, cy = f.bx !== undefined ? py(f.by) : B.y + B.h / 2;
+      for (const e of G.ents.values()) {
+        if (e.kind !== 'pl' || e.h <= 0 || e.x < f.r[0] || e.x > f.r[2] || e.y < f.r[1] || e.y > f.r[3]) continue;
+        if (f.isl.some((i) => Math.hypot(e.x - i.x, e.y - i.y) <= i.r)) continue;
+        const x = X.sxOf(e.rx) + TS / 2, y = X.syOf(e.ry) + TS - 6; if (Math.hypot(x - cx, y - cy) > rad) continue;
+        c.save(); c.beginPath(); c.rect(x - 22, y - 8, 44, 30); c.clip();
+        c.fillStyle = 'rgba(255,110,20,.92)'; c.beginPath(); c.ellipse(x, y + 2, 15 + Math.sin(now / 120 + e.id) * 1.2, 8, 0, 0, 7); c.fill();
+        c.fillStyle = 'rgba(255,220,110,.8)'; c.beginPath(); c.ellipse(x + Math.sin(now / 200 + e.id) * 4, y, 7, 3, 0, 0, 7); c.fill(); c.restore();
+        if (Math.random() < 0.15) X.burst(e.rx, e.ry, 'fire', 1, { sp: 1.2, up: 2.6, g: 3, life: 0.5, size: 2.4 });
+      }
+    }
+  });
   /* ---------- aviso de versión nueva: quien tenga el juego abierto con archivos viejos no ve los jefes nuevos ---------- */
   {
     let v0 = null, shown = false;

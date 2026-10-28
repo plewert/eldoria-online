@@ -293,3 +293,12 @@ Dieciséis personajes controlados por el servidor (`game/bots.js`) juegan como u
 
 ## Mascotas que recogen el botín
 Con una mascota activa (usa el objeto de mascota de la mochila), el oro y los objetos que dejan tus presas llegan solos a tu mochila (`game/petloot.js`): radio de 8 casillas, un montón cada ~0,45 s, con el bonus de oro de la mascota. Solo recoge lo tuyo (o lo sin dueño de tus kills en zonas PvP), nunca el botín protegido de otros jugadores ni lo que se suelta al morir. Si la mochila está llena, el objeto se queda en el suelo. Prueba: `node test/pet.js`.
+
+## Ignaros, Soberano del Magma (jefe de la Caldera)
+Aspecto: figura encapuchada con capa de basalto y magma, bandas rúnicas doradas y un orbe flotante con rayos de arcoíris (sprite animado de 8 fotogramas más una pose de lanzamiento de 6). Todos los ataques salen del jefe: carga el orbe, lanza meteoritos hacia el cielo, 8 rayos radiales de fuego, el fuego del infierno se propaga en ola y la lava nace de él.
+Cueva nueva en las Tierras de Lava (puerta al norte, justo al sur de la Guarida del Aracnídeo). Jefe de nivel 750 con armadura 50 %. Ataques:
+- **Infierno**: la cueva se enciende; aparece al azar un **cuadro azul** (refugio) y solo quien está dentro se libra del daño.
+- **Meteoritos**: círculos rojos de aviso, impacto directo y onda explosiva que se expande.
+- **Líneas de fuego**: franjas horizontales y verticales que cruzan toda la cueva (con aviso).
+- **Marea de lava**: la caldera se llena de lava y solo las **rocas azules** son seguras.
+Los personajes arden al ser golpeados (llamas sobre el cuerpo) y se hunden en la lava. Botín raro: Yelmo, Coraza, Capa, Anillo, Arco Ígneo y Bastón del Orbe Ardiente, además del Corazón de Magma y la cría de mascota. Código: `game/magma.js` (servidor) y bloque «Ignaros» de `public/ui2.js` (animaciones).

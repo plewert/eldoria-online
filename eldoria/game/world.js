@@ -17,10 +17,10 @@ const H = 200;                  // + 60 filas al sur con las salas de la Raid (e
 const T = {
   GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10,
   SAND: 11, SNOW: 12, SWAMP: 13, DUNE: 14, PALM: 15, PINE: 16, DEADTREE: 17, CACTUS: 18, ICEBLOCK: 19,
-  MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24, CFLOOR: 25, CWALL: 26, LAVA: 27, ASH: 28, CLOUDF: 29, CLOUDW: 30, WEBF: 31, WEBW: 32, AQF: 33, AQW: 34,
+  MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24, CFLOOR: 25, CWALL: 26, LAVA: 27, ASH: 28, CLOUDF: 29, CLOUDW: 30, WEBF: 31, WEBW: 32, AQF: 33, AQW: 34, MAGF: 35, MAGW: 36,
 };
 const BLOCKED = new Uint8Array(64);   // (con 32 casillas, WEBW=32 quedaba fuera y no bloqueaba)
-[T.WATER, T.TREE, T.WALL, T.ROCK, T.PALM, T.PINE, T.DEADTREE, T.CACTUS, T.ICEBLOCK, T.BOG, T.CWALL, T.LAVA, T.CLOUDW, T.WEBW, T.AQW].forEach((t) => { BLOCKED[t] = 1; });
+[T.WATER, T.TREE, T.WALL, T.ROCK, T.PALM, T.PINE, T.DEADTREE, T.CACTUS, T.ICEBLOCK, T.BOG, T.CWALL, T.LAVA, T.CLOUDW, T.WEBW, T.AQW, T.MAGW].forEach((t) => { BLOCKED[t] = 1; });
 
 // El orden importa: gana la primera zona cuyo rectángulo contiene la casilla.
 const RAID_Y0 = 146, RAID_Y1 = 170, RAID_W = 36;
@@ -45,6 +45,7 @@ const ZONES = [
   { id: 'cueva_nube', name: 'Santuario de las Nubes', pvp: false, kind: 'dungeon', rect: [196, 96, 229, 115] },
   { id: 'cueva_arana', name: 'Guarida del Aracnídeo Fuego Negro', pvp: false, kind: 'dungeon', tint: 'rgba(255,60,10,.12)', rect: [272, 96, 305, 115] },
   { id: 'cueva_mar',  name: 'Gruta del Leviatán Abisal', pvp: false, kind: 'dungeon', tint: 'rgba(30,150,210,.14)', rect: [213, 40, 246, 59] },
+  { id: 'cueva_magma', name: 'Caldera del Soberano del Magma', pvp: false, kind: 'dungeon', tint: 'rgba(255,70,10,.16)', rect: [272, 119, 305, 137] },
   { id: 'abismo',     name: 'Abismo Carmesí',         pvp: true,  kind: 'dungeon', rect: [112, 40, 139, 74] },
   { id: 'piramide',   name: 'Pirámide Olvidada',      pvp: true,  kind: 'dungeon', rect: [148, 100, 175, 136] },
   { id: 'fortaleza',  name: 'Fortaleza de Hielo',     pvp: true,  kind: 'dungeon', rect: [148, 3, 175, 30] },
@@ -320,6 +321,29 @@ function carveAqua(C, seed) {
 }
 carveAqua(CAVE5, 5151);
 
+// Caldera del Soberano del Magma: cámara de basalto con grietas de lava en las Tierras de Lava; la puerta está al norte
+const CAVE6 = { rect: zoneById('cueva_magma').rect, door: [288, 118], inside: [288, 123], exit: [288, 121], lair: [288, 131] };
+function carveMagma(C, seed) {
+  const [x0, y0, x1, y1] = C.rect, cx = C.lair[0] + 0.5, cy = C.lair[1] - 2.5, nz = makeNoise(seed);
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) tiles[idx(x, y)] = T.MAGW;
+  const floor = (x, y) => { if (x > x0 && x < x1 && y > y0 && y < y1) tiles[idx(x, y)] = T.MAGF; };
+  for (let y = y0 + 1; y < y1; y++) for (let x = x0 + 1; x < x1; x++) {
+    const dx = (x - cx) / 15.8, dy = (y - cy) / 8.2;
+    if (Math.hypot(dx, dy) < 0.97 + (nz(x / 3, y / 3) - 0.5) * 0.3) floor(x, y);                       // gran cámara
+  }
+  for (let y = y0 + 1; y <= y0 + 6; y++) for (let x = C.inside[0] - 3; x <= C.inside[0] + 3; x++) floor(x, y);   // vestíbulo
+  const keep = (x, y) => Math.abs(x - C.inside[0]) <= 4 && y <= y0 + 7 || Math.hypot(x - C.lair[0], (y - C.lair[1]) * 1.1) <= 9;
+  for (const [lx, ly, lr] of [[277, 126, 1.6], [300, 126, 1.6], [276.5, 132.5, 1.5], [300.5, 132.5, 1.5]]) {      // pequeños lagos de lava en los bordes
+    for (let y = Math.floor(ly - lr - 1); y <= Math.ceil(ly + lr + 1); y++) for (let x = Math.floor(lx - lr - 1); x <= Math.ceil(lx + lr + 1); x++) if (tiles[idx(x, y)] === T.MAGF && Math.hypot(x - lx, (y - ly) * 1.1) < lr && !keep(x, y)) tiles[idx(x, y)] = T.LAVA;
+  }
+  const pil = mulberry32(seed * 3 + 5);
+  for (let y = y0 + 2; y < y1 - 1; y++) for (let x = x0 + 2; x < x1 - 1; x++) if (tiles[idx(x, y)] === T.MAGF && !keep(x, y) && pil() < 0.03) tiles[idx(x, y)] = T.MAGW;   // columnas de basalto
+  const seen = new Set([idx(C.inside[0], C.inside[1])]), q = [...seen];
+  for (let i = 0; i < q.length; i++) { const k = q[i], x = k % W, y = (k / W) | 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) { const nk = idx(x + dx, y + dy); if (inb(x + dx, y + dy) && tiles[nk] === T.MAGF && !seen.has(nk)) { seen.add(nk); q.push(nk); } } }
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (tiles[idx(x, y)] === T.MAGF && !seen.has(idx(x, y))) tiles[idx(x, y)] = T.MAGW;
+}
+carveMagma(CAVE6, 6161);
+
 /* Santuario de las Cinco Sombras (Raid): 6 salas en fila al sur del mundo. Todo el sur se cierra con roca y se talla cada sala. */
 for (let y = H0; y < H; y++) for (let x = 0; x < W; x++) tiles[idx(x, y)] = T.CWALL;
 const RAID = { rooms: RAID_ROOMS, enter: { x: 85, y: 72 } };
@@ -353,7 +377,7 @@ const RAID = { rooms: RAID_ROOMS, enter: { x: 85, y: 72 } };
 
 /* 4) Caminos (despejan árboles, agua y rocas del trazado) */
 function carvePath(x0, y0, x1, y1) {
-  const put = (x, y) => { if (inb(x, y) && tiles[idx(x, y)] !== T.PORTAL && tiles[idx(x, y)] !== T.WALL && tiles[idx(x, y)] !== T.CWALL && tiles[idx(x, y)] !== T.CLOUDW && tiles[idx(x, y)] !== T.WEBW && tiles[idx(x, y)] !== T.AQW) tiles[idx(x, y)] = T.ROAD; };
+  const put = (x, y) => { if (inb(x, y) && tiles[idx(x, y)] !== T.PORTAL && tiles[idx(x, y)] !== T.WALL && tiles[idx(x, y)] !== T.CWALL && tiles[idx(x, y)] !== T.CLOUDW && tiles[idx(x, y)] !== T.WEBW && tiles[idx(x, y)] !== T.AQW && tiles[idx(x, y)] !== T.MAGW) tiles[idx(x, y)] = T.ROAD; };
   for (let x = Math.min(x0, x1); x <= Math.max(x0, x1); x++) put(x, y0);
   for (let y = Math.min(y0, y1); y <= Math.max(y0, y1); y++) put(x1, y);
 }
@@ -400,6 +424,8 @@ addPortal(CAVE4.door[0], CAVE4.door[1], CAVE4.inside[0], CAVE4.inside[1], 'Guari
 addPortal(CAVE4.exit[0], CAVE4.exit[1], CAVE4.door[0], CAVE4.door[1] - 1, 'Salir a las Tierras de Lava');
 addPortal(CAVE5.door[0], CAVE5.door[1], CAVE5.inside[0], CAVE5.inside[1], 'Gruta del Leviatán Abisal (peligro extremo)');
 addPortal(CAVE5.exit[0], CAVE5.exit[1], CAVE5.door[0], CAVE5.door[1] - 1, 'Salir a la Selva Esmeralda');
+addPortal(CAVE6.door[0], CAVE6.door[1], CAVE6.inside[0], CAVE6.inside[1], 'Caldera del Soberano del Magma (peligro extremo)');
+addPortal(CAVE6.exit[0], CAVE6.exit[1], CAVE6.door[0], CAVE6.door[1] - 1, 'Salir a las Tierras de Lava');
 {
   const H1 = RAID_ROOMS[0];
   addPortal(RAID.enter.x, RAID.enter.y, H1.start[0] + 3, H1.cy, 'Santuario de las Cinco Sombras (Raid de 1 a 10 jugadores)');
@@ -411,7 +437,7 @@ function clearAround(cx, cy, r) {
     for (let x = cx - r; x <= cx + r; x++) {
       if (!inb(x, y)) continue;
       const t = tiles[idx(x, y)];
-      if (BLOCKED[t] && t !== T.WALL && t !== T.CWALL && t !== T.CLOUDW && t !== T.WEBW && t !== T.AQW) tiles[idx(x, y)] = zoneAt(x, y).id === 'dunas' ? T.DUNE : zoneAt(x, y).id === 'cumbres' ? T.SNOW : T.GRASS;
+      if (BLOCKED[t] && t !== T.WALL && t !== T.CWALL && t !== T.CLOUDW && t !== T.WEBW && t !== T.AQW && t !== T.MAGW) tiles[idx(x, y)] = zoneAt(x, y).id === 'dunas' ? T.DUNE : zoneAt(x, y).id === 'cumbres' ? T.SNOW : T.GRASS;
     }
   }
 }
@@ -506,6 +532,7 @@ const monsterSpawns = [];
   monsterSpawns.push({ type: 'arcangel', x: CAVE3.lair[0], y: CAVE3.lair[1] });
 monsterSpawns.push({ type: 'aracnido_fuego', x: CAVE4.lair[0], y: CAVE4.lair[1] });
   monsterSpawns.push({ type: 'leviatan', x: CAVE5.lair[0], y: CAVE5.lair[1] });
+  monsterSpawns.push({ type: 'ignaros', x: CAVE6.lair[0], y: CAVE6.lair[1] });
   const nearest = (zoneId, px, py) => {
     let best = null, bd = 1e9;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -522,7 +549,7 @@ monsterSpawns.push({ type: 'aracnido_fuego', x: CAVE4.lair[0], y: CAVE4.lair[1] 
 })();
 
 // Versión compacta del mapa para el cliente (un carácter por casilla)
-const CH = '0123456789abcdefghijklmnopqrstuvwxy';
+const CH = '0123456789abcdefghijklmnopqrstuvwxyzA';
 const rows = [];
 for (let y = 0; y < H; y++) {
   let s = '';
