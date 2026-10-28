@@ -133,7 +133,7 @@
     // luz dinámica: proyectiles elementales, hechizos, jefes enfurecidos
     const k = (0.5 + 0.9 * nt + (dun ? 0.7 : 0)) * (L >= 3 ? 1.25 : 1);
     const lights = [];
-    for (const p of G.proj || []) { const T = p.T || 300, u = (now - p.t) / T; if (u < 0 || u > 1 || !p.el) continue; lights.push([p.x1 + (p.x2 - p.x1) * u, p.y1 + (p.y2 - p.y1) * u - 0.3, LIGHT[p.el] || LIGHT.magic, 0.5, 72]); }
+    for (const p of G.proj || []) { const T = p.T || 300, u = (now - p.t) / T; if (u < 0 || u > 1 || !p.el || p.s === 'ranged' || p.s === 'arrow') continue; lights.push([p.x1 + (p.x2 - p.x1) * u, p.y1 + (p.y2 - p.y1) * u - 0.3, LIGHT[p.el] || LIGHT.magic, 0.5, 72]); }
     for (const cst of G.casts || []) { const u = (now - cst.t) / 420; if (u < 0 || u > 1) continue; lights.push([cst.x, cst.y - 0.2, LIGHT[cst.el] || LIGHT.magic, 0.55 * (1 - u), 80]); }
     for (const e of G.ents.values()) {
       if (e.kind === 'mo' && G.mons[e.t] && G.mons[e.t].boss && e.H && e.h / e.H <= 0.5) lights.push([e.rx, e.ry - 0.3, e.h / e.H <= 0.25 ? '255,50,30' : '255,110,40', 0.35 + 0.1 * Math.sin(now / 200), 110]);
