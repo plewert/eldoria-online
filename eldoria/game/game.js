@@ -419,7 +419,7 @@ class Game {
     };
   }
 
-  savePlayer(p) { this.store.saveData(p.key, this.serialize(p)); }
+  savePlayer(p) { if (p.bot) return; this.store.saveData(p.key, this.serialize(p)); }
 
   /** Conecta una cuenta autenticada a la partida. */
   attach(acc, ws) {
@@ -538,7 +538,7 @@ class Game {
     for (const q of this.players.values()) {
       if (!inView(q.x, q.y)) continue;
       const vis = this.visOf(q);
-      pl.push({ i: q.id, n: q.name, x: q.x, y: q.y, h: q.hp, H: q.maxHp, l: q.level, c: q.color, s: this.styleOf(q), d: q.dir, k: now < q.pvpLock ? 1 : 0, o: q.ws ? 0 : 1, v: vis.g, a: vis.an, t: q.trade ? 1 : 0, q: SLOTS.map((s) => (q.eq[s] ? q.eq[s].id : 0)), ...this.extView(q) });
+      pl.push({ i: q.id, n: q.name, x: q.x, y: q.y, h: q.hp, H: q.maxHp, l: q.level, c: q.color, s: this.styleOf(q), d: q.dir, k: now < q.pvpLock ? 1 : 0, o: q.ws || q.bot ? 0 : 1, b: q.bot ? 1 : 0, v: vis.g, a: vis.an, t: q.trade ? 1 : 0, q: SLOTS.map((s) => (q.eq[s] ? q.eq[s].id : 0)), ...this.extView(q) });
     }
     for (const m of this.monsters) {
       if (m.dead || !inView(m.x, m.y)) continue;
@@ -629,7 +629,7 @@ class Game {
     p.lastChat = now;
     if (text === '/pos') { const z = zoneAt(p.x, p.y); this.msg(p, `Estás en ${z.name} (${p.x}, ${p.y}). ${z.pvp ? 'Zona PvP.' : 'Zona segura.'}`, 's'); return; }
     if (text === '/top') {
-      const list = [...this.players.values()].sort((a, b) => b.xp - a.xp).slice(0, 5).map((q) => `${q.name} (nv ${q.level})`).join(', ');
+      const list = [...this.players.values()].filter((q) => !q.bot).sort((a, b) => b.xp - a.xp).slice(0, 5).map((q) => `${q.name} (nv ${q.level})`).join(', ');
       this.msg(p, 'Jugadores conectados más fuertes: ' + list, 's'); return;
     }
     if (text === '/ayuda') { this.msg(p, 'Comandos: /g mensaje (global), /p mensaje (grupo), /gc mensaje (gremio), /grupo, /gremio, /clave, /pos, /top. Teclas 1-2-3: habilidades; Q misiones, L logros, G social, R ranking, P mercado, F oficios. Otras: WASD mover, Z/X/C arma, H/J pociones, V curar, E recoger. Clic derecho: monstruo = ver sus drops, jugador = comerciar, objeto = gemas.', 's'); return; }
@@ -1222,4 +1222,5 @@ require('./ext')(Game);
 require('./fishing').install(Game);
 require('./mining').install(Game);
 require('./raid').install(Game);
+require('./bots').install(Game);
 module.exports = { Game, NAME_RE, levelFromXp, xpForLevel, skillFromXp };

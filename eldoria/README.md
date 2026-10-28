@@ -279,3 +279,14 @@ Nivel ✨ completo o cine: oclusión ambiental junto a muros, rocas y árboles; 
 
 ## Tutorial inicial (tutorial.js)
 Los personajes nuevos (nivel menor a 5) reciben un tutorial de 4 pasos: moverse, hablar con Orin el Sabio, equipar un arma (el objeto recomendado brilla en la mochila) y matar un monstruo. Una flecha dorada rebota sobre el objetivo (o se pega al borde de la pantalla apuntando hacia él), y el panel muestra una brújula con la distancia, útil también en la vista 3D. Se guarda por personaje en el navegador; «Saltar» lo cierra y F1 lo repite.
+
+## Aventureros simulados (bots)
+Dieciséis personajes controlados por el servidor (`game/bots.js`) juegan como una persona normal y comparten el mundo con los jugadores reales.
+- **Siempre etiquetados:** su nombre termina en `[IA]` (también en el chat y en los avisos de jefes/Raid) y llevan 🤖 sobre la cabeza. Sus nombres (Kael, Mira, Thorn…) están reservados al registrarse.
+- **Cuatro niveles:** *novatos* (5) cazan en el Prado; *aventureros* (4) en las Catacumbas y el Bosque Maldito; *veteranos* (2) en las Minas Enanas, la Selva Esmeralda y el Pantano; *élites* (5) en las Colinas, las Tierras de Lava y el Abismo Carmesí, con equipo de la Raid. Cambian de zona cada 10–20 minutos.
+- **Zonas PvP:** entran en ellas como cualquiera. Los jugadores pueden atacarlos (si caen, sueltan objetos como un jugador) y **se defienden**, pero no empiezan peleas. En esas zonas solo recogen el botín de sus propias presas, nunca lo que otros jugadores sueltan al morir.
+- **Juegan de verdad:** cazan, **recogen el botín** del suelo, y cuando la mochila se llena (o cada cierto tiempo) viajan a la ciudad: **venden** lo que sobra en la tienda de Boris, **compran** pociones y mejoras de equipo que puedan pagar, y **guardan en el banco** (con Gerda) las gemas, el equipo raro y el oro sobrante. Usan pociones y el conjuro de curar, y de vez en cuando charlan cerca de otros jugadores.
+- **Comparten zonas y jefes:** cazan en las mismas zonas que los jugadores reales; aventureros y veteranos se juntan para el Rey Esqueleto y el Maestro Forjador (los jefes de cuevas con ataques especiales y los de zonas PvP quedan fuera). Si hay jugadores reales peleando, el botín se reparte como siempre.
+- **Raid con jugadores:** las élites forman grupo y hacen la Raid esquivando los avisos de ataque. Si un jugador real espera en la antecámara, **van con él** y la inician juntos; si la iniciaron ellas, el jugador puede **unirse en cualquier momento**. Abren el cofre final como cualquiera.
+- **Límites:** tienen tope de nivel y de habilidad, no atacan primero a nadie, no comercian de jugador a jugador ni forman grupo social, no salen en `/top` y no se guardan (al reiniciar el servidor empiezan de nuevo).
+- `BOTS=0` los desactiva; `BOTS=8` cambia la cantidad (máx. 16). Prueba: `node test/bots.js`.

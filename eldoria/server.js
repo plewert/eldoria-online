@@ -11,12 +11,15 @@ const path = require('path');
 const { WSServer } = require('./game/ws');
 const Store = require('./game/store');
 const { Game, NAME_RE } = require('./game/game');
+const BOT_NAMES = require('./game/bots').NAMES.map((n) => n.toLowerCase());
 const { CFG } = require('./game/data');
 
 const PORT = parseInt(process.env.PORT, 10) || 3000;
 const PUB = path.join(__dirname, 'public');
 const store = new Store(process.env.DATA_FILE || path.join(__dirname, 'data', 'players.json'));
 const game = new Game(store);
+const NBOTS = process.env.BOTS === undefined ? 16 : parseInt(process.env.BOTS, 10) || 0;   // aventureros simulados (BOTS=0 los desactiva)
+if (NBOTS > 0) game.initBots(NBOTS);
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -95,6 +98,7 @@ wss.on('connection', (ws, req) => {
       let acc = store.get(name), rc = null;
       if (msg.mode === 'register') {
         if (acc) return sendErr('Ese nombre ya existe. Elige otro o inicia sesión.');
+        if (BOT_NAMES.includes(name.toLowerCase())) return sendErr('Ese nombre está reservado para un aventurero simulado. Elige otro.');
         const color = /^#[0-9a-fA-F]{6}$/.test(msg.color || '') ? msg.color : '#4aa3ff';
         acc = store.create(name, pass, color);
         rc = store.setRecovery(acc);

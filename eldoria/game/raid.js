@@ -155,9 +155,11 @@ module.exports = { build, SETS, BOSS_DEFS, BOSS_ORDER, MINIONS, MAX_PARTY, MAX_D
       tp(p, R.start[0] + rnd(0, 2), R.start[1] + rnd(-2, 2)); this.msg(p, `Regresas a la ${R.name}.`, 's'); return;
     }
     if (r) {
-      if (r.room === 1 && r.phase === 'fight' && r.members.size < MAX_PARTY && this.now < r.startedAt + 60000) {            // se puede entrar durante el primer minuto
+      const early = r.room === 1 && r.phase === 'fight' && this.now < r.startedAt + 60000;         // se puede entrar durante el primer minuto
+      const botRun = r.botRun && (r.phase === 'fight' || r.phase === 'transition');                 // o en cualquier momento si la iniciaron los aventureros simulados
+      if ((early || botRun) && r.members.size < MAX_PARTY) {
         r.members.add(p.key); r.deaths[p.key] = 0; r.contrib[p.key] = 0;
-        const R = ROOMS[1]; tp(p, R.start[0] + rnd(0, 2), R.start[1] + rnd(-2, 2)); tell(this, `⚔️ ${p.name} se une a la Raid (${r.members.size}/${MAX_PARTY}).`);
+        const R = ROOMS[Math.max(1, r.room)]; tp(p, R.start[0] + rnd(0, 2), R.start[1] + rnd(-2, 2)); tell(this, `⚔️ ${p.name} se une a la Raid (${r.members.size}/${MAX_PARTY}).`);
         return;
       }
       this.msg(p, `Hay una Raid en curso (cámara ${r.room} de 5, ${r.members.size} jugadores). Espera a que termine.`, 's'); return;
