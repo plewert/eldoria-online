@@ -612,6 +612,15 @@ ok('Banco ampliable (1M por 5 espacios) y entrada de 2k a las cuevas de jefe', (
   const ex = world.PORTALS.find((o) => !o.fee && o.tx === po.x && o.ty === po.y - 0) ; assert.ok(world.PORTALS.filter((o) => !o.fee).length > 6, 'las salidas son gratis');
 });
 
+ok('misiones de jefes: 13 nuevas, las de cueva se repiten cada día', () => {
+  const { QUESTS } = require('../game/quests'); const bq = QUESTS.filter((q) => q.type === 'kill' && MONSTERS[q.mon] && MONSTERS[q.mon].boss);
+  assert.ok(bq.length >= 16, 'un encargo por jefe'); for (const m of ['dragon_sombra', 'hidra_jade', 'arcangel', 'aracnido_fuego', 'leviatan', 'ignaros']) { const q = bq.find((o) => o.mon === m); assert.ok(q && q.repeat === 24, m); }
+  const { p } = login('Cazador'); p.level = 95; p.xp = Math.max(p.xp, 1); place(p, ...TOWN); const q = QUESTS.find((o) => o.id === 'cueva_magma');
+  game.questAccept(p, q.id); assert.equal(p.ext.q[q.id].s, 'a'); game.questKill(p, 'ignaros'); assert.equal(p.ext.q[q.id].n, 1);
+  const g0 = p.gold; game.questTurn(p, q.id); assert.ok(p.gold >= g0 + q.reward.g); assert.equal(p.ext.q[q.id].s, 'd');
+  p.ext.q[q.id].t -= 25 * 3600000; game.questAccept(p, q.id); assert.equal(p.ext.q[q.id].s, 'a', 'vuelve a estar disponible tras 24 h');
+});
+
 console.log(`\n${n} pruebas correctas`);
 try { require('fs').unlinkSync(store.file); } catch (e) { /* nada */ }
 
