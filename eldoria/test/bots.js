@@ -21,7 +21,7 @@ const advance = (ms) => { for (let i = 0; i < ms; i += CFG.TICK_MS) { t += CFG.T
 const zoneCount = (role, zone) => game.bots.filter((b) => b.ai.role === role && world.zoneAt(b.x, b.y).id === zone).length;
 
 // etiquetados y repartidos por rol
-assert.ok(game.bots.every((b) => b.bot && b.name.endsWith(' [IA]')), 'todos llevan [IA] en el nombre');
+assert.ok(game.bots.every((b) => b.bot && /^[A-Za-z0-9][A-Za-z0-9_]{2,13}$/.test(b.name)), 'nombres válidos como los de cualquier jugador');
 for (const r of ['novato', 'aventurero', 'veterano', 'elite']) assert.ok(game.bots.some((b) => b.ai.role === r), 'hay ' + r);
 assert.ok(game.bots.filter((b) => b.ai.role === 'elite').every((b) => b.eq.weapon && b.eq.weapon.id.startsWith('rd_') && b.eq.cape), 'las élites llevan equipo de la Raid');
 
@@ -37,7 +37,6 @@ assert.ok(zoneCount('elite', 'colinas') + zoneCount('elite', 'raid_hall') + game
 let boss = false;
 for (let i = 0; i < 90 && !boss; i++) { advance(10000); boss = chats.some((c) => /ha derrotado a (Rey Esqueleto|Maestro Forjador)/.test(c)); }
 assert.ok(boss, 'los bots derrotan a un jefe de mazmorra');
-assert.ok(chats.some((c) => /\[IA\]/.test(c)), 'los avisos llevan la etiqueta');
 
 // la Raid: los bots inician la incursión y avanzan
 let raid = false, room = 0;
@@ -108,13 +107,8 @@ assert.ok(game.raid && game.raid.botRun, 'los bots tienen una Raid en curso');
   game.hurtPlayer(av, 5, me, t, me.name);
   assert.strictEqual(av.target, me.id, 'el bot se defiende del jugador que lo ataca');
 }
-// el snapshot los marca como bots
-const b0 = game.bots.find((b) => world.zoneAt(b.x, b.y).id === 'prado');
-me.x = b0.x; me.y = b0.y + 1; me.tpSeq++; game.sendSnapshot(me);
-const snap = ws.got.filter((m) => m.t === 's').pop();
-const sb = snap.pl.find((q) => q.b === 1);
-assert.ok(sb && sb.o === 0, 'el bot llega al cliente con b=1 y sin "ausente"');
 // ni el ranking /top ni el comercio los incluyen
 game.handle(me, { t: 'chat', text: '/top' });
-assert.ok(!ws.got.filter((m) => m.t === 'chat').pop().m.includes('[IA]'), '/top no lista bots');
+const topMsg = ws.got.filter((m) => m.t === 'chat').pop().m;
+assert.ok(!game.bots.some((b) => topMsg.includes(b.name)), '/top no lista bots');
 console.log('OK bots (' + game.bots.length + ' aventureros; jefe derrotado, Raid hasta cámara ' + room + ')');

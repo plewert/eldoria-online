@@ -2,7 +2,7 @@
 /**
  * Aventureros simulados (bots): personajes controlados por el servidor que juegan como una persona normal.
  *  - Son jugadores de verdad para el motor (mismas reglas de combate, vida, experiencia, muerte y botín).
- *  - SIEMPRE etiquetados: su nombre termina en "[IA]" (también en el chat y los avisos) y el cliente añade 🤖.
+ *  - Tienen nombre propio como cualquier jugador (el /ayuda del juego avisa de que el mundo incluye aventureros del servidor).
  *  - Cuatro niveles de experiencia, cada uno con su zona:
  *      novato     → Prado (monstruos pequeños)
  *      aventurero → Catacumbas Silenciosas
@@ -29,7 +29,7 @@ const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const xpForLevel = (l) => 50 * (l - 1) * (l - 1);
 const DIRS8 = [[0, -1], [1, 0], [0, 1], [-1, 0], [1, -1], [1, 1], [-1, 1], [-1, -1]];
 
-const NAMES = ['Kael', 'Mira', 'Thorn', 'Lyra', 'Doran', 'Selene', 'Bram', 'Ysolde', 'Garrick', 'Nia', 'Orlan', 'Tess', 'Varek', 'Elin', 'Rodrik', 'Sora'];
+const NAMES = ['Kael', 'MiraSol', 'Thorn92', 'Lyra', 'DoranX', 'Selene_', 'BramVK', 'Ysolde', 'Garrick7', 'NiaLuz', 'Orlan', 'TessK', 'Varek', 'Elin_', 'RodrikZ', 'SoraV'];
 const COLORS = ['#e0584a', '#4aa3ff', '#6fcf6f', '#e0b84a', '#b06ae0', '#4ad0c0', '#e08a4a', '#d96aa8'];
 const ROLE_ORDER = ['novato', 'aventurero', 'elite', 'novato', 'veterano', 'elite', 'novato', 'aventurero', 'elite', 'veterano', 'novato', 'aventurero', 'elite', 'elite', 'elite', 'novato'];
 
@@ -146,7 +146,7 @@ function install(Game) {
     let ei = 0;
     for (let i = 0; i < n; i++) {
       const base = NAMES[i], role = ROLE_ORDER[i], tier = TIERS[role];
-      const p = this.createPlayer({ key: 'bot:' + base.toLowerCase(), name: base + ' [IA]', color: COLORS[i % COLORS.length] });
+      const p = this.createPlayer({ key: 'bot:' + base.toLowerCase(), name: base, color: COLORS[i % COLORS.length] });
       p.bot = true;
       const eidx = role === 'elite' ? ei++ : -1;
       const style = role === 'elite' ? STYLE_OF[[0, 1, 2, 0, 1, 2][eidx % 6]] : STYLE_OF[i % 3];

@@ -98,7 +98,7 @@ wss.on('connection', (ws, req) => {
       let acc = store.get(name), rc = null;
       if (msg.mode === 'register') {
         if (acc) return sendErr('Ese nombre ya existe. Elige otro o inicia sesión.');
-        if (BOT_NAMES.includes(name.toLowerCase())) return sendErr('Ese nombre está reservado para un aventurero simulado. Elige otro.');
+        if (BOT_NAMES.includes(name.toLowerCase())) return sendErr('Ese nombre ya existe. Elige otro o inicia sesión.');
         const color = /^#[0-9a-fA-F]{6}$/.test(msg.color || '') ? msg.color : '#4aa3ff';
         acc = store.create(name, pass, color);
         rc = store.setRecovery(acc);

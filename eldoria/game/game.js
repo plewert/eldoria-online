@@ -538,7 +538,7 @@ class Game {
     for (const q of this.players.values()) {
       if (!inView(q.x, q.y)) continue;
       const vis = this.visOf(q);
-      pl.push({ i: q.id, n: q.name, x: q.x, y: q.y, h: q.hp, H: q.maxHp, l: q.level, c: q.color, s: this.styleOf(q), d: q.dir, k: now < q.pvpLock ? 1 : 0, o: q.ws || q.bot ? 0 : 1, b: q.bot ? 1 : 0, v: vis.g, a: vis.an, t: q.trade ? 1 : 0, q: SLOTS.map((s) => (q.eq[s] ? q.eq[s].id : 0)), ...this.extView(q) });
+      pl.push({ i: q.id, n: q.name, x: q.x, y: q.y, h: q.hp, H: q.maxHp, l: q.level, c: q.color, s: this.styleOf(q), d: q.dir, k: now < q.pvpLock ? 1 : 0, o: q.ws || q.bot ? 0 : 1, v: vis.g, a: vis.an, t: q.trade ? 1 : 0, q: SLOTS.map((s) => (q.eq[s] ? q.eq[s].id : 0)), ...this.extView(q) });
     }
     for (const m of this.monsters) {
       if (m.dead || !inView(m.x, m.y)) continue;
@@ -632,7 +632,7 @@ class Game {
       const list = [...this.players.values()].filter((q) => !q.bot).sort((a, b) => b.xp - a.xp).slice(0, 5).map((q) => `${q.name} (nv ${q.level})`).join(', ');
       this.msg(p, 'Jugadores conectados más fuertes: ' + list, 's'); return;
     }
-    if (text === '/ayuda') { this.msg(p, 'Comandos: /g mensaje (global), /p mensaje (grupo), /gc mensaje (gremio), /grupo, /gremio, /clave, /pos, /top. Teclas 1-2-3: habilidades; Q misiones, L logros, G social, R ranking, P mercado, F oficios. Otras: WASD mover, Z/X/C arma, H/J pociones, V curar, E recoger. Clic derecho: monstruo = ver sus drops, jugador = comerciar, objeto = gemas.', 's'); return; }
+    if (text === '/ayuda') { this.msg(p, 'Comandos: /g mensaje (global), /p mensaje (grupo), /gc mensaje (gremio), /grupo, /gremio, /clave, /pos, /top. Teclas 1-2-3: habilidades; Q misiones, L logros, G social, R ranking, P mercado, F oficios. Otras: WASD mover, Z/X/C arma, H/J pociones, V curar, E recoger. Clic derecho: monstruo = ver sus drops, jugador = comerciar, objeto = gemas. Nota: parte de los aventureros que ves en el mundo están controlados por el servidor.', 's'); return; }
     if (text.startsWith('/g ')) { this.broadcastChat(text.slice(3), 'g', p.name); return; }
     if (this.chatExt(p, text)) return;
     if (text.startsWith('/')) { this.msg(p, 'Comando desconocido. Escribe /ayuda.', 's'); return; }

@@ -139,7 +139,7 @@
       seen.add(p.i);
       let e = G.ents.get(p.i);
       if (!e) { e = { kind: 'pl', id: p.i, rx: p.x, ry: p.y }; G.ents.set(p.i, e); }
-      Object.assign(e, { n: p.n, x: p.x, y: p.y, h: p.h, H: p.H, l: p.l, c: p.c, s: p.s, d: p.d, k: p.k, o: p.o, b: p.b || 0, v: p.v || 0, a: p.a || 0, tr: p.t, q: p.q, tt: p.tt || '', gl: p.gl || '', pt: p.pt || '', mt: p.mt || '' });
+      Object.assign(e, { n: p.n, x: p.x, y: p.y, h: p.h, H: p.H, l: p.l, c: p.c, s: p.s, d: p.d, k: p.k, o: p.o, v: p.v || 0, a: p.a || 0, tr: p.t, q: p.q, tt: p.tt || '', gl: p.gl || '', pt: p.pt || '', mt: p.mt || '' });
     }
     for (const q of m.mo) {
       seen.add(q.i);
@@ -1957,7 +1957,7 @@
       if (e.kind === 'pl') {
         const top = sy - 14;
         hpBar(c, cx, top, 28, e.h / e.H);
-        outlined(c, `${e.b ? '🤖 ' : ''}${e.gl ? '‹' + e.gl + '› ' : ''}${e.n} [${e.l}]${e.k ? ' ⚔' : ''}${e.tr ? ' 🤝' : ''}${e.o ? ' (ausente)' : ''}`, cx, top - 8, e.id === G.id ? '#c9a24b' : '#e8e2d0');
+        outlined(c, `${e.gl ? '‹' + e.gl + '› ' : ''}${e.n} [${e.l}]${e.k ? ' ⚔' : ''}${e.tr ? ' 🤝' : ''}${e.o ? ' (ausente)' : ''}`, cx, top - 8, e.id === G.id ? '#c9a24b' : '#e8e2d0');
         if (e.tt) outlined(c, e.tt, cx, top - 19, '#9fd0ff', 'italic 10px "Segoe UI", sans-serif');
       } else {
         const d = G.mons[e.t] || {}; const sp0 = sprReady() && SPR[e.t];

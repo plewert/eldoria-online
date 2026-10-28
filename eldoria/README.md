@@ -282,7 +282,7 @@ Los personajes nuevos (nivel menor a 5) reciben un tutorial de 4 pasos: moverse,
 
 ## Aventureros simulados (bots)
 Dieciséis personajes controlados por el servidor (`game/bots.js`) juegan como una persona normal y comparten el mundo con los jugadores reales.
-- **Siempre etiquetados:** su nombre termina en `[IA]` (también en el chat y en los avisos de jefes/Raid) y llevan 🤖 sobre la cabeza. Sus nombres (Kael, Mira, Thorn…) están reservados al registrarse.
+- **Nombres normales:** tienen nombre propio como cualquier jugador y sus nombres quedan reservados al registrarse. El comando `/ayuda` avisa de que parte de los aventureros del mundo están controlados por el servidor.
 - **Cuatro niveles:** *novatos* (5) cazan en el Prado; *aventureros* (4) en las Catacumbas y el Bosque Maldito; *veteranos* (2) en las Minas Enanas, la Selva Esmeralda y el Pantano; *élites* (5) en las Colinas, las Tierras de Lava y el Abismo Carmesí, con equipo de la Raid. Cambian de zona cada 10–20 minutos.
 - **Zonas PvP:** entran en ellas como cualquiera. Los jugadores pueden atacarlos (si caen, sueltan objetos como un jugador) y **se defienden**, pero no empiezan peleas. En esas zonas solo recogen el botín de sus propias presas, nunca lo que otros jugadores sueltan al morir.
 - **Juegan de verdad:** cazan, **recogen el botín** del suelo, y cuando la mochila se llena (o cada cierto tiempo) viajan a la ciudad: **venden** lo que sobra en la tienda de Boris, **compran** pociones y mejoras de equipo que puedan pagar, y **guardan en el banco** (con Gerda) las gemas, el equipo raro y el oro sobrante. Usan pociones y el conjuro de curar, y de vez en cuando charlan cerca de otros jugadores.
