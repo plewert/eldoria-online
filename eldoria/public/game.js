@@ -19,11 +19,12 @@
   if (location.hash === '#debug') { window.__eld = G; G.renderInv = () => renderInv(); G.openShop = (m) => openShop(m); }
   let ws = null, joined = false, wantMode = 'login';
   /* Ganchos para los módulos extra (audio, clima, táctil, misiones, social...) */
-  const HK = { msg: [], fx: [], snap: [], draw: [], under: [], click: [], key: [], chat: [], inv: [], stats: [], ctx: [] };
+  const HK = { ground: [], msg: [], fx: [], snap: [], draw: [], under: [], click: [], key: [], chat: [], inv: [], stats: [], ctx: [] };
   const EXT = (window.EldExt = {
     G, el, $, store, joy: { dx: 0, dy: 0 }, handlers: {},
     on(n, f) { HK[n].push(f); },
     msg(m) { for (const f of HK.msg) f(m); }, fx(f) { for (const h of HK.fx) h(f); }, snap(m) { for (const f of HK.snap) f(m); },
+    ground(c, now, cw, ch) { for (const f of HK.ground) f(c, now, cw, ch); },
     draw(c, now, cw, ch, dt, tx, ty) { for (const f of HK.draw) f(c, now, cw, ch, dt, tx, ty); },
     under(c, now, cw, ch) { for (const f of HK.under) f(c, now, cw, ch); }, click(t, ev) { return HK.click.some((f) => f(t, ev)); },
     ctx(t) { for (const f of HK.ctx) { const r = f(t); if (r) return r; } return null; },
@@ -1380,6 +1381,7 @@
     const sw = Math.sin(ph), cs = Math.cos(ph);
     const idle = Math.sin(now / 450 + e.id) * 0.6 * (1 - amp);              // respiración en reposo
     const bob = Math.round((-Math.abs(sw) * 1.5 * amp + idle) * 2) / 2;      // el cuerpo sube a mitad de zancada
+    const blink = ((now + e.id * 977) % 3700) < 120;                           // parpadeo
     const side = fd === 1 ? 1 : fd === 3 ? -1 : 0;
     const lean = side * amp * 1.2;                                            // inclinación al correr
     const hipY = base - 10, shY = base - 21 + bob;
@@ -1500,7 +1502,7 @@
       c.fillStyle = skin; c.beginPath(); c.arc(hx, hy, 6, 0, 7); c.fill();
       if (!gr.hid || /cuero|faraon/.test(gr.hid)) { c.fillStyle = '#3a2a1c'; c.beginPath(); c.arc(hx - side * 1.5, hy - 1.5, 6, Math.PI * (side > 0 ? 0.9 : -0.1), Math.PI * (side > 0 ? 2.1 : 1.1)); c.fill(); }
       c.fillStyle = skinD; c.fillRect(hx + side * 6 - (side > 0 ? 1 : 0), hy, 2, 2);                        // nariz
-      c.fillStyle = '#111'; c.fillRect(hx + side * 2.5 - 1, hy - 1, 2, 2);                                  // ojo
+      c.fillStyle = '#111'; c.fillRect(hx + side * 2.5 - 1, hy - (blink ? 0.2 : 1), 2, blink ? 0.8 : 2);                                  // ojo
       if (gr.hid) drawHead(c, gr.hid, hx, hy, 's', side, now);
       arm(cx + lean + side * 1, shY + 4, nearArmDx, 8, body);
       const handX = cx + lean + side * 1 + nearArmDx, handY = shY + 12;
@@ -1531,7 +1533,7 @@
       const hx = cx + sway * 0.4, hy = shY - 5;
       c.fillStyle = skin; c.beginPath(); c.arc(hx, hy, 6, 0, 7); c.fill();
       c.fillStyle = '#3a2a1c';
-      if (front) { if (!gr.hid || /cuero|faraon/.test(gr.hid)) { c.beginPath(); c.arc(hx, hy - 1.5, 6, Math.PI, 0); c.fill(); } c.fillStyle = '#111'; c.fillRect(hx - 3, hy, 2, 2); c.fillRect(hx + 1, hy, 2, 2); }
+      if (front) { if (!gr.hid || /cuero|faraon/.test(gr.hid)) { c.beginPath(); c.arc(hx, hy - 1.5, 6, Math.PI, 0); c.fill(); } c.fillStyle = '#111'; c.fillRect(hx - 3, hy + (blink ? 1 : 0), 2, blink ? 0.8 : 2); c.fillRect(hx + 1, hy + (blink ? 1 : 0), 2, blink ? 0.8 : 2); }
       else { c.beginPath(); c.arc(hx, hy, 6, 0, 7); c.fill(); }
       if (gr.hid) drawHead(c, gr.hid, hx, hy, front ? 'f' : 'b', 0, now);
       if (front && gr.sid) drawShieldItem(c, gr.sid, cx - 11 + sway * 0.8, shY + 8 - sw * amp, 'f', 0);        // escudo en el brazo izquierdo
@@ -1880,6 +1882,7 @@
       } else if (t === TILE.WATER) drawWater(c, x, y, sx, sy, now);
       else { c.drawImage(texFor(t, x, y, frameW), sx, sy); if (t === TILE.CLOUDF) cloudFloorFx(c, x, y, sx, sy, now); else if (t === TILE.CLOUDW) cloudWallFx(c, x, y, sx, sy, now); else if (t === TILE.WEBF) webFloorFx(c, x, y, sx, sy, now); else if (t === TILE.WEBW) webWallFx(c, x, y, sx, sy, now); else if (t === TILE.AQF) aqFloorFx(c, x, y, sx, sy, now); else if (t === TILE.AQW) aqWallFx(c, x, y, sx, sy, now); }
     }
+    EXT.ground(c, now, cw, ch);                                  // oclusión, mezcla de terreno, agua con profundidad (bajo los árboles)
     for (let i = 0; i < treeList.length; i += 3) drawNewTree(c, treeList[i], treeList[i + 1], treeList[i + 2], now);
     drawLeaves(c, now);
     // zonas PvP: velo rojizo y borde donde termina la zona segura
