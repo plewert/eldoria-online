@@ -254,3 +254,7 @@ Botón junto al de sonido (PC y teléfono) que cambia entre **Completo** (luces 
 - Jefes intermedios: oro y 22 % de una pieza de su set. **Cofre final** (cámara 5): cada participante lo abre una vez (clic, tecla E o botón) y recibe botín raro de los 5 sets (casco, peto, guantes, grebas, botas, cinto, anillo, amuleto, **capa**, arma), oro, pluma de fénix y, con suerte, la cría de un jefe. Más aporte de daño = más opciones de un segundo objeto. Animación de apertura con rayos y tarjetas (dorado = raro).
 - Nueva ranura **Capa** en el equipo (las capas de la Raid tienen color propio; la de Xaelis lleva alas doradas).
 - Todo el botín sale en la **Colección** de cada jefe. Archivos: `game/raid.js` (servidor), `public/raid.js` (cliente), sprites `raid_*` y `gear.png`.
+
+## Seguir compañero y auto golpe
+- Clic derecho sobre un jugador → **🚶 Seguir**: tu personaje lo sigue solo por el camino. Se cancela al moverte tú, pulsar Esc, hacer clic en el suelo o perderlo de vista 6 s. Funciona también en la Raid.
+- Botón **🗡️ Auto** en la barra inferior (junto a Z/X/C): si está activo, cuando algo te ataca y no tienes objetivo, lo atacas automáticamente (a jugadores solo si hay PvP). Se recuerda entre sesiones.

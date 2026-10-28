@@ -107,7 +107,7 @@
   }
 
   function onWelcome(m) {
-    joined = true;
+    joined = true; if (G.autoRet) send({ t: 'autoret', on: true });
     G.id = m.id; G.W = m.w; G.H = m.h; G.zones = m.zones; G.portals = m.portals; G.npcs = m.npcs; G.items = m.items; G.mons = m.mons; G.cfg = m.cfg; G.rar = m.rar; G.gems = m.gems;
     for (const [iid, idf] of Object.entries(m.items)) if (idf.el) WEAPON_ELEM[iid] = idf.el;
     const CH = '0123456789abcdefghijklmnopqrstuvwxy';
@@ -1956,7 +1956,7 @@
       g.addColorStop(0, 'rgba(4,5,9,0)'); g.addColorStop(0.55, 'rgba(4,5,9,.72)'); g.addColorStop(1, 'rgba(4,5,9,.94)');
       c.fillStyle = g; c.fillRect(0, 0, cw, ch);
     }
-    walkTick(now);
+    walkTick(now); followTick(now);
   }
 
   /* ======================================================================
@@ -1979,8 +1979,8 @@
     if (EXT.key(k, ev)) { ev.preventDefault(); return; }
     if (k === 'enter') { ev.preventDefault(); if (!chatOpen()) setChat(true); chatIn.focus(); return; }
     if (k === 'tab') { ev.preventDefault(); setChat(!chatOpen()); return; }
-    if (k === 'escape') { if (!ctxEl.hidden) closeCtx(); else if (!$('#drops').hidden) closeDrops(); else if (G.trade) send({ t: 'trade_no' }); else if (G.bankOpen) closeBank(); else if (G.shopOpen) closeShop(); else { send({ t: 'target', id: null }); G.path = []; } return; }
-    if (KEYDIR[k]) { ev.preventDefault(); held.add(k); G.path = []; return; }
+    if (k === 'escape') { if (!ctxEl.hidden) closeCtx(); else if (!$('#drops').hidden) closeDrops(); else if (G.trade) send({ t: 'trade_no' }); else if (G.bankOpen) closeBank(); else if (G.shopOpen) closeShop(); else { send({ t: 'target', id: null }); G.path = []; G.follow = null; } return; }
+    if (KEYDIR[k]) { ev.preventDefault(); held.add(k); G.path = []; G.follow = null; return; }
     if (k === 'z') send({ t: 'style', s: 'melee' });
     else if (k === 'x') send({ t: 'style', s: 'ranged' });
     else if (k === 'c') send({ t: 'style', s: 'magic' });
@@ -2000,7 +2000,7 @@
     for (const k of held) { dx += KEYDIR[k][0]; dy += KEYDIR[k][1]; }
     dx += EXT.joy.dx; dy += EXT.joy.dy;
     dx = Math.sign(dx); dy = Math.sign(dy);
-    if (dx || dy) { if (EXT.joy.dx || EXT.joy.dy) G.path = []; send({ t: 'move', dx, dy }); wasMoving = true; }
+    if (dx || dy) { if (EXT.joy.dx || EXT.joy.dy) { G.path = []; G.follow = null; } send({ t: 'move', dx, dy }); wasMoving = true; }
     else if (wasMoving) { send({ t: 'move', dx: 0, dy: 0 }); wasMoving = false; }
   }, 80);
 
@@ -2058,7 +2058,7 @@
       return;
     }
     if (e.kind === 'mo') { const d = G.mons[e.t]; if (!d) return; openCtx(ev, [{ hdr: d.name, color: d.boss ? '#ff9c80' : null }, { label: 'Ver botín y datos', fn: () => showDrops(e.t) }, { label: 'Atacar', fn: () => send({ t: 'target', id: e.id }) }]); }
-    else openCtx(ev, [{ hdr: e.n }, { label: 'Comerciar', fn: () => send({ t: 'trade_req', id: e.id }) }, { label: 'Invitar al grupo', fn: () => send({ t: 'p_inv', id: e.id }) }, { label: 'Invitar al gremio', fn: () => send({ t: 'g_inv', id: e.id }) }, { label: 'Atacar', fn: () => send({ t: 'target', id: e.id }) }]);
+    else openCtx(ev, [{ hdr: e.n }, { label: G.follow === e.id ? '🚶 Dejar de seguir' : '🚶 Seguir', fn: () => setFollow(G.follow === e.id ? null : e) }, { label: 'Comerciar', fn: () => send({ t: 'trade_req', id: e.id }) }, { label: 'Invitar al grupo', fn: () => send({ t: 'p_inv', id: e.id }) }, { label: 'Invitar al gremio', fn: () => send({ t: 'g_inv', id: e.id }) }, { label: 'Atacar', fn: () => send({ t: 'target', id: e.id }) }]);
   });
   cv.addEventListener('mousemove', (ev) => {
     if (!G.me) return;
@@ -2068,6 +2068,7 @@
   cv.addEventListener('mousedown', (ev) => {
     if (!G.me || ev.button !== 0) return;       // el clic derecho solo abre el menú
     if (typing()) chatIn.blur();
+    G.follow = null;
     const t = tileAt(ev);
     const e = entAtTile(t);
     if (e) { send({ t: 'target', id: e.id }); G.path = []; return; }
@@ -2102,6 +2103,31 @@
     const path = []; for (let k = goal; k !== start; k = prev.get(k)) path.push({ x: k % G.W, y: (k / G.W) | 0 });
     G.path = path.reverse(); G.pathStuck = performance.now();
   }
+
+  /* ---------- seguir a un compañero ---------- */
+  G.follow = null; let nextFollow = 0, lostAt = 0;
+  function setFollow(e) {
+    if (!e) { G.follow = null; G.path = []; addChat({ n: '', m: 'Dejas de seguir.', k: 's' }); return; }
+    G.follow = e.id; lostAt = 0; nextFollow = 0; addChat({ n: '', m: `🚶 Siguiendo a ${e.n}. Muévete tú o pulsa Esc para dejar de seguir.`, k: 's' });
+  }
+  function followTick(now) {
+    if (G.follow == null || !G.me || now < nextFollow) return;
+    nextFollow = now + 300;
+    const e = G.ents.get(G.follow);
+    if (!e || e.kind !== 'pl') { if (!lostAt) lostAt = now; if (now - lostAt > 6000) { G.follow = null; addChat({ n: '', m: 'Perdiste de vista a tu compañero: dejas de seguir.', k: 's' }); } return; }
+    lostAt = 0;
+    const tx = Math.round(e.x), ty = Math.round(e.y), d = Math.max(Math.abs(G.me.x - tx), Math.abs(G.me.y - ty));
+    if (d <= 1) { G.path = []; return; }
+    const last = G.path.length ? G.path[G.path.length - 1] : null;
+    if (last && Math.max(Math.abs(last.x - tx), Math.abs(last.y - ty)) <= 1) return;      // ya voy hacia allí
+    walkTo(tx, ty); if (G.path.length > 1) G.path.pop(); else G.path = [];
+  }
+  /* ---------- auto golpe: responder cuando me atacan ---------- */
+  G.autoRet = store.get('eldoria.autoret') === '1';
+  const autoBtn = document.getElementById('autoRet');
+  const syncAuto = () => { if (autoBtn) { autoBtn.classList.toggle('on', G.autoRet); autoBtn.title = 'Auto golpe: ' + (G.autoRet ? 'ACTIVADO' : 'desactivado') + ' (responde solo cuando te atacan)'; } };
+  if (autoBtn) autoBtn.addEventListener('click', () => { G.autoRet = !G.autoRet; store.set('eldoria.autoret', G.autoRet ? '1' : '0'); syncAuto(); send({ t: 'autoret', on: G.autoRet }); addChat({ n: '', m: G.autoRet ? '↩️ Auto golpe activado: responderás a quien te ataque.' : '↩️ Auto golpe desactivado.', k: 's' }); });
+  syncAuto();
   let nextWalk = 0;
   function walkTick(now) {
     if (!G.path.length || now < nextWalk || !G.me) return;

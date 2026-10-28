@@ -255,7 +255,12 @@ module.exports = function install(Game) {
       if (sh.hp <= 0) this.sendBuffs(p);
       if (raw <= 0) return 0;
     }
-    return G0.hurtPlayer.call(this, p, raw, src, now, srcName);
+    const dmg = G0.hurtPlayer.call(this, p, raw, src, now, srcName);
+    if (p.autoRet && p.hp > 0 && src && src !== p && src.id != null && !src.dead && (src.kind === 'mo' || (src.kind === 'pl' && this.canPvp(p, src)))) {      // auto golpe: responde a quien me pega
+      const cur = p.target ? this.ents.get(p.target) : null;
+      if (!cur || cur.dead || cur.hp <= 0) p.target = src.id;
+    }
+    return dmg;
   };
   P.gainXp = function (p, xp) {
     const m = this.buffMult(p, 'xp');
@@ -1155,6 +1160,7 @@ module.exports = function install(Game) {
       case 'xinfo': this.sendXinfo(p, false); break;
       case 'rank': this.send(p, { t: 'rank', v: this.rankings() }); break;
       case 'col': this.sendCol(p); break;
+      case 'autoret': p.autoRet = !!msg.on; break;
       case 'p_inv': this.partyInvite(p, msg.id); break;
       case 'p_acc': this.partyAccept(p, msg.id); break;
       case 'p_leave': this.partyLeave(p); break;
