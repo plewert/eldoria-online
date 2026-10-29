@@ -2092,9 +2092,9 @@
   function npcOne(c, n, now) {
       const cx = sxOf(n.x) + TS / 2, cy = syOf(n.y) + TS / 2;
       c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.ellipse(cx, cy + 12, 11, 4, 0, 0, 7); c.fill();
-      const ns = sprReady() && SPR['npc_' + n.id];
+      const ns = sprReady() && SPR['npc_' + (n.spr || n.id)];
       if (ns) {
-        drawSprite(c, 'npc_' + n.id, 0, cx, cy + 14, false, 1 + Math.sin(now / 600 + n.x) * 0.015);
+        drawSprite(c, 'npc_' + (n.spr || n.id), 0, cx, cy + 14, false, 1 + Math.sin(now / 600 + n.x) * 0.015);
         outlined(c, n.name, cx, cy + 14 - ns.h - 8, '#c9a24b');
       } else {
         c.font = '28px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#fff';
@@ -2164,7 +2164,7 @@
   function pick3(mx, my) {                                     // ¿hay una figura bajo el cursor? devuelve su casilla
     const objs = [];
     for (const e of G.ents.values()) objs.push({ x: e.rx, y: e.ry + 0.45, tx: Math.round(e.x), ty: Math.round(e.y), h: e.kind === 'mo' && SPR[e.t] ? SPR[e.t].h : 44, w: e.kind === 'mo' && SPR[e.t] && SPR[e.t].h >= 100 ? SPR[e.t].f[0][2] * 0.3 : 15 });
-    for (const n of G.npcs) objs.push({ x: n.x, y: n.y + 0.45, tx: n.x, ty: n.y, h: SPR['npc_' + n.id] ? SPR['npc_' + n.id].h : 40, w: 15 });
+    for (const n of G.npcs) objs.push({ x: n.x, y: n.y + 0.45, tx: n.x, ty: n.y, h: SPR['npc_' + (n.spr || n.id)] ? SPR['npc_' + (n.spr || n.id)].h : 40, w: 15 });
     objs.sort((a, b) => b.y - a.y);
     for (const o of objs) { const P = proj3(o.x, o.y); if (P && Math.abs(mx - P.x) <= o.w * P.k && my >= P.y - (o.h + 6) * P.k && my <= P.y + 6 * P.k) return { x: o.tx, y: o.ty }; }
     return null;

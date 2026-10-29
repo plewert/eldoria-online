@@ -260,7 +260,8 @@ ok('comida: sardina 80, salmón 100, tiburón 150; se come con el mensaje eat y 
   assert.ok(require('../game/data').SHOPS.boris.includes('tiburon'));
 });
 ok('mapa ampliado: Selva Esmeralda, Sabana Dorada y Aldea Pesquera con comida y banco', () => {
-  assert.equal(world.W, 320);
+  assert.equal(world.W, 480);
+  { const z = world.zoneById('tierras_nuevas'); assert.ok(z && !z.pvp && z.rect[0] === 320 && z.rect[2] === 479, 'zona reservada al este'); let n = 0; for (let y = 0; y < 140; y++) for (let x = 320; x < 480; x++) if (world.reach[y * world.W + x]) n++; assert.ok(n > 10000, 'las tierras nuevas se pueden recorrer (' + n + ')'); assert.ok(world.reach[70 * world.W + 330], 'hay paso desde las Tierras de Lava'); assert.ok(!world.monsterSpawns.some((m) => world.zoneAt(m.x, m.y).id === 'tierras_nuevas'), 'vacías, sin puntos de aparición'); }
   assert.equal(world.zoneAt(220, 30).id, 'selva'); assert.equal(world.zoneAt(240, 110).id, 'sabana'); assert.equal(world.zoneAt(210, 77).id, 'aldea');
   assert.ok(world.zoneAt(210, 77).kind === 'town' && !world.zoneAt(210, 77).pvp);
   for (const id of ['nilo', 'tomas']) { const n = world.NPCS.find((q) => q.id === id); assert.ok(n && world.reach[n.y * world.W + n.x], id + ' alcanzable'); }
@@ -641,6 +642,16 @@ ok('flechas de misión: señalan monstruo, entrada de la cueva del jefe o PNJ al
   assert.ok(por && /Caldera/.test(por.label) && /^Entrada/.test(q.label), 'apunta al portal de la Caldera, no al jefe');
   const ig = world.monsterSpawns.find((o) => o.type === 'ignaros'); place(p, ig.x, ig.y - 3); game.questGuide(p); const q2 = g().list.find((o) => o.id === 'cueva_magma'); assert.ok(q2.x === ig.x && q2.y === ig.y, 'dentro de la cueva apunta al jefe');
   place(p, ...TOWN); for (let i = 0; i < 8; i++) game.questKill(p, 'rata'); const r = g().list.find((o) => o.id === 'ratas'); assert.ok(/Entregar/.test(r.label), 'lista: apunta al PNJ'); game.questAbandon(p, 'cueva_magma'); assert.ok(!g().list.some((o) => o.id === 'cueva_magma'));
+});
+
+ok('Ciudad de Alba Dorada: gran ciudad segura con banco, pescadera y brujo de armas mágicas', () => {
+  const z = world.zoneById('ciudad_alba'); assert.ok(z && z.kind === 'town' && !z.pvp && z.rect[2] - z.rect[0] >= 40, 'ciudad grande (más que Aldea Real)');
+  const N = (id) => world.NPCS.find((q) => q.id === id); for (const id of ['ilda', 'marela', 'zaroth']) { const n = N(id); assert.ok(n && world.zoneAt(n.x, n.y).id === 'ciudad_alba' && world.reach[n.y * world.W + n.x], id + ' dentro y alcanzable'); }
+  const { SHOPS, ITEMS } = require('../game/data'); assert.equal(N('ilda').type, 'bank'); assert.ok(SHOPS.marela.includes('salmon') && SHOPS.marela.includes('cana_madera'), 'pescado y cañas');
+  const mg = SHOPS.zaroth.filter((i) => ITEMS[i].type === 'weapon'); assert.ok(mg.length >= 8 && mg.every((i) => ITEMS[i].style === 'magic'), 'solo armas mágicas');
+  const { p, ws } = login('Alba'); place(p, N('ilda').x + 1, N('ilda').y); p.gold = 1000; game.npcClick(p, 'ilda'); assert.ok(lastMsg(ws, 'bank'), 'abre el banco'); game.bankGoldMove(p, 'dep', 500); assert.equal(p.bankGold, 500);
+  place(p, N('zaroth').x + 1, N('zaroth').y); game.npcClick(p, 'zaroth'); assert.ok(lastMsg(ws, 'shop'), 'abre la tienda del brujo');
+  assert.ok(world.reach[70 * world.W + 379] && world.reach[70 * world.W + 331], 'camino desde las Tierras de Lava');
 });
 
 console.log(`\n${n} pruebas correctas`);

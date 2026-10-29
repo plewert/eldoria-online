@@ -322,3 +322,9 @@ Al aceptar una misión aparece una flecha azul (hasta 3, las más cercanas) que 
 
 ## Estadísticas de objetos en el móvil
 En pantallas táctiles no hay cursor, así que el menú que se abre al tocar (o mantener pulsado) un objeto de la mochila o del equipo ahora muestra también sus estadísticas (ataque o defensa, bonus, ranuras, nivel requerido y valor). En la tienda, el banco y el comercio, mantener pulsado un objeto muestra esas estadísticas sin comprarlo ni moverlo.
+
+## Mapa ampliado: Tierras Inexploradas (para zonas futuras)
+El mundo exterior pasa de 320 a **480 casillas de ancho** (480 × 140, más las salas de la Raid al sur). Todo lo anterior queda igual; se añadieron 160 columnas al este, desde la x = 320, como zona **Tierras Inexploradas** (`tierras_nuevas`): terreno abierto de hierba, árboles, agua y rocas, segura (sin PvP) y sin monstruos, con un paso despejado de 7 casillas desde las Tierras de Lava (y = 67-73). Cuando se diseñen las zonas nuevas, basta con dividir ese rectángulo en `ZONES` (`game/world.js`), tallar sus cuevas y añadir sus monstruos y rocas en `SPAWN_PLAN`/`mining.js`. El minimapa y el mapa del mundo escalan solos al nuevo tamaño.
+
+## Ciudad de Alba Dorada (Tierras Inexploradas)
+Gran ciudad segura (41 × 27 casillas, la más grande del juego) en el centro de las Tierras Inexploradas, con puertas en los cuatro lados, una plaza central con flores y cuatro casas. Se llega por un camino desde las Tierras de Lava (puerta oeste). Dentro: **Ilda la Banquera** (guarda oro y objetos), **Marela la Pescadora** (pescado, cañas y cebos, igual que Nilo; con el dibujo de la niña de la estrella) y **Zaroth el Brujo** (todas las armas mágicas a la venta, más pociones de maná). La casa suroeste queda vacía para futuros PNJ. Código: `buildTown('ciudad_alba', …)` y `NPCS` en `game/world.js`; las tiendas `marela` y `zaroth` en `game/data.js`.

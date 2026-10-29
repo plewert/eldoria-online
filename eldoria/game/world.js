@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Mundo de Eldoria (320 x 140): se genera de forma determinista (siempre el mismo mapa).
+ * Mundo de Eldoria (480 x 140 en el exterior + las salas de la Raid al sur): se genera de forma determinista (siempre el mismo mapa).
  *
  *   norte    Bosque Maldito (PvP) · Cumbres Heladas (PvP) -> Fortaleza de Hielo (mazmorra PvP)
  *   centro   Ciudad de Aldea Real (segura) · Prado de los Novatos (seguro)
@@ -12,7 +12,8 @@
 const { SPAWN_PLAN } = require('./data');
 
 const W0 = 180;                 // el mapa original (se genera igual que siempre)
-const W = 320, H0 = 140;        // mundo exterior: Selva Esmeralda, Sabana Dorada, Aldea Pesquera y las Tierras de Lava
+const W1 = 320;                 // ancho del mundo antes de la gran ampliación al este (esa parte se genera igual que siempre)
+const W = 480, H0 = 140;        // mundo exterior: Selva Esmeralda, Sabana Dorada, Aldea Pesquera, Tierras de Lava y, al este, las Tierras Inexploradas (vacías, para zonas futuras)
 const H = 200;                  // + 60 filas al sur con las salas de la Raid (el exterior se genera igual que siempre con H0)
 const T = {
   GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10,
@@ -59,6 +60,8 @@ const ZONES = [
   { id: 'sabana',     name: 'Sabana Dorada',          pvp: false, kind: 'field',   rect: [180, 70, 249, 139] },
   { id: 'volcan',     name: 'Tierras de Lava y Fuego', pvp: true,  kind: 'wild',    rect: [250, 0, 319, 139], tint: 'rgba(255,70,20,.14)' },
   { id: 'gremio_minero', name: 'Gremio de Mineros',   pvp: false, kind: 'town',    rect: [34, 70, 61, 85] },
+  { id: 'ciudad_alba', name: 'Ciudad de Alba Dorada', pvp: false, kind: 'town', rect: [380, 57, 420, 83] },        // gran ciudad segura en el centro de las Tierras Inexploradas
+  { id: 'tierras_nuevas', name: 'Tierras Inexploradas', pvp: false, kind: 'field', rect: [320, 0, 479, 139] },   // reservado para zonas futuras
   { id: 'prado',      name: 'Prado de los Novatos',   pvp: false, kind: 'field',   rect: [0, 0, 179, 139] },
 ];
 const zoneGrid = new Uint8Array(W * H);
@@ -148,7 +151,7 @@ for (let y = 0; y < H0; y++) {
 {
   const r2 = mulberry32(8675309), n4 = makeNoise(31), n5 = makeNoise(63);
   for (let y = 0; y < H0; y++) {
-    for (let x = W0; x < W; x++) {
+    for (let x = W0; x < W1; x++) {
       const a = n4(x / 6, y / 6), b = n5(x / 8, y / 8), z = zoneAt(x, y).id;
       let t;
       if (z === 'volcan') { t = T.ASH; if (b > 0.64) t = T.LAVA; else if (a > 0.8 || r2() < 0.02) t = T.CWALL; }          // obsidiana
@@ -157,6 +160,20 @@ for (let y = 0; y < H0; y++) {
       tiles[idx(x, y)] = t;
     }
   }
+}
+// ampliación grande al este: Tierras Inexploradas (generador propio; no toca nada de lo anterior). Terreno abierto para futuras zonas
+{
+  const r3 = mulberry32(31415926), n6 = makeNoise(101), n7 = makeNoise(202);
+  for (let y = 0; y < H0; y++) {
+    for (let x = W1; x < W; x++) {
+      const a = n6(x / 7, y / 7), b = n7(x / 10, y / 10);
+      let t = T.GRASS;
+      if (a > 0.72 || r3() < 0.02) t = T.TREE; else if (b > 0.84) t = T.WATER; else if (r3() < 0.007) t = T.ROCK; else if (r3() < 0.04) t = T.FLOWER;
+      tiles[idx(x, y)] = t;
+    }
+  }
+  // paso despejado entre las Tierras de Lava y las Tierras Inexploradas (7 casillas de ancho)
+  for (let y = 67; y <= 73; y++) for (let x = W1 - 10; x < W1 + 10; x++) tiles[idx(x, y)] = x < W1 ? T.ASH : T.GRASS;
 }
 // costa de agua alrededor del mapa
 for (let y = 0; y < H0; y++) {
@@ -191,6 +208,11 @@ buildTown('aldea', [210, 211, 212], [77, 78, 79],
 buildTown('puerto', [99, 100, 101], [125, 126, 127],
   [[92, 129], [93, 129], [106, 129], [107, 129]],
   [[92, 122, 97, 126, 94], [102, 122, 107, 126, 104]]);
+
+buildTown('ciudad_alba', [399, 400, 401], [69, 70, 71],
+  [[398, 68], [402, 68], [398, 72], [402, 72], [400, 66], [400, 74], [383, 70], [417, 70], [383, 59], [417, 59], [383, 81], [417, 81]],
+  [[384, 60, 394, 66, 389], [384, 74, 394, 80, 389], [406, 60, 416, 66, 411], [406, 74, 416, 80, 411]]);
+carvePath(331, 70, 379, 70);     // camino desde las Tierras de Lava hasta la puerta oeste de Alba Dorada
 
 /* 3) Mazmorras: habitaciones en cuadrícula conectadas con pasillos */
 function carveDungeon(zoneId, cols, rows, floor) {
@@ -461,6 +483,9 @@ for (const p of PORTALS) tiles[idx(p.x, p.y)] = T.PORTAL;
 
 /* 6) PNJ */
 const NPCS = [
+  { id: 'ilda',   name: 'Ilda la Banquera',    icon: '🏦', spr: 'gerda', x: 389, y: 63, type: 'bank' },
+  { id: 'marela', name: 'Marela la Pescadora', icon: '🐟', x: 411, y: 63, type: 'shop', shop: 'marela' },
+  { id: 'zaroth', name: 'Zaroth el Brujo',     icon: '🧙', spr: 'orin',  x: 411, y: 77, type: 'shop', shop: 'zaroth' },
   { id: 'durgan', name: 'Durgan el Capataz', icon: '⛏️', x: 44, y: 72, type: 'shop', shop: 'durgan' },
   { id: 'boris', name: 'Boris el Mercader',  icon: '🧑‍🌾', x: 85,  y: 62,  type: 'shop', shop: 'boris' },
   { id: 'orin',  name: 'Orin el Sabio',      icon: '🧙‍♂️', x: 95,  y: 62,  type: 'shop', shop: 'orin' },
