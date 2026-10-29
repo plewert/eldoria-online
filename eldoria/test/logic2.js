@@ -630,7 +630,17 @@ ok('Gremio de Mineros: sala segura con solo rocas de nivel bajo y medio, capataz
   assert.ok(inG.every((nd) => world.reach[nd.y * world.W + nd.x]), 'alcanzables'); assert.ok(world.reach[73 * world.W + 47], 'se llega por el portal'); const pin = world.PORTALS.find((o) => /Gremio de Mineros/.test(o.label)); assert.ok(pin && !pin.fee && world.zoneAt(pin.x, pin.y).id !== 'gremio_minero' && world.zoneAt(pin.tx, pin.ty).id === 'gremio_minero', 'entrada por portal desde fuera, sin cobro'); assert.ok(world.PORTALS.some((o) => o.label === 'Salir al Prado' && world.zoneAt(o.x, o.y).id === 'gremio_minero'), 'portal de salida');
   const du = world.NPCS.find((q) => q.id === 'durgan'); assert.ok(du && world.zoneAt(du.x, du.y).id === 'gremio_minero');
   assert.ok(require('../game/data').SHOPS.durgan.includes('pico_hierro'), 'vende picos');
-  assert.deepEqual(game.monsters.filter((m) => !m.dead && world.zoneAt(m.x, m.y).id === 'gremio_minero').map((m) => m.type + m.x + ',' + m.y), [], 'sin monstruos');
+  assert.ok(!world.monsterSpawns.some((o) => world.zoneAt(o.x, o.y).id === 'gremio_minero'), 'sin puntos de aparición de monstruos');
+});
+
+ok('flechas de misión: señalan monstruo, entrada de la cueva del jefe o PNJ al que entregar', () => {
+  const { p, ws } = login('Guia'); place(p, ...TOWN); p.level = 99; const g = () => lastMsg(ws, 'qguide');
+  game.questAccept(p, 'ratas'); let m = g(); assert.ok(m && m.list.length === 1 && m.list[0].id === 'ratas' && /Rata/i.test(m.list[0].label), 'apunta a las ratas');
+  const sp = world.monsterSpawns.filter((o) => o.type === 'rata'); assert.ok(sp.some((o) => o.x === m.list[0].x && o.y === m.list[0].y), 'coordenadas de un spawn real');
+  place(p, ...TOWN); game.questAccept(p, 'cueva_magma'); m = g(); const q = m.list.find((o) => o.id === 'cueva_magma'); const por = world.PORTALS.find((o) => o.x === q.x && o.y === q.y);
+  assert.ok(por && /Caldera/.test(por.label) && /^Entrada/.test(q.label), 'apunta al portal de la Caldera, no al jefe');
+  const ig = world.monsterSpawns.find((o) => o.type === 'ignaros'); place(p, ig.x, ig.y - 3); game.questGuide(p); const q2 = g().list.find((o) => o.id === 'cueva_magma'); assert.ok(q2.x === ig.x && q2.y === ig.y, 'dentro de la cueva apunta al jefe');
+  place(p, ...TOWN); for (let i = 0; i < 8; i++) game.questKill(p, 'rata'); const r = g().list.find((o) => o.id === 'ratas'); assert.ok(/Entregar/.test(r.label), 'lista: apunta al PNJ'); game.questAbandon(p, 'cueva_magma'); assert.ok(!g().list.some((o) => o.id === 'cueva_magma'));
 });
 
 console.log(`\n${n} pruebas correctas`);

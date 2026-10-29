@@ -194,7 +194,7 @@ module.exports = function install(Game) {
     if (qState(p, q, Date.now()) !== 'new') return;
     if (Object.values(p.ext.q).filter((e) => e.s === 'a').length >= 10) { this.msg(p, 'Ya tienes 10 misiones activas.', 's'); return; }
     p.ext.q[q.id] = { s: 'a', n: 0, t: Date.now() };
-    this.msg(p, `Misión aceptada: ${q.title}.`, 's');
+    this.msg(p, `Misión aceptada: ${q.title}.`, 's'); this.questGuide(p);
     this.sendQuests(p, q.npc);
   };
   P.questTurn = function (p, id) {
@@ -207,7 +207,7 @@ module.exports = function install(Game) {
     if (r.g) p.gold += r.g;
     for (const [iid, qty] of r.items || []) this.giveOrDrop(p, iid, qty);
     if (r.xp) this.gainXp(p, r.xp);
-    this.send(p, { t: 'quest_done', id: q.id, title: q.title });
+    this.send(p, { t: 'quest_done', id: q.id, title: q.title }); this.questGuide(p);
     this.msgC(p, `✅ Misión cumplida: ${q.title}. +${r.g} de oro, +${r.xp} xp${(r.items || []).length ? ', ' + r.items.map(([i, n]) => (n > 1 ? n + '× ' : '') + ITEMS[i].name).join(', ') : ''}.`, '#7fe08a');
     p.dirty.inv = true; p.dirty.stats = true;
     this.checkAch(p);
@@ -215,8 +215,40 @@ module.exports = function install(Game) {
   };
   P.questAbandon = function (p, id) {
     const e = p.ext.q[String(id)]; if (!e || e.s !== 'a') return;
-    delete p.ext.q[String(id)];
+    delete p.ext.q[String(id)]; this.questGuide(p);
     this.sendQuests(p, '');
+  };
+
+  /* ---- flechas de misión: a dónde ir con cada misión aceptada (el cliente dibuja la flecha) ---- */
+  const nearestOf = (p, list) => { let b = null, bd = 1e9; for (const o of list) { const d = Math.hypot(o.x - p.x, o.y - p.y); if (d < bd) { bd = d; b = o; } } return b; };
+  // si el destino está en otra zona (una cueva), la flecha apunta al portal de entrada; si estás dentro de una cueva, al portal de salida
+  const hopTo = (p, tx, ty) => {
+    const Z = zoneAt(tx, ty), cur = zoneAt(p.x, p.y);
+    if (Z === cur) return { x: tx, y: ty };
+    const exits = (z) => world.PORTALS.filter((o) => zoneAt(o.x, o.y) === z && zoneAt(o.tx, o.ty) !== z);     // portales de salida de una zona interior
+    const isInt = (z) => z.kind === 'dungeon' || z.id === 'gremio_minero';
+    const exit = isInt(cur) ? exits(cur) : [];
+    if (exit.length) { const e = nearestOf(p, exit); return { x: e.x, y: e.y, via: 'Salida' }; }                // estás dentro de una cueva: sal primero
+    if (isInt(Z)) { const ent = world.PORTALS.filter((o) => zoneAt(o.tx, o.ty) === Z && zoneAt(o.x, o.y) !== Z); if (ent.length) { const e = nearestOf(p, ent); return { x: e.x, y: e.y, via: 'Entrada' }; } }
+    return { x: tx, y: ty };
+  };
+  const SRC = {};     // objeto -> monstruos que lo sueltan (se rellena una vez)
+  P.questGuide = function (p) {
+    const now = Date.now(), out = [];
+    for (const q of QUESTS) {
+      const e = p.ext.q[q.id]; if (!e || e.s !== 'a') continue;
+      let tg = null;
+      if (qState(p, q, now) === 'ready') { const n = NPCS.find((o) => o.id === q.npc); if (n) tg = { x: n.x, y: n.y, label: `Entregar: ${n.name}` }; }
+      else if (q.type === 'kill') { const sp = nearestOf(p, world.monsterSpawns.filter((s) => s.type === q.mon)); if (sp) tg = Object.assign(hopTo(p, sp.x, sp.y), { label: (MONSTERS[q.mon] || {}).name || q.mon }); }
+      else if (q.type === 'collect') {
+        if (!SRC[q.item]) { SRC[q.item] = Object.keys(MONSTERS).filter((k) => (MONSTERS[k].loot || []).some((l) => l[0] === q.item)); }
+        const cand = world.monsterSpawns.filter((s) => SRC[q.item].includes(s.type)).concat((this.nodes || []).filter((nd) => (X.NODES[nd.type].give || []).some((gv) => gv[0] === q.item)));
+        const sp = nearestOf(p, cand); if (sp) tg = Object.assign(hopTo(p, sp.x, sp.y), { label: ITEMS[q.item] ? ITEMS[q.item].name : q.item });
+      } else if (q.type === 'killany') { const sp = nearestOf(p, this.monsters.filter((m) => !m.dead && !m.def.boss && Math.abs(m.def.lv - p.level) < 20 && zoneAt(m.x, m.y) === zoneAt(p.x, p.y))); if (sp) tg = { x: sp.x, y: sp.y, label: 'Monstruos' }; }
+      if (tg) out.push({ id: q.id, title: q.title, x: tg.x, y: tg.y, label: tg.via ? `${tg.via}: ${tg.label}` : tg.label });
+    }
+    const txt = JSON.stringify(out);
+    if (txt !== p.lastGuide) { p.lastGuide = txt; this.send(p, { t: 'qguide', list: out }); }
   };
   P.questKill = function (p, type) {
     for (const q of QUESTS) {
@@ -226,7 +258,7 @@ module.exports = function install(Game) {
       else if (q.type === 'killany') e.n++;
       else continue;
       this.send(p, { t: 'qprog', id: q.id, n: e.n, need: q.n, title: q.title });
-      if (e.n >= q.n) this.msgC(p, `📜 Misión lista para entregar: ${q.title}.`, '#ffd96a');
+      if (e.n >= q.n) { this.msgC(p, `📜 Misión lista para entregar: ${q.title}.`, '#ffd96a'); this.questGuide(p); }
     }
   };
 
@@ -1207,6 +1239,7 @@ module.exports = function install(Game) {
         if (sig !== p.lastSig) { p.lastSig = sig; this.sendBuffs(p); }
         if (p.partyInv && Date.now() > p.partyInv.exp) p.partyInv = null;
         this.petCheck(p);
+        if (!p.bot && Object.keys(p.ext.q).length) this.questGuide(p);
       }
       for (const party of this.parties.values()) this.sendParty(party);
     }

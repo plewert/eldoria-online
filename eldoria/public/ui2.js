@@ -146,6 +146,30 @@
   };
   const QDready = () => Object.keys(QD).length > 0;
   X.handlers.qprog = (m) => { const s = qst[m.id] || (qst[m.id] = { st: 'active', n: 0 }); s.n = m.n; s.st = m.n >= m.need ? 'ready' : 'active'; if (!wQ.m.hidden) renderQLog(); X.toast(`📜 ${m.title}: ${m.n}/${m.need}`, null, 2500); };
+  /* flechas de misión: señalan a dónde ir (monstruo, objeto, cueva o PNJ al que entregar); en el borde de la pantalla si queda lejos */
+  X.handlers.qguide = (m) => { G.qguide = m.list || []; };
+  X.on('draw', (c, now, cw, ch) => {
+    if (!G.qguide || !G.qguide.length || !G.me || (X.mode3d && X.mode3d())) return;
+    const TS = X.TS, me = G.me, list = G.qguide.map((g) => Object.assign({ d: Math.hypot(g.x - me.x, g.y - me.y) }, g)).sort((a, b) => a.d - b.d).slice(0, 3), m = 26;
+    list.forEach((t, i) => {
+      if (t.d < 2) return;
+      const x = (t.x - G.cam.x) * TS + cw / 2, y = (t.y - G.cam.y) * TS + ch / 2, bob = Math.sin(now / 240 + i) * 4, label = `${t.label} · ${Math.round(t.d)}`;
+      c.save();
+      if (x > m && x < cw - m && y > m + 30 && y < ch - m) {
+        const ay = y - 34 + bob;
+        c.fillStyle = '#7fd0ff'; c.strokeStyle = '#0b3a5a'; c.lineWidth = 2; c.lineJoin = 'round';
+        c.beginPath(); c.moveTo(x, ay + 13); c.lineTo(x - 10, ay); c.lineTo(x - 4, ay); c.lineTo(x - 4, ay - 11); c.lineTo(x + 4, ay - 11); c.lineTo(x + 4, ay); c.lineTo(x + 10, ay); c.closePath(); c.stroke(); c.fill();
+        X.outlined(c, label, x, ay - 18, '#bfe8ff', 'bold 11px "Segoe UI", sans-serif');
+      } else {
+        const ang = Math.atan2(y - ch / 2, x - cw / 2), ex = Math.max(78, Math.min(cw - m, cw / 2 + Math.cos(ang) * cw)), ey = Math.max(m + 40, Math.min(ch - 130 - i * 26, ch / 2 + Math.sin(ang) * ch - i * 26));     // sin tapar el menú ni el chat
+        c.translate(ex, ey); c.save(); c.rotate(ang);
+        c.fillStyle = '#7fd0ff'; c.strokeStyle = '#0b3a5a'; c.lineWidth = 2; c.lineJoin = 'round';
+        c.beginPath(); c.moveTo(14 + Math.sin(now / 240) * 3, 0); c.lineTo(-8, -11); c.lineTo(-3, 0); c.lineTo(-8, 11); c.closePath(); c.stroke(); c.fill(); c.restore();
+        c.font = 'bold 11px "Segoe UI", sans-serif'; const tw = c.measureText(label).width; X.outlined(c, label, Math.max(-ex + tw / 2 + 8, Math.min(cw - ex - tw / 2 - 8, 0)), -16 - i * 0, '#bfe8ff', 'bold 11px "Segoe UI", sans-serif');
+      }
+      c.restore();
+    });
+  });
   X.handlers.quest_done = (m) => { X.toast(`✅ Misión cumplida: ${m.title}`, null, 5000); };
   X.on('inv', () => { if (!wQ.m.hidden) renderQLog(); if (!wN.m.hidden) renderDlg(); if (!wC.m.hidden) renderCraft(); if (!wM.m.hidden && tab === 'sell') renderMarket(); });
 

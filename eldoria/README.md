@@ -316,3 +316,6 @@ Todas las piezas que sueltan los jefes (Dragón de las Sombras, Hidra de Jade, A
 
 ## Gremio de Mineros
 Cueva propia (zona segura) a la que se entra por un portal junto a la ciudad, en el lado oeste (casilla 74, 64); no cobra entrada. Solo tiene rocas de nivel **bajo y medio** (granito, arenisca, pizarra, pedernal y piedra pómez; sin mármol, basalto ni obsidiana), que reaparecen en 40 s. **Durgan el Capataz** vende todos los picos. Sobre los jugadores solo se muestra nombre y nivel (ya no la etiqueta de gremio).
+
+## Flechas de misión
+Al aceptar una misión aparece una flecha azul (hasta 3, las más cercanas) que señala a dónde ir: el monstruo de la misión, de dónde sale el objeto a recolectar, la **entrada de la cueva** del jefe (y, ya dentro, al jefe; si estás dentro de otra cueva, al portal de salida) o, con la misión lista, al PNJ al que entregarla. Si queda fuera de pantalla la flecha se pega al borde con el nombre y la distancia. Servidor: `questGuide` en `game/ext.js`; cliente: bloque `qguide` en `public/ui2.js`.
