@@ -641,6 +641,7 @@ ok('flechas de misión: señalan monstruo, entrada de la cueva del jefe o PNJ al
   place(p, ...TOWN); game.questAccept(p, 'cueva_magma'); m = g(); const q = m.list.find((o) => o.id === 'cueva_magma'); const por = world.PORTALS.find((o) => o.x === q.x && o.y === q.y);
   assert.ok(por && /Caldera/.test(por.label) && /^Entrada/.test(q.label), 'apunta al portal de la Caldera, no al jefe');
   const ig = world.monsterSpawns.find((o) => o.type === 'ignaros'); place(p, ig.x, ig.y - 3); game.questGuide(p); const q2 = g().list.find((o) => o.id === 'cueva_magma'); assert.ok(q2.x === ig.x && q2.y === ig.y, 'dentro de la cueva apunta al jefe');
+  assert.ok(typeof q2.zone === 'string' && q2.zone.length, 'la flecha trae el nombre de la zona');
   place(p, ...TOWN); for (let i = 0; i < 8; i++) game.questKill(p, 'rata'); const r = g().list.find((o) => o.id === 'ratas'); assert.ok(/Entregar/.test(r.label), 'lista: apunta al PNJ'); game.questAbandon(p, 'cueva_magma'); assert.ok(!g().list.some((o) => o.id === 'cueva_magma'));
 });
 

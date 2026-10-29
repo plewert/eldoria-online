@@ -147,13 +147,20 @@
   const QDready = () => Object.keys(QD).length > 0;
   X.handlers.qprog = (m) => { const s = qst[m.id] || (qst[m.id] = { st: 'active', n: 0 }); s.n = m.n; s.st = m.n >= m.need ? 'ready' : 'active'; if (!wQ.m.hidden) renderQLog(); X.toast(`📜 ${m.title}: ${m.n}/${m.need}`, null, 2500); };
   /* flechas de misión: señalan a dónde ir (monstruo, objeto, cueva o PNJ al que entregar); en el borde de la pantalla si queda lejos */
-  X.handlers.qguide = (m) => { G.qguide = m.list || []; };
-  X.on('draw', (c, now, cw, ch) => {
-    if (!G.qguide || !G.qguide.length || !G.me || (X.mode3d && X.mode3d())) return;
+  X.handlers.qguide = (m) => {
+    const old = new Set((G.qguide || []).map((g) => g.id)), fresh = (m.list || []).filter((g) => !old.has(g.id));
+    G.qguide = m.list || [];
+    if (G.qguideInit) for (const g of fresh) X.toast(`📍 ${g.title}: ve a ${g.zone || 'la zona marcada'} — sigue la flecha azul (${g.label})`, null, 7000);
+    G.qguideInit = true;
+  };
+  const drawGuide = (c, now, cw, ch, is3) => {
+    if (!G.qguide || !G.qguide.length || !G.me) return;
     const TS = X.TS, me = G.me, list = G.qguide.map((g) => Object.assign({ d: Math.hypot(g.x - me.x, g.y - me.y) }, g)).sort((a, b) => a.d - b.d).slice(0, 3), m = 26;
     list.forEach((t, i) => {
       if (t.d < 2) return;
-      const x = (t.x - G.cam.x) * TS + cw / 2, y = (t.y - G.cam.y) * TS + ch / 2, bob = Math.sin(now / 240 + i) * 4, label = `${t.label} · ${Math.round(t.d)}`;
+      let x = (t.x - G.cam.x) * TS + cw / 2, y = (t.y - G.cam.y) * TS + ch / 2;
+      if (is3) { const P = X.proj3 && X.proj3(t.x, t.y); if (P) { x = P.x; y = P.y; } else { y = -2000; } }
+      const bob = Math.sin(now / 240 + i) * 4, label = `${t.label} · ${Math.round(t.d)}`;
       c.save();
       if (x > m && x < cw - m && y > m + 30 && y < ch - m) {
         const ay = y - 34 + bob;
@@ -169,7 +176,9 @@
       }
       c.restore();
     });
-  });
+  };
+  X.on('draw', (c, now, cw, ch) => { if (!(X.mode3d && X.mode3d())) drawGuide(c, now, cw, ch, false); });
+  X.draw3 = (c, now, cw, ch) => drawGuide(c, now, cw, ch, true);
   X.handlers.quest_done = (m) => { X.toast(`✅ Misión cumplida: ${m.title}`, null, 5000); };
   X.on('inv', () => { if (!wQ.m.hidden) renderQLog(); if (!wN.m.hidden) renderDlg(); if (!wC.m.hidden) renderCraft(); if (!wM.m.hidden && tab === 'sell') renderMarket(); });
 

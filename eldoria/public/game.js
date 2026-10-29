@@ -1132,6 +1132,12 @@
       g.fillStyle = hot ? '#ff5a4a' : gold ? '#ffd24a' : '#6ea8ff'; g.strokeStyle = '#000'; g.lineWidth = 1.5;
       g.beginPath(); g.moveTo(x, y - k); g.lineTo(x + k, y); g.lineTo(x, y + k); g.lineTo(x - k, y); g.closePath(); g.stroke(); g.fill();
     }
+    for (const q of (G.qguide || [])) {                                      // misiones activas: cruz azul que late
+      const x = q.x * sx, y = q.y * sy, k = 5 + Math.sin(nowM / 250) * 1.5;
+      g.strokeStyle = '#000'; g.lineWidth = 4; g.beginPath(); g.arc(x, y, k, 0, 7); g.stroke();
+      g.strokeStyle = '#7fd0ff'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, k, 0, 7); g.stroke();
+      g.fillStyle = '#7fd0ff'; g.beginPath(); g.arc(x, y, 2, 0, 7); g.fill();
+    }
     if (G.grave && G.grave.x >= 0) {
       const gx = G.grave.x * sx, gy = G.grave.y * sy; g.strokeStyle = '#000'; g.lineWidth = 4; g.beginPath(); g.moveTo(gx, gy - 6); g.lineTo(gx, gy + 6); g.moveTo(gx - 4, gy - 2); g.lineTo(gx + 4, gy - 2); g.stroke();
       g.strokeStyle = '#ff5a4a'; g.lineWidth = 2; g.stroke();
@@ -2147,6 +2153,7 @@
    * ==================================================================== */
   let mode3d = store.get('eldoria.3d') === '1';
   EXT.mode3d = () => mode3d;
+  EXT.proj3 = (x, y) => proj3(x, y);
   EXT.set3d = (v) => { mode3d = !!v; store.set('eldoria.3d', mode3d ? '1' : '0'); G.path = G.path || []; };
   let gcv = null, gx = null, shk = [0, 0];
   const K_TOP = 0.5;                                          // escala del borde superior (el inferior ronda 1,35)
@@ -2265,6 +2272,7 @@
       c.fillStyle = g; c.fillRect(0, 0, cw, ch);
     }
     postFx(c, now, true);
+    if (EXT.draw3) EXT.draw3(c, now, cw, ch);
   }
 
   function frame(now) {

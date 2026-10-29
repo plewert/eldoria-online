@@ -328,3 +328,6 @@ El mundo exterior pasa de 320 a **480 casillas de ancho** (480 × 140, más las 
 
 ## Ciudad de Alba Dorada (Tierras Inexploradas)
 Gran ciudad segura (41 × 27 casillas, la más grande del juego) en el centro de las Tierras Inexploradas, con puertas en los cuatro lados, una plaza central con flores y cuatro casas. Se llega por un camino desde las Tierras de Lava (puerta oeste). Dentro: **Ilda la Banquera** (guarda oro y objetos), **Marela la Pescadora** (pescado, cañas y cebos, igual que Nilo; con el dibujo de la niña de la estrella) y **Zaroth el Brujo** (todas las armas mágicas a la venta, más pociones de maná). La casa suroeste queda vacía para futuros PNJ. Código: `buildTown('ciudad_alba', …)` y `NPCS` en `game/world.js`; las tiendas `marela` y `zaroth` en `game/data.js`.
+
+### Flechas de misión (mejoradas)
+Al aceptar una misión sale un aviso con la zona a la que ir, la flecha azul indica el lugar (también en modo 3D) y el minimapa marca el destino con un círculo azul que late.

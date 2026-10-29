@@ -245,7 +245,7 @@ module.exports = function install(Game) {
         const cand = world.monsterSpawns.filter((s) => SRC[q.item].includes(s.type)).concat((this.nodes || []).filter((nd) => (X.NODES[nd.type].give || []).some((gv) => gv[0] === q.item)));
         const sp = nearestOf(p, cand); if (sp) tg = Object.assign(hopTo(p, sp.x, sp.y), { label: ITEMS[q.item] ? ITEMS[q.item].name : q.item });
       } else if (q.type === 'killany') { const sp = nearestOf(p, this.monsters.filter((m) => !m.dead && !m.def.boss && Math.abs(m.def.lv - p.level) < 20 && zoneAt(m.x, m.y) === zoneAt(p.x, p.y))); if (sp) tg = { x: sp.x, y: sp.y, label: 'Monstruos' }; }
-      if (tg) out.push({ id: q.id, title: q.title, x: tg.x, y: tg.y, label: tg.via ? `${tg.via}: ${tg.label}` : tg.label });
+      if (tg) out.push({ id: q.id, title: q.title, x: tg.x, y: tg.y, zone: zoneAt(tg.x, tg.y).name, label: tg.via ? `${tg.via}: ${tg.label}` : tg.label });
     }
     const txt = JSON.stringify(out);
     if (txt !== p.lastGuide) { p.lastGuide = txt; this.send(p, { t: 'qguide', list: out }); }
