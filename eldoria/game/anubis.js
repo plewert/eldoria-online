@@ -41,9 +41,9 @@ function build(ITEMS, MONSTERS) {
   boss.loot.push([RING[0], RING[6], 1, 1], [AMULET[0], AMULET[6], 1, 1], [BOW[0], BOW[8], 1, 1], [STAFF[0], STAFF[8], 1, 1]);
   // las tres sombras (invocadas) y la momia que revive; no sueltan nada
   const base = { lv: 300, exp: 1500, aggro: 24, respawn: 999999999, armor: 0.25, gold: [0, 0], loot: [] };
-  MONSTERS.anubis_sombra_m = Object.assign({ name: 'Sombra de Anubis (cuerpo a cuerpo)', icon: '🌑', hp: 70000, dmg: [260, 420], move: 340, atkCd: 1000, spr: 'anubis', shade: 'rgba(170,40,80,.8)', glow: '255,60,90' }, base);
-  MONSTERS.anubis_sombra_h = Object.assign({ name: 'Sombra de Anubis (mágica)', icon: '🌑', hp: 60000, dmg: [240, 400], move: 520, atkCd: 1500, range: 6, proj: 'poison', spr: 'anubis', shade: 'rgba(120,70,220,.8)', glow: '170,90,255' }, base);
-  MONSTERS.anubis_sombra_a = Object.assign({ name: 'Sombra de Anubis (a distancia)', icon: '🌑', hp: 60000, dmg: [220, 360], move: 420, atkCd: 1100, range: 8, proj: 'arrow', spr: 'anubis', shade: 'rgba(30,160,120,.8)', glow: '60,255,170' }, base);
+  MONSTERS.anubis_sombra_m = Object.assign({ name: 'Sombra de Anubis (cuerpo a cuerpo)', icon: '🌑', hp: 70000, dmg: [260, 420], move: 340, atkCd: 1000, spr: 'anubis', shade: 'rgba(200,50,90,.6)', glow: '255,60,90' }, base);
+  MONSTERS.anubis_sombra_h = Object.assign({ name: 'Sombra de Anubis (mágica)', icon: '🌑', hp: 60000, dmg: [240, 400], move: 520, atkCd: 1500, range: 6, proj: 'poison', spr: 'anubis', shade: 'rgba(130,80,255,.6)', glow: '170,90,255' }, base);
+  MONSTERS.anubis_sombra_a = Object.assign({ name: 'Sombra de Anubis (a distancia)', icon: '🌑', hp: 60000, dmg: [220, 360], move: 420, atkCd: 1100, range: 8, proj: 'arrow', spr: 'anubis', shade: 'rgba(40,200,140,.6)', glow: '60,255,170' }, base);
   MONSTERS.momia_eterna = { name: 'Momia Eterna del Juicio', icon: '🩹', lv: 320, hp: 90000, dmg: [260, 430], exp: 8000, move: 520, atkCd: 1200, aggro: 24, respawn: 999999999, armor: 0.2, gold: [0, 0], loot: [], spr: 'momia_eterna' };
 }
 

@@ -1844,16 +1844,19 @@
     if (plain) { c.restore(); return; }
     const pu = 0.5 + 0.5 * Math.sin(t * 3.2 + ph), fl = 0.8 + 0.2 * Math.sin(t * 21 + ph);
     c.globalCompositeOperation = 'lighter';
-    for (const sx of [-0.085, 0.085]) { c.fillStyle = `rgba(110,255,170,${(0.55 + 0.4 * pu) * fl})`; c.beginPath(); c.ellipse(sx * w + Math.sin(t * 0.9 + ph) * 1.1, -H * 0.885, 2.6, 1.6, 0, 0, 7); c.fill(); }   // ojos
-    const g = c.createRadialGradient(-w * 0.38, -H * 0.86, 1, -w * 0.38, -H * 0.86, 20); g.addColorStop(0, `rgba(120,255,170,${0.45 + 0.35 * pu})`); g.addColorStop(1, 'rgba(120,255,170,0)');
-    c.fillStyle = g; c.fillRect(-w * 0.38 - 20, -H * 0.86 - 20, 40, 40);                                  // orbe del báculo
+    for (const [ex, ey] of spr.eyes || [[0.47, 0.12], [0.53, 0.12]]) { c.fillStyle = `rgba(255,215,90,${(0.5 + 0.45 * pu) * fl})`; c.beginPath(); c.ellipse((ex - 0.5) * w + Math.sin(t * 0.9 + ph) * 0.8, -H * (1 - ey), 2.2, 1.4, 0, 0, 7); c.fill(); }   // ojos dorados
+    const [ox, oy] = spr.orb || [0.88, 0.2], X0 = (ox - 0.5) * w + Math.sin(t * 0.9 + ph) * 1.2, Y0 = -H * (1 - oy);
+    for (let k = 0; k < 3; k++) { const u = (t * 0.55 + k / 3) % 1, rr = 5 + 20 * u, hue = (t * 90 + k * 120) % 360; c.strokeStyle = `hsla(${hue},95%,70%,${0.75 * (1 - u)})`; c.lineWidth = 1.6; c.beginPath(); c.ellipse(X0, Y0, rr, rr * 0.85, 0, 0, 7); c.stroke(); }   // anillos arcoíris del cetro
+    const g = c.createRadialGradient(X0, Y0, 1, X0, Y0, 22); g.addColorStop(0, `rgba(255,235,170,${0.5 + 0.35 * pu})`); g.addColorStop(1, 'rgba(255,200,90,0)');
+    c.fillStyle = g; c.fillRect(X0 - 22, Y0 - 22, 44, 44);
+    for (let k = 0; k < 4; k++) { const u = (t * 0.7 + k * 0.25 + ph) % 1; c.fillStyle = `rgba(255,${200 + k * 12},120,${0.8 * (1 - u)})`; c.fillRect(X0 + Math.sin(u * 6 + k * 2) * 9, Y0 - u * 26, 1.6, 1.6); }   // chispas
     c.restore();
   }
   /** Anubis y sus sombras: flotan, con aura verde/violeta; las sombras se tiñen y dejan estela. */
   const _tc = document.createElement('canvas'); _tc.width = 200; _tc.height = 220; const _tg = _tc.getContext('2d');
   function drawAnubisLike(c, e, d, skey, spr, cx, ground, now, sq) {
     const shadow = !!d.shade, cast = (EXT.casts && EXT.casts.get(e.id) || 0) > now, t = now / 1000;
-    const fl = shadow ? 8 + Math.sin(t * 3 + e.id) * 3 : 5 + Math.sin(t * 2 + e.id) * 2 + (cast ? 5 : 0), gl = d.glow || '90,255,150';
+    const fl = shadow ? 8 + Math.sin(t * 3 + e.id) * 3 : 5 + Math.sin(t * 2 + e.id) * 2 + (cast ? 5 : 0), gl = d.glow || '255,205,100';
     const y = ground + 2 - Math.round(fl), flip = (e.face || 1) < 0;
     const pulse = 0.5 + 0.5 * Math.sin(t * 3 + e.id);
     const g = c.createRadialGradient(cx, y - spr.h * 0.5, 4, cx, y - spr.h * 0.5, spr.h * 0.85);
@@ -1861,7 +1864,7 @@
     c.fillStyle = g; c.fillRect(cx - spr.h, y - spr.h * 1.4, spr.h * 2, spr.h * 1.6);
     if (shadow) {
       _tg.clearRect(0, 0, 200, 220); drawLiving(_tg, skey, spr, 100, 200, flip, t * 1.25, e, false, true);
-      _tg.globalCompositeOperation = 'source-atop'; _tg.fillStyle = d.shade; _tg.fillRect(0, 0, 200, 220); _tg.globalCompositeOperation = 'source-over';
+      _tg.globalCompositeOperation = 'source-atop'; _tg.fillStyle = 'rgba(8,0,18,.5)'; _tg.fillRect(0, 0, 200, 220); _tg.fillStyle = d.shade; _tg.fillRect(0, 0, 200, 220); _tg.globalCompositeOperation = 'source-over';
       for (let i = 3; i >= 1; i--) { c.globalAlpha = 0.14 / i; c.drawImage(_tc, cx - 100 - i * 4 * (flip ? -1 : 1), y - 200 + 2 + i); }       // estela de sombra
       c.globalAlpha = 0.78 + 0.12 * pulse; c.drawImage(_tc, cx - 100, y - 200 + 2); c.globalAlpha = 1;
       c.fillStyle = `rgba(${gl},.95)`; c.fillRect(cx - 5, y - spr.h * 0.8, 3, 2); c.fillRect(cx + 2, y - spr.h * 0.8, 3, 2);
