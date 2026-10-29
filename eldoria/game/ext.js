@@ -307,7 +307,7 @@ module.exports = function install(Game) {
   /** Daño base de un golpe del jugador (igual que el ataque normal). */
   P.baseDmg = function (p, w) {
     const skill = skillFromXp(p.sxp[w.style]);
-    return Math.max(1, Math.round(w.atk * (0.55 + Math.random() * 0.45) * skillMult(skill) * (1 + 0.015 * (p.level - 1))));
+    return Math.max(1, Math.round(w.atk * (0.55 + Math.random() * 0.45) * skillMult(skill) * (1 + 0.010 * (p.level - 1))));
   };
   /** Aplica daño de una habilidad a un objetivo (monstruo o jugador). */
   P.skillHit = function (p, t, dmg, now) {

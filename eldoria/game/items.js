@@ -80,6 +80,7 @@ function gearBonus(eq) {
     const b = bonusOf(eq[s]);
     if (b) for (const k of Object.keys(b)) out[k] += b[k];
   }
+  if (out.crit > 0.10) out.crit = 0.10;                    // tope de crítico del equipo
   return out;
 }
 

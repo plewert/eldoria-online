@@ -349,3 +349,6 @@ Para teléfonos/PC donde el juego se pone en blanco o se pega: apaga el 3D, los 
 - **Desierto de las Pirámides** (suroeste): pirámides de arenisca, escorpiones dorados, momias, sacerdotes, cobras y la infantería del faraón (lanceros, escuderos, hacheros, arqueros y guardia real); jefe **Amenkhet**.
 - **Paraíso de Coral** (sureste): playa con laguna (pesca), cangrejos, tortugas, sirenas, querubines y ángeles; jefe **Reina Sirena**.
 Todas sin PvP, con calles desde la ciudad, misiones de Ilda y trofeos. Los monstruos nuevos reutilizan el dibujo de otro (`spr` en `game/regiones.js`).
+
+## Equilibrio de armas y armaduras
+Armas: ataque −5 % (nivel 1–40), −12 % (41–89), −20 % (90+, además +7 % de tiempo entre ataques). Bono de daño por nivel 1,0 % (antes 1,5 %). Armaduras: defensa −10 % (nivel 90+), ataque extra −40 %, vida extra −15 %; crítico total del equipo máx. 10 %. Se aplica en `game/data.js` (bloque «Equilibrio»). La vida de los jefes no cambia.

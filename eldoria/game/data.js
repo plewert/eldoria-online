@@ -498,6 +498,17 @@ require('./mage').build(ITEMS, SHOPS, MONSTERS);
   require('./fishing').build(ITEMS, SHOPS);
   require('./mining').build(ITEMS, SHOPS);
   require('./tablets').build(ITEMS, SHOPS);
+  // Equilibrio: armas y armaduras más suaves (se aplica una sola vez a todo el catálogo)
+  for (const it of Object.values(ITEMS)) {
+    if (it.nerfed) continue; const L = it.minLevel || 1;
+    if (it.type === 'weapon' && it.atk) { it.atk = Math.round(it.atk * (L >= 90 ? 0.8 : L >= 41 ? 0.88 : 0.95)); if (L >= 90 && it.cd) it.cd = Math.round(it.cd * 1.07); it.nerfed = 1; }
+    else if (['head', 'body', 'legs', 'boots', 'gloves', 'belt'].includes(it.type) && it.def) {
+      if (L >= 90) it.def = Math.round(it.def * 0.9);
+      if (it.bonus) { if (it.bonus.atk) it.bonus.atk = Math.max(1, Math.round(it.bonus.atk * 0.6)); if (it.bonus.hp) it.bonus.hp = Math.round(it.bonus.hp * 0.85); }
+      it.nerfed = 1;
+    }
+  }
+
   SHOPS.marela.push(...SHOPS.nilo);
   SHOPS.brisa.push('mascota_lobito', 'mascota_murcielago', 'mascota_goblin', 'montura_lobo', 'montura_oso');
   const rare = [['lobo', 'mascota_lobito', 0.004], ['murcielago', 'mascota_murcielago', 0.003], ['goblin', 'mascota_goblin', 0.003], ['dragon', 'mascota_dragoncito', 0.01],

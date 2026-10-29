@@ -1085,7 +1085,7 @@ class Game {
     }
     const skill = skillFromXp(p.sxp[w.style]);
     const gb = I.gearBonus(p.eq);
-    let dmg = Math.round(w.atk * (0.55 + Math.random() * 0.45) * skillMult(skill) * (1 + 0.015 * (p.level - 1)));
+    let dmg = Math.round(w.atk * (0.55 + Math.random() * 0.45) * skillMult(skill) * (1 + 0.010 * (p.level - 1)));
     dmg = Math.max(1, dmg);
     let crit = 0;
     if (gb.crit > 0 && Math.random() < gb.crit) {           // Amatista: golpe crítico
