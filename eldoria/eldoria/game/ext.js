@@ -26,7 +26,7 @@ const PARTY_MAX = 5;
 const MARKET_MAX = 8, MARKET_FEE = 0.05, MARKET_HOURS = 72;
 const EVENT_EVERY = (parseFloat(process.env.EVENT_MIN) || 35) * 60000;
 
-const defExt = () => ({ q: {}, ach: {}, title: '', kt: 0, kills: {}, bosses: 0, pvp: 0, deaths: 0, quests: 0, crafts: 0, gather: 0, cxp: 0, events: 0, sold: 0, pet: '', mount: '', hadPet: 0, hadMount: 0, partyKills: 0, guild: '', grole: '', mail: [], grave: null, col: {}, fish: { xp: 0, c: {} } });
+const defExt = () => ({ q: {}, ach: {}, title: '', kt: 0, kills: {}, bosses: 0, pvp: 0, deaths: 0, quests: 0, crafts: 0, gather: 0, cxp: 0, events: 0, sold: 0, pet: '', mount: '', hadPet: 0, hadMount: 0, partyKills: 0, guild: '', grole: '', mail: [], grave: null, col: {}, fish: { xp: 0, c: {} }, mine: { xp: 0, c: {} } });
 
 function sanitizeExt(raw) {
   const e = defExt();
@@ -36,8 +36,9 @@ function sanitizeExt(raw) {
   if (raw.ach && typeof raw.ach === 'object') for (const [id, t] of Object.entries(raw.ach)) if (ACH_BY[id]) e.ach[id] = num(t, 1e15) || 1;
   if (raw.kills && typeof raw.kills === 'object') for (const [m, n] of Object.entries(raw.kills)) if (MONSTERS[m]) e.kills[m] = num(n);
   if (raw.grave && Number.isInteger(raw.grave.x) && Number.isInteger(raw.grave.y)) e.grave = { x: raw.grave.x, y: raw.grave.y, t: num(raw.grave.t, 1e15) };
-  if (raw.col && typeof raw.col === 'object') for (const [b, items] of Object.entries(raw.col)) if ((MONSTERS[b] || b === 'pesca') && items && typeof items === 'object') { e.col[b] = {}; for (const [id, n] of Object.entries(items)) if (ITEMS[id]) e.col[b][id] = num(n, 1e9) || 1; }
+  if (raw.col && typeof raw.col === 'object') for (const [b, items] of Object.entries(raw.col)) if ((MONSTERS[b] || b === 'pesca' || b === 'mineria') && items && typeof items === 'object') { e.col[b] = {}; for (const [id, n] of Object.entries(items)) if (ITEMS[id]) e.col[b][id] = num(n, 1e9) || 1; }
   if (raw.fish && typeof raw.fish === 'object') { e.fish.xp = num(raw.fish.xp, 1e9); if (raw.fish.c && typeof raw.fish.c === 'object') for (const [id, n] of Object.entries(raw.fish.c)) if (ITEMS[id]) e.fish.c[id] = num(n, 1e9); }
+  if (raw.mine && typeof raw.mine === 'object') { e.mine.xp = num(raw.mine.xp, 1e9); if (raw.mine.c && typeof raw.mine.c === 'object') for (const [id, n] of Object.entries(raw.mine.c)) if (ITEMS[id]) e.mine.c[id] = num(n, 1e9); }
   e.title = typeof raw.title === 'string' ? raw.title.slice(0, 30) : '';
   e.pet = ITEMS[raw.pet] && ITEMS[raw.pet].type === 'pet' ? raw.pet : '';
   e.mount = ITEMS[raw.mount] && ITEMS[raw.mount].type === 'mount' ? raw.mount : '';
@@ -193,7 +194,7 @@ module.exports = function install(Game) {
     if (qState(p, q, Date.now()) !== 'new') return;
     if (Object.values(p.ext.q).filter((e) => e.s === 'a').length >= 10) { this.msg(p, 'Ya tienes 10 misiones activas.', 's'); return; }
     p.ext.q[q.id] = { s: 'a', n: 0, t: Date.now() };
-    this.msg(p, `Misión aceptada: ${q.title}.`, 's');
+    this.msg(p, `Misión aceptada: ${q.title}.`, 's'); this.questGuide(p);
     this.sendQuests(p, q.npc);
   };
   P.questTurn = function (p, id) {
@@ -206,7 +207,7 @@ module.exports = function install(Game) {
     if (r.g) p.gold += r.g;
     for (const [iid, qty] of r.items || []) this.giveOrDrop(p, iid, qty);
     if (r.xp) this.gainXp(p, r.xp);
-    this.send(p, { t: 'quest_done', id: q.id, title: q.title });
+    this.send(p, { t: 'quest_done', id: q.id, title: q.title }); this.questGuide(p);
     this.msgC(p, `✅ Misión cumplida: ${q.title}. +${r.g} de oro, +${r.xp} xp${(r.items || []).length ? ', ' + r.items.map(([i, n]) => (n > 1 ? n + '× ' : '') + ITEMS[i].name).join(', ') : ''}.`, '#7fe08a');
     p.dirty.inv = true; p.dirty.stats = true;
     this.checkAch(p);
@@ -214,8 +215,40 @@ module.exports = function install(Game) {
   };
   P.questAbandon = function (p, id) {
     const e = p.ext.q[String(id)]; if (!e || e.s !== 'a') return;
-    delete p.ext.q[String(id)];
+    delete p.ext.q[String(id)]; this.questGuide(p);
     this.sendQuests(p, '');
+  };
+
+  /* ---- flechas de misión: a dónde ir con cada misión aceptada (el cliente dibuja la flecha) ---- */
+  const nearestOf = (p, list) => { let b = null, bd = 1e9; for (const o of list) { const d = Math.hypot(o.x - p.x, o.y - p.y); if (d < bd) { bd = d; b = o; } } return b; };
+  // si el destino está en otra zona (una cueva), la flecha apunta al portal de entrada; si estás dentro de una cueva, al portal de salida
+  const hopTo = (p, tx, ty) => {
+    const Z = zoneAt(tx, ty), cur = zoneAt(p.x, p.y);
+    if (Z === cur) return { x: tx, y: ty };
+    const exits = (z) => world.PORTALS.filter((o) => zoneAt(o.x, o.y) === z && zoneAt(o.tx, o.ty) !== z);     // portales de salida de una zona interior
+    const isInt = (z) => z.kind === 'dungeon' || z.id === 'gremio_minero';
+    const exit = isInt(cur) ? exits(cur) : [];
+    if (exit.length) { const e = nearestOf(p, exit); return { x: e.x, y: e.y, via: 'Salida' }; }                // estás dentro de una cueva: sal primero
+    if (isInt(Z)) { const ent = world.PORTALS.filter((o) => zoneAt(o.tx, o.ty) === Z && zoneAt(o.x, o.y) !== Z); if (ent.length) { const e = nearestOf(p, ent); return { x: e.x, y: e.y, via: 'Entrada' }; } }
+    return { x: tx, y: ty };
+  };
+  const SRC = {};     // objeto -> monstruos que lo sueltan (se rellena una vez)
+  P.questGuide = function (p) {
+    const now = Date.now(), out = [];
+    for (const q of QUESTS) {
+      const e = p.ext.q[q.id]; if (!e || e.s !== 'a') continue;
+      let tg = null;
+      if (qState(p, q, now) === 'ready') { const n = NPCS.find((o) => o.id === q.npc); if (n) tg = { x: n.x, y: n.y, label: `Entregar: ${n.name}` }; }
+      else if (q.type === 'kill') { const sp = nearestOf(p, world.monsterSpawns.filter((s) => s.type === q.mon)); if (sp) tg = Object.assign(hopTo(p, sp.x, sp.y), { label: (MONSTERS[q.mon] || {}).name || q.mon }); }
+      else if (q.type === 'collect') {
+        if (!SRC[q.item]) { SRC[q.item] = Object.keys(MONSTERS).filter((k) => (MONSTERS[k].loot || []).some((l) => l[0] === q.item)); }
+        const cand = world.monsterSpawns.filter((s) => SRC[q.item].includes(s.type)).concat((this.nodes || []).filter((nd) => (X.NODES[nd.type].give || []).some((gv) => gv[0] === q.item)));
+        const sp = nearestOf(p, cand); if (sp) tg = Object.assign(hopTo(p, sp.x, sp.y), { label: ITEMS[q.item] ? ITEMS[q.item].name : q.item });
+      } else if (q.type === 'killany') { const sp = nearestOf(p, this.monsters.filter((m) => !m.dead && !m.def.boss && Math.abs(m.def.lv - p.level) < 20 && zoneAt(m.x, m.y) === zoneAt(p.x, p.y))); if (sp) tg = { x: sp.x, y: sp.y, label: 'Monstruos' }; }
+      if (tg) out.push({ id: q.id, title: q.title, x: tg.x, y: tg.y, zone: zoneAt(tg.x, tg.y).name, label: tg.via ? `${tg.via}: ${tg.label}` : tg.label });
+    }
+    const txt = JSON.stringify(out);
+    if (txt !== p.lastGuide) { p.lastGuide = txt; this.send(p, { t: 'qguide', list: out }); }
   };
   P.questKill = function (p, type) {
     for (const q of QUESTS) {
@@ -225,7 +258,7 @@ module.exports = function install(Game) {
       else if (q.type === 'killany') e.n++;
       else continue;
       this.send(p, { t: 'qprog', id: q.id, n: e.n, need: q.n, title: q.title });
-      if (e.n >= q.n) this.msgC(p, `📜 Misión lista para entregar: ${q.title}.`, '#ffd96a');
+      if (e.n >= q.n) { this.msgC(p, `📜 Misión lista para entregar: ${q.title}.`, '#ffd96a'); this.questGuide(p); }
     }
   };
 
@@ -234,7 +267,7 @@ module.exports = function install(Game) {
   P.addBuff = function (p, k, m, secs, extra) { p.buffs[k] = Object.assign({ m, until: this.now + secs * 1000 }, extra || {}); this.sendBuffs(p); };
   P.sendBuffs = function (p) {
     const now = this.now, b = {};
-    for (const [k, v] of Object.entries(p.buffs)) if (v.until > now && (k !== 'shield' || v.hp > 0)) b[k] = { s: Math.ceil((v.until - now) / 1000), m: v.m, hp: v.hp };
+    for (const [k, v] of Object.entries(p.buffs)) if (v && v.until > now && (k !== 'shield' || v.hp > 0)) b[k] = { s: Math.ceil((v.until - now) / 1000), m: v.m, hp: v.hp };
     const txt = JSON.stringify(b);
     p.lastBuffTxt = txt;
     this.send(p, { t: 'buffs', b });
@@ -254,7 +287,12 @@ module.exports = function install(Game) {
       if (sh.hp <= 0) this.sendBuffs(p);
       if (raw <= 0) return 0;
     }
-    return G0.hurtPlayer.call(this, p, raw, src, now, srcName);
+    const dmg = G0.hurtPlayer.call(this, p, raw, src, now, srcName);
+    if (p.autoRet && p.hp > 0 && src && src !== p && src.id != null && !src.dead && (src.kind === 'mo' || (src.kind === 'pl' && this.canPvp(p, src)))) {      // auto golpe: responde a quien me pega
+      const cur = p.target ? this.ents.get(p.target) : null;
+      if (!cur || cur.dead || cur.hp <= 0) p.target = src.id;
+    }
+    return dmg;
   };
   P.gainXp = function (p, xp) {
     const m = this.buffMult(p, 'xp');
@@ -539,7 +577,7 @@ module.exports = function install(Game) {
   P.marketSend = function (p, filter) {
     const m = this.market(), now = Date.now(), f = filter || {};
     const q = String(f.q || '').toLowerCase().slice(0, 30);
-    const kinds = { weapon: ['weapon'], armor: ['head', 'body', 'shield', 'belt', 'gloves', 'legs', 'boots'], jewel: ['ring', 'amulet'], other: null };
+    const kinds = { weapon: ['weapon'], armor: ['head', 'body', 'shield', 'belt', 'gloves', 'legs', 'boots', 'cape'], jewel: ['ring', 'amulet'], other: null };
     let list = m.list.filter((l) => {
       const d = ITEMS[l.it.id]; if (!d) return false;
       if (q && !d.name.toLowerCase().includes(q)) return false;
@@ -649,7 +687,7 @@ module.exports = function install(Game) {
         if (!world.reach[kxy(x, y)] || !zoneAt(x, y) || !nd.zones.includes(zoneAt(x, y).id)) continue;
         const t = world.tiles[kxy(x, y)];
         if (t === T.PORTAL || t === T.ROAD || t === T.WATER || t === T.WALL) continue;
-        if (zoneAt(x, y).kind === 'town') continue;
+        if (zoneAt(x, y).kind === 'town' && zoneAt(x, y).id !== 'gremio_minero') continue;
         cands.push([x, y]);
       }
       for (let i = cands.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [cands[i], cands[j]] = [cands[j], cands[i]]; }
@@ -672,6 +710,7 @@ module.exports = function install(Game) {
     const n = this.nodeById.get(id | 0), now = this.now;
     if (!n || now < n.at || now < p.nextGather || cheb(p.x, p.y, n.x, n.y) > 1) return;
     const nd = X.NODES[n.type];
+    if (nd.rock) return this.mineRock(p, n, nd);
     p.nextGather = now + 1100; n.at = now + nd.respawn * (0.8 + Math.random() * 0.4);
     const cl = craftLevel(p.ext.cxp);
     for (const [iid, a, b] of nd.give) {
@@ -1051,6 +1090,8 @@ module.exports = function install(Game) {
     else if (m.def.special === 'titan' && !m.dead) this.titanAI(m, now);
     else if (m.def.special === 'spider' && !m.dead) this.spiderAI(m, now);
     else if (m.def.special === 'leviathan' && !m.dead) this.leviathanAI(m, now);
+    else if (m.def.special === 'magma' && !m.dead) this.magmaAI(m, now);
+    else if (m.def.special === 'raid' && !m.dead) this.raidAI(m, now);
   };
 
   /* ============================ ENGANCHES DE COMBATE ============================ */
@@ -1152,6 +1193,7 @@ module.exports = function install(Game) {
       case 'xinfo': this.sendXinfo(p, false); break;
       case 'rank': this.send(p, { t: 'rank', v: this.rankings() }); break;
       case 'col': this.sendCol(p); break;
+      case 'autoret': p.autoRet = !!msg.on; break;
       case 'p_inv': this.partyInvite(p, msg.id); break;
       case 'p_acc': this.partyAccept(p, msg.id); break;
       case 'p_leave': this.partyLeave(p); break;
@@ -1197,6 +1239,7 @@ module.exports = function install(Game) {
         if (sig !== p.lastSig) { p.lastSig = sig; this.sendBuffs(p); }
         if (p.partyInv && Date.now() > p.partyInv.exp) p.partyInv = null;
         this.petCheck(p);
+        if (!p.bot && Object.keys(p.ext.q).length) this.questGuide(p);
       }
       for (const party of this.parties.values()) this.sendParty(party);
     }

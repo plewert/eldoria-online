@@ -208,7 +208,7 @@ Al atacar con un arma cuerpo a cuerpo, el personaje balancea el arma con una est
 - Botín raro: Rastreador Ciego, Silbato Silencioso, Brazal de Garra, Pantalón de Fuego Negro, Botas de Garra, Cierre de Garra, Reserva Ígnea (carcaj) (4–6 % base) y Llama del Viento (gran espada), Garras de Fuego Negro y Arco Largo Llama del Viento (0,5 %).
 
 ## Tabletas de teletransporte
-Boris vende 11 tabletas (100 000 de oro cada una, de un solo uso): Ciudad, Bosque, Cumbres, Dunas, Aldea Pesquera, Selva, Sabana, Tierras de Lava, Pantano, Colinas y Puerto. Clic en la tableta para usarla; no funciona en combate. Ver `game/tablets.js`.
+Boris (y Zaroth en Alba Dorada) venden 17 tabletas (2 000 de oro cada una, de un solo uso): Ciudad, Bosque, Cumbres, Dunas, Aldea Pesquera, Selva, Sabana, Tierras de Lava, Pantano, Colinas, Puerto, Alba Dorada, Montañas del Trueno, Reino de las Nubes, Desierto de las Pirámides, Paraíso de Coral y Gremio de Mineros. Clic en la tableta para usarla; no funciona en combate. Ver `game/tablets.js`.
 
 ## Mapa del mundo
 - Ábrelo con el botón 🗺️, la tecla **N** o haciendo clic en el minimapa.
@@ -230,3 +230,114 @@ Boris vende 11 tabletas (100 000 de oro cada una, de un solo uso): Ciudad, Bosqu
 - Ataques especiales: **tornados marinos** que se multiplican y vagan por la cueva (15 s), **olas** que barren la cueva en franjas avisadas, **rayo de bolas de agua** por la boca (3 pulsos que re-apuntan) y **escudo burbuja** de 5 s en el que es inmune.
 - Botín raro: Yelmo, Coraza, Manoplas, Grebas, Botas y Cinto del Abismo Marino, 3 anillos (perla, alga, coral), Amuleto del Corazón Marino y el Tridente del Leviatán (agua), además de la cría del Leviatán (mascota).
 - Corregido: las casillas de muro de la guarida de la araña (WEBW) no bloqueaban en el servidor.
+
+## Minería
+
+Habilidad nueva (tecla **U**). Boris vende los picos (piedra, hierro, acero, cristal, obsidiana, abismo): mejor pico = más rápido, más gemas y a veces doble piedra. 8 rocas repartidas por zonas y nivel: Granito y Arenisca (1-30), Pizarra (30-60), Pedernal (60-90), Pómez (90-120), Mármol (120-170), Basalto (170-220), Obsidiana (220-320, cuevas). Cada roca puede dar gemas (rubí, zafiro, esmeralda, topacio, amatista, ópalo, diamante) para engarzar en armas y armaduras. Sección propia en el registro de colección y anuncio global de gemas raras.
+
+## Efectos visuales (✨)
+
+Botón junto al de sonido (PC y teléfono) que cambia entre **Completo** (luces cálidas, rayos de sol, polvo de luz y luciérnagas), **Básico** (sombras según la hora, viñeta y color) y **Apagado**. Se guarda en el navegador; en teléfono arranca en Básico. Código en `public/gfx.js`.
+
+## Teléfono
+
+- **Horizontal:** mapa a pantalla completa, joystick a la izquierda, acciones (estilos, pociones, hechizos) en cuadrícula a la derecha, chat compacto y mochila en dos columnas. Las ventanas se adaptan a pantallas bajas.
+- **Vertical:** acciones abajo en dos filas, joystick encima y chat compacto.
+- **⛶ Pantalla completa** (bloquea horizontal donde el navegador lo permita), zonas seguras para muescas y bordes redondeados.
+- **Zoom:** pellizco con dos dedos o botones ＋/－ (se guarda); en teléfono arranca alejado para ver más mapa.
+- La pantalla de acceso se desplaza si el teléfono está en horizontal.
+
+## Raid: Santuario de las Cinco Sombras (1 a 10 jugadores)
+- Entrada: portal del Santuario en la Ciudad de Aldea Real (cerca de la plaza). En la antecámara pulsa **Iniciar la Raid** (o `/raid`): entran juntos quienes estén allí (máx. 10). Durante el primer minuto de la cámara 1 se puede unir más gente.
+- 5 cámaras seguidas: **Slyvra → Koros → Aranak → Xaelis → Malgathor**. La vida de cada jefe escala con el grupo (+75 % por jugador extra). Cada jefe tiene ataques con aviso en el suelo (círculos, líneas, charcos, golpes, invocaciones, escudo, singularidad) y se enfurece por debajo del 35 % de vida.
+- Cada jugador tiene 3 vidas: si cae, vuelve por el portal a la cámara actual. Si todos mueren, la Raid se sella. `/raid salir` te saca.
+- Jefes intermedios: oro y 22 % de una pieza de su set. **Cofre final** (cámara 5): cada participante lo abre una vez (clic, tecla E o botón) y recibe botín raro de los 5 sets (casco, peto, guantes, grebas, botas, cinto, anillo, amuleto, **capa**, arma), oro, pluma de fénix y, con suerte, la cría de un jefe. Más aporte de daño = más opciones de un segundo objeto. Animación de apertura con rayos y tarjetas (dorado = raro).
+- Nueva ranura **Capa** en el equipo (las capas de la Raid tienen color propio; la de Xaelis lleva alas doradas).
+- Todo el botín sale en la **Colección** de cada jefe. Archivos: `game/raid.js` (servidor), `public/raid.js` (cliente), sprites `raid_*` y `gear.png`.
+
+## Seguir compañero y auto golpe
+- Clic derecho sobre un jugador → **🚶 Seguir**: tu personaje lo sigue solo por el camino. Se cancela al moverte tú, pulsar Esc, hacer clic en el suelo o perderlo de vista 6 s. Funciona también en la Raid.
+- Botón **🗡️ Auto** en la barra inferior (junto a Z/X/C): si está activo, cuando algo te ataca y no tienes objetivo, lo atacas automáticamente (a jugadores solo si hay PvP). Se recuerda entre sesiones.
+
+## Vista 3D (opcional)
+- Botón **🧊** (debajo del reloj, junto a ✨) o tecla **Y**: activa/desactiva la vista 3D. Se recuerda entre sesiones; por defecto está desactivada.
+- El suelo se dibuja en perspectiva (más cerca = más grande) y jugadores, jefes, PNJ y objetos quedan de pie mirando a la cámara. Los avisos de ataque de la Raid se ven proyectados en el suelo. Clic, menú contextual, seguir y auto golpe funcionan igual.
+- Es solo visual (`public/game.js`, función `frame3d`): el servidor y el juego no cambian. En teléfonos modestos puede ir más justo; basta con desactivarlo.
+
+## Efectos 🎬 (nivel Cinematográfico)
+- El botón ✨ ahora tiene 4 niveles: 🚫 apagados · 🔅 básicos · ✨ completos · 🎬 cinematográficos (bloom, gradación de color, luz de jefes sobre el suelo y, en vista 3D, reflejo de jefes y profundidad de campo). Es el más exigente: en teléfono arranca en 🔅 y conviene probarlo antes de dejarlo.
+- En 3D los teléfonos usan menos resolución en el suelo para ir más fluidos.
+
+## Animación de arcos y báculos
+Al disparar, el arco tensa la cuerda con la flecha encajada (brillo elemental), la suelta con vibración y retroceso; los báculos se alzan, cargan un orbe con chispas que convergen y lanzan con destello y onda. El proyectil sale al terminar la carga (~190 ms arco, ~250 ms magia). Funciona en 2D y 3D.
+
+## Extras gráficos (fx2.js)
+Se controlan con el botón ✨ (básico / completo / cine). Básico: huellas en arena, nieve y barro, polvo al caminar, golpes con peso (zoom y destello en críticos, bordes rojos al recibir daño, números con rebote), desintegración de monstruos, tarjeta de entrada de jefe con barras de cine, fases de furia con aura, banner de subida de nivel e iris al cruzar portales. Completo: charcos con ondas y salpicaduras de lluvia, nieve acumulada, espuma y brillos en el agua, hojas con viento (arena en el desierto), ventanas encendidas de noche, auras del equipo (sets de raid, Ancient, +N altos), estela de capa y brillo animado en ítems raros. Cine: reflejos en el agua y relámpagos dibujados. El minimapa marca los portales (rojo PvP, dorado raid/mina, azul resto).
+
+## Realismo de luz y terreno (fx3.js)
+Nivel ✨ completo o cine: oclusión ambiental junto a muros, rocas y árboles; sombras de copas con luz filtrada; bordes blandos entre hierba, camino, arena, nieve y pantano; agua con profundidad y brillo del cielo (reflejo de luna en cine); sombras de nubes; bruma baja al amanecer, atardecer, tras la lluvia y en pantanos; luz dinámica de hechizos, proyectiles, lava y jefes enfurecidos; vaho en el frío; parpadeo de personajes. Pendiente (requiere WebGL): luz por píxel sobre los sprites y normal maps.
+
+## Tutorial inicial (tutorial.js)
+Los personajes nuevos (nivel menor a 5) reciben un tutorial de 4 pasos: moverse, hablar con Orin el Sabio, equipar un arma (el objeto recomendado brilla en la mochila) y matar un monstruo. Una flecha dorada rebota sobre el objetivo (o se pega al borde de la pantalla apuntando hacia él), y el panel muestra una brújula con la distancia, útil también en la vista 3D. Se guarda por personaje en el navegador; «Saltar» lo cierra y F1 lo repite.
+
+## Aventureros simulados (bots)
+Dieciséis personajes controlados por el servidor (`game/bots.js`) juegan como una persona normal y comparten el mundo con los jugadores reales.
+- **Nombres normales:** tienen nombre propio como cualquier jugador y sus nombres quedan reservados al registrarse. El comando `/ayuda` avisa de que parte de los aventureros del mundo están controlados por el servidor.
+- **Cuatro niveles:** *novatos* (5) cazan en el Prado; *aventureros* (4) en las Catacumbas y el Bosque Maldito; *veteranos* (2) en las Minas Enanas, la Selva Esmeralda y el Pantano; *élites* (5) en las Colinas, las Tierras de Lava y el Abismo Carmesí, con equipo de la Raid. Cambian de zona cada 10–20 minutos.
+- **Zonas PvP:** entran en ellas como cualquiera. Los jugadores pueden atacarlos (si caen, sueltan objetos como un jugador) y **se defienden**, pero no empiezan peleas. En esas zonas solo recogen el botín de sus propias presas, nunca lo que otros jugadores sueltan al morir.
+- **Juegan de verdad:** cazan, **recogen el botín** del suelo, y cuando la mochila se llena (o cada cierto tiempo) viajan a la ciudad: **venden** lo que sobra en la tienda de Boris, **compran** pociones y mejoras de equipo que puedan pagar, y **guardan en el banco** (con Gerda) las gemas, el equipo raro y el oro sobrante. Usan pociones y el conjuro de curar, y de vez en cuando charlan cerca de otros jugadores.
+- **Comparten zonas y jefes:** cazan en las mismas zonas que los jugadores reales; aventureros y veteranos se juntan para el Rey Esqueleto y el Maestro Forjador (los jefes de cuevas con ataques especiales y los de zonas PvP quedan fuera). Si hay jugadores reales peleando, el botín se reparte como siempre.
+- **Raid con jugadores:** las élites forman grupo y hacen la Raid esquivando los avisos de ataque. Si un jugador real espera en la antecámara, **van con él** y la inician juntos; si la iniciaron ellas, el jugador puede **unirse en cualquier momento**. Abren el cofre final como cualquiera.
+- **Límites:** tienen tope de nivel y de habilidad, no atacan primero a nadie, no comercian de jugador a jugador ni forman grupo social, no salen en `/top` y no se guardan (al reiniciar el servidor empiezan de nuevo).
+- `BOTS=0` los desactiva; `BOTS=8` cambia la cantidad (máx. 16). Prueba: `node test/bots.js`.
+
+## Mascotas que recogen el botín
+Con una mascota activa (usa el objeto de mascota de la mochila), el oro y los objetos que dejan tus presas llegan solos a tu mochila (`game/petloot.js`): radio de 8 casillas, un montón cada ~0,45 s, con el bonus de oro de la mascota. Solo recoge lo tuyo (o lo sin dueño de tus kills en zonas PvP), nunca el botín protegido de otros jugadores ni lo que se suelta al morir. Si la mochila está llena, el objeto se queda en el suelo. Prueba: `node test/pet.js`.
+
+## Ignaros, Soberano del Magma (jefe de la Caldera)
+Aspecto: figura encapuchada con capa de basalto y magma, bandas rúnicas doradas y un orbe flotante con rayos de arcoíris (sprite animado de 8 fotogramas más una pose de lanzamiento de 6). Todos los ataques salen del jefe: carga el orbe, lanza meteoritos hacia el cielo, 8 rayos radiales de fuego, el fuego del infierno se propaga en ola y la lava nace de él.
+Cueva nueva en las Tierras de Lava (puerta al norte, justo al sur de la Guarida del Aracnídeo). Jefe de nivel 750 con armadura 50 %. Ataques:
+- **Infierno**: la cueva se enciende; aparece al azar un **cuadro azul** (refugio) y solo quien está dentro se libra del daño.
+- **Meteoritos**: círculos rojos de aviso, impacto directo y onda explosiva que se expande.
+- **Líneas de fuego**: franjas horizontales y verticales que cruzan toda la cueva (con aviso).
+- **Marea de lava**: la caldera se llena de lava y solo las **rocas azules** son seguras.
+Los personajes arden al ser golpeados (llamas sobre el cuerpo) y se hunden en la lava. Botín raro: Yelmo, Coraza, Capa, Anillo, Arco Ígneo y Bastón del Orbe Ardiente, además del Corazón de Magma y la cría de mascota. Código: `game/magma.js` (servidor) y bloque «Ignaros» de `public/ui2.js` (animaciones).
+
+## Banco ampliable y entrada a las cuevas
+- En el banco, el botón **Comprar +5 espacios** cuesta **1.000.000** de oro (se paga con el oro en mano y, si falta, con el del banco). Se puede repetir hasta 480 espacios. Los espacios se guardan con el personaje (`bankSlots`). Ajustes en `CFG` (`BANK_PACK`, `BANK_PACK_COST`, `BANK_MAX`).
+- Entrar a cada **cueva de jefe** (Dragón, Hidra, Nubes, Araña, Leviatán, Caldera de Magma) cuesta **2.000** de oro en mano cada vez (`CFG.CAVE_FEE`). Las salidas son gratis; la Raid y las zonas normales no cobran. Los aventureros automáticos no pagan.
+
+## Sonido y música (`public/audio.js`)
+Todo se sintetiza con WebAudio (sin archivos). **Música distinta por zona** (ciudad, puerto, prado, bosque, cumbres, dunas, pantano, selva, volcán, catacumbas, minas, cada cueva de jefe, PvP, antecámara y cámaras de la Raid), con bordón, oleaje y percusión según el lugar. Si hay un jefe vivo a menos de 15 casillas suena el tema de **batalla** (más rápido, con tambores) y vuelve al de la zona al alejarte. Efectos por arma (espada, daga, hacha/martillo, arco) y por elemento (fuego, hielo, veneno, rayo, arcano, agua, oscuro, sagrado); cada ataque de jefe tiene su aviso y su sonido (aliento, terremoto, meteoro, inferno, lava, rayo, nova…) y cada jefe ruge distinto al aparecer. Botón 🔊 o tecla M para silenciar.
+- **Misiones de jefes** (cazador de jefes): un encargo por cada jefe (Rey Esqueleto, Señor Orco, Cangrejo Colosal, Hidra, Rey Escorpión, Demonio Supremo, Coloso y los 6 de cueva). Los del Coloso y las cuevas se repiten cada 24 h con oro, experiencia, pociones y plumas de fénix.
+
+## Equipo de los jefes animado
+Todas las piezas que sueltan los jefes (Dragón de las Sombras, Hidra de Jade, Arcángel, Aracnídeo Fuego Negro, Leviatán, Coloso, los 5 jefes de la Raid y los mantos, capuchas y bastones de los jefes menores) tienen una banda de luz que las recorre y partículas propias de su tema (sombra, jade, destellos sagrados, brasas, burbujas, forja, hielo). Se ve en el inventario, el botín del suelo y sobre el personaje. Los trofeos y plumas de fénix flotan y brillan. Código: `themeOf`/`themedDraw` en `public/game.js` (los del Magma tienen su propia animación).
+
+## Gremio de Mineros
+Cueva propia (zona segura) a la que se entra por un portal junto a la ciudad, en el lado oeste (casilla 74, 64); no cobra entrada. Solo tiene rocas de nivel **bajo y medio** (granito, arenisca, pizarra, pedernal y piedra pómez; sin mármol, basalto ni obsidiana), que reaparecen en 40 s. **Durgan el Capataz** vende todos los picos. Sobre los jugadores solo se muestra nombre y nivel (ya no la etiqueta de gremio).
+
+## Flechas de misión
+Al aceptar una misión aparece una flecha azul (hasta 3, las más cercanas) que señala a dónde ir: el monstruo de la misión, de dónde sale el objeto a recolectar, la **entrada de la cueva** del jefe (y, ya dentro, al jefe; si estás dentro de otra cueva, al portal de salida) o, con la misión lista, al PNJ al que entregarla. Si queda fuera de pantalla la flecha se pega al borde con el nombre y la distancia. Servidor: `questGuide` en `game/ext.js`; cliente: bloque `qguide` en `public/ui2.js`.
+
+## Estadísticas de objetos en el móvil
+En pantallas táctiles no hay cursor, así que el menú que se abre al tocar (o mantener pulsado) un objeto de la mochila o del equipo ahora muestra también sus estadísticas (ataque o defensa, bonus, ranuras, nivel requerido y valor). En la tienda, el banco y el comercio, mantener pulsado un objeto muestra esas estadísticas sin comprarlo ni moverlo.
+
+## Mapa ampliado: Tierras Inexploradas (para zonas futuras)
+El mundo exterior pasa de 320 a **480 casillas de ancho** (480 × 140, más las salas de la Raid al sur). Todo lo anterior queda igual; se añadieron 160 columnas al este, desde la x = 320, como zona **Tierras Inexploradas** (`tierras_nuevas`): terreno abierto de hierba, árboles, agua y rocas, segura (sin PvP) y sin monstruos, con un paso despejado de 7 casillas desde las Tierras de Lava (y = 67-73). Cuando se diseñen las zonas nuevas, basta con dividir ese rectángulo en `ZONES` (`game/world.js`), tallar sus cuevas y añadir sus monstruos y rocas en `SPAWN_PLAN`/`mining.js`. El minimapa y el mapa del mundo escalan solos al nuevo tamaño.
+
+## Ciudad de Alba Dorada (Tierras Inexploradas)
+Gran ciudad segura (41 × 27 casillas, la más grande del juego) en el centro de las Tierras Inexploradas, con puertas en los cuatro lados, una plaza central con flores y cuatro casas. Se llega por un camino desde las Tierras de Lava (puerta oeste). Dentro: **Ilda la Banquera** (guarda oro y objetos), **Marela la Pescadora** (pescado, cañas y cebos, igual que Nilo; con el dibujo de la niña de la estrella) y **Zaroth el Brujo** (todas las armas mágicas a la venta, más pociones de maná). La casa suroeste queda vacía para futuros PNJ. Código: `buildTown('ciudad_alba', …)` y `NPCS` en `game/world.js`; las tiendas `marela` y `zaroth` en `game/data.js`.
+
+### Flechas de misión (mejoradas)
+Al aceptar una misión sale un aviso con la zona a la que ir, la flecha azul indica el lugar (también en modo 3D) y el minimapa marca el destino con un círculo azul que late.
+
+### Modo seguro 🛡️
+Para teléfonos/PC donde el juego se pone en blanco o se pega: apaga el 3D, los efectos, la portada animada y la resolución alta. Se activa con el botón 🛡️ (en el juego), con la casilla de la pantalla de inicio o añadiendo `?seguro=1` a la dirección (`?seguro=0` lo quita). Si el juego baja de 14 fps durante unos 7 segundos, lo activa solo y avisa.
+
+### Cuatro regiones alrededor de Alba Dorada
+- **Montañas del Trueno** (noroeste): huestes de arcángeles (centinelas, cruzados, espadas celestiales, guardianes alados); jefe **Serafín de Fuego**.
+- **Reino de las Nubes** (noreste): ángeles, ángeles guerreros, celestiales sabias, serafines y querubines; jefe **Serafín de la Tormenta**.
+- **Desierto de las Pirámides** (suroeste): pirámides de arenisca, escorpiones dorados, momias, sacerdotes, cobras y la infantería del faraón (lanceros, escuderos, hacheros, arqueros y guardia real); jefe **Amenkhet**.
+- **Paraíso de Coral** (sureste): playa con laguna (pesca), cangrejos, tortugas, sirenas, querubines y ángeles; jefe **Reina Sirena**.
+Todas sin PvP, con calles desde la ciudad, misiones de Ilda y trofeos. Los monstruos nuevos reutilizan el dibujo de otro (`spr` en `game/regiones.js`).

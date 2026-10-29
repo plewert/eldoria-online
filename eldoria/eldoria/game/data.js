@@ -27,7 +27,9 @@ const CFG = {
   FOOD_CD_MS: 1500,             // enfriamiento al comer
   HEAL_AMOUNT: 1000,            // hechizo de curar (V): vida por uso
   HEAL_CD_MS: 4000,             // y su enfriamiento
-  BANK_SIZE: 120,               // casillas del banco
+  BANK_SIZE: 120,
+  BANK_MAX: 480, BANK_PACK: 5, BANK_PACK_COST: 1000000,   // ampliar banco: +5 casillas por 1.000.000
+  CAVE_FEE: 2000,               // entrada a cada cueva de jefe               // casillas del banco
   TRADE_RANGE: 4,               // distancia máxima para comerciar
   TRADE_MAX_ITEMS: 8,
   TRADE_INVITE_MS: 20000,
@@ -229,6 +231,9 @@ Object.assign(ITEMS, {
 
 
 const SHOPS = {
+  durgan: [],
+  marela: [],   // Alba Dorada: pescado, cañas y cebos (se rellena al final)
+  zaroth: [],   // Alba Dorada: armas mágicas (se rellena al final)   // Gremio de Mineros: picos (se rellena en mining.js)
   boris: [
     'sardina', 'salmon', 'tiburon',
     'pocion_vida', 'pocion_vida_g', 'pocion_mana', 'pocion_mana_g',
@@ -485,14 +490,20 @@ require('./mage').build(ITEMS, SHOPS, MONSTERS);
   require('./spider').build(ITEMS, MONSTERS, X.SPIDER.type);
   MONSTERS[X.LEVIATAN.type] = X.LEVIATAN.def;
   require('./leviatan').build(ITEMS, MONSTERS, X.LEVIATAN.type);
+  require('./magma').build(ITEMS, MONSTERS);
+  require('./raid').build(ITEMS, MONSTERS);
+  require('./regiones').build(ITEMS, MONSTERS, SPAWN_PLAN);
   require('./bosspets').build(ITEMS, MONSTERS);
   require('./fishing').build(ITEMS, SHOPS);
+  require('./mining').build(ITEMS, SHOPS);
   require('./tablets').build(ITEMS, SHOPS);
+  SHOPS.marela.push(...SHOPS.nilo);
   SHOPS.brisa.push('mascota_lobito', 'mascota_murcielago', 'mascota_goblin', 'montura_lobo', 'montura_oso');
   const rare = [['lobo', 'mascota_lobito', 0.004], ['murcielago', 'mascota_murcielago', 0.003], ['goblin', 'mascota_goblin', 0.003], ['dragon', 'mascota_dragoncito', 0.01],
     ['espectro_helado', 'mascota_fantasma', 0.006], ['lobo_hielo', 'montura_lobo', 0.002], ['oso', 'montura_oso', 0.002], ['dragon', 'pluma_fenix', 0.08], ['faraon', 'pluma_fenix', 0.5],
     ['elemental_hielo', 'cristal_arcano', 0.12], ['golem_hielo', 'cristal_arcano', 0.3], ['espectro_helado', 'cristal_arcano', 0.1], ['hidra', 'montura_dragon', 0.03], ['reina_hielo', 'montura_dragon', 0.2]];
   for (const [m, id, ch] of rare) if (MONSTERS[m]) MONSTERS[m].loot.push([id, ch, 1, 1]);
+  SHOPS.zaroth.push('pocion_mana', 'pocion_mana_g', ...Object.keys(ITEMS).filter((k) => ITEMS[k].type === 'weapon' && ITEMS[k].style === 'magic' && ITEMS[k].price).sort((a, b) => ITEMS[a].price - ITEMS[b].price));   // Zaroth: todas las armas mágicas a la venta
 }
 
 // Nivel de cada monstruo (se muestra sobre su cabeza): sale de la experiencia que da, salvo los que fijan el suyo.

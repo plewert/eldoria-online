@@ -2,7 +2,12 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0e1218">
+<link rel="manifest" href="manifest.webmanifest">
 <title>Eldoria Online</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Ccircle cx=%278%27 cy=%278%27 r=%277%27 fill=%27%23c9a24b%27/%3E%3C/svg%3E">
 <link rel="stylesheet" href="style.css">
@@ -27,6 +32,8 @@
       <legend>Color de tu capa</legend>
       <div id="swatches"></div>
     </fieldset>
+
+    <label class="safechk"><input type="checkbox" id="safeChk"> 🛡️ Modo seguro (sin 3D ni efectos; si el juego se pone en blanco o se pega)</label>
 
     <p id="loginErr" role="alert"></p>
 
@@ -58,6 +65,7 @@
       <button data-style="melee" title="Cuerpo a cuerpo (Z)"><b>⚔️</b><small>Z</small></button>
       <button data-style="ranged" title="Distancia (X)"><b>🏹</b><small>X</small></button>
       <button data-style="magic" title="Magia (C)"><b>🔮</b><small>C</small></button>
+      <button id="autoRet" title="Auto golpe: responder automáticamente cuando me peguen"><b>🗡️</b><small>Auto</small></button>
       <span class="gap"></span>
       <button data-pot="heal" title="Poción de vida (H)"><b>🧪</b><small>H</small><em id="nHeal">0</em></button>
       <button data-pot="mana" title="Poción de maná (J)"><b>💧</b><small>J</small><em id="nMana">0</em></button>
@@ -89,6 +97,7 @@
         <li data-sk="ranged"><span>🏹 Distancia</span><b></b><div class="bar mini"><i></i></div></li>
         <li data-sk="magic"><span>🔮 Magia</span><b></b><div class="bar mini"><i></i></div></li>
         <li data-sk="fish" title="Nivel de pesca (clic para abrir la ventana de pesca)"><span>🎣 Pesca</span><b></b><div class="bar mini"><i></i></div></li>
+        <li data-sk="mine" title="Nivel de minería (clic para abrir la ventana de minería)"><span>⛏️ Minería</span><b></b><div class="bar mini"><i></i></div></li>
       </ul>
       <p class="fine" id="gemSum"></p>
     </section>
@@ -107,6 +116,7 @@
         <div class="slot-wrap s-gloves"><div class="slot" data-eq="gloves"></div></div>
         <div class="slot-wrap s-legs"><div class="slot" data-eq="legs"></div></div>
         <div class="slot-wrap s-boots"><div class="slot" data-eq="boots"></div></div>
+        <div class="slot-wrap s-cape"><div class="slot" data-eq="cape"></div></div>
       </div>
     </section>
 
@@ -164,6 +174,8 @@
         <div id="bankBox" class="grid"></div>
         <div class="goldrow"><span>🏦 <b id="bankGold">0</b> guardados</span>
           <button id="bankWd" class="mini">Retirar</button></div>
+        <div class="goldrow"><span>📦 <b id="bankSlots">0</b> espacios</span>
+          <button id="bankBuy" class="mini">Comprar +5 espacios (1.000.000 💰)</button></div>
       </div>
     </div>
     <p class="fine">Lo que guardas aquí está a salvo: no se pierde si te matan en una zona PvP.</p>
@@ -213,11 +225,18 @@
 <div id="tip" role="tooltip" hidden></div>
 <div id="toasts" aria-live="polite"></div>
 
+<script src="safe.js"></script>
 <script src="cover.js"></script>
 <script src="game.js"></script>
 <script src="audio.js"></script>
 <script src="env.js"></script>
+<script src="gfx.js"></script>
+<script src="view3d.js"></script>
+<script src="fx2.js"></script>
+<script src="fx3.js"></script>
+<script src="tutorial.js"></script>
 <script src="touch.js"></script>
 <script src="ui2.js"></script>
+<script src="raid.js"></script>
 </body>
 </html>

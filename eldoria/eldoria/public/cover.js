@@ -4,6 +4,7 @@
 (() => {
   const cv = document.getElementById('cover');
   if (!cv) return;
+  if (window.EldSafe && window.EldSafe.on()) { cv.style.display = 'none'; return; }       // modo seguro: sin portada animada
   const c = cv.getContext('2d');
   const login = document.getElementById('login');
   const still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;

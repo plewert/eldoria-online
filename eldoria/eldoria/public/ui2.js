@@ -53,7 +53,7 @@
       const grid = el('div', 'colgrid');
       for (const [id, ch] of d.loot) {
         const it = G.items[id]; if (!it) continue;
-        if (!(it.type === 'weapon' || it.type === 'shield' || ['head', 'body', 'gloves', 'legs', 'boots', 'amulet', 'ring', 'belt', 'pet', 'mount'].includes(it.type) || /^trofeo/.test(id)) && ch >= 0.2) continue;   // solo lo "coleccionable": equipo, mascotas y objetos raros
+        if (!(it.type === 'weapon' || it.type === 'shield' || ['head', 'body', 'gloves', 'legs', 'boots', 'cape', 'amulet', 'ring', 'belt', 'pet', 'mount'].includes(it.type) || /^trofeo/.test(id)) && ch >= 0.2) continue;   // solo lo "coleccionable": equipo, mascotas y objetos raros
         n++; const c = have2[id], tile = el('div', 'coltile' + (c ? ' on' : ''));
         const ic = el('div', 'ico'); ic.append(X.iconNode ? X.iconNode(id) : it.icon || '?'); tile.append(ic, el('small', '', c ? it.name : '???'));
         if (c) { g++; tile.append(el('b', '', '×' + c)); }
@@ -63,17 +63,17 @@
       if (!n) return null; got += g; tot += n;
       const h = el('h3', '', `${d.icon} ${d.name} · nivel ${d.lv} `); h.append(el('small', '', `${g} / ${n}`)); sec.append(h, grid); return sec;
     }).filter(Boolean);
-    const fdef = G.fish && G.fish.defs && G.fish.defs.col;
-    if (fdef) {                                                                      // sección de pesca (peces, tesoros, mascotas y set raro)
-      const sec = el('div', 'colsec'), have3 = colData.pesca || {}, grid = el('div', 'colgrid'); let g = 0;
-      for (const [id, ch] of fdef) {
+    for (const [title, defsCol, key] of [['⛏️ Minería', G.mine && G.mine.defs && G.mine.defs.col, 'mineria'], ['🎣 Pesca', G.fish && G.fish.defs && G.fish.defs.col, 'pesca']]) {   // secciones de oficios (peces, rocas, gemas, mascotas...)
+      if (!defsCol) continue;
+      const sec = el('div', 'colsec'), have3 = colData[key] || {}, grid = el('div', 'colgrid'); let g = 0;
+      for (const [id, ch] of defsCol) {
         const it = G.items[id]; if (!it) continue; const c = have3[id], tile = el('div', 'coltile' + (c ? ' on' : ''));
         const ic = el('div', 'ico'); ic.append(X.iconNode ? X.iconNode(id) : it.icon || '?'); tile.append(ic, el('small', '', c ? it.name : '???'));
         if (c) { g++; tile.append(el('b', '', '×' + c)); }
-        tile.title = c ? `${it.name} — conseguido ${c} ${c === 1 ? 'vez' : 'veces'}` : ch >= 1 ? 'Aún no lo has pescado' : `Aún no te ha salido (${(ch * 100).toFixed(2)} % al pescar)`;
+        tile.title = c ? `${it.name} — conseguido ${c} ${c === 1 ? 'vez' : 'veces'}` : ch >= 1 ? 'Aún no lo has conseguido' : `Aún no te ha salido (${(ch * 100).toFixed(2)} %)`;
         grid.append(tile);
       }
-      const h = el('h3', '', '🎣 Pesca '); h.append(el('small', '', `${g} / ${fdef.length}`)); sec.append(h, grid); secs.unshift(sec);
+      const h = el('h3', '', title + ' '); h.append(el('small', '', `${g} / ${defsCol.length}`)); sec.append(h, grid); secs.unshift(sec);
     }
     b.append(el('p', 'colhead', `Objetos de jefes que ya te han salido: ${got} / ${tot}`), ...secs);
     if (!secs.length) b.append(el('p', '', 'Aún no hay jefes registrados.'));
@@ -87,7 +87,7 @@
     st.append(n); setTimeout(() => n.classList.add('out'), 4200); setTimeout(() => { n.remove(); colNext(); }, 4800);
   };
   X.handlers.colnew = (m) => { colQ.push(m); if (!colBusy) colNext(); };
-  wB.onOpen = () => { send({ t: 'col' }); send({ t: 'fish' }); renderCol(); };
+  wB.onOpen = () => { send({ t: 'col' }); send({ t: 'fish' }); send({ t: 'mine' }); renderCol(); };
   X.handlers.col = (m) => { colData = m.v || {}; if (!wB.m.hidden) renderCol(); };
 
   /* ============================ MISIONES ============================ */
@@ -146,6 +146,39 @@
   };
   const QDready = () => Object.keys(QD).length > 0;
   X.handlers.qprog = (m) => { const s = qst[m.id] || (qst[m.id] = { st: 'active', n: 0 }); s.n = m.n; s.st = m.n >= m.need ? 'ready' : 'active'; if (!wQ.m.hidden) renderQLog(); X.toast(`📜 ${m.title}: ${m.n}/${m.need}`, null, 2500); };
+  /* flechas de misión: señalan a dónde ir (monstruo, objeto, cueva o PNJ al que entregar); en el borde de la pantalla si queda lejos */
+  X.handlers.qguide = (m) => {
+    const old = new Set((G.qguide || []).map((g) => g.id)), fresh = (m.list || []).filter((g) => !old.has(g.id));
+    G.qguide = m.list || [];
+    if (G.qguideInit) for (const g of fresh) X.toast(`📍 ${g.title}: ve a ${g.zone || 'la zona marcada'} — sigue la flecha azul (${g.label})`, null, 7000);
+    G.qguideInit = true;
+  };
+  const drawGuide = (c, now, cw, ch, is3) => {
+    if (!G.qguide || !G.qguide.length || !G.me) return;
+    const TS = X.TS, me = G.me, list = G.qguide.map((g) => Object.assign({ d: Math.hypot(g.x - me.x, g.y - me.y) }, g)).sort((a, b) => a.d - b.d).slice(0, 3), m = 26;
+    list.forEach((t, i) => {
+      if (t.d < 2) return;
+      let x = (t.x - G.cam.x) * TS + cw / 2, y = (t.y - G.cam.y) * TS + ch / 2;
+      if (is3) { const P = X.proj3 && X.proj3(t.x, t.y); if (P) { x = P.x; y = P.y; } else { y = -2000; } }
+      const bob = Math.sin(now / 240 + i) * 4, label = `${t.label} · ${Math.round(t.d)}`;
+      c.save();
+      if (x > m && x < cw - m && y > m + 30 && y < ch - m) {
+        const ay = y - 34 + bob;
+        c.fillStyle = '#7fd0ff'; c.strokeStyle = '#0b3a5a'; c.lineWidth = 2; c.lineJoin = 'round';
+        c.beginPath(); c.moveTo(x, ay + 13); c.lineTo(x - 10, ay); c.lineTo(x - 4, ay); c.lineTo(x - 4, ay - 11); c.lineTo(x + 4, ay - 11); c.lineTo(x + 4, ay); c.lineTo(x + 10, ay); c.closePath(); c.stroke(); c.fill();
+        X.outlined(c, label, x, ay - 18, '#bfe8ff', 'bold 11px "Segoe UI", sans-serif');
+      } else {
+        const ang = Math.atan2(y - ch / 2, x - cw / 2), ex = Math.max(78, Math.min(cw - m, cw / 2 + Math.cos(ang) * cw)), ey = Math.max(m + 40, Math.min(ch - 130 - i * 26, ch / 2 + Math.sin(ang) * ch - i * 26));     // sin tapar el menú ni el chat
+        c.translate(ex, ey); c.save(); c.rotate(ang);
+        c.fillStyle = '#7fd0ff'; c.strokeStyle = '#0b3a5a'; c.lineWidth = 2; c.lineJoin = 'round';
+        c.beginPath(); c.moveTo(14 + Math.sin(now / 240) * 3, 0); c.lineTo(-8, -11); c.lineTo(-3, 0); c.lineTo(-8, 11); c.closePath(); c.stroke(); c.fill(); c.restore();
+        c.font = 'bold 11px "Segoe UI", sans-serif'; const tw = c.measureText(label).width; X.outlined(c, label, Math.max(-ex + tw / 2 + 8, Math.min(cw - ex - tw / 2 - 8, 0)), -16 - i * 0, '#bfe8ff', 'bold 11px "Segoe UI", sans-serif');
+      }
+      c.restore();
+    });
+  };
+  X.on('draw', (c, now, cw, ch) => { if (!(X.mode3d && X.mode3d())) drawGuide(c, now, cw, ch, false); });
+  X.draw3 = (c, now, cw, ch) => drawGuide(c, now, cw, ch, true);
   X.handlers.quest_done = (m) => { X.toast(`✅ Misión cumplida: ${m.title}`, null, 5000); };
   X.on('inv', () => { if (!wQ.m.hidden) renderQLog(); if (!wN.m.hidden) renderDlg(); if (!wC.m.hidden) renderCraft(); if (!wM.m.hidden && tab === 'sell') renderMarket(); });
 
@@ -449,7 +482,7 @@
   wF.onOpen = () => { send({ t: 'fish' }); renderFish(); };
 
   /* ---------- atajos ---------- */
-  const KEYS = { n: 'map', q: 'q', l: 'a', g: 's', r: 'r', p: 'm', f: 'c', b: 'b', o: 'o' };
+  const KEYS = { u: 'u', n: 'map', q: 'q', l: 'a', g: 's', r: 'r', p: 'm', f: 'c', b: 'b', o: 'o' };
   X.on('key', (k) => {
     if (KEYS[k]) { toggle(KEYS[k]); return true; }
     if (k === '1' || k === '2' || k === '3') { useSkill(+k - 1); return true; }
@@ -544,6 +577,11 @@
       const d = xi.nodes[type]; if (!d) continue;
       const cx = X.sxOf(x) + TS / 2, cy = X.syOf(y) + TS / 2, pulse = 1 + Math.sin(now / 420 + x * 3 + y) * 0.06;
       c.fillStyle = 'rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(cx, cy + 10, 10, 3.5, 0, 0, 7); c.fill();
+      if (d.spr && X.SPR[d.spr] && X.sprReady()) {                                   // rocas de minería (sprites)
+        X.drawSpriteS(c, d.spr, 0, cx, cy + 12, false, 1.1);
+        if (G.mine && d.lvl > G.mine.lv) { c.font = 'bold 9px sans-serif'; c.textAlign = 'center'; c.fillStyle = '#ffb4a0'; c.strokeStyle = '#000'; c.lineWidth = 2.5; c.strokeText('⛏️' + d.lvl, cx, cy - 8); c.fillText('⛏️' + d.lvl, cx, cy - 8); }
+        continue;
+      }
       c.save(); c.translate(cx, cy + 2); c.scale(pulse, pulse); c.font = '20px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(d.icon, 0, 0); c.restore();
       if (Math.sin(now / 300 + x * 7) > 0.88) { c.fillStyle = '#fff'; c.fillRect(cx + 7, cy - 9, 2, 2); }
     }
@@ -584,6 +622,66 @@
   }
   setInterval(tickGather, 350);
 
+  /* ============================ MINERÍA ============================ */
+  const wMn = win('u', '⛏️ Minería', true); mkBtn('⛏️', 'Minería', 'u', 'u');
+  const msd = G.mine = { lv: 1, xp: 0, lo: 0, hi: 1, c: {}, defs: null };
+  const GEM_IC = { rubi: '🔴', zafiro: '🔵', esmeralda: '🟢', topacio: '🟡', amatista: '🟣', opalo: '🟠', diamante: '💎' };
+  const bestPickId = () => {
+    let best = '', rq = -1; const picks = (msd.defs && msd.defs.picks) || {};
+    for (const it of G.inv || []) { const r = it && picks[it[0]]; if (r && r.req <= msd.lv && r.req > rq) { rq = r.req; best = it[0]; } }
+    return best;
+  };
+  const mineLi = document.querySelector('#skills li[data-sk="mine"]');
+  function syncMineRow() {
+    if (!mineLi) return; const max = msd.defs ? msd.defs.max : 320, hi = msd.hi > msd.lo ? msd.hi : msd.lo + 1;
+    mineLi.querySelector('b').textContent = msd.lv; mineLi.title = `Nivel de minería ${msd.lv} / ${max} (clic para abrir la ventana de minería)`;
+    mineLi.querySelector('.bar i').style.width = (msd.lv >= max ? 100 : Math.max(0, Math.min(100, (msd.xp - msd.lo) / (hi - msd.lo) * 100))) + '%';
+  }
+  if (mineLi) { mineLi.style.cursor = 'pointer'; mineLi.addEventListener('click', () => toggle('u')); }
+  function renderMine() {
+    const b = wMn.body; b.textContent = ''; const d = msd.defs; if (!d) { b.append(el('p', '', 'Cargando…')); return; }
+    const pct = msd.lv >= d.max ? 100 : Math.max(0, Math.min(100, (msd.xp - msd.lo) / Math.max(1, msd.hi - msd.lo) * 100));
+    b.append(el('p', 'colhead', `Nivel de minería ${msd.lv} / ${d.max}  ·  ${fmt(msd.xp)} xp`));
+    const bar = el('div', 'fbarx'), fill = el('div', 'fbarf'); fill.style.width = pct + '%'; bar.append(fill); b.append(bar);
+    b.append(el('p', 'fhint', 'Compra un pico a Boris el Mercader (ciudad) y haz clic en una roca del mapa: caminarás hasta ella y la picarás. Cada roca pide un nivel de minería. Mejores picos minan más rápido, dan más piedra y atraen más gemas. Las gemas se engarzan en las ranuras de armas y armaduras (en una zona segura).'));
+    b.append(el('h3', '', 'Rocas y registro'));
+    const g = el('div', 'colgrid');
+    for (const id of d.order) {
+      const r = d.rocks[id], n = msd.c[id] || 0, ok = msd.lv >= r.lvl, tile = el('div', 'coltile' + (n ? ' on' : ''));
+      const ic = el('div', 'ico'); ic.append(X.iconNode ? X.iconNode(id) : '🪨'); tile.append(ic, el('small', '', n || ok ? r.name : '???'), el('small', '', ok ? `Nv ${r.lvl}` : `🔒 Nv ${r.lvl}`));
+      if (n) tile.append(el('b', '', '×' + n));
+      tile.title = `${r.name} · minería ${r.lvl} · ${r.xp} xp · gema ${(r.gem * 100).toFixed(1)}% (base) · ${r.zones.join(', ')}`;
+      g.append(tile);
+    }
+    b.append(g);
+    b.append(el('h3', '', 'Dónde minar'));
+    for (const id of d.order) {
+      const r = d.rocks[id], ok = msd.lv >= r.lvl, row = el('p', 'frow' + (ok ? '' : ' flock')), ic = el('span', 'fricon'); ic.append(X.iconNode ? X.iconNode(id) : '🪨');
+      row.append(ic, el('b', '', `${r.name} (Nv ${r.lvl}): `), r.zones.join(' · '), el('small', '', `  ·  gemas: ${r.pool.filter((v, i, a) => a.indexOf(v) === i).map((q) => GEM_IC[q] || q).join(' ')}`)); b.append(row);
+    }
+    b.append(el('h3', '', 'Gemas encontradas'));
+    const gg = el('div', 'colgrid');
+    for (const id of ['rubi', 'zafiro', 'esmeralda', 'topacio', 'amatista', 'opalo', 'diamante']) {
+      const n = msd.c[id] || 0, tile = el('div', 'coltile' + (n ? ' on' : '')), ic = el('div', 'ico'); ic.append(X.iconNode ? X.iconNode(id) : GEM_IC[id]);
+      tile.append(ic, el('small', '', n ? iname(id) : '???')); if (n) tile.append(el('b', '', '×' + n)); tile.title = (G.gems && G.gems[id] ? G.gems[id].desc : '') || iname(id); gg.append(tile);
+    }
+    b.append(gg);
+    b.append(el('h3', '', 'Picos'));
+    for (const [id, r] of Object.entries(d.picks)) { const ok = msd.lv >= r.req, row = el('p', 'frow' + (ok ? '' : ' flock')), ic = el('span', 'fricon'); ic.append(X.iconNode ? X.iconNode(id) : '⛏️'); row.append(ic, `${r.name} — minería ${r.req} · velocidad ${Math.round(100 / r.speed)}% · gemas +${Math.round(r.gem * 100)}% · piedra extra ${Math.round(r.extra * 100)}% · ${fmt(r.price)} 🪙${have(id) ? ' ✔ lo tienes' : ''}`); b.append(row); }
+  }
+  X.handlers.mine = (m) => { Object.assign(msd, m); if (m.defs) msd.defs = m.defs; syncMineRow(); if (!wMn.m.hidden) renderMine(); if (!wB.m.hidden) renderCol(); };
+  wMn.onOpen = () => { send({ t: 'mine' }); renderMine(); };
+  // al picar: polvo y esquirlas de la roca + el pico en la mano (se balancea mientras minas)
+  X.on('fx', (f) => { if (f.k === 'mn') { X.burst(f.x, f.y, 'stone', 16, { sp: 4, up: 3, g: 5, life: 0.55, size: 2.6 }); X.ring(f.x, f.y, 'stone', 300, 18, 3); } });
+  const pkIc = {};
+  X.on('draw', (c, now) => {
+    if (!gTarget || !G.me || performance.now() > gTarget.until || cheb(G.me.x, G.me.y, gTarget.x, gTarget.y) > 1) return;
+    const id = bestPickId(); if (!id || !X.iconNode) return; const me = G.ents.get(G.id); if (!me) return;
+    const ic = (pkIc[id] && pkIc[id].width ? pkIc[id] : (pkIc[id] = X.iconNode(id))); if (!ic || ic.tagName !== 'CANVAS' || !ic.width) return;
+    const TS = X.TS, dir = gTarget.x < me.x ? -1 : 1, cx = X.sxOf(me.rx) + TS / 2 + dir * 5, cy = X.syOf(me.ry) + TS / 2 + 3, ang = -0.5 + (Math.sin(now / 95) * 0.5 + 0.5) * 1.5, k = 0.8;
+    c.save(); c.translate(cx, cy); c.scale(dir, 1); c.rotate(ang); c.imageSmoothingEnabled = false; c.drawImage(ic, -4 * k, -31 * k, 36 * k, 36 * k); c.restore();
+  });
+
   /* ============================ EFECTOS DE HABILIDADES ============================ */
   X.on('fx', (f) => {
     if (f.k !== 'sk') return;
@@ -611,12 +709,12 @@
     const now = performance.now();
     switch (f.k) {
       case 'dkw': BF.push({ k: 'dkw', t: now, T: 1000, f }); break;
-      case 'dk': BF.push({ k: 'dk', t: now, T: 1000, f, seed: Math.random() * 99 }); G.shake = { t: now, m: 3 }; X.sfx && X.sfx('boss'); X.burst(f.x1, f.y1, 'dark', 26, { sp: 4, life: 0.7, size: 3.2, add: false }); break;
+      case 'dk': BF.push({ k: 'dk', t: now, T: 1000, f, seed: Math.random() * 99 }); G.shake = { t: now, m: 3 }; X.burst(f.x1, f.y1, 'dark', 26, { sp: 4, life: 0.7, size: 3.2, add: false }); break;
       case 'slw': BF.push({ k: 'slw', t: now, T: 1100, f }); break;
       case 'sl': BF.push({ k: 'crack', t: now, T: 9000, x: f.x, y: f.y, r: f.r, c: cracks(f.r) });
         X.ring(f.x, f.y, 'fire', 700, f.r * 32, 6); X.ring(f.x, f.y, 'dark', 520, f.r * 20, 4);
         X.burst(f.x, f.y, 'fire', 60, { sp: 7, up: 3, g: 5, life: 0.9, size: 3.4 }); X.burst(f.x, f.y, 'dark', 30, { sp: 5, life: 0.9, size: 3.5, add: false });
-        G.shake = { t: now, m: 9 }; X.sfx && X.sfx('thunder'); break;
+        G.shake = { t: now, m: 9 }; break;
       case 'fiw': BF.push({ k: 'fiw', t: now, T: 1000, f }); break;
       case 'fi': BF.push({ k: 'crack', t: now, T: 6000, x: f.x, y: f.y, r: 1.5, c: cracks(1.5) }); BF.push({ k: 'fi', t: now, T: 700, f });
         X.burst(f.x, f.y, 'fire', 34, { sp: 3, up: 6, g: 4, life: 0.9, size: 3.4 }); X.ring(f.x, f.y, 'fire', 500, 26, 4); break;
@@ -713,11 +811,11 @@
     const now = performance.now();
     switch (f.k) {
       case 'ykw': BF.push({ k: 'ykw', t: now, T: 1000, f }); break;
-      case 'yk': BF.push({ k: 'yk', t: now, T: 1000, f, seed: Math.random() * 99 }); G.shake = { t: now, m: 3 }; X.sfx && X.sfx('boss'); X.burst(f.x1, f.y1, 'storm', 26, { sp: 4, life: 0.7, size: 3.2 }); break;
+      case 'yk': BF.push({ k: 'yk', t: now, T: 1000, f, seed: Math.random() * 99 }); G.shake = { t: now, m: 3 }; X.burst(f.x1, f.y1, 'storm', 26, { sp: 4, life: 0.7, size: 3.2 }); break;
       case 'acw': BF.push({ k: 'acw', t: now, T: 900, f }); break;
       case 'ac': BF.push({ k: 'pool', t: now, T: 3500, x: f.x, y: f.y, seed: Math.random() * 9 }); X.burst(f.x, f.y, 'poison', 22, { sp: 3.5, up: 4, g: 5, life: 0.7, size: 3 }); X.ring(f.x, f.y, 'poison', 420, 34, 4); break;
       case 'hsw': BF.push({ k: 'hsw', t: now, T: 1100, f }); break;
-      case 'hs': X.ring(f.x, f.y, 'poison', 650, f.r * 32, 6); X.ring(f.x, f.y, 'dark', 520, f.r * 20, 4); X.burst(f.x, f.y, 'dark', 40, { sp: 6, up: 3, g: 5, life: 0.9, size: 3.6, add: false }); G.shake = { t: now, m: 9 }; X.sfx && X.sfx('thunder'); break;
+      case 'hs': X.ring(f.x, f.y, 'poison', 650, f.r * 32, 6); X.ring(f.x, f.y, 'dark', 520, f.r * 20, 4); X.burst(f.x, f.y, 'dark', 40, { sp: 6, up: 3, g: 5, life: 0.9, size: 3.6, add: false }); G.shake = { t: now, m: 9 }; break;
       case 'rcw': BF.push({ k: 'rcw', t: now, T: 1100, f, h: rnd(-6, 6) }); break;
       case 'rc': BF.push({ k: 'rubble', t: now, T: 5000, x: f.x, y: f.y, s: Math.random() * 99 }); X.burst(f.x, f.y, 'dark', 26, { sp: 5, up: 4, g: 6, life: 0.8, size: 3.4, add: false }); X.ring(f.x, f.y, 'dark', 380, 30, 4); G.shake = { t: now, m: 4 }; break;
       default: break;
@@ -783,11 +881,11 @@
     for (let i = AF.length - 1; i >= 0; i--) if (now - AF[i].t > AF[i].T) AF.splice(i, 1);
     switch (f.k) {
       case 'lgw': AF.push({ k: 'lgw', t: now, T: 900, f }); break;
-      case 'lg': AF.push({ k: 'lg', t: now, T: 420, f, s: Math.random() * 99 }); X.burst(f.x, f.y, 'storm', 14, { sp: 4, up: 3, g: 5, life: 0.5, size: 2.8 }); X.ring(f.x, f.y, 'storm', 360, 28, 3); G.shake = { t: now, m: 3 }; X.sfx && X.sfx('thunder'); break;
+      case 'lg': AF.push({ k: 'lg', t: now, T: 420, f, s: Math.random() * 99 }); X.burst(f.x, f.y, 'storm', 14, { sp: 4, up: 3, g: 5, life: 0.5, size: 2.8 }); X.ring(f.x, f.y, 'storm', 360, 28, 3); G.shake = { t: now, m: 3 }; break;
       case 'frw': AF.push({ k: 'frw', t: now, T: 900, f }); break;
       case 'fr': AF.push({ k: 'fr', t: now, T: 1800, f, s: Math.random() * 99 }); X.burst(f.x, f.y, 'fire', 18, { sp: 4, up: 4, g: 5, life: 0.7, size: 3 }); X.ring(f.x, f.y, 'fire', 380, 30, 4); G.shake = { t: now, m: 3 }; break;
       case 'fqw': AF.push({ k: 'fqw', t: now, T: 1300, f }); G.shake = { t: now, m: 2 }; break;
-      case 'fq': AF.push({ k: 'fq', t: now, T: 800, f }); X.ring(f.x, f.y, 'fire', 700, f.r * 32, 7); X.burst(f.x, f.y, 'dark', 40, { sp: 6, up: 3, g: 5, life: 0.9, size: 3.6, add: false }); G.shake = { t: now, m: 12 }; X.sfx && X.sfx('thunder'); break;
+      case 'fq': AF.push({ k: 'fq', t: now, T: 800, f }); X.ring(f.x, f.y, 'fire', 700, f.r * 32, 7); X.burst(f.x, f.y, 'dark', 40, { sp: 6, up: 3, g: 5, life: 0.9, size: 3.6, add: false }); G.shake = { t: now, m: 12 }; break;
       case 'wbw': AF.push({ k: 'wbw', t: now, T: 1100, f }); break;
       case 'wb': AF.push({ k: 'wb', t: now, T: 2400, f, s: Math.random() * 9 }); X.burst(f.x, f.y, 'fire', 22, { sp: 4, up: 3, g: 4, life: 0.8, size: 3 }); X.ring(f.x, f.y, 'fire', 420, f.r * 26, 4); G.shake = { t: now, m: 3 }; break;
       case 'spw': AF.push({ k: 'spw', t: now, T: 900, f }); break;
@@ -795,7 +893,7 @@
       case 'tpo': case 'tpi': AF.push({ k: f.k, t: now, T: 900, f }); X.burst(f.x, f.y, 'arcane', 26, { sp: 4, up: 5, g: 2, life: 0.8, size: 3 }); X.ring(f.x, f.y, 'arcane', 600, 34, 5); break;
       case 'tn': AF.push({ k: 'tn', t: now, T: 560, f }); break;
       case 'nvw': AF.push({ k: 'nvw', t: now, T: 1300, f }); break;
-      case 'nv': AF.push({ k: 'nv', t: now, T: 700, f }); X.ring(f.x, f.y, 'arcane', 650, f.r * 36, 6); X.burst(f.x, f.y, 'arcane', 36, { sp: 6, up: 5, g: 3, life: 0.9, size: 3.4 }); G.shake = { t: now, m: 7 }; X.sfx && X.sfx('boss'); break;
+      case 'nv': AF.push({ k: 'nv', t: now, T: 700, f }); X.ring(f.x, f.y, 'arcane', 650, f.r * 36, 6); X.burst(f.x, f.y, 'arcane', 36, { sp: 6, up: 5, g: 3, life: 0.9, size: 3.4 }); G.shake = { t: now, m: 7 }; break;
       default: break;
     }
   });
@@ -893,7 +991,7 @@
       case 'olw': LF.push({ k: 'olw', t: now, T: 1100, f }); break;
       case 'ol': LF.push({ k: 'ol', t: now, T: 300, f, s: Math.random() * 9 }); if (Math.random() < 0.25) X.burst(f.x, f.y, 'water', 3, { sp: 3, up: 3, g: 4, life: 0.5, size: 2.4 }); break;
       case 'bmw': LF.push({ k: 'bmw', t: now, T: 1000, f }); break;
-      case 'bm': LF.push({ k: 'bm', t: now, T: 560, f, s: Math.random() * 99 }); G.shake = { t: now, m: 3 }; X.sfx && X.sfx('boss'); X.burst(f.x1, f.y1, 'water', 18, { sp: 4, life: 0.6, size: 3 }); break;
+      case 'bm': LF.push({ k: 'bm', t: now, T: 560, f, s: Math.random() * 99 }); G.shake = { t: now, m: 3 }; X.burst(f.x1, f.y1, 'water', 18, { sp: 4, life: 0.6, size: 3 }); break;
       case 'bub': LF.push({ k: 'bub', t: now, T: 620, f }); break;
       case 'bubx': LF.push({ k: 'bubx', t: now, T: 500, f }); X.ring(f.x, f.y - 2, 'water', 500, 90, 5); X.burst(f.x, f.y - 2, 'water', 30, { sp: 6, up: 4, g: 3, life: 0.8, size: 3 }); break;
       default: break;
@@ -966,6 +1064,193 @@
       }
     }
   });
+  /* ---------- Ignaros, Soberano del Magma: infierno con refugio azul, meteoritos, líneas de fuego y marea de lava ---------- */
+  const MG = [], BRN = new Map(); let LAVA = null;
+  const flameAt = (c, x, y, h, w, now, s) => {                                        // llama con parpadeo (capas roja, naranja y amarilla)
+    for (const [col, k] of [['rgba(255,60,10,.85)', 1], ['rgba(255,150,30,.9)', 0.72], ['rgba(255,235,130,.92)', 0.42]]) {
+      const fl = Math.sin(now / 90 + s * 1.7) * 0.18 + Math.sin(now / 53 + s * 3.1) * 0.12, hh = h * k * (1 + fl), ww = w * k;
+      c.fillStyle = col; c.beginPath(); c.moveTo(x - ww, y); c.quadraticCurveTo(x - ww * 0.9, y - hh * 0.5, x + fl * ww * 2, y - hh); c.quadraticCurveTo(x + ww * 0.9, y - hh * 0.5, x + ww, y); c.closePath(); c.fill();
+    }
+  };
+  // el orbe flotante del jefe (para que los ataques salgan de él)
+  const orbOf = (bx, by) => { for (const e of G.ents.values()) if (e.kind === 'mo' && e.t === 'ignaros') return { id: e.id, x: X.sxOf(e.rx) + X.TS / 2, y: X.syOf(e.ry) + X.TS - 2 - 180, wx: e.rx, wy: e.ry }; return null; };
+  const caveBox = (R) => ({ x: X.sxOf(R[0]), y: X.syOf(R[1]), w: (R[2] - R[0] + 1) * X.TS, h: (R[3] - R[1] + 1) * X.TS });
+  const sqPath = (c, f) => { c.rect(X.sxOf(f.sx), X.syOf(f.sy), f.w * X.TS, f.w * X.TS); };
+  X.on('fx', (f) => {
+    const now = performance.now();
+    for (let i = MG.length - 1; i >= 0; i--) if (now - MG[i].t > MG[i].T) MG.splice(i, 1);
+    switch (f.k) {
+      case 'mcast': X.casts.set(f.id, now + f.T + 400); MG.push({ k: 'mcast', t: now, T: f.T + 400, f }); break;
+      case 'mgw': MG.push({ k: 'mgw', t: now, T: f.T, f }); break;
+      case 'mgf': MG.push({ k: 'mgf', t: now, T: f.T, f }); G.shake = { t: now, m: 5 }; break;
+      case 'mmw': MG.push({ k: 'mmw', t: now, T: f.T, f }); if (f.bx !== undefined) { const o = orbOf(f.bx, f.by); if (o) X.burst(o.wx, o.wy - 5.6, 'fire', 6, { sp: 3, up: 5, g: -2, life: 0.5, size: 2.8 }); } break;
+      case 'mmx': MG.push({ k: 'mmx', t: now, T: 900, f }); G.shake = { t: now, m: 4 }; X.burst(f.x, f.y, 'fire', 26, { sp: 5, up: 3, g: 3, life: 0.8, size: 3.4 }); X.ring(f.x, f.y, 'fire', 600, 60, 5); break;
+      case 'mlw': MG.push({ k: 'mlw', t: now, T: f.T, f }); break;
+      case 'ml': MG.push({ k: 'ml', t: now, T: f.T, f, s: Math.random() * 9 }); G.shake = { t: now, m: 3 }; break;
+      case 'mlw2': MG.push({ k: 'mlw2', t: now, T: f.T, f }); break;
+      case 'mlv': LAVA = { t: now, f, T: f.rise + f.hold + f.ebb }; G.shake = { t: now, m: 4 }; break;
+      case 'brn': BRN.set(f.id, now + (f.ms || 1500)); break;
+      default: break;
+    }
+  });
+  const islandDraw = (c, f, now, al) => {                                                       // rocas azules seguras
+    for (const i of f.isl) {
+      const x = px(i.x), y = py(i.y), r = i.r * X.TS, pu = 0.5 + 0.5 * Math.sin(now / 170);
+      c.fillStyle = `rgba(26,28,50,${0.8 * al})`; c.beginPath(); c.ellipse(x, y, r, r * 0.85, 0, 0, 7); c.fill();
+      c.fillStyle = `rgba(60,120,255,${(0.22 + 0.14 * pu) * al})`; c.beginPath(); c.ellipse(x, y, r, r * 0.85, 0, 0, 7); c.fill();
+      c.strokeStyle = `rgba(150,200,255,${(0.7 + 0.3 * pu) * al})`; c.lineWidth = 3; c.stroke();
+      c.strokeStyle = `rgba(210,235,255,${0.5 * al})`; c.lineWidth = 1.2; c.beginPath(); c.ellipse(x, y, r * 0.7, r * 0.6, 0, 0, 7); c.stroke();
+    }
+  };
+  const lavaFill = (c, b, now) => {                                                               // textura animada de lava
+    c.fillStyle = '#a82208'; c.fillRect(b.x, b.y, b.w, b.h);
+    c.fillStyle = 'rgba(255,110,20,.8)'; c.fillRect(b.x, b.y, b.w, b.h);
+    const t = now / 700;
+    for (let yy = b.y; yy < b.y + b.h; yy += 14) {
+      c.strokeStyle = `rgba(255,${190 + ((yy / 14) | 0) % 3 * 20},70,.55)`; c.lineWidth = 3; c.beginPath();
+      for (let xx = b.x; xx <= b.x + b.w; xx += 10) { const yv = yy + Math.sin(xx / 37 + t + yy / 20) * 4; if (xx === b.x) c.moveTo(xx, yv); else c.lineTo(xx, yv); } c.stroke();
+    }
+    c.fillStyle = 'rgba(90,20,6,.55)';
+    for (let k = 0; k < 90; k++) { const hx = (k * 131 + 17) % 997 / 997, hy = (k * 197 + 43) % 991 / 991; const ox = (Math.sin(t * 0.6 + k) * 6), oy = Math.cos(t * 0.5 + k * 1.3) * 4; c.beginPath(); c.ellipse(b.x + hx * b.w + ox, b.y + hy * b.h + oy, 9 + (k % 4) * 3, 4 + (k % 3) * 2, 0, 0, 7); c.fill(); }
+  };
+  X.on('under', (c, now) => {
+    const TS = X.TS;
+    for (const b of MG) {
+      const p = (now - b.t) / b.T; if (p >= 1 || p < 0) continue; const f = b.f;
+      if (b.k === 'mgw') {                                                            // aviso: la cueva se calienta y aparece el refugio azul
+        const B = caveBox(f.r), pu = 0.5 + 0.5 * Math.sin(now / 120 * (1 + p * 2));
+        c.save(); c.fillStyle = `rgba(255,60,10,${0.06 + 0.18 * p * (0.6 + 0.4 * pu)})`; c.fillRect(B.x, B.y, B.w, B.h);
+        const sx = X.sxOf(f.sx), sy = X.syOf(f.sy), w = f.w * TS;
+        const g = c.createRadialGradient(sx + w / 2, sy + w / 2, 4, sx + w / 2, sy + w / 2, w * 1.6); g.addColorStop(0, 'rgba(80,150,255,.35)'); g.addColorStop(1, 'rgba(80,150,255,0)'); c.fillStyle = g; c.fillRect(sx - w, sy - w, w * 3, w * 3);
+        c.fillStyle = `rgba(50,120,255,${0.35 + 0.2 * pu})`; c.fillRect(sx, sy, w, w);
+        c.strokeStyle = `rgba(170,215,255,${0.8 + 0.2 * pu})`; c.lineWidth = 3; c.strokeRect(sx + 1.5, sy + 1.5, w - 3, w - 3);
+        c.strokeStyle = 'rgba(220,240,255,.7)'; c.lineWidth = 1; for (let i = 1; i < f.w; i++) { c.beginPath(); c.moveTo(sx + i * TS, sy); c.lineTo(sx + i * TS, sy + w); c.moveTo(sx, sy + i * TS); c.lineTo(sx + w, sy + i * TS); c.stroke(); }
+        c.fillStyle = 'rgba(235,245,255,.95)'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center'; c.fillText('REFUGIO', sx + w / 2, sy - 6);
+        c.strokeStyle = `rgba(255,200,120,${0.5 * (1 - p)})`; c.lineWidth = 2; c.beginPath(); c.arc(sx + w / 2, sy + w / 2, w * (1.1 + 1.3 * (1 - p)), 0, 7); c.stroke();     // cuenta atrás
+        c.restore();
+      } else if (b.k === 'mgf') {                                                     // el suelo arde (menos el refugio)
+        const B = caveBox(f.r), al = p < 0.12 ? p / 0.12 : p > 0.8 ? (1 - p) / 0.2 : 1;
+        c.save(); c.beginPath(); c.rect(B.x, B.y, B.w, B.h); sqPath(c, f); c.clip('evenodd');
+        c.fillStyle = `rgba(255,70,10,${0.4 * al})`; c.fillRect(B.x, B.y, B.w, B.h);
+        c.fillStyle = `rgba(255,170,40,${0.18 * al * (0.6 + 0.4 * Math.sin(now / 70))})`; c.fillRect(B.x, B.y, B.w, B.h);
+        c.restore();
+        c.save(); const sx = X.sxOf(f.sx), sy = X.syOf(f.sy), w = f.w * TS; c.strokeStyle = `rgba(170,215,255,${al})`; c.lineWidth = 3; c.strokeRect(sx + 1.5, sy + 1.5, w - 3, w - 3); c.fillStyle = `rgba(60,130,255,${0.3 * al})`; c.fillRect(sx, sy, w, w); c.restore();
+      } else if (b.k === 'mmw') {                                                     // aviso del meteorito
+        const x = px(f.x), y = py(f.y), r = f.r * TS * 1.1;
+        c.fillStyle = `rgba(255,50,10,${0.12 + 0.25 * p})`; c.beginPath(); c.ellipse(x, y, r, r * 0.8, 0, 0, 7); c.fill();
+        c.strokeStyle = `rgba(255,170,90,${0.5 + 0.4 * Math.abs(Math.sin(now / 70))})`; c.lineWidth = 2; c.stroke();
+        c.strokeStyle = 'rgba(255,230,160,.8)'; c.beginPath(); c.ellipse(x, y, r * (1 - p), r * 0.8 * (1 - p), 0, 0, 7); c.stroke();
+      } else if (b.k === 'mmx') {                                                     // cráter y onda explosiva
+        const x = px(f.x), y = py(f.y), al = 1 - p;
+        c.fillStyle = `rgba(40,12,6,${0.55 * al})`; c.beginPath(); c.ellipse(x, y, f.r * TS * 0.9, f.r * TS * 0.7, 0, 0, 7); c.fill();
+        const R2 = 5 * TS * Math.min(1, p * 2.6);
+        c.strokeStyle = `rgba(255,190,90,${al})`; c.lineWidth = 6 * al + 1; c.beginPath(); c.ellipse(x, y, R2, R2 * 0.8, 0, 0, 7); c.stroke();
+        c.strokeStyle = `rgba(255,90,20,${0.7 * al})`; c.lineWidth = 3; c.beginPath(); c.ellipse(x, y, R2 * 0.8, R2 * 0.64, 0, 0, 7); c.stroke();
+      } else if (b.k === 'mlw') {                                                     // aviso de la línea de fuego
+        const x1 = px(f.x1), y1 = py(f.y1), x2 = px(f.x2), y2 = py(f.y2), a = Math.atan2(y2 - y1, x2 - x1), L = Math.hypot(x2 - x1, y2 - y1), th = f.w * TS;
+        c.save(); if (f.r) { const B = caveBox(f.r); c.beginPath(); c.rect(B.x, B.y, B.w, B.h); c.clip(); } c.translate(x1, y1); c.rotate(a); c.fillStyle = `rgba(255,60,10,${0.08 + 0.2 * p})`; c.fillRect(0, -th / 2, L, th);
+        c.strokeStyle = `rgba(255,190,110,${0.35 + 0.4 * Math.abs(Math.sin(now / 80))})`; c.lineWidth = 2; c.strokeRect(0, -th / 2, L, th); c.restore();
+      } else if (b.k === 'mlw2') {                                                    // aviso de la lava: rocas seguras
+        const B = caveBox(f.r), pu = 0.5 + 0.5 * Math.sin(now / 130);
+        c.fillStyle = `rgba(255,60,10,${0.05 + 0.15 * p * (0.6 + 0.4 * pu)})`; c.fillRect(B.x, B.y, B.w, B.h);
+        islandDraw(c, f, now, 1);
+        c.fillStyle = 'rgba(235,245,255,.95)'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center'; for (const i of f.isl) c.fillText('ROCA', px(i.x), py(i.y) - i.r * TS - 4);
+      }
+    }
+    if (LAVA) {                                                                       // marea de lava
+      const age = now - LAVA.t, f = LAVA.f; if (age > LAVA.T) { LAVA = null; return; }
+      const rise = Math.min(1, age / f.rise), ebb = age > f.rise + f.hold ? (age - f.rise - f.hold) / f.ebb : 0, B = caveBox(f.r);
+      const cx = f.bx !== undefined ? px(f.bx) : B.x + B.w / 2, cy = f.bx !== undefined ? py(f.by) : B.y + B.h / 2, maxR = Math.hypot(B.w, B.h) + 20, rad = maxR * (ebb > 0 ? 1 - ebb : rise);
+      c.save(); c.beginPath(); c.rect(B.x, B.y, B.w, B.h); c.clip();
+      c.beginPath(); c.arc(cx, cy, rad, 0, 7);
+      for (const i of f.isl) { c.moveTo(px(i.x) + i.r * TS, py(i.y)); c.ellipse(px(i.x), py(i.y), i.r * TS, i.r * TS * 0.85, 0, 0, 7); }
+      c.clip('evenodd'); lavaFill(c, B, now); c.restore();
+      c.strokeStyle = `rgba(255,220,120,${0.7 * (1 - ebb)})`; c.lineWidth = 3; c.save(); c.beginPath(); c.rect(B.x, B.y, B.w, B.h); c.clip(); c.beginPath(); c.arc(cx, cy, rad, 0, 7); c.stroke(); c.restore();    // frente de lava
+      islandDraw(c, f, now, 1 - ebb * 0.6);
+    }
+  });
+  X.on('draw', (c, now) => {
+    const TS = X.TS;
+    for (const b of MG) {
+      const p = (now - b.t) / b.T; if (p >= 1 || p < 0) continue; const f = b.f;
+      if (b.k === 'mgf') {                                                            // llamas altas en todo el suelo
+        const R = f.r, al = p < 0.1 ? p / 0.1 : p > 0.75 ? (1 - p) / 0.25 : 1;
+        for (let y = R[1] + 1; y <= R[3]; y++) for (let x = R[0] + 1; x <= R[2]; x++) {
+          if (x >= f.sx && x < f.sx + f.w && y >= f.sy && y < f.sy + f.w) continue;
+          const sx = X.sxOf(x), sy = X.syOf(y); if (sx < -TS || sy < -TS || sx > innerWidth + TS || sy > innerHeight + TS) continue;
+          const hs = (x * 73856093 ^ y * 19349663) >>> 0; if (hs % 3 === 0) continue;
+          if (f.bx !== undefined && Math.hypot(x - f.bx, y - f.by) > (now - b.t) / 650 * 46) continue;        // se extiende en ola desde Ignaros
+          c.save(); c.globalAlpha = al; flameAt(c, sx + 8 + (hs % 17), sy + TS - 2, 18 + (hs % 14), 5 + (hs % 3), now, hs % 11); c.restore();
+        }
+      } else if (b.k === 'mmw') {                                                     // el meteorito cae con estela
+        const x = px(f.x), y = py(f.y), fy = y - (1 - p) * 340 - 6, fx = x + (1 - p) * 170;
+        c.save(); c.globalCompositeOperation = 'lighter';
+        const g = c.createLinearGradient(fx + 70, fy - 60, fx, fy); g.addColorStop(0, 'rgba(255,80,0,0)'); g.addColorStop(1, 'rgba(255,170,40,.85)');
+        c.strokeStyle = g; c.lineWidth = 16; c.lineCap = 'round'; c.beginPath(); c.moveTo(fx + 72, fy - 62); c.lineTo(fx, fy); c.stroke();
+        c.fillStyle = 'rgba(255,120,20,.8)'; c.beginPath(); c.arc(fx, fy, 15, 0, 7); c.fill(); c.fillStyle = 'rgba(255,235,150,.95)'; c.beginPath(); c.arc(fx, fy, 9, 0, 7); c.fill(); c.restore();
+      } else if (b.k === 'mmx') {
+        const x = px(f.x), y = py(f.y), al = 1 - p;
+        c.save(); c.globalCompositeOperation = 'lighter'; const g = c.createRadialGradient(x, y - 10, 2, x, y - 10, 70 * (0.5 + p)); g.addColorStop(0, `rgba(255,240,170,${0.9 * al})`); g.addColorStop(0.5, `rgba(255,120,20,${0.6 * al})`); g.addColorStop(1, 'rgba(255,60,0,0)');
+        c.fillStyle = g; c.fillRect(x - 90, y - 100, 180, 180); c.restore();
+      } else if (b.k === 'ml') {                                                      // línea de fuego
+        const x1 = px(f.x1), y1 = py(f.y1), x2 = px(f.x2), y2 = py(f.y2), L = Math.hypot(x2 - x1, y2 - y1), a = Math.atan2(y2 - y1, x2 - x1), th = f.w * TS, al = p < 0.2 ? p / 0.2 : (1 - p) / 0.8;
+        c.save(); if (f.r) { const B = caveBox(f.r); c.beginPath(); c.rect(B.x, B.y, B.w, B.h); c.clip(); } c.translate(x1, y1); c.rotate(a); c.globalCompositeOperation = 'lighter';
+        const g = c.createLinearGradient(0, -th / 2, 0, th / 2); g.addColorStop(0, 'rgba(255,60,0,0)'); g.addColorStop(0.5, `rgba(255,190,70,${0.85 * al})`); g.addColorStop(1, 'rgba(255,60,0,0)');
+        c.fillStyle = g; c.fillRect(0, -th / 2, L, th); c.restore();
+        c.save(); if (f.r) { const B = caveBox(f.r); c.beginPath(); c.rect(B.x, B.y, B.w, B.h); c.clip(); }
+        for (let s = 0; s < L; s += 26) { const wx = x1 + Math.cos(a) * s, wy = y1 + Math.sin(a) * s; if (wx < -30 || wy < -60 || wx > innerWidth + 30 || wy > innerHeight + 60) continue; c.save(); c.globalAlpha = Math.max(0, al); flameAt(c, wx, wy + 8, 26 + (s % 5) * 4, 8, now, s / 26 + b.s); c.restore(); }
+        c.restore();
+      }
+    }
+    for (const b of MG) {
+      const p = (now - b.t) / b.T; if (p >= 1 || p < 0) continue; const f = b.f;
+      if (b.k === 'mcast') {                                                          // el orbe se carga: anillos que convergen, chispas en espiral y destello
+        const o = orbOf(); if (!o) continue;
+        const pal = { inferno: ['255,90,30', '255,210,120'], meteoros: ['255,150,40', '255,240,170'], lineas: ['255,200,60', '255,255,210'], lava: ['255,60,20', '255,170,60'] }[f.kind] || ['255,120,30', '255,230,150'];
+        const charge = Math.min(1, p * b.T / Math.max(600, f.T)), fade = p > 0.85 ? (1 - p) / 0.15 : 1;
+        c.save(); c.globalCompositeOperation = 'lighter';
+        const gr = c.createRadialGradient(o.x, o.y, 4, o.x, o.y, 40 + 90 * charge); gr.addColorStop(0, `rgba(${pal[1]},${0.75 * fade})`); gr.addColorStop(0.45, `rgba(${pal[0]},${0.4 * fade})`); gr.addColorStop(1, `rgba(${pal[0]},0)`);
+        c.fillStyle = gr; c.fillRect(o.x - 140, o.y - 140, 280, 280);
+        for (let k = 0; k < 3; k++) { const u = ((now / 520 + k / 3) % 1), r = 120 * (1 - u) + 14; c.strokeStyle = `rgba(${pal[1]},${0.7 * u * fade})`; c.lineWidth = 2.5; c.beginPath(); c.ellipse(o.x, o.y, r, r * 0.8, 0, 0, 7); c.stroke(); }
+        for (let k = 0; k < 14; k++) { const u = ((now / 700 + k * 0.071) % 1), a = k * 0.9 + now / 400, r = 110 * (1 - u); c.fillStyle = `rgba(${pal[1]},${0.9 * u * fade})`; c.beginPath(); c.arc(o.x + Math.cos(a) * r, o.y + Math.sin(a) * r * 0.8, 1.8 + 2 * u, 0, 7); c.fill(); }
+        c.restore();
+      } else if (b.k === 'mmw' && f.bx !== undefined && p < 0.25) {                  // meteorito lanzado: haz que sale del orbe hacia el cielo
+        const o = orbOf(); if (!o) continue; const al = 1 - p / 0.25;
+        c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = `rgba(255,170,60,${0.8 * al})`; c.lineWidth = 6 * al + 1; c.lineCap = 'round'; c.beginPath(); c.moveTo(o.x, o.y); c.lineTo(o.x + 60, o.y - 320); c.stroke();
+        c.strokeStyle = `rgba(255,240,190,${al})`; c.lineWidth = 2; c.stroke(); c.restore();
+      }
+    }
+    for (const [id, until] of BRN) {                                                  // el personaje arde: llamas y brasas sobre su cuerpo
+      if (now > until) { BRN.delete(id); continue; } const e = G.ents.get(id); if (!e) { BRN.delete(id); continue; }
+      const x = X.sxOf(e.rx) + TS / 2, y = X.syOf(e.ry) + TS - 2, al = Math.min(1, (until - now) / 400);
+      c.save(); c.globalAlpha = al; c.globalCompositeOperation = 'lighter'; c.fillStyle = 'rgba(255,90,20,.22)'; c.beginPath(); c.ellipse(x, y - 14, 14, 20, 0, 0, 7); c.fill(); c.restore();
+      c.save(); c.globalAlpha = al; for (let i = 0; i < 5; i++) flameAt(c, x - 10 + i * 5, y - 2 - (i % 2) * 8, 20 + (i % 3) * 5, 4, now, id + i); c.restore();
+      if (Math.random() < 0.5) X.burst(e.rx, e.ry - 0.4, 'fire', 1, { sp: 0.8, up: 2.4, g: -1, life: 0.6, size: 2.2 });
+    }
+    if (LAVA) {                                                                       // quien pisa lava se hunde hasta la cintura
+      const age = now - LAVA.t, f = LAVA.f, rise = Math.min(1, age / f.rise), ebb = age > f.rise + f.hold ? (age - f.rise - f.hold) / f.ebb : 0, B = caveBox(f.r);
+      const rad = (Math.hypot(B.w, B.h) + 20) * (ebb > 0 ? 1 - ebb : rise), cx = f.bx !== undefined ? px(f.bx) : B.x + B.w / 2, cy = f.bx !== undefined ? py(f.by) : B.y + B.h / 2;
+      for (const e of G.ents.values()) {
+        if (e.kind !== 'pl' || e.h <= 0 || e.x < f.r[0] || e.x > f.r[2] || e.y < f.r[1] || e.y > f.r[3]) continue;
+        if (f.isl.some((i) => Math.hypot(e.x - i.x, e.y - i.y) <= i.r)) continue;
+        const x = X.sxOf(e.rx) + TS / 2, y = X.syOf(e.ry) + TS - 6; if (Math.hypot(x - cx, y - cy) > rad) continue;
+        c.save(); c.beginPath(); c.rect(x - 22, y - 8, 44, 30); c.clip();
+        c.fillStyle = 'rgba(255,110,20,.92)'; c.beginPath(); c.ellipse(x, y + 2, 15 + Math.sin(now / 120 + e.id) * 1.2, 8, 0, 0, 7); c.fill();
+        c.fillStyle = 'rgba(255,220,110,.8)'; c.beginPath(); c.ellipse(x + Math.sin(now / 200 + e.id) * 4, y, 7, 3, 0, 0, 7); c.fill(); c.restore();
+        if (Math.random() < 0.15) X.burst(e.rx, e.ry, 'fire', 1, { sp: 1.2, up: 2.6, g: 3, life: 0.5, size: 2.4 });
+      }
+    }
+  });
+  /* ---------- aviso de versión nueva: quien tenga el juego abierto con archivos viejos no ve los jefes nuevos ---------- */
+  {
+    let v0 = null, shown = false;
+    const check = () => fetch('/status', { cache: 'no-store' }).then((r) => r.json()).then((st) => {
+      if (!st.v) return; if (v0 === null) { v0 = st.v; return; }
+      if (st.v === v0 || shown) return; shown = true;
+      const bar = el('div', 'newver'); bar.append(el('span', '', '🔄 ¡Hay una versión nueva del juego! Recarga para ver los jefes y objetos nuevos. '), btn('Recargar ahora', () => location.reload())); document.body.append(bar);
+    }).catch(() => {});
+    check(); setInterval(check, 30000);
+  }
   /* ---------- mapa del mundo: zoom, arrastre y nombres de zona ---------- */
   const wMap = win('map', '🗺️ Mapa del mundo', true); mkBtn('🗺️', 'Mapa del mundo', 'n', 'map');
   {

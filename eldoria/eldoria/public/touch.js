@@ -27,6 +27,34 @@
   base.addEventListener('pointerdown', (ev) => { ev.preventDefault(); id = ev.pointerId; base.setPointerCapture(id); const r = base.getBoundingClientRect(); cx = r.left + r.width / 2; cy = r.top + r.height / 2; base.classList.add('on'); set(ev); });
   base.addEventListener('pointermove', (ev) => { if (ev.pointerId === id) set(ev); });
   base.addEventListener('pointerup', end); base.addEventListener('pointercancel', end);
+  /* ---- pantalla completa, zoom del mapa y gesto de pellizco ---- */
+  const small = Math.min(innerWidth, innerHeight) < 520;
+  if (store.get('eldoria.zoom') === null && small && X.setZoom) X.setZoom(0.8);           // en teléfono se ve más mapa de entrada
+  const fs = el('button', 'sndbtn fsBtn', '⛶'); fs.type = 'button'; fs.title = 'Pantalla completa'; fs.setAttribute('aria-label', 'Pantalla completa');
+  const de = document.documentElement, canFs = !!(de.requestFullscreen || de.webkitRequestFullscreen);
+  const inFs = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  fs.addEventListener('click', async () => {
+    try {
+      if (inFs()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+      await (de.requestFullscreen || de.webkitRequestFullscreen).call(de);
+      if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
+    } catch (e) { /* no permitido */ }
+  });
+  const zb = el('div', 'zoomBtns'), zp = el('button', '', '＋'), zm = el('button', '', '－');
+  zp.type = zm.type = 'button'; zp.title = 'Acercar'; zm.title = 'Alejar (ver más mapa)'; zp.setAttribute('aria-label', 'Acercar'); zm.setAttribute('aria-label', 'Alejar');
+  zp.addEventListener('click', () => X.setZoom(X.zoom() * 1.2)); zm.addEventListener('click', () => X.setZoom(X.zoom() / 1.2));
+  zb.append(zp, zm);
+  const mount2 = () => { const st = $('#stage'); if (!st || zb.parentNode) return; if (canFs) st.append(fs); st.append(zb); const v = $('#view'); if (v) { v.style.touchAction = 'none'; pinch(v); } };
+  document.addEventListener('DOMContentLoaded', mount2); if (document.readyState !== 'loading') mount2();
+  function pinch(v) {
+    let d0 = 0, z0 = 1, on = false, tEnd = 0;
+    const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY) || 1;
+    v.addEventListener('touchstart', (e) => { if (e.touches.length === 2) { d0 = dist(e.touches); z0 = X.zoom(); on = true; X.joy.dx = X.joy.dy = 0; } }, { passive: true });
+    v.addEventListener('touchmove', (e) => { if (on && e.touches.length === 2) { e.preventDefault(); X.setZoom(z0 * dist(e.touches) / d0, true); } }, { passive: false });
+    const up = (e) => { if (on && e.touches.length < 2) { on = false; tEnd = performance.now(); X.setZoom(X.zoom()); } };
+    v.addEventListener('touchend', up, { passive: true }); v.addEventListener('touchcancel', up, { passive: true });
+    for (const n of ['click', 'mousedown', 'pointerdown', 'contextmenu']) v.addEventListener(n, (e) => { if (on || performance.now() - tEnd < 400) { e.stopImmediatePropagation(); e.preventDefault(); } }, true);
+  }
   // el chat empieza plegado para ver más mapa
   if (store.get('eldoria.chat') === null) store.set('eldoria.chat', '0');
 })();

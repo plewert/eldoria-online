@@ -11,17 +11,23 @@ const path = require('path');
 const { WSServer } = require('./game/ws');
 const Store = require('./game/store');
 const { Game, NAME_RE } = require('./game/game');
+const BOT_NAMES = require('./game/bots').NAMES.map((n) => n.toLowerCase());
 const { CFG } = require('./game/data');
 
 const PORT = parseInt(process.env.PORT, 10) || 3000;
 const PUB = path.join(__dirname, 'public');
 const store = new Store(process.env.DATA_FILE || path.join(__dirname, 'data', 'players.json'));
 const game = new Game(store);
+const NBOTS = process.env.BOTS === undefined ? 16 : parseInt(process.env.BOTS, 10) || 0;   // aventureros simulados (BOTS=0 los desactiva)
+if (NBOTS > 0) game.initBots(NBOTS);
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
-  '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json', '.svg': 'image/svg+xml',
+  '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json',
 };
+
+// versión de los archivos del cliente (la fecha del más reciente): los navegadores abiertos con una versión vieja la comparan y avisan
+const BUILD = (() => { let m = 0; const walk = (d) => { for (const f of fs.readdirSync(d, { withFileTypes: true })) { const q = path.join(d, f.name); if (f.isDirectory()) walk(q); else m = Math.max(m, fs.statSync(q).mtimeMs); } }; try { walk(PUB); } catch (e) { /* nada */ } return String(Math.round(m)); })();
 
 const server = http.createServer((req, res) => {
   let u;
@@ -29,7 +35,7 @@ const server = http.createServer((req, res) => {
   if (u === '/health') { res.writeHead(200, { 'Content-Type': 'text/plain' }); return res.end('ok'); }
   if (u === '/status') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    return res.end(JSON.stringify({ online: [...game.players.values()].filter((p) => p.ws).length, monsters: game.monsters.filter((m) => !m.dead).length }));
+    return res.end(JSON.stringify({ online: [...game.players.values()].filter((p) => p.ws).length, monsters: game.monsters.filter((m) => !m.dead).length, v: BUILD }));
   }
   if (u === '/') u = '/index.html';
   const fp = path.normalize(path.join(PUB, u));
@@ -92,6 +98,7 @@ wss.on('connection', (ws, req) => {
       let acc = store.get(name), rc = null;
       if (msg.mode === 'register') {
         if (acc) return sendErr('Ese nombre ya existe. Elige otro o inicia sesión.');
+        if (BOT_NAMES.includes(name.toLowerCase())) return sendErr('Ese nombre ya existe. Elige otro o inicia sesión.');
         const color = /^#[0-9a-fA-F]{6}$/.test(msg.color || '') ? msg.color : '#4aa3ff';
         acc = store.create(name, pass, color);
         rc = store.setRecovery(acc);

@@ -377,7 +377,7 @@ class Game {
       ws: null, x: SPAWN_POINT.x, y: SPAWN_POINT.y, dir: 2,
       hp: 0, mana: 0, xp: 0, sxp: { melee: 0, ranged: 0, magic: 0 }, gold: 0,
       inv: new Array(CFG.INV_SIZE).fill(null), eq: { weapon: null, head: null, body: null, shield: null },
-      bank: new Array(CFG.BANK_SIZE).fill(null), bankGold: 0, vis: null, trade: null, tradeInv: null, bankOpen: false,
+      bank: new Array(Math.min(CFG.BANK_MAX, Math.max(CFG.BANK_SIZE, (d && d.bankSlots) | 0))).fill(null), bankGold: 0, vis: null, trade: null, tradeInv: null, bankOpen: false,
       target: null, nextMove: 0, nextAtk: 0, nextPotion: 0, nextFood: 0, nextSpell: 0, nextRegen: 0, pend: null,
       pvpLock: 0, offlineUntil: 0, tpSeq: 0, lastChat: 0, throttle: {}, dirty: { inv: true, stats: true },
     };
@@ -386,7 +386,7 @@ class Game {
       p.xp = Math.min(xpForLevel(LEVEL_MAX), d.xp | 0); p.gold = d.gold | 0;
       const cap = skillXpFor(SKILL_MAX); p.sxp = { melee: Math.min(cap, d.sxp.melee | 0), ranged: Math.min(cap, d.sxp.ranged | 0), magic: Math.min(cap, d.sxp.magic | 0) };
       d.inv.forEach((it, i) => { const n = I.normalize(it); if (n && i < CFG.INV_SIZE) p.inv[i] = n; });
-      if (Array.isArray(d.bank)) d.bank.forEach((it, i) => { const n = I.normalize(it); if (n && i < CFG.BANK_SIZE) p.bank[i] = n; });
+      if (Array.isArray(d.bank)) d.bank.forEach((it, i) => { const n = I.normalize(it); if (n && i < p.bank.length) p.bank[i] = n; });
       p.bankGold = d.bankGold | 0;
       for (const s of SLOTS) { const n = I.normalize(d.eq && d.eq[s]); p.eq[s] = n && I.fits(s, ITEMS[n.id].type) ? n : null; }
       if (world.isWalkable(d.x, d.y) && zoneAt(d.x, d.y).kind !== 'dungeon') { p.x = d.x; p.y = d.y; }
@@ -415,11 +415,11 @@ class Game {
     }
     return {
       x: p.x, y: p.y, hp: p.hp, mana: p.mana, xp: p.xp, sxp: p.sxp, gold,
-      inv, eq, bank: p.bank.map((it) => I.clone(it)), bankGold: p.bankGold, ext: this.extSave(p),
+      inv, eq, bank: p.bank.map((it) => I.clone(it)), bankSlots: p.bank.length, bankGold: p.bankGold, ext: this.extSave(p),
     };
   }
 
-  savePlayer(p) { this.store.saveData(p.key, this.serialize(p)); }
+  savePlayer(p) { if (p.bot) return; this.store.saveData(p.key, this.serialize(p)); }
 
   /** Conecta una cuenta autenticada a la partida. */
   attach(acc, ws) {
@@ -490,7 +490,7 @@ class Game {
     const monsDefs = {};
     for (const [k, d] of Object.entries(MONSTERS)) {
       monsDefs[k] = Object.assign({
-        name: d.name, icon: d.icon, boss: !!d.boss, range: d.range || 1, lv: d.lv || 1,
+        name: d.name, icon: d.icon, spr: d.spr, fly: !!d.fly, boss: !!d.boss, range: d.range || 1, lv: d.lv || 1,
         hp: d.hp, dmg: d.dmg, exp: Math.round(d.exp * CFG.XP_RATE), aggro: d.aggro, respawn: d.respawn, move: d.move,
       }, I.dropInfo(d));
     }
@@ -499,10 +499,10 @@ class Game {
     this.send(p, {
       t: 'welcome', id: p.id, w: W, h: H, rows: world.rows,
       zones: ZONES.map((z) => ({ id: z.id, name: z.name, pvp: z.pvp, kind: z.kind, dark: !!z.dark, rect: z.rect, tint: z.tint || null })),
-      portals: PORTALS.map((q) => ({ x: q.x, y: q.y, label: q.label })),
+      portals: PORTALS.map((q) => ({ x: q.x, y: q.y, label: q.label + (q.fee ? ` — entrada ${q.fee.toLocaleString('es')} 💰` : '') })),
       npcs: NPCS, items: ITEMS, mons: monsDefs, gems, rar: RAR,
       cfg: {
-        pvpMin: CFG.PVP_MIN_LEVEL, step: CFG.STEP_MS, invSize: CFG.INV_SIZE, bankSize: CFG.BANK_SIZE,
+        pvpMin: CFG.PVP_MIN_LEVEL, step: CFG.STEP_MS, invSize: CFG.INV_SIZE, bankSize: CFG.BANK_SIZE, caveFee: CFG.CAVE_FEE,
         tradeMax: CFG.TRADE_MAX_ITEMS, gemCost: CFG.GEM_REMOVE_COST, plusChance: CFG.PLUS_CHANCE, ancChance: CFG.ANCIENT_CHANCE,
       },
     });
@@ -538,7 +538,7 @@ class Game {
     for (const q of this.players.values()) {
       if (!inView(q.x, q.y)) continue;
       const vis = this.visOf(q);
-      pl.push({ i: q.id, n: q.name, x: q.x, y: q.y, h: q.hp, H: q.maxHp, l: q.level, c: q.color, s: this.styleOf(q), d: q.dir, k: now < q.pvpLock ? 1 : 0, o: q.ws ? 0 : 1, v: vis.g, a: vis.an, t: q.trade ? 1 : 0, q: SLOTS.map((s) => (q.eq[s] ? q.eq[s].id : 0)), ...this.extView(q) });
+      pl.push({ i: q.id, n: q.name, x: q.x, y: q.y, h: q.hp, H: q.maxHp, l: q.level, c: q.color, s: this.styleOf(q), d: q.dir, k: now < q.pvpLock ? 1 : 0, o: q.ws || q.bot ? 0 : 1, v: vis.g, a: vis.an, t: q.trade ? 1 : 0, q: SLOTS.map((s) => (q.eq[s] ? q.eq[s].id : 0)), ...this.extView(q) });
     }
     for (const m of this.monsters) {
       if (m.dead || !inView(m.x, m.y)) continue;
@@ -602,6 +602,7 @@ class Game {
       case 'sell': this.sell(p, msg.s | 0, msg.q | 0); break;
       case 'bdep': this.bankDeposit(p, msg.s | 0, msg.q | 0); break;
       case 'bwd': this.bankWithdraw(p, msg.s | 0, msg.q | 0); break;
+      case 'bbuy': this.bankBuy(p); break;
       case 'bgold': this.bankGoldMove(p, msg.d === 'wd' ? 'wd' : 'dep', msg.q); break;
       case 'socket': this.socketGem(p, msg); break;
       case 'unsocket': this.unsocketGem(p, msg); break;
@@ -629,10 +630,10 @@ class Game {
     p.lastChat = now;
     if (text === '/pos') { const z = zoneAt(p.x, p.y); this.msg(p, `Estás en ${z.name} (${p.x}, ${p.y}). ${z.pvp ? 'Zona PvP.' : 'Zona segura.'}`, 's'); return; }
     if (text === '/top') {
-      const list = [...this.players.values()].sort((a, b) => b.xp - a.xp).slice(0, 5).map((q) => `${q.name} (nv ${q.level})`).join(', ');
+      const list = [...this.players.values()].filter((q) => !q.bot).sort((a, b) => b.xp - a.xp).slice(0, 5).map((q) => `${q.name} (nv ${q.level})`).join(', ');
       this.msg(p, 'Jugadores conectados más fuertes: ' + list, 's'); return;
     }
-    if (text === '/ayuda') { this.msg(p, 'Comandos: /g mensaje (global), /p mensaje (grupo), /gc mensaje (gremio), /grupo, /gremio, /clave, /pos, /top. Teclas 1-2-3: habilidades; Q misiones, L logros, G social, R ranking, P mercado, F oficios. Otras: WASD mover, Z/X/C arma, H/J pociones, V curar, E recoger. Clic derecho: monstruo = ver sus drops, jugador = comerciar, objeto = gemas.', 's'); return; }
+    if (text === '/ayuda') { this.msg(p, 'Comandos: /g mensaje (global), /p mensaje (grupo), /gc mensaje (gremio), /grupo, /gremio, /clave, /pos, /top. Teclas 1-2-3: habilidades; Q misiones, L logros, G social, R ranking, P mercado, F oficios. Otras: WASD mover, Z/X/C arma, H/J pociones, V curar, E recoger. Clic derecho: monstruo = ver sus drops, jugador = comerciar, objeto = gemas. Nota: parte de los aventureros que ves en el mundo están controlados por el servidor.', 's'); return; }
     if (text.startsWith('/g ')) { this.broadcastChat(text.slice(3), 'g', p.name); return; }
     if (this.chatExt(p, text)) return;
     if (text.startsWith('/')) { this.msg(p, 'Comando desconocido. Escribe /ayuda.', 's'); return; }
@@ -702,7 +703,18 @@ class Game {
   /* ============================ BANCO ============================ */
   nearBank(p) { return NPCS.find((q) => q.type === 'bank' && cheb(p.x, p.y, q.x, q.y) <= 4) || null; }
 
-  sendBank(p) { this.send(p, { t: 'bank', bank: p.bank.map(I.pack), gold: p.bankGold, size: CFG.BANK_SIZE }); }
+  sendBank(p) { this.send(p, { t: 'bank', bank: p.bank.map(I.pack), gold: p.bankGold, size: p.bank.length, pack: CFG.BANK_PACK, cost: CFG.BANK_PACK_COST, max: CFG.BANK_MAX }); }
+
+  bankBuy(p) {
+    if (!this.nearBank(p)) { this.msg(p, 'Acércate a una banquera.', 's'); return; }
+    if (p.bank.length + CFG.BANK_PACK > CFG.BANK_MAX) { this.msg(p, 'Tu banco ya tiene el máximo de espacios.', 's'); return; }
+    const c = CFG.BANK_PACK_COST;
+    if (p.gold + p.bankGold < c) { this.msg(p, `Ampliar el banco cuesta ${c.toLocaleString('es')} de oro (mano + banco).`, 's'); return; }
+    const fromHand = Math.min(p.gold, c); p.gold -= fromHand; p.bankGold -= c - fromHand;
+    for (let i = 0; i < CFG.BANK_PACK; i++) p.bank.push(null);
+    p.dirty.inv = true; this.sendBank(p); this.savePlayer(p);
+    this.msg(p, `Tu banco ahora tiene ${p.bank.length} espacios (+${CFG.BANK_PACK}).`, 's');
+  }
 
   bankDeposit(p, slot, qty) {
     if (!this.nearBank(p)) { this.msg(p, 'Acércate a una banquera.', 's'); return; }
@@ -1089,7 +1101,7 @@ class Game {
     p.nextAtk = now + w.cd;
     const wid = p.eq.weapon ? p.eq.weapon.id : null;
     if (w.style === 'melee') this.fx.push({ k: 's', x: t.x, y: t.y, w: wid, cr: crit, i: p.id });
-    else this.fx.push({ k: 'p', x1: p.x, y1: p.y, x2: t.x, y2: t.y, s: w.style, w: wid, cr: crit });
+    else this.fx.push({ k: 'p', x1: p.x, y1: p.y, x2: t.x, y2: t.y, s: w.style, w: wid, cr: crit, i: p.id });
     this.addSkillXp(p, w.style, 1 + Math.floor(dmg / 3));
     p.dir = Math.abs(t.x - p.x) >= Math.abs(t.y - p.y) ? (t.x > p.x ? 1 : 3) : (t.y > p.y ? 2 : 0);
     if (t.kind === 'pl') this.hurtPlayer(t, dmg, p, now, p.name);
@@ -1131,7 +1143,10 @@ class Game {
     const portal = world.portalAt(nx, ny);
     if (portal) {
       if (now < p.pvpLock) { this.msgThrottle(p, 'lock', '¡Estás en combate! No puedes usar el portal todavía.'); }
-      else {
+      else if (portal.fee && !p.bot && p.gold < portal.fee) {
+        this.msgThrottle(p, 'fee', `Entrar a esta cueva cuesta ${portal.fee.toLocaleString('es')} de oro (en mano).`);
+      } else {
+        if (portal.fee && !p.bot) { p.gold -= portal.fee; p.dirty.inv = true; this.msg(p, `Pagas ${portal.fee.toLocaleString('es')} de oro por entrar.`, 's'); }
         p.x = portal.tx; p.y = portal.ty; p.tpSeq++; p.target = null; p.pend = null;
         this.msg(p, `Cruzas el portal: ${zoneAt(p.x, p.y).name}.`, 's');
       }
@@ -1220,4 +1235,8 @@ class Game {
 
 require('./ext')(Game);
 require('./fishing').install(Game);
+require('./mining').install(Game);
+require('./raid').install(Game);
+require('./magma').install(Game); require('./bots').install(Game);
+require('./petloot').install(Game);
 module.exports = { Game, NAME_RE, levelFromXp, xpForLevel, skillFromXp };

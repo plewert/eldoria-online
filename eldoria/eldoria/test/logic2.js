@@ -143,7 +143,7 @@ ok('mercado: expira y devuelve el objeto por correo', () => {
   assert.equal(game.market().list.length, 0); assert.ok(s.p.inv.some((it) => it && it.id === 'arco_corto'));
 });
 ok('recolección y fabricación: nodos, recoger, receta, nivel de oficio', () => {
-  assert.ok(game.nodes.length > 100, 'hay puntos de recolección'); assert.ok(new Set(game.nodes.map((q) => q.type)).size === 4);
+  assert.ok(game.nodes.length > 100, 'hay puntos de recolección'); assert.ok(new Set(game.nodes.map((q) => q.type)).size === 17, 'oficios + 8 rocas + 5 del gremio');
   const { p } = login('Craft1'); const nd = game.nodes.find((q) => q.type === 'hierba');
   place(p, nd.x, nd.y); game.gather(p, nd.id);
   assert.ok(p.inv.some((it) => it && it.id === 'hierba_curativa')); assert.equal(p.ext.gather, 1);
@@ -260,7 +260,8 @@ ok('comida: sardina 80, salmón 100, tiburón 150; se come con el mensaje eat y 
   assert.ok(require('../game/data').SHOPS.boris.includes('tiburon'));
 });
 ok('mapa ampliado: Selva Esmeralda, Sabana Dorada y Aldea Pesquera con comida y banco', () => {
-  assert.equal(world.W, 320);
+  assert.equal(world.W, 480);
+  { const z = world.zoneById('tierras_nuevas'); assert.ok(z && !z.pvp && z.rect[0] === 320 && z.rect[2] === 479, 'zona reservada al este'); let n = 0; for (let y = 0; y < 140; y++) for (let x = 320; x < 480; x++) if (world.reach[y * world.W + x]) n++; assert.ok(n > 10000, 'las tierras nuevas se pueden recorrer (' + n + ')'); assert.ok(world.reach[70 * world.W + 330], 'hay paso desde las Tierras de Lava'); assert.ok(!world.monsterSpawns.some((m) => world.zoneAt(m.x, m.y).id === 'tierras_nuevas'), 'vacías, sin puntos de aparición'); }
   assert.equal(world.zoneAt(220, 30).id, 'selva'); assert.equal(world.zoneAt(240, 110).id, 'sabana'); assert.equal(world.zoneAt(210, 77).id, 'aldea');
   assert.ok(world.zoneAt(210, 77).kind === 'town' && !world.zoneAt(210, 77).pvp);
   for (const id of ['nilo', 'tomas']) { const n = world.NPCS.find((q) => q.id === id); assert.ok(n && world.reach[n.y * world.W + n.x], id + ' alcanzable'); }
@@ -298,7 +299,7 @@ ok('mazmorras y cuevas: nadie ataca a través de la entrada', () => {
   game.hurtMonster(m, 500, a.p, T0); assert.equal(m.hp, hp0, 'desde fuera no daña');
   m.target = a.p.id; m.nextAtk = 0; for (let i = 0; i < 40; i++) { T0 += CFG.TICK_MS; game.tick(T0); }
   assert.equal(a.p.hp, 5000, 'el dragón no daña hacia fuera'); assert.notEqual(m.target, a.p.id);
-  place(a.p, 122, 86); game.hurtMonster(m, 500, a.p, T0); assert.equal(m.hp, hp0 - 100, 'dentro sí, con 80% de defensa');
+  place(a.p, 122, 86); game.hurtMonster(m, 500, a.p, T0); assert.equal(m.hp, hp0 - 250, 'dentro sí, con 50% de defensa');
   assert.equal(MONSTERS.dragon_sombra.respawn, 60000);
   game.mgrid.delete(m.y * world.W + m.x); game.monsters = game.monsters.filter((q) => q !== m); game.ents.delete(m.id);
 });
@@ -487,13 +488,185 @@ ok('Leviatán Abisal: gruta inundada, set raro y sus 4 ataques (tornados, olas, 
   run(5200); assert.ok(!m.shieldUntil); game.hurtMonster(m, 5000, p, game.now); assert.ok(m.hp < h1, 'la burbuja acaba');
 });
 
+ok('Ignaros, Soberano del Magma: caldera, botín (6 objetos) y sus 4 ataques (infierno con refugio, meteoritos, líneas y lava)', () => {
+  assert.equal(MONSTERS.ignaros.special, 'magma'); assert.equal(typeof Game.prototype.magmaAI, 'function');
+  const loot = MONSTERS.ignaros.loot.map((l) => l[0]);
+  ['ig_casco', 'ig_pecho', 'ig_capa', 'ig_anillo', 'ig_arco', 'ig_baston', 'trofeo_magma', 'pet_ignaros'].forEach((id) => { assert.ok(loot.includes(id), id); assert.ok(ITEMS[id], id); });
+  assert.equal(ITEMS.ig_arco.style, 'ranged'); assert.equal(ITEMS.ig_baston.style, 'magic'); assert.ok(ITEMS.ig_capa.cc && ITEMS.ig_capa.type === 'cape');
+  const sj = require('../public/sprites.json'), gj = require('../public/gear.json');
+  assert.ok(sj.ignaros.f.length >= 8 && sj.ignaros.anim > 0 && sj.ignaros_cast.f.length >= 4, 'animado y con pose de lanzamiento');
+  for (const k of ['ig_helm', 'ig_chest', 'ig_cape', 'ig_ring', 'ig_bow', 'ig_staff']) assert.ok(gj['i_' + k], 'icono ' + k);
+  for (const k of ['ig_helm', 'ig_chest', 'ig_bow', 'ig_staff']) assert.ok(gj['c_' + k], 'personaje ' + k);
+  const sp = world.monsterSpawns.find((q) => q.type === 'ignaros'); assert.equal(zoneOf([sp.x, sp.y]).id, 'cueva_magma'); assert.equal(zoneOf([288, 118]).id, 'volcan');
+  assert.ok(world.isWalkable(288, 123) && world.isWalkable(sp.x, sp.y) && world.BLOCKED[world.T.MAGW] && !world.BLOCKED[world.T.MAGF]);
+  const pt = world.PORTALS.find((q) => q.x === 288 && q.y === 118); assert.deepEqual([pt.tx, pt.ty], [288, 123]);
+  const run = (ms) => { for (let k = 0; k <= ms; k += 100) { game.now += 100; const due = game.sched.filter((e) => e.at <= game.now); game.sched = game.sched.filter((e) => e.at > game.now); due.forEach((e) => e.fn()); } };
+  const a = login('Mag1'), b = login('Mag2'); place(a.p, 288, 126); place(b.p, 284, 126); for (const q of [a.p, b.p]) q.hp = q.maxHp = 1e7;
+  const m = game.spawnMonster('ignaros', sp.x, sp.y); m.target = a.p.id; game.fx.length = 0;
+  // 1) infierno: quien está en el cuadro azul no recibe daño
+  game.magmaCast(m, 'inferno'); const w = game.fx.find((f) => f.k === 'mgw'); assert.ok(w && w.w >= 3, 'se marca el refugio');
+  for (let y = w.sy; y < w.sy + w.w; y++) for (let x = w.sx; x < w.sx + w.w; x++) assert.ok(world.isWalkable(x, y), 'el refugio es suelo libre');
+  place(a.p, w.sx + 1, w.sy + 1); place(b.p, w.sx > 280 ? w.sx - 4 : w.sx + w.w + 3, w.sy); const hpA = a.p.hp, hpB = b.p.hp;
+  run(12000); assert.ok(game.fx.some((f) => f.k === 'mgf'), 'el suelo arde'); assert.equal(a.p.hp, hpA, 'el refugio protege'); assert.ok(b.p.hp < hpB, 'fuera del refugio quema');
+  assert.ok(game.fx.some((f) => f.k === 'brn' && f.id === b.p.id), 'el personaje arde');
+  // 2) meteoritos con onda explosiva
+  place(a.p, 288, 126); place(b.p, 284, 127); let h0 = a.p.hp + b.p.hp; game.fx.length = 0; game.magmaCast(m, 'meteoros'); run(14000);
+  assert.ok(game.fx.filter((f) => f.k === 'mmw').length >= 12 && game.fx.some((f) => f.k === 'mmx') && a.p.hp + b.p.hp < h0, 'los meteoritos hacen daño');
+  // 3) líneas de fuego por toda la cueva
+  place(a.p, 288, 126); h0 = a.p.hp; game.fx.length = 0; game.magmaCast(m, 'lineas'); run(9000);
+  assert.ok(game.fx.some((f) => f.k === 'mlw') && game.fx.some((f) => f.k === 'ml') && a.p.hp < h0, 'las líneas golpean');
+  // 4) lava: las rocas azules protegen
+  place(a.p, 288, 126); place(b.p, 284, 127); game.fx.length = 0; game.magmaCast(m, 'lava'); const lw = game.fx.find((f) => f.k === 'mlw2'); assert.ok(lw && lw.isl.length >= 3, 'se marcan rocas');
+  const isl = lw.isl[0]; place(a.p, isl.x, isl.y); const far = [[284, 127], [292, 124], [279, 131], [296, 132], [288, 133]].find(([x, y]) => world.isWalkable(x, y) && lw.isl.every((i) => Math.hypot(x - i.x, y - i.y) > i.r + 0.5)); place(b.p, far[0], far[1]);
+  const hA = a.p.hp, hB = b.p.hp; run(16000); assert.ok(game.fx.some((f) => f.k === 'mlv'), 'sube la lava'); assert.ok(game.fx.filter((f) => /^m(g|l|m)/.test(f.k)).every((f) => Number.isFinite(f.x ?? f.x1) && Number.isFinite(f.y ?? f.y1)), 'los efectos llevan posición (si no, el servidor no los envía)'); assert.ok(game.fx.filter((f) => ['mgw', 'mgf', 'mlw2', 'mlv', 'mlw', 'ml'].includes(f.k)).every((f) => f.x === 289 && f.y === 128), 'anclados al centro de la caldera'); assert.equal(a.p.hp, hA, 'la roca protege'); assert.ok(b.p.hp < hB, 'la lava quema');
+});
+
+ok('minería: picos, rocas por nivel, experiencia, gemas raras y colección', () => {
+  const M = require('../game/mining');
+  for (const id of M.ORDER) { assert.ok(ITEMS[id], id); assert.ok(game.nodes.some((q) => q.type === 'roca_' + id), 'hay rocas de ' + id); }
+  assert.equal(Object.keys(M.PICKS).length, 6); const SH = require('../game/data').SHOPS; assert.ok(SH.boris.includes('pico_piedra') && SH.boris.includes('pico_abismo'));
+  const sj = require('../public/sprites.json'), gj = require('../public/gear.json'); for (const id of M.ORDER) { assert.ok(sj['rock_' + id] && gj['i_k_' + id], 'gráficos de ' + id); } for (const k of Object.values(M.PICKS)) assert.ok(gj['i_' + k.spr]);
+  const { p, ws } = login('Mine1'); const nd = game.nodes.find((q) => q.type === 'roca_granito'); place(p, nd.x, nd.y); game.now += 5000;
+  game.gather(p, nd.id); assert.ok(!p.inv.some((it) => it && it.id === 'granito') && nd.at === 0, 'sin pico no se mina');
+  p.inv[0] = I.mk('pico_piedra', 1); const r0 = Math.random;
+  try {
+    Math.random = () => 0.5; game.gather(p, nd.id);
+    assert.ok(p.inv.some((it) => it && it.id === 'granito'), 'da granito'); assert.ok(p.ext.mine.xp > 0 && p.ext.mine.c.granito >= 1); assert.ok(nd.at > game.now, 'la roca se agota');
+    assert.ok(lastMsg(ws, 'mine').lv >= 1, 'se informa de la habilidad'); assert.ok(p.ext.col.mineria.granito, 'colección');
+    const ob = game.nodes.find((q) => q.type === 'roca_obsidiana'); place(p, ob.x, ob.y); game.now += 5000; game.gather(p, ob.id); assert.equal(ob.at, 0, 'nivel de minería insuficiente');
+    // con nivel y pico altos y suerte: sale gema rara y se anuncia
+    p.ext.mine.xp = 1e8; p.inv[1] = I.mk('pico_abismo', 1); Math.random = () => 0.0001; game.now += 5000; game.gather(p, ob.id);
+    assert.ok(['amatista', 'opalo', 'diamante'].some((g) => p.inv.some((it) => it && it.id === g)), 'gema rara'); assert.ok(p.ext.col.mineria.obsidiana);
+  } finally { Math.random = r0; }
+  assert.ok(game.extSave(p).mine.xp > 0 && game.extSave(p).col.mineria);
+});
+
 ok('tabletas de teletransporte: Boris las vende a 100k y llevan a la zona', () => {
-  const SH = require('../game/data').SHOPS; assert.equal(ITEMS.tp_lava.price, 100000); assert.ok(SH.boris.includes('tp_lava') && SH.boris.includes('tp_ciudad'));
+  const SH = require('../game/data').SHOPS; assert.equal(ITEMS.tp_lava.price, 2000); assert.ok(ITEMS.tp_paraiso && ITEMS.tp_alba.dest[0] === 400 && require('../game/data').SHOPS.zaroth.includes('tp_nubes')); assert.ok(SH.boris.includes('tp_lava') && SH.boris.includes('tp_ciudad'));
   const { p, ws } = login('Tab1'); place(p, ...TOWN); p.inv[0] = I.mk('tp_lava', 2); p.pvpLock = 0; game.now = T0 + 5;
   game.handle(p, { t: 'use', s: 0 });
   assert.equal(zoneOf([p.x, p.y]).id, 'volcan'); assert.equal(p.inv[0].qty, 1, 'se gasta una');
   place(p, ...TOWN); p.pvpLock = game.now + 5000; game.handle(p, { t: 'use', s: 0 });
   assert.equal(zoneOf([p.x, p.y]).id, 'ciudad', 'no se puede usar en combate'); assert.equal(p.inv[0].qty, 1);
+});
+
+ok('Raid: 5 cámaras, jefes, vidas, escalado por grupo, cofre final con botín raro y capa equipada', () => {
+  const R = require('../game/raid'), RAID = world.RAID;
+  assert.equal(R.ALL_ITEMS.length, 50); for (const [p, s] of R.ALL_ITEMS) assert.ok(ITEMS[R.itemId(p, s)], p + s);
+  const gj = require('../public/gear.json'), sj = require('../public/sprites.json');
+  for (const [p, s] of R.ALL_ITEMS) assert.ok(gj['i_' + p + '_' + s], 'icono ' + p + s);
+  for (const id of R.BOSS_ORDER) { assert.ok(sj[id] && MONSTERS[id].special === 'raid' && MONSTERS[id].loot.length === 11, id); }
+  assert.ok(ITEMS.rd_rx_cape.wings && ITEMS.rd_rm_cape.type === 'cape' && ITEMS.rd_rm_weapon.style === 'melee');
+  assert.equal(RAID.rooms.length, 6);
+  const A = login('RaidA'), B = login('RaidB'); const H = RAID.rooms[0];
+  for (const q of [A.p, B.p]) { q.level = 150; q.hp = q.maxHp = 5e6; place(q, H.start[0] + 3, H.cy); q.dead = false; }
+  A.p.eq.cape = I.mk('rd_rm_cape'); assert.ok(I.isGear('rd_rm_cape'));
+  game.raidGo(A.p); const r = game.raid; assert.ok(r && r.members.size === 2 && r.room === 1 && r.boss);
+  const m = r.boss, base = MONSTERS.raid_slyvra.hp; assert.equal(m.maxHp, Math.round(base * 1.75), 'vida escalada a 2 jugadores');
+  assert.ok(m.shieldUntil > game.now, 'inmune al despertar');
+  assert.equal(world.zoneAt(A.p.x, A.p.y).id, 'raid_slyvra');
+  const run = (ms) => { for (let k = 0; k <= ms; k += 100) { game.now += 100; game.tickN += 0; const due = game.sched.filter((e) => e.at <= game.now); game.sched = game.sched.filter((e) => e.at > game.now); due.forEach((e) => e.fn()); } };
+  // ataques
+  m.shieldUntil = 0; place(A.p, m.x - 3, m.y); place(B.p, m.x - 4, m.y + 2); m.target = A.p.id;
+  for (let i = 0; i < 6; i++) { game.fx.length = 0; m.nextSp = 0; game.now += 10; const hp0 = A.p.hp + B.p.hp; game.raidAI(m, game.now); run(9000); if (i === 0) assert.ok(game.fx.some((f) => f.k === 'rd_w'), 'aviso'); }
+  assert.ok(game.monsters.some((q) => q.type === 'raid_vibora'), 'invoca víboras');
+  // matar jefes uno a uno
+  const kill = (b) => { b.shieldUntil = 0; b.dmgBy.set(A.p.id, { dmg: 7e5, t: game.now }); b.dmgBy.set(B.p.id, { dmg: 3e5, t: game.now }); game.hurtMonster(b, b.hp + 99999999, A.p, game.now); };
+  for (let i = 1; i <= 4; i++) { assert.equal(r.room, i); kill(r.boss); assert.equal(r.phase, 'transition'); game.now += 15000; T0 = game.now; advance(1100); }
+  assert.equal(r.room, 5, 'llegan a la cámara 5'); assert.equal(world.zoneAt(A.p.x, A.p.y).id, 'raid_malgathor');
+  assert.equal(r.boss.maxHp, Math.round(MONSTERS.raid_malgathor.hp * 1.75));
+  // vidas: morir y volver
+  A.p.hp = 1; game.hurtPlayer(A.p, 1e7, r.boss, game.now); assert.ok(world.zoneAt(A.p.x, A.p.y).id !== 'raid_malgathor'); assert.equal(r.deaths[A.p.key], 1);
+  place(A.p, H.start[0] + 3, H.cy); A.p.hp = A.p.maxHp = 5e6; game.raidGo(A.p); assert.equal(world.zoneAt(A.p.x, A.p.y).id, 'raid_malgathor', 'vuelve a la cámara actual');
+  // jefe final → cofre
+  const fin = r.boss; fin.shieldUntil = 0; fin.dmgBy.set(A.p.id, { dmg: 6e5, t: game.now }); fin.dmgBy.set(B.p.id, { dmg: 4e5, t: game.now }); r.contrib[A.p.key] = 9e5; r.contrib[B.p.key] = 5e5;
+  game.hurtMonster(fin, fin.hp + 99999999, A.p, game.now);
+  assert.equal(r.phase, 'chest'); assert.ok(r.chest && world.isWalkable(r.chest.x, r.chest.y));
+  place(A.p, r.chest.x - 1, r.chest.y); game.raidOpenChest(A.p);
+  const loot = lastMsg(A.ws, 'raid_loot'); assert.ok(loot && loot.items.length >= 1 && loot.gold > 0, 'el cofre da botín');
+  assert.ok(loot.items.every((o) => ITEMS[o.id] && (ITEMS[o.id].raid || ITEMS[o.id].type === 'pet')) && A.p.inv.some((it) => it && /^(rd_|pet_)/.test(it.id)) , 'objetos en el inventario');
+  assert.ok(game.fx.some((f) => f.k === 'rd_chest'), 'animación');
+  const before = A.ws.got.filter((q) => q.t === 'raid_loot').length; game.raidOpenChest(A.p); assert.equal(A.ws.got.filter((q) => q.t === 'raid_loot').length, before, 'solo se abre una vez');
+  place(B.p, r.chest.x + 40, r.chest.y); game.raidOpenChest(B.p); assert.ok(!r.opened.has(B.p.key), 'hay que estar junto al cofre');
+  assert.ok(A.p.ext.col.raid_malgathor || A.p.ext.col.raid_slyvra || A.p.ext.col.raid_koros || A.p.ext.col.raid_aranak || A.p.ext.col.raid_xaelis, 'colección');
+  game.raidFinish(); assert.equal(game.raid, null); assert.ok(!game.monsters.some((q) => q.raidRun));
+  // derrota total
+  place(A.p, H.start[0] + 3, H.cy); A.p.hp = A.p.maxHp; game.raidGo(A.p); const r2 = game.raid; assert.equal(r2.members.size, 1); assert.equal(r2.boss.maxHp, MONSTERS.raid_slyvra.hp);
+  game.now += 5000; A.p.hp = 0; place(A.p, 3, 3); T0 = game.now; advance(1100); assert.equal(game.raid, null, 'sin supervivientes la Raid termina');
+  for (let i = 0; i < 12; i++) { const { p } = login('RaidX' + i); place(p, H.start[0] + 2 + (i % 3), H.cy + (i % 5)); p.hp = p.maxHp = 1e6; if (i === 0) var first = p; }
+  game.raidGo(first); assert.equal(game.raid.members.size, 10, 'máximo 10 jugadores'); game.raidReset();
+});
+
+ok('Banco ampliable (1M por 5 espacios) y entrada de 2k a las cuevas de jefe', () => {
+  const { p, ws } = login('Banquero'); const g = world.NPCS.find((q) => q.type === 'bank'); place(p, g.x + 1, g.y);
+  const n0 = p.bank.length; p.gold = 999999; p.bankGold = 0; game.bankBuy(p); assert.equal(p.bank.length, n0, 'sin oro no amplía');
+  p.gold = 600000; p.bankGold = 500000; game.bankBuy(p); assert.equal(p.bank.length, n0 + 5); assert.equal(p.gold + p.bankGold, 100000, 'cobra 1M (mano y banco)');
+  p.gold = 2e6; game.bankBuy(p); game.bankBuy(p); assert.equal(p.bank.length, n0 + 15, 'se puede seguir comprando'); assert.equal(lastMsg(ws, 'bank').size, n0 + 15);
+  p.bank[n0 + 14] = { id: 'pocion_vida', qty: 3 }; const d = game.serialize(p); assert.equal(d.bankSlots, n0 + 15);
+  const q = game.createPlayer({ key: 'x', name: 'x', data: d }); assert.equal(q.bank.length, n0 + 15); assert.ok(q.bank[n0 + 14]);
+  place(p, g.x + 40, g.y); p.gold = 2e6; game.bankBuy(p); assert.equal(p.bank.length, n0 + 15, 'hay que estar junto a la banquera');
+  const fees = world.PORTALS.filter((o) => o.fee); assert.equal(fees.length, 6, 'las 6 cuevas de jefe cobran'); assert.ok(fees.every((o) => o.fee === 2000));
+  const po = fees[5], z0 = [po.tx, po.ty];
+  const stepOn = (pl) => { const sx = po.x + 1, sy = po.y; place(pl, sx, sy); pl.pvpLock = 0; pl.nextMove = 0; game.tryStep(pl, -1, 0, game.now + 1e6); };
+  const { p: r } = login('Pobre'); r.gold = 1999; stepOn(r); assert.ok(!(r.x === z0[0] && r.y === z0[1]), 'sin 2k no entra'); assert.equal(r.gold, 1999);
+  const { p: u } = login('Rico'); u.gold = 5000; stepOn(u); assert.deepEqual([u.x, u.y], z0, 'con oro entra'); assert.equal(u.gold, 3000);
+  const ex = world.PORTALS.find((o) => !o.fee && o.tx === po.x && o.ty === po.y - 0) ; assert.ok(world.PORTALS.filter((o) => !o.fee).length > 6, 'las salidas son gratis');
+});
+
+ok('misiones de jefes: 13 nuevas, las de cueva se repiten cada día', () => {
+  const { QUESTS } = require('../game/quests'); const bq = QUESTS.filter((q) => q.type === 'kill' && MONSTERS[q.mon] && MONSTERS[q.mon].boss);
+  assert.ok(bq.length >= 16, 'un encargo por jefe'); for (const m of ['dragon_sombra', 'hidra_jade', 'arcangel', 'aracnido_fuego', 'leviatan', 'ignaros']) { const q = bq.find((o) => o.mon === m); assert.ok(q && q.repeat === 24, m); }
+  const { p } = login('Cazador'); p.level = 95; p.xp = Math.max(p.xp, 1); place(p, ...TOWN); const q = QUESTS.find((o) => o.id === 'cueva_magma');
+  game.questAccept(p, q.id); assert.equal(p.ext.q[q.id].s, 'a'); game.questKill(p, 'ignaros'); assert.equal(p.ext.q[q.id].n, 1);
+  const g0 = p.gold; game.questTurn(p, q.id); assert.ok(p.gold >= g0 + q.reward.g); assert.equal(p.ext.q[q.id].s, 'd');
+  p.ext.q[q.id].t -= 25 * 3600000; game.questAccept(p, q.id); assert.equal(p.ext.q[q.id].s, 'a', 'vuelve a estar disponible tras 24 h');
+});
+
+ok('Gremio de Mineros: sala segura con solo rocas de nivel bajo y medio, capataz con picos y sin etiqueta de gremio', () => {
+  const z = world.zoneById('gremio_minero'); assert.ok(z && z.kind === 'town' && !z.pvp);
+  const inG = game.nodes.filter((nd) => world.zoneAt(nd.x, nd.y).id === 'gremio_minero'); const { NODES } = require('../game/extra');
+  assert.ok(inG.length >= 10, 'hay rocas dentro (' + inG.length + ')'); assert.ok(inG.every((nd) => NODES[nd.type].rock && NODES[nd.type].lvl <= 90), 'ninguna roca alta');
+  const kinds = new Set(inG.map((nd) => NODES[nd.type].rock)); for (const r of ['granito', 'arenisca', 'pizarra', 'pedernal', 'pomez']) assert.ok(kinds.has(r), r);
+  assert.ok(![...kinds].some((r) => ['marmol', 'basalto', 'obsidiana'].includes(r)));
+  assert.ok(inG.every((nd) => world.reach[nd.y * world.W + nd.x]), 'alcanzables'); assert.ok(world.reach[73 * world.W + 47], 'se llega por el portal'); const pin = world.PORTALS.find((o) => /Gremio de Mineros/.test(o.label)); assert.ok(pin && !pin.fee && world.zoneAt(pin.x, pin.y).id !== 'gremio_minero' && world.zoneAt(pin.tx, pin.ty).id === 'gremio_minero', 'entrada por portal desde fuera, sin cobro'); assert.ok(world.PORTALS.some((o) => o.label === 'Salir al Prado' && world.zoneAt(o.x, o.y).id === 'gremio_minero'), 'portal de salida');
+  const du = world.NPCS.find((q) => q.id === 'durgan'); assert.ok(du && world.zoneAt(du.x, du.y).id === 'gremio_minero');
+  assert.ok(require('../game/data').SHOPS.durgan.includes('pico_hierro'), 'vende picos');
+  assert.ok(!world.monsterSpawns.some((o) => world.zoneAt(o.x, o.y).id === 'gremio_minero'), 'sin puntos de aparición de monstruos');
+});
+
+ok('flechas de misión: señalan monstruo, entrada de la cueva del jefe o PNJ al que entregar', () => {
+  const { p, ws } = login('Guia'); place(p, ...TOWN); p.level = 99; const g = () => lastMsg(ws, 'qguide');
+  game.questAccept(p, 'ratas'); let m = g(); assert.ok(m && m.list.length === 1 && m.list[0].id === 'ratas' && /Rata/i.test(m.list[0].label), 'apunta a las ratas');
+  const sp = world.monsterSpawns.filter((o) => o.type === 'rata'); assert.ok(sp.some((o) => o.x === m.list[0].x && o.y === m.list[0].y), 'coordenadas de un spawn real');
+  place(p, ...TOWN); game.questAccept(p, 'cueva_magma'); m = g(); const q = m.list.find((o) => o.id === 'cueva_magma'); const por = world.PORTALS.find((o) => o.x === q.x && o.y === q.y);
+  assert.ok(por && /Caldera/.test(por.label) && /^Entrada/.test(q.label), 'apunta al portal de la Caldera, no al jefe');
+  const ig = world.monsterSpawns.find((o) => o.type === 'ignaros'); place(p, ig.x, ig.y - 3); game.questGuide(p); const q2 = g().list.find((o) => o.id === 'cueva_magma'); assert.ok(q2.x === ig.x && q2.y === ig.y, 'dentro de la cueva apunta al jefe');
+  assert.ok(typeof q2.zone === 'string' && q2.zone.length, 'la flecha trae el nombre de la zona');
+  place(p, ...TOWN); for (let i = 0; i < 8; i++) game.questKill(p, 'rata'); const r = g().list.find((o) => o.id === 'ratas'); assert.ok(/Entregar/.test(r.label), 'lista: apunta al PNJ'); game.questAbandon(p, 'cueva_magma'); assert.ok(!g().list.some((o) => o.id === 'cueva_magma'));
+});
+
+ok('Ciudad de Alba Dorada: gran ciudad segura con banco, pescadera y brujo de armas mágicas', () => {
+  const z = world.zoneById('ciudad_alba'); assert.ok(z && z.kind === 'town' && !z.pvp && z.rect[2] - z.rect[0] >= 40, 'ciudad grande (más que Aldea Real)');
+  const N = (id) => world.NPCS.find((q) => q.id === id); for (const id of ['ilda', 'marela', 'zaroth']) { const n = N(id); assert.ok(n && world.zoneAt(n.x, n.y).id === 'ciudad_alba' && world.reach[n.y * world.W + n.x], id + ' dentro y alcanzable'); }
+  const { SHOPS, ITEMS } = require('../game/data'); assert.equal(N('ilda').type, 'bank'); assert.ok(SHOPS.marela.includes('salmon') && SHOPS.marela.includes('cana_madera'), 'pescado y cañas');
+  const mg = SHOPS.zaroth.filter((i) => ITEMS[i].type === 'weapon'); assert.ok(mg.length >= 8 && mg.every((i) => ITEMS[i].style === 'magic'), 'solo armas mágicas');
+  const { p, ws } = login('Alba'); place(p, N('ilda').x + 1, N('ilda').y); p.gold = 1000; game.npcClick(p, 'ilda'); assert.ok(lastMsg(ws, 'bank'), 'abre el banco'); game.bankGoldMove(p, 'dep', 500); assert.equal(p.bankGold, 500);
+  place(p, N('zaroth').x + 1, N('zaroth').y); game.npcClick(p, 'zaroth'); assert.ok(lastMsg(ws, 'shop'), 'abre la tienda del brujo');
+  assert.ok(world.reach[70 * world.W + 379] && world.reach[70 * world.W + 331], 'camino desde las Tierras de Lava');
+});
+
+ok('cuatro regiones nuevas: montañas, nubes, desierto con pirámides y paraíso, con monstruos y un jefe cada una', () => {
+  const { MONSTERS } = require('../game/data'), { QUESTS } = require('../game/quests');
+  const R = { montana_alta: 'serafin_fuego', nubes_reino: 'serafin_tormenta', desierto_piramides: 'amenkhet', paraiso: 'reina_coral' };
+  for (const [zid, boss] of Object.entries(R)) {
+    const z = world.zoneById(zid); assert.ok(z && !z.pvp, zid + ' existe y es segura');
+    const sp = world.monsterSpawns.filter((o) => world.zoneAt(o.x, o.y).id === zid); assert.ok(sp.length >= 40, zid + ' tiene monstruos');
+    const b = sp.find((o) => o.type === boss); assert.ok(b && MONSTERS[boss].boss, 'jefe de ' + zid);
+    assert.ok(world.reach[b.y * world.W + b.x], 'jefe alcanzable en ' + zid);
+    assert.ok(QUESTS.some((q) => q.mon === boss), 'misión del jefe ' + boss);
+  }
+  assert.ok(world.reach[57 * world.W + 400] && world.reach[40 * world.W + 440] && world.reach[98 * world.W + 340] && world.reach[98 * world.W + 440], 'calles desde Alba Dorada a las cuatro regiones');
+  const SJ = require('../public/sprites.json'); assert.ok(Object.values(MONSTERS).filter((m) => m.spr).every((m) => SJ[m.spr]), 'todos los dibujos de monstruos existen');
 });
 
 console.log(`\n${n} pruebas correctas`);
