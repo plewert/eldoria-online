@@ -143,7 +143,7 @@ ok('mercado: expira y devuelve el objeto por correo', () => {
   assert.equal(game.market().list.length, 0); assert.ok(s.p.inv.some((it) => it && it.id === 'arco_corto'));
 });
 ok('recolección y fabricación: nodos, recoger, receta, nivel de oficio', () => {
-  assert.ok(game.nodes.length > 100, 'hay puntos de recolección'); assert.ok(new Set(game.nodes.map((q) => q.type)).size === 12, 'oficios + 8 rocas');
+  assert.ok(game.nodes.length > 100, 'hay puntos de recolección'); assert.ok(new Set(game.nodes.map((q) => q.type)).size === 17, 'oficios + 8 rocas + 5 del gremio');
   const { p } = login('Craft1'); const nd = game.nodes.find((q) => q.type === 'hierba');
   place(p, nd.x, nd.y); game.gather(p, nd.id);
   assert.ok(p.inv.some((it) => it && it.id === 'hierba_curativa')); assert.equal(p.ext.gather, 1);
@@ -619,6 +619,18 @@ ok('misiones de jefes: 13 nuevas, las de cueva se repiten cada día', () => {
   game.questAccept(p, q.id); assert.equal(p.ext.q[q.id].s, 'a'); game.questKill(p, 'ignaros'); assert.equal(p.ext.q[q.id].n, 1);
   const g0 = p.gold; game.questTurn(p, q.id); assert.ok(p.gold >= g0 + q.reward.g); assert.equal(p.ext.q[q.id].s, 'd');
   p.ext.q[q.id].t -= 25 * 3600000; game.questAccept(p, q.id); assert.equal(p.ext.q[q.id].s, 'a', 'vuelve a estar disponible tras 24 h');
+});
+
+ok('Gremio de Mineros: sala segura con solo rocas de nivel bajo y medio, capataz con picos y sin etiqueta de gremio', () => {
+  const z = world.zoneById('gremio_minero'); assert.ok(z && z.kind === 'town' && !z.pvp);
+  const inG = game.nodes.filter((nd) => world.zoneAt(nd.x, nd.y).id === 'gremio_minero'); const { NODES } = require('../game/extra');
+  assert.ok(inG.length >= 10, 'hay rocas dentro (' + inG.length + ')'); assert.ok(inG.every((nd) => NODES[nd.type].rock && NODES[nd.type].lvl <= 90), 'ninguna roca alta');
+  const kinds = new Set(inG.map((nd) => NODES[nd.type].rock)); for (const r of ['granito', 'arenisca', 'pizarra', 'pedernal', 'pomez']) assert.ok(kinds.has(r), r);
+  assert.ok(![...kinds].some((r) => ['marmol', 'basalto', 'obsidiana'].includes(r)));
+  assert.ok(inG.every((nd) => world.reach[nd.y * world.W + nd.x]), 'alcanzables'); assert.ok(world.reach[73 * world.W + 47], 'se llega por el portal'); const pin = world.PORTALS.find((o) => /Gremio de Mineros/.test(o.label)); assert.ok(pin && !pin.fee && world.zoneAt(pin.x, pin.y).id !== 'gremio_minero' && world.zoneAt(pin.tx, pin.ty).id === 'gremio_minero', 'entrada por portal desde fuera, sin cobro'); assert.ok(world.PORTALS.some((o) => o.label === 'Salir al Prado' && world.zoneAt(o.x, o.y).id === 'gremio_minero'), 'portal de salida');
+  const du = world.NPCS.find((q) => q.id === 'durgan'); assert.ok(du && world.zoneAt(du.x, du.y).id === 'gremio_minero');
+  assert.ok(require('../game/data').SHOPS.durgan.includes('pico_hierro'), 'vende picos');
+  assert.deepEqual(game.monsters.filter((m) => !m.dead && world.zoneAt(m.x, m.y).id === 'gremio_minero').map((m) => m.type + m.x + ',' + m.y), [], 'sin monstruos');
 });
 
 console.log(`\n${n} pruebas correctas`);

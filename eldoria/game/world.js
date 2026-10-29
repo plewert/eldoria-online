@@ -58,6 +58,7 @@ const ZONES = [
   { id: 'selva',      name: 'Selva Esmeralda',        pvp: true,  kind: 'wild',    rect: [180, 0, 249, 69], tint: 'rgba(60,160,90,.10)' },
   { id: 'sabana',     name: 'Sabana Dorada',          pvp: false, kind: 'field',   rect: [180, 70, 249, 139] },
   { id: 'volcan',     name: 'Tierras de Lava y Fuego', pvp: true,  kind: 'wild',    rect: [250, 0, 319, 139], tint: 'rgba(255,70,20,.14)' },
+  { id: 'gremio_minero', name: 'Gremio de Mineros',   pvp: false, kind: 'town',    rect: [34, 70, 61, 85] },
   { id: 'prado',      name: 'Prado de los Novatos',   pvp: false, kind: 'field',   rect: [0, 0, 179, 139] },
 ];
 const zoneGrid = new Uint8Array(W * H);
@@ -344,6 +345,14 @@ function carveMagma(C, seed) {
 }
 carveMagma(CAVE6, 6161);
 
+// Cueva del Gremio de Mineros: cueva propia (zona segura) con portal de entrada junto a la ciudad. Solo rocas de nivel bajo y medio
+const GUILD = { rect: zoneById('gremio_minero').rect, door: [74, 64], outside: [74, 65], inside: [47, 83], exit: [47, 84] };
+(function carveGuild(C) {
+  const [x0, y0, x1, y1] = C.rect;
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) tiles[idx(x, y)] = (x === x0 || x === x1 || y === y0 || y === y1) ? T.CWALL : T.MFLOOR;
+  for (const [px, py] of [[38, 74], [57, 74], [38, 81], [57, 81], [47, 78], [49, 78], [43, 76], [52, 76]]) tiles[idx(px, py)] = T.CWALL;     // columnas
+})(GUILD);
+
 /* Santuario de las Cinco Sombras (Raid): 6 salas en fila al sur del mundo. Todo el sur se cierra con roca y se talla cada sala. */
 for (let y = H0; y < H; y++) for (let x = 0; x < W; x++) tiles[idx(x, y)] = T.CWALL;
 const RAID = { rooms: RAID_ROOMS, enter: { x: 85, y: 72 } };
@@ -427,6 +436,8 @@ addPortal(CAVE5.door[0], CAVE5.door[1], CAVE5.inside[0], CAVE5.inside[1], 'Gruta
 addPortal(CAVE5.exit[0], CAVE5.exit[1], CAVE5.door[0], CAVE5.door[1] - 1, 'Salir a la Selva Esmeralda');
 addPortal(CAVE6.door[0], CAVE6.door[1], CAVE6.inside[0], CAVE6.inside[1], 'Caldera del Soberano del Magma (peligro extremo)', CAVE_FEE);
 addPortal(CAVE6.exit[0], CAVE6.exit[1], CAVE6.door[0], CAVE6.door[1] - 1, 'Salir a las Tierras de Lava');
+addPortal(GUILD.door[0], GUILD.door[1], GUILD.inside[0], GUILD.inside[1], 'Cueva del Gremio de Mineros (zona segura)');
+addPortal(GUILD.exit[0], GUILD.exit[1], GUILD.outside[0], GUILD.outside[1], 'Salir al Prado');
 {
   const H1 = RAID_ROOMS[0];
   addPortal(RAID.enter.x, RAID.enter.y, H1.start[0] + 3, H1.cy, 'Santuario de las Cinco Sombras (Raid de 1 a 10 jugadores)');
@@ -450,6 +461,7 @@ for (const p of PORTALS) tiles[idx(p.x, p.y)] = T.PORTAL;
 
 /* 6) PNJ */
 const NPCS = [
+  { id: 'durgan', name: 'Durgan el Capataz', icon: '⛏️', x: 44, y: 72, type: 'shop', shop: 'durgan' },
   { id: 'boris', name: 'Boris el Mercader',  icon: '🧑‍🌾', x: 85,  y: 62,  type: 'shop', shop: 'boris' },
   { id: 'orin',  name: 'Orin el Sabio',      icon: '🧙‍♂️', x: 95,  y: 62,  type: 'shop', shop: 'orin' },
   { id: 'gerda', name: 'Gerda la Banquera',  icon: '👩‍💼', x: 95,  y: 68,  type: 'bank' },

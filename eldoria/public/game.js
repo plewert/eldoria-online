@@ -2108,7 +2108,7 @@
       if (e.kind === 'pl') {
         const top = sy - 14;
         hpBar(c, cx, top, 28, e.h / e.H);
-        outlined(c, `${e.gl ? '‹' + e.gl + '› ' : ''}${e.n} [${e.l}]${e.k ? ' ⚔' : ''}${e.tr ? ' 🤝' : ''}${e.o ? ' (ausente)' : ''}`, cx, top - 8, e.id === G.id ? '#c9a24b' : '#e8e2d0');
+        outlined(c, `${e.n} [${e.l}]${e.k ? ' ⚔' : ''}${e.tr ? ' 🤝' : ''}${e.o ? ' (ausente)' : ''}`, cx, top - 8, e.id === G.id ? '#c9a24b' : '#e8e2d0');
         if (e.tt) outlined(c, e.tt, cx, top - 19, '#9fd0ff', 'italic 10px "Segoe UI", sans-serif');
       } else {
         const d = G.mons[e.t] || {}; const sp0 = sprReady() && SPR[e.t];

@@ -313,3 +313,6 @@ Todo se sintetiza con WebAudio (sin archivos). **Música distinta por zona** (ci
 
 ## Equipo de los jefes animado
 Todas las piezas que sueltan los jefes (Dragón de las Sombras, Hidra de Jade, Arcángel, Aracnídeo Fuego Negro, Leviatán, Coloso, los 5 jefes de la Raid y los mantos, capuchas y bastones de los jefes menores) tienen una banda de luz que las recorre y partículas propias de su tema (sombra, jade, destellos sagrados, brasas, burbujas, forja, hielo). Se ve en el inventario, el botín del suelo y sobre el personaje. Los trofeos y plumas de fénix flotan y brillan. Código: `themeOf`/`themedDraw` en `public/game.js` (los del Magma tienen su propia animación).
+
+## Gremio de Mineros
+Cueva propia (zona segura) a la que se entra por un portal junto a la ciudad, en el lado oeste (casilla 74, 64); no cobra entrada. Solo tiene rocas de nivel **bajo y medio** (granito, arenisca, pizarra, pedernal y piedra pómez; sin mármol, basalto ni obsidiana), que reaparecen en 40 s. **Durgan el Capataz** vende todos los picos. Sobre los jugadores solo se muestra nombre y nivel (ya no la etiqueta de gremio).

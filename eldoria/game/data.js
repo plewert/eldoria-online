@@ -231,6 +231,7 @@ Object.assign(ITEMS, {
 
 
 const SHOPS = {
+  durgan: [],   // Gremio de Mineros: picos (se rellena en mining.js)
   boris: [
     'sardina', 'salmon', 'tiburon',
     'pocion_vida', 'pocion_vida_g', 'pocion_mana', 'pocion_mana_g',

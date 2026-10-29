@@ -20,6 +20,7 @@ const ROCKS = {
   basalto:   { name: 'Basalto Negro',     lvl: 170,  xp: 800, zones: ['volcan', 'minas', 'piramide', 'abismo'],          n: 26, respawn: 100000, gem: 0.055, sell: 520, pool: [['amatista', 8], ['opalo', 3], ['diamante', 2], ['rubi', 5], ['zafiro', 5], ['esmeralda', 5]] },
   obsidiana: { name: 'Obsidiana',         lvl: 220, xp: 1500, zones: ['cueva_arana', 'cueva', 'cueva_jade', 'cueva_nube', 'cueva_mar'], n: 18, respawn: 120000, gem: 0.07, sell: 900, pool: [['amatista', 6], ['opalo', 5], ['diamante', 4]] },
 };
+const GUILD_ROCKS = ['granito', 'arenisca', 'pizarra', 'pedernal', 'pomez'];
 const ORDER = ['granito', 'arenisca', 'pizarra', 'pedernal', 'pomez', 'marmol', 'basalto', 'obsidiana'];
 // picos: nivel de minería para usarlos, velocidad (menos = más rápido), bonus de gemas y de piedra extra
 const PICKS = {
@@ -40,8 +41,11 @@ function build(ITEMS_, SHOPS) {
     ITEMS_[id] = { name: r.name, icon: '🪨', spr: 'k_' + id, type: 'misc', stack: true, sell: r.sell };
     NODES['roca_' + id] = { icon: '🪨', name: r.name, rock: id, spr: 'rock_' + id, lvl: r.lvl, give: [[id, 1, 2]], zones: r.zones, n: r.n, respawn: r.respawn, xp: r.xp, gem: r.gem };
   }
+  // Gremio de Mineros: solo rocas de nivel bajo y medio, más juntas y con reaparición rápida
+  for (const id of GUILD_ROCKS) { const r = ROCKS[id]; NODES['roca_g_' + id] = { icon: '🪨', name: r.name, rock: id, spr: 'rock_' + id, lvl: r.lvl, give: [[id, 1, 2]], zones: ['gremio_minero'], n: 3, respawn: 40000, xp: r.xp, gem: r.gem }; }
   for (const [id, k] of Object.entries(PICKS)) ITEMS_[id] = { name: `${k.name} (minería ${k.req})`, icon: '⛏️', spr: k.spr, type: 'misc', pick: 1, price: k.price, sell: Math.round(k.price / 4) };
   SHOPS.boris.push(...Object.keys(PICKS));
+  SHOPS.durgan.push(...Object.keys(PICKS));
 }
 
 module.exports = { build, ROCKS, PICKS, ORDER, MINE_MAX, install(Game) {

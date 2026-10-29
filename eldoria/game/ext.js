@@ -655,7 +655,7 @@ module.exports = function install(Game) {
         if (!world.reach[kxy(x, y)] || !zoneAt(x, y) || !nd.zones.includes(zoneAt(x, y).id)) continue;
         const t = world.tiles[kxy(x, y)];
         if (t === T.PORTAL || t === T.ROAD || t === T.WATER || t === T.WALL) continue;
-        if (zoneAt(x, y).kind === 'town') continue;
+        if (zoneAt(x, y).kind === 'town' && zoneAt(x, y).id !== 'gremio_minero') continue;
         cands.push([x, y]);
       }
       for (let i = cands.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [cands[i], cands[j]] = [cands[j], cands[i]]; }
