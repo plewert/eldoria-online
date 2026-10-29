@@ -521,6 +521,39 @@ ok('Ignaros, Soberano del Magma: caldera, botín (6 objetos) y sus 4 ataques (in
   const hA = a.p.hp, hB = b.p.hp; run(16000); assert.ok(game.fx.some((f) => f.k === 'mlv'), 'sube la lava'); assert.ok(game.fx.filter((f) => /^m(g|l|m)/.test(f.k)).every((f) => Number.isFinite(f.x ?? f.x1) && Number.isFinite(f.y ?? f.y1)), 'los efectos llevan posición (si no, el servidor no los envía)'); assert.ok(game.fx.filter((f) => ['mgw', 'mgf', 'mlw2', 'mlv', 'mlw', 'ml'].includes(f.k)).every((f) => f.x === 289 && f.y === 128), 'anclados al centro de la caldera'); assert.equal(a.p.hp, hA, 'la roca protege'); assert.ok(b.p.hp < hB, 'la lava quema');
 });
 
+ok('Anubis, Juez de las Sombras: tumba, botín, miasma, portales, sombras y momia que explota', () => {
+  assert.equal(MONSTERS.anubis.special, 'anubis'); assert.equal(typeof Game.prototype.anubisAI, 'function');
+  const loot = MONSTERS.anubis.loot.map((l) => l[0]);
+  ['an_yelmo', 'an_peto', 'an_guantes', 'an_pantalon', 'an_botas', 'an_cinto', 'an_anillo', 'an_amuleto', 'an_arco', 'an_baston', 'trofeo_anubis'].forEach((id) => { assert.ok(loot.includes(id), id); assert.ok(ITEMS[id], id); });
+  const sj = require('../public/sprites.json'), gj = require('../public/gear.json');
+  for (const k of ['anubis', 'momia_eterna']) assert.ok(sj[k], 'dibujo ' + k);
+  for (const k of ['an_helm', 'an_chest', 'an_glove', 'an_leg', 'an_boot', 'an_belt', 'an_ring', 'an_amulet', 'an_bow', 'an_staff']) assert.ok(gj['i_' + k], 'icono ' + k);
+  for (const k of ['an_helm', 'an_chest', 'an_belt', 'an_bow', 'an_staff']) assert.ok(gj['c_' + k], 'personaje ' + k);
+  const sp = world.monsterSpawns.find((q) => q.type === 'anubis'); assert.equal(zoneOf([sp.x, sp.y]).id, 'cueva_anubis'); assert.ok(world.reach[sp.y * world.W + sp.x], 'alcanzable');
+  const pt = world.PORTALS.find((q) => q.x === 377 && q.y === 117); assert.ok(pt && pt.fee === 2000);
+  const run = (ms) => { for (let k = 0; k <= ms; k += 100) { game.now += 100; const due = game.sched.filter((e) => e.at <= game.now); game.sched = game.sched.filter((e) => e.at > game.now); due.forEach((e) => e.fn()); } };
+  const a = login('Anu1'), b = login('Anu2'); place(a.p, 377, 125); place(b.p, 372, 126); for (const q of [a.p, b.p]) q.hp = q.maxHp = 1e7;
+  const m = game.spawnMonster('anubis', sp.x, sp.y); m.target = a.p.id; game.fx.length = 0;
+  // 1) miasma: daño continuo y curación reducida
+  game.anubisCast(m, 'miasma'); run(9000); assert.ok(game.fx.some((f) => f.k === 'an_crack') && game.fx.some((f) => f.k === 'an_ms'), 'grietas y miasma');
+  assert.ok(a.p.hp < 1e7, 'el miasma daña'); assert.ok(a.p.antiHeal > 0, 'reduce la curación');
+  // 2) portales verdes con flechas que explotan
+  place(a.p, 377, 125); a.p.hp = 1e7; game.fx.length = 0; game.anubisCast(m, 'portales'); run(14000);
+  assert.ok(game.fx.filter((f) => f.k === 'an_pt').length >= 6 && game.fx.some((f) => f.k === 'an_ar') && game.fx.some((f) => f.k === 'an_bm'), 'portales y flechas');
+  // 3) tres sombras: Anubis es inmune mientras duren
+  game.fx.length = 0; game.anubisCast(m, 'sombras'); run(2500);
+  const sh = game.monsters.filter((z) => z.parent === m); assert.deepEqual(sh.map((z) => z.type).sort(), ['anubis_sombra_a', 'anubis_sombra_h', 'anubis_sombra_m'], 'tres sombras');
+  assert.ok(m.shieldUntil > game.now, 'Anubis inmune'); for (const z of sh) z.dead = true; run(1500); game.anubisSweep(m);
+  assert.ok(!(m.shieldUntil > game.now), 'vuelve a ser vulnerable'); assert.ok(!game.monsters.some((z) => z.parent === m && z.type.startsWith('anubis_sombra')), 'las sombras desaparecen');
+  // 4) momia: al morir explota con fuego negro por toda la cueva
+  game.fx.length = 0; game.anubisCast(m, 'momia'); run(2500); const mu = game.monsters.find((z) => z.type === 'momia_eterna'); assert.ok(mu, 'revive una momia');
+  place(a.p, 377, 125); a.p.hp = 1e7; const h0 = a.p.hp; game.killMonster(mu, game.now); run(8000);
+  assert.ok(game.fx.some((f) => f.k === 'an_mx') && game.fx.some((f) => f.k === 'an_l') && game.fx.some((f) => f.k === 'an_bf'), 'explosión, rayos y bolas negras'); assert.ok(a.p.hp < h0, 'el fuego negro daña');
+  assert.ok(game.fx.filter((f) => /^an_/.test(f.k)).every((f) => Number.isFinite(f.x ?? f.x1) && Number.isFinite(f.y ?? f.y1) || f.k === 'an_dot'), 'fx con coordenadas');
+  // curación reducida
+  const hp0 = a.p.hp = 1000; a.p.maxHp = 5000; a.p.antiHeal = game.now + 5000; const nm = a.p.hp; assert.ok(a.p.antiHeal > game.now && nm === hp0);
+});
+
 ok('minería: picos, rocas por nivel, experiencia, gemas raras y colección', () => {
   const M = require('../game/mining');
   for (const id of M.ORDER) { assert.ok(ITEMS[id], id); assert.ok(game.nodes.some((q) => q.type === 'roca_' + id), 'hay rocas de ' + id); }
@@ -605,7 +638,7 @@ ok('Banco ampliable (1M por 5 espacios) y entrada de 2k a las cuevas de jefe', (
   p.bank[n0 + 14] = { id: 'pocion_vida', qty: 3 }; const d = game.serialize(p); assert.equal(d.bankSlots, n0 + 15);
   const q = game.createPlayer({ key: 'x', name: 'x', data: d }); assert.equal(q.bank.length, n0 + 15); assert.ok(q.bank[n0 + 14]);
   place(p, g.x + 40, g.y); p.gold = 2e6; game.bankBuy(p); assert.equal(p.bank.length, n0 + 15, 'hay que estar junto a la banquera');
-  const fees = world.PORTALS.filter((o) => o.fee); assert.equal(fees.length, 6, 'las 6 cuevas de jefe cobran'); assert.ok(fees.every((o) => o.fee === 2000));
+  const fees = world.PORTALS.filter((o) => o.fee); assert.equal(fees.length, 7, 'las 7 cuevas de jefe cobran'); assert.ok(fees.every((o) => o.fee === 2000));
   const po = fees[5], z0 = [po.tx, po.ty];
   const stepOn = (pl) => { const sx = po.x + 1, sy = po.y; place(pl, sx, sy); pl.pvpLock = 0; pl.nextMove = 0; game.tryStep(pl, -1, 0, game.now + 1e6); };
   const { p: r } = login('Pobre'); r.gold = 1999; stepOn(r); assert.ok(!(r.x === z0[0] && r.y === z0[1]), 'sin 2k no entra'); assert.equal(r.gold, 1999);
@@ -613,7 +646,7 @@ ok('Banco ampliable (1M por 5 espacios) y entrada de 2k a las cuevas de jefe', (
   const ex = world.PORTALS.find((o) => !o.fee && o.tx === po.x && o.ty === po.y - 0) ; assert.ok(world.PORTALS.filter((o) => !o.fee).length > 6, 'las salidas son gratis');
 });
 
-ok('misiones de jefes: 13 nuevas, las de cueva se repiten cada día', () => {
+ok('misiones de jefes: 14 nuevas, las de cueva se repiten cada día', () => {
   const { QUESTS } = require('../game/quests'); const bq = QUESTS.filter((q) => q.type === 'kill' && MONSTERS[q.mon] && MONSTERS[q.mon].boss);
   assert.ok(bq.length >= 16, 'un encargo por jefe'); for (const m of ['dragon_sombra', 'hidra_jade', 'arcangel', 'aracnido_fuego', 'leviatan', 'ignaros']) { const q = bq.find((o) => o.mon === m); assert.ok(q && q.repeat === 24, m); }
   const { p } = login('Cazador'); p.level = 95; p.xp = Math.max(p.xp, 1); place(p, ...TOWN); const q = QUESTS.find((o) => o.id === 'cueva_magma');

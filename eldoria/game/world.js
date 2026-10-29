@@ -18,10 +18,10 @@ const H = 200;                  // + 60 filas al sur con las salas de la Raid (e
 const T = {
   GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10,
   SAND: 11, SNOW: 12, SWAMP: 13, DUNE: 14, PALM: 15, PINE: 16, DEADTREE: 17, CACTUS: 18, ICEBLOCK: 19,
-  MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24, CFLOOR: 25, CWALL: 26, LAVA: 27, ASH: 28, CLOUDF: 29, CLOUDW: 30, WEBF: 31, WEBW: 32, AQF: 33, AQW: 34, MAGF: 35, MAGW: 36,
+  MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24, CFLOOR: 25, CWALL: 26, LAVA: 27, ASH: 28, CLOUDF: 29, CLOUDW: 30, WEBF: 31, WEBW: 32, AQF: 33, AQW: 34, MAGF: 35, MAGW: 36, TOMBF: 37, TOMBW: 38, BRAZ: 39,
 };
 const BLOCKED = new Uint8Array(64);   // (con 32 casillas, WEBW=32 quedaba fuera y no bloqueaba)
-[T.WATER, T.TREE, T.WALL, T.ROCK, T.PALM, T.PINE, T.DEADTREE, T.CACTUS, T.ICEBLOCK, T.BOG, T.CWALL, T.LAVA, T.CLOUDW, T.WEBW, T.AQW, T.MAGW].forEach((t) => { BLOCKED[t] = 1; });
+[T.WATER, T.TREE, T.WALL, T.ROCK, T.PALM, T.PINE, T.DEADTREE, T.CACTUS, T.ICEBLOCK, T.BOG, T.CWALL, T.LAVA, T.CLOUDW, T.WEBW, T.AQW, T.MAGW, T.TOMBW, T.BRAZ].forEach((t) => { BLOCKED[t] = 1; });
 
 // El orden importa: gana la primera zona cuyo rectángulo contiene la casilla.
 const RAID_Y0 = 146, RAID_Y1 = 170, RAID_W = 36;
@@ -47,6 +47,7 @@ const ZONES = [
   { id: 'cueva_arana', name: 'Guarida del Aracnídeo Fuego Negro', pvp: false, kind: 'dungeon', tint: 'rgba(255,60,10,.12)', rect: [272, 96, 305, 115] },
   { id: 'cueva_mar',  name: 'Gruta del Leviatán Abisal', pvp: false, kind: 'dungeon', tint: 'rgba(30,150,210,.14)', rect: [213, 40, 246, 59] },
   { id: 'cueva_magma', name: 'Caldera del Soberano del Magma', pvp: false, kind: 'dungeon', tint: 'rgba(255,70,10,.16)', rect: [272, 119, 305, 137] },
+  { id: 'cueva_anubis', name: 'Tumba de Anubis, Juez de las Sombras', pvp: false, kind: 'dungeon', dark: true, tint: 'rgba(110,50,190,.16)', rect: [361, 118, 394, 136] },
   { id: 'abismo',     name: 'Abismo Carmesí',         pvp: true,  kind: 'dungeon', rect: [112, 40, 139, 74] },
   { id: 'piramide',   name: 'Pirámide Olvidada',      pvp: true,  kind: 'dungeon', rect: [148, 100, 175, 136] },
   { id: 'fortaleza',  name: 'Fortaleza de Hielo',     pvp: true,  kind: 'dungeon', rect: [148, 3, 175, 30] },
@@ -204,7 +205,7 @@ for (let y = 0; y < H0; y++) {
     }
   }
   // pirámides de arenisca (muros sólidos escalonados; la mayor guarda al jefe del desierto)
-  for (const [cx, by, hw] of [[352, 112, 9], [376, 124, 6], [335, 130, 5], [380, 96, 4]]) {
+  for (const [cx, by, hw] of [[352, 112, 9], [335, 130, 5], [380, 96, 4]]) {
     for (let k = 0; k <= hw; k++) for (let x = cx - hw + k; x <= cx + hw - k; x++) tiles[idx(x, by - k)] = T.CWALL;
     tiles[idx(cx, by)] = T.SAND; tiles[idx(cx, by - 1)] = T.CWALL;      // la base queda cerrada
   }
@@ -257,7 +258,7 @@ carvePath(331, 70, 379, 70);
 carvePath(400, 57, 400, 40); carvePath(336, 40, 464, 40);              // norte: montañas (oeste) y nubes (este)
 carvePath(359, 40, 359, 14); carvePath(424, 40, 424, 12); carvePath(452, 40, 452, 26);
 carvePath(400, 83, 400, 98); carvePath(336, 98, 464, 98);              // sur: desierto (oeste) y paraíso (este)
-carvePath(352, 98, 352, 114); carvePath(376, 98, 376, 124); carvePath(440, 98, 440, 106);
+carvePath(352, 98, 352, 114); carvePath(377, 98, 377, 116); carvePath(440, 98, 440, 106);
 for (let y = 0; y < H0; y++) for (let x = 400; x < 480; x++) if (y < 57 && tiles[idx(x, y)] === T.ROAD) tiles[idx(x, y)] = T.CLOUDF;    // en las nubes el camino es de nube
 for (let y = 84; y < H0; y++) for (let x = 400; x < 480; x++) if (tiles[idx(x, y)] === T.ROAD && zoneAt(x, y).id === 'paraiso') tiles[idx(x, y)] = T.SAND;
 for (let y = 0; y < 57; y++) for (let x = 320; x < 400; x++) if (tiles[idx(x, y)] === T.ROAD && zoneAt(x, y).id === 'montana_alta') tiles[idx(x, y)] = T.HILL;     // camino desde las Tierras de Lava hasta la puerta oeste de Alba Dorada
@@ -415,6 +416,28 @@ function carveMagma(C, seed) {
 }
 carveMagma(CAVE6, 6161);
 
+// Tumba de Anubis: gran sala funeraria de piedra violeta (desierto de las pirámides). Pilares, brasas moradas y un altar al fondo; la puerta está al norte
+const CAVE7 = { rect: zoneById('cueva_anubis').rect, door: [377, 117], inside: [377, 122], exit: [377, 120], lair: [377, 130] };
+(function carveTomb(C) {
+  const [x0, y0, x1, y1] = C.rect, cx = 377.5;
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) tiles[idx(x, y)] = T.TOMBW;
+  const floor = (x, y) => { if (x > x0 && x < x1 && y > y0 && y < y1) tiles[idx(x, y)] = T.TOMBF; };
+  for (let y = y0 + 1; y <= y0 + 4; y++) for (let x = C.inside[0] - 3; x <= C.inside[0] + 3; x++) floor(x, y);          // vestíbulo
+  for (let y = y0 + 3; y < y1; y++) for (let x = x0 + 2; x < x1 - 1; x++) { const dx = Math.abs(x - cx) / 15.6, dy = (y - 128.5) / 7.6; if (dx * dx + dy * dy < 1.06 || (Math.abs(x - cx) < 14 && y >= y0 + 4)) floor(x, y); }      // gran sala
+  // pilares en dos filas a cada lado
+  for (const px of [365, 369, 386, 390]) for (const py of [122, 126, 131]) if (tiles[idx(px, py)] === T.TOMBF) tiles[idx(px, py)] = T.TOMBW;
+  // altar al fondo: arco de piedra con un nicho
+  for (let x = 372; x <= 383; x++) for (let y = 134; y <= 135; y++) tiles[idx(x, y)] = T.TOMBW;
+  for (const [x, y] of [[374, 133], [381, 133]]) tiles[idx(x, y)] = T.TOMBW;
+  // brasas moradas (6)
+  for (const [x, y] of [[367, 124], [388, 124], [367, 133], [388, 133], [371, 128], [384, 128]]) if (tiles[idx(x, y)] === T.TOMBF) tiles[idx(x, y)] = T.BRAZ;
+  // alcobas laterales con estatuas (zonas bajas decoradas con pilares)
+  for (const [ax, ay] of [[364, 127], [391, 127]]) for (let dy = 0; dy < 2; dy++) tiles[idx(ax, ay + dy * 3)] = T.TOMBW;
+  const seen = new Set([idx(C.inside[0], C.inside[1])]), q = [...seen];
+  for (let i = 0; i < q.length; i++) { const k = q[i], x = k % W, y = (k / W) | 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) { const nk = idx(x + dx, y + dy); if (inb(x + dx, y + dy) && tiles[nk] === T.TOMBF && !seen.has(nk)) { seen.add(nk); q.push(nk); } } }
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (tiles[idx(x, y)] === T.TOMBF && !seen.has(idx(x, y))) tiles[idx(x, y)] = T.TOMBW;
+})(CAVE7);
+
 // Cueva del Gremio de Mineros: cueva propia (zona segura) con portal de entrada junto a la ciudad. Solo rocas de nivel bajo y medio
 const GUILD = { rect: zoneById('gremio_minero').rect, door: [74, 64], outside: [74, 65], inside: [47, 83], exit: [47, 84] };
 (function carveGuild(C) {
@@ -506,6 +529,8 @@ addPortal(CAVE5.door[0], CAVE5.door[1], CAVE5.inside[0], CAVE5.inside[1], 'Gruta
 addPortal(CAVE5.exit[0], CAVE5.exit[1], CAVE5.door[0], CAVE5.door[1] - 1, 'Salir a la Selva Esmeralda');
 addPortal(CAVE6.door[0], CAVE6.door[1], CAVE6.inside[0], CAVE6.inside[1], 'Caldera del Soberano del Magma (peligro extremo)', CAVE_FEE);
 addPortal(CAVE6.exit[0], CAVE6.exit[1], CAVE6.door[0], CAVE6.door[1] - 1, 'Salir a las Tierras de Lava');
+addPortal(CAVE7.door[0], CAVE7.door[1], CAVE7.inside[0], CAVE7.inside[1], 'Tumba de Anubis (peligro extremo)', CAVE_FEE);
+addPortal(CAVE7.exit[0], CAVE7.exit[1], CAVE7.door[0], CAVE7.door[1] - 1, 'Salir al Desierto de las Pirámides');
 addPortal(GUILD.door[0], GUILD.door[1], GUILD.inside[0], GUILD.inside[1], 'Cueva del Gremio de Mineros (zona segura)');
 addPortal(GUILD.exit[0], GUILD.exit[1], GUILD.outside[0], GUILD.outside[1], 'Salir al Prado');
 {
@@ -619,6 +644,7 @@ const monsterSpawns = [];
 monsterSpawns.push({ type: 'aracnido_fuego', x: CAVE4.lair[0], y: CAVE4.lair[1] });
   monsterSpawns.push({ type: 'leviatan', x: CAVE5.lair[0], y: CAVE5.lair[1] });
   monsterSpawns.push({ type: 'ignaros', x: CAVE6.lair[0], y: CAVE6.lair[1] });
+  monsterSpawns.push({ type: 'anubis', x: CAVE7.lair[0], y: CAVE7.lair[1] });
   const nearest = (zoneId, px, py) => {
     let best = null, bd = 1e9;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -636,7 +662,7 @@ monsterSpawns.push({ type: 'aracnido_fuego', x: CAVE4.lair[0], y: CAVE4.lair[1] 
 })();
 
 // Versión compacta del mapa para el cliente (un carácter por casilla)
-const CH = '0123456789abcdefghijklmnopqrstuvwxyzA';
+const CH = '0123456789abcdefghijklmnopqrstuvwxyzABCD';
 const rows = [];
 for (let y = 0; y < H; y++) {
   let s = '';

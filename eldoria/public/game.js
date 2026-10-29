@@ -111,7 +111,7 @@
     joined = true; if (G.autoRet) send({ t: 'autoret', on: true });
     G.id = m.id; G.W = m.w; G.H = m.h; G.zones = m.zones; G.portals = m.portals; G.npcs = m.npcs; G.items = m.items; G.mons = m.mons; aliasSprites(); G.cfg = m.cfg; G.rar = m.rar; G.gems = m.gems;
     for (const [iid, idf] of Object.entries(m.items)) if (idf.el) WEAPON_ELEM[iid] = idf.el;
-    const CH = '0123456789abcdefghijklmnopqrstuvwxyzA';
+    const CH = '0123456789abcdefghijklmnopqrstuvwxyzABCD';
     G.tiles = new Uint8Array(G.W * G.H);
     m.rows.forEach((row, y) => { for (let x = 0; x < G.W; x++) G.tiles[y * G.W + x] = CH.indexOf(row[x]); });
     G.zoneGrid = new Uint8Array(G.W * G.H);
@@ -710,7 +710,7 @@
   /* ======================================================================
    *  TEXTURAS DEL MAPA (generadas por código, estilo píxel)
    * ==================================================================== */
-  const TILE = { GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10, SAND: 11, SNOW: 12, SWAMP: 13, DUNE: 14, PALM: 15, PINE: 16, DEADTREE: 17, CACTUS: 18, ICEBLOCK: 19, MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24, CFLOOR: 25, CWALL: 26, LAVA: 27, ASH: 28, CLOUDF: 29, CLOUDW: 30, WEBF: 31, WEBW: 32, AQF: 33, AQW: 34, MAGF: 35, MAGW: 36 };
+  const TILE = { GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10, SAND: 11, SNOW: 12, SWAMP: 13, DUNE: 14, PALM: 15, PINE: 16, DEADTREE: 17, CACTUS: 18, ICEBLOCK: 19, MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24, CFLOOR: 25, CWALL: 26, LAVA: 27, ASH: 28, CLOUDF: 29, CLOUDW: 30, WEBF: 31, WEBW: 32, AQF: 33, AQW: 34, MAGF: 35, MAGW: 36, TOMBF: 37, TOMBW: 38, BRAZ: 39 };
   const seeded = (s) => () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
   const mk = (fn) => { const c = document.createElement('canvas'); c.width = c.height = TS; const g = c.getContext('2d'); fn(g); return c; };
   const dot = (g, c, x, y, w = 2, h = 2) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
@@ -869,6 +869,24 @@
     g.strokeStyle = '#e8601a'; g.globalAlpha = 0.5; g.lineWidth = 1.3; g.beginPath();
     let x = r() * 32, y = 0; g.moveTo(x, y); for (let i = 0; i < 5; i++) { x += (r() - 0.5) * 10; y += 7; g.lineTo(x, y); } g.stroke(); g.globalAlpha = 1;
   }); };
+  const tombfloor = (v) => { const r = seeded(3300 + v); return mk((g) => {
+    g.fillStyle = '#2b2440'; g.fillRect(0, 0, TS, TS);
+    for (let i = 0; i < 14; i++) dot(g, r() < 0.5 ? '#352c50' : '#201a33', (r() * 16 | 0) * 2, (r() * 16 | 0) * 2, 2 + (r() < 0.3 ? 2 : 0), 2);
+    g.strokeStyle = 'rgba(12,8,24,.7)'; g.lineWidth = 1; g.strokeRect(0.5, 0.5, 31, 31);
+    g.strokeStyle = 'rgba(150,100,240,.35)'; g.beginPath(); let x = r() * 32, y = r() * 8; g.moveTo(x, y); for (let i = 0; i < 4; i++) { x += (r() - 0.5) * 12; y += 6 + r() * 4; g.lineTo(x, y); } g.stroke();
+    if (r() < 0.3) { g.fillStyle = 'rgba(190,150,255,.45)'; const gx = 6 + (r() * 18 | 0), gy = 6 + (r() * 18 | 0); g.fillRect(gx, gy, 2, 5); g.fillRect(gx + 4, gy + 2, 3, 2); g.fillRect(gx + 9, gy, 2, 5); }   // jeroglífico
+  }); };
+  const tombwall = (v) => { const r = seeded(3400 + v); return mk((g) => {
+    g.fillStyle = '#17121f'; g.fillRect(0, 0, TS, TS);
+    for (let i = 0; i < 10; i++) dot(g, r() < 0.5 ? '#231b31' : '#0d0913', (r() * 16 | 0) * 2, (r() * 16 | 0) * 2, 4, 4);
+    g.strokeStyle = '#0a0710'; g.strokeRect(0.5, 0.5, 31, 15); g.strokeRect(0.5, 16.5, 31, 15);
+    g.fillStyle = 'rgba(120,230,150,.28)'; if (r() < 0.6) { const gx = 4 + (r() * 20 | 0), gy = 3 + (r() < 0.5 ? 0 : 16); g.fillRect(gx, gy, 2, 6); g.fillRect(gx + 4, gy + 1, 4, 2); g.fillRect(gx + 10, gy, 2, 6); }
+  }); };
+  const brazfloor = (v) => { const r = seeded(3500 + v); return mk((g) => {
+    g.drawImage(tombfloor(v), 0, 0);
+    g.fillStyle = '#4a4258'; g.fillRect(9, 20, 14, 8); g.fillStyle = '#2a2436'; g.fillRect(7, 26, 18, 4); g.fillRect(12, 28, 8, 3);
+    g.fillStyle = '#1b1626'; g.fillRect(8, 17, 16, 4); g.fillStyle = '#6fe08a'; g.fillRect(11, 18, 10, 2);
+  }); };
   const wfloor = (v) => { const r = seeded(2500 + v); return mk((g) => {
     g.fillStyle = '#1d1a22'; g.fillRect(0, 0, TS, TS);
     for (let i = 0; i < 14; i++) dot(g, r() < 0.5 ? '#2a2630' : '#14121a', (r() * 16 | 0) * 2, (r() * 16 | 0) * 2, 2, 2);
@@ -951,7 +969,7 @@
     dfloor: [0, 1, 2, 3].map(dfloor), afloor: [0, 1, 2, 3].map(afloor), shop: [0, 1].map(shopFloor),
     sand: [0, 1, 2, 3].map(sand), snow: [0, 1, 2, 3].map(snow), dune: [0, 1, 2, 3].map(dune), swamp: [0, 1, 2, 3].map(swamp), bog: [bog(0), bog(1)], hill: [0, 1, 2, 3].map(hill),
     palm: [0, 1].map(palm), pine: [0, 1].map(pine), dead: [0, 1].map(dead), cactus: [0, 1].map(cactus), ice: [0, 1].map(ice),
-    mfloor: [0, 1, 2, 3].map(mfloor), pfloor: [0, 1, 2, 3].map(pfloor), ifloor: [0, 1, 2, 3].map(ifloor), cfloor: [0, 1, 2, 3].map(cfloor), lava: [lava(0), lava(1)], wfloor: [0, 1, 2, 3].map(wfloor), aqfloor: [0, 1, 2, 3].map(aqfloor), aqwall: [0, 1, 2].map(aqwall), magfloor: [0, 1, 2, 3].map(magfloor), magwall: [0, 1, 2].map(magwall), wwall: [0, 1, 2].map(wwall), nfloor: [0, 1, 2, 3].map(nfloor), nwall: [0, 1, 2].map(nwall), obsid: [0, 1, 2].map(obsid), sandwall: [0, 1, 2].map(sandwall), granwall: [0, 1, 2].map(granwall), ash: [0, 1, 2, 3].map(ash), cwall: [0, 1, 2].map(cwall),
+    mfloor: [0, 1, 2, 3].map(mfloor), pfloor: [0, 1, 2, 3].map(pfloor), ifloor: [0, 1, 2, 3].map(ifloor), cfloor: [0, 1, 2, 3].map(cfloor), lava: [lava(0), lava(1)], wfloor: [0, 1, 2, 3].map(wfloor), aqfloor: [0, 1, 2, 3].map(aqfloor), aqwall: [0, 1, 2].map(aqwall), magfloor: [0, 1, 2, 3].map(magfloor), magwall: [0, 1, 2].map(magwall), tombfloor: [0, 1, 2, 3].map(tombfloor), tombwall: [0, 1, 2].map(tombwall), braz: [0].map(brazfloor), wwall: [0, 1, 2].map(wwall), nfloor: [0, 1, 2, 3].map(nfloor), nwall: [0, 1, 2].map(nwall), obsid: [0, 1, 2].map(obsid), sandwall: [0, 1, 2].map(sandwall), granwall: [0, 1, 2].map(granwall), ash: [0, 1, 2, 3].map(ash), cwall: [0, 1, 2].map(cwall),
   });
   const buildFG = () => { FG = true; const o = { tree: [0, 1].map(tree), palm: [0, 1].map(palm), pine: [0, 1].map(pine), dead: [0, 1].map(dead) }; FG = false; return o; };
   let TEX = buildTEX(), TEXFG = buildFG();
@@ -1003,6 +1021,17 @@
   }
 
   /* ---- gruta del leviatán: ondas de luz sobre el agua poco profunda y burbujas que suben ---- */
+  function tombFloorFx(c, x, y, sx, sy, now) {         // el suelo de la tumba respira un resplandor violeta
+    const a = 0.03 + 0.045 * Math.sin(now / 1100 + x * 0.7 - y * 0.5);
+    c.fillStyle = `rgba(150,80,255,${a})`; c.fillRect(sx, sy, 32, 32);
+  }
+  function brazFx(c, x, y, sx, sy, now) {              // brasero de llama verde
+    const t = now / 1000, fl = 0.75 + 0.25 * Math.sin(t * 9 + x * 3 + y);
+    const g = c.createRadialGradient(sx + 16, sy + 14, 2, sx + 16, sy + 14, 38); g.addColorStop(0, `rgba(110,255,140,${0.34 * fl})`); g.addColorStop(1, 'rgba(110,255,140,0)');
+    c.fillStyle = g; c.fillRect(sx - 24, sy - 24, 80, 80);
+    c.fillStyle = `rgba(80,230,110,${0.9 * fl})`; c.beginPath(); c.moveTo(sx + 9, sy + 18); c.quadraticCurveTo(sx + 12 + Math.sin(t * 7) * 2, sy + 4, sx + 16, sy - 3 - 3 * fl); c.quadraticCurveTo(sx + 21 + Math.sin(t * 8) * 2, sy + 6, sx + 23, sy + 18); c.fill();
+    c.fillStyle = `rgba(220,255,200,${0.85 * fl})`; c.beginPath(); c.ellipse(sx + 16, sy + 14, 3.2, 6 * fl, 0, 0, 6.3); c.fill();
+  }
   function magFloorFx(c, x, y, sx, sy, now) {          // el suelo de la caldera late como brasas
     const t = now / 1000, a = 0.05 + 0.07 * Math.sin(t * 1.7 + x * 0.8 + y * 0.6);
     c.fillStyle = `rgba(255,110,30,${a})`; c.fillRect(sx, sy, 32, 32);
@@ -1109,6 +1138,9 @@
       case TILE.AQW: return TEX.aqwall[h % 3];
       case TILE.MAGF: return TEX.magfloor[h % 4];
       case TILE.MAGW: return TEX.magwall[h % 3];
+      case TILE.TOMBF: return TEX.tombfloor[h % 4];
+      case TILE.TOMBW: return TEX.tombwall[h % 3];
+      case TILE.BRAZ: return TEX.braz[0];
       case TILE.CWALL: return G.zoneGrid && zoneAt(x, y).id === 'volcan' ? TEX.obsid[h % 3] : G.zoneGrid && zoneAt(x, y).id === 'desierto_piramides' ? TEX.sandwall[h % 3] : G.zoneGrid && zoneAt(x, y).id === 'montana_alta' ? TEX.granwall[h % 3] : TEX.cwall[h % 3];
       default: return TEX.grass[0];
     }
@@ -1117,7 +1149,7 @@
   /* ======================================================================
    *  MINIMAPA
    * ==================================================================== */
-  const MINI_COL = ['#3f6b3a', '#2b5d8a', '#234a2a', '#8a8271', '#59606e', '#3a3948', '#b07cff', '#77797f', '#3f6b3a', '#7a5634', '#4a2a2e', '#d6c188', '#e4ecf3', '#3f5a33', '#d2b878', '#2f7d3a', '#2d6a4a', '#5a4a3a', '#3f8a45', '#8fd0f0', '#3a342c', '#b89a5e', '#9fbfd6', '#2e4a2a', '#8d9a45', '#2a2833', '#0c0b10', '#d8480a', '#3b2e2a', '#e9f1fa', '#b4c6e0', '#3a2a30', '#241418', '#2a7a96', '#10303c'];
+  const MINI_COL = ['#3f6b3a', '#2b5d8a', '#234a2a', '#8a8271', '#59606e', '#3a3948', '#b07cff', '#77797f', '#3f6b3a', '#7a5634', '#4a2a2e', '#d6c188', '#e4ecf3', '#3f5a33', '#d2b878', '#2f7d3a', '#2d6a4a', '#5a4a3a', '#3f8a45', '#8fd0f0', '#3a342c', '#b89a5e', '#9fbfd6', '#2e4a2a', '#8d9a45', '#2a2833', '#0c0b10', '#d8480a', '#3b2e2a', '#e9f1fa', '#b4c6e0', '#3a2a30', '#241418', '#2a7a96', '#10303c', '#3a2f52', '#1a1424', '#2a3a2c', '#6a9a4a'];
   let miniBase = null;
   function buildMiniBase() {
     const c = document.createElement('canvas'); c.width = G.W; c.height = G.H;
@@ -1337,7 +1369,7 @@
   function drawHead(c, id, hx, hy, view, side, now) {
     const d = G.items[id];
     if (d && d.spr && GJ['c_' + d.spr]) {
-      const hood = /^hat1[234]$/.test(d.spr), boss = /^(t_helm|s_hood|j_helm|a_helm|f_helm|l_helm|ig_helm|r[mvxka]_helm)$/.test(d.spr), dy = hood ? 7.5 : d.spr === 't_helm' ? 9.5 : d.spr === 'a_helm' || d.spr === 'f_helm' || d.spr === 'l_helm' || d.spr === 'ig_helm' || /^r[mvxka]_helm$/.test(d.spr) ? 8.5 : d.spr === 'g_helm' ? 3.5 : boss ? 5.5 : 0.5;   // capuchas y cascos de jefe: cubren el rostro
+      const hood = /^hat1[234]$/.test(d.spr), boss = /^(t_helm|s_hood|j_helm|a_helm|f_helm|l_helm|ig_helm|an_helm|r[mvxka]_helm)$/.test(d.spr), dy = hood ? 7.5 : d.spr === 't_helm' ? 9.5 : d.spr === 'a_helm' || d.spr === 'f_helm' || d.spr === 'l_helm' || d.spr === 'ig_helm' || d.spr === 'an_helm' || /^r[mvxka]_helm$/.test(d.spr) ? 8.5 : d.spr === 'g_helm' ? 3.5 : boss ? 5.5 : 0.5;   // capuchas y cascos de jefe: cubren el rostro
       if ((hood || boss) && view === 'b') { drawLayer(c, d.spr, hx, hy + dy, 0.5, 1, false, 0); return; }
       if ((hood || boss) && view !== 'f') {                                       // de perfil: se estrecha y se voltea hacia donde mira el personaje
         const f = GJ['c_' + d.spr]; c.save(); c.translate(hx + side * 1.4, hy + dy); if (side < 0) c.scale(-1, 1); c.scale(0.84, 1);
@@ -1385,6 +1417,7 @@
     if (bd && bd.spr === 'f_chest') return { id: gr.bid, m: ['#3a3640', '#201c24'] };
     if (bd && bd.spr === 'a_chest') return { id: gr.bid, m: ['#e9f1fa', '#a9c0e0'] };
     if (bd && bd.spr === 'j_chest') return { id: gr.bid, m: ['#2f8a4a', '#1c5a32'] };
+    if (bd && bd.spr === 'an_chest') return { id: gr.bid, m: ['#2a2040', '#150f24'] };
     if (bd && bd.spr === 'ig_chest') return { id: gr.bid, m: ['#3a2a28', '#1c1212'] };
     if (rp) return { id: gr.bid, m: [rp[0], rp[1]], robe: { trim: rp[2], kind: rp[3] } };
     return { id: gr.bid, m: matOf(gr.bid, /cuero/.test(gr.bid) ? 'cuero' : 'hierro') };
@@ -1668,9 +1701,10 @@
     titan:  { glow: '255,120,30', mote: '255,205,90', sweep: 2200, rise: 1, ember: 1 },
     forge:  { glow: '255,150,40', mote: '255,225,130', sweep: 1700, star: 1, ember: 1 },
     ice:    { glow: '150,215,255', mote: '235,250,255', sweep: 2300, star: 1 },
+    anubis: { glow: '90,255,150', mote: '190,150,255', sweep: 2200, rise: 1, star: 1 },
     blood:  { glow: '230,30,50', mote: '255,110,120', sweep: 2100, rise: 1 },
   };
-  const THM_P = { s: 'shadow', j: 'jade', a: 'angel', f: 'fire', l: 'sea', t: 'titan', rv: 'jade', rk: 'fire', ra: 'forge', rx: 'angel', rm: 'shadow' };
+  const THM_P = { s: 'shadow', j: 'jade', a: 'angel', f: 'fire', l: 'sea', t: 'titan', rv: 'jade', rk: 'fire', ra: 'forge', rx: 'angel', rm: 'shadow', an: 'anubis' };
   const THM_S = { robe10: 'fire', robe11: 'fire', robe12: 'ice', hat12: 'blood', hat13: 'fire', hat14: 'ice', staff14: 'shadow', staff15: 'angel', staff16: 'forge', staff17: 'ice', staff18: 'sea', book5: 'angel' };
   const themeOf = (spr) => { if (!spr || spr.startsWith('ig_')) return null; const m = /^([a-z]+)_/.exec(spr); return THM_S[spr] || (m && THM_P[m[1]]) || null; };
   const SHM = new Map();
@@ -1742,10 +1776,10 @@
     robe6: ['#b02a2a', '#6e1818', '#d4d9e0', 0], robe7: ['#40307a', '#251a4a', '#7a5ac0', 0], robe8: ['#5a3aa0', '#2e1f5c', '#ffe070', 1],
     robe9: ['#2f5a9a', '#1c3868', '#d8ecff', 1], robe10: ['#8a2a10', '#4a1208', '#ff8a2a', 2], robe11: ['#e06a10', '#8a2a08', '#ffd040', 2], robe12: ['#6ab0e0', '#3a78b0', '#f0fcff', 2],
   };
-  const GLOVE_COL = { glove0: '#b8a88a', glove1: '#b8a88a', glove2: '#8a5a30', glove3: '#7a4a28', glove4: '#6a3e20', glove5: '#6a3e20', t_glove1: '#7a5a48', t_glove2: '#7a5a48', s_gauntlet: '#2f2a3c', j_glove: '#2f7a4a', a_glove: '#e9f1fa', f_glove: '#2f2a30', l_glove: '#2a7a8a', rm_glove: '#3a1a66', rv_glove: '#2f7a3a', rx_glove: '#e8c860', rk_glove: '#5a3a2a', ra_glove: '#7a5a3a' };
-  const BOOT_COL = { t_boot: ['#5d4637', '#ff8a1f'], s_boot: ['#2c2838', '#9a6ad8'], j_boot: ['#24603a', '#9ee85a'], a_boot: ['#e9f1fa', '#ffd96a'], f_boot: ['#26242a', '#ff6a1f'], g_boot: ['#3e4a30', '#8a7a50'], l_boot: ['#234f5c', '#7fe3f2'], rm_boot: ['#241040', '#b070ff'], rv_boot: ['#1f4a2a', '#7dff7a'], rx_boot: ['#e8d49a', '#ffe27a'], rk_boot: ['#3a2418', '#ff7a20'], ra_boot: ['#5a4630', '#ff9a40'] };
-  const LEG_COL = { j_leg: ['#2f8a4a', '#1f5c33', '#9ee85a'], s_leg: ['#2c2838', '#1c1928', '#9a6ad8'], a_leg: ['#e9f1fa', '#a9c0e0', '#ffd96a'], f_leg: ['#2c2a30', '#18161a', '#ff6a1f'], g_leg: ['#6b5a34', '#4a3d22', '#3f5a30'], l_leg: ['#2a6a78', '#1a4452', '#8be8f5'], rm_leg: ['#2a1250', '#160a2c', '#b070ff'], rv_leg: ['#2a6a38', '#174022', '#7dff7a'], rx_leg: ['#f0dca0', '#c9a24a', '#ffe27a'], rk_leg: ['#5a3a28', '#34200f', '#ff7a20'], ra_leg: ['#7a5a38', '#4a3620', '#ff9a40'] };
-  const CHEST_SPR = new Set(['t_chest', 's_chest', 'j_chest', 'a_chest', 'f_chest', 'g_chest', 'l_chest', 'rm_chest', 'rv_chest', 'rx_chest', 'rk_chest', 'ra_chest', 'ig_chest']);
+  const GLOVE_COL = { glove0: '#b8a88a', glove1: '#b8a88a', glove2: '#8a5a30', glove3: '#7a4a28', glove4: '#6a3e20', glove5: '#6a3e20', t_glove1: '#7a5a48', t_glove2: '#7a5a48', s_gauntlet: '#2f2a3c', j_glove: '#2f7a4a', a_glove: '#e9f1fa', f_glove: '#2f2a30', l_glove: '#2a7a8a', rm_glove: '#3a1a66', rv_glove: '#2f7a3a', rx_glove: '#e8c860', rk_glove: '#5a3a2a', ra_glove: '#7a5a3a', an_glove: '#3a2f58' };
+  const BOOT_COL = { t_boot: ['#5d4637', '#ff8a1f'], s_boot: ['#2c2838', '#9a6ad8'], j_boot: ['#24603a', '#9ee85a'], a_boot: ['#e9f1fa', '#ffd96a'], f_boot: ['#26242a', '#ff6a1f'], g_boot: ['#3e4a30', '#8a7a50'], l_boot: ['#234f5c', '#7fe3f2'], rm_boot: ['#241040', '#b070ff'], rv_boot: ['#1f4a2a', '#7dff7a'], rx_boot: ['#e8d49a', '#ffe27a'], rk_boot: ['#3a2418', '#ff7a20'], ra_boot: ['#5a4630', '#ff9a40'], an_boot: ['#241a3a', '#6fe08a'] };
+  const LEG_COL = { j_leg: ['#2f8a4a', '#1f5c33', '#9ee85a'], s_leg: ['#2c2838', '#1c1928', '#9a6ad8'], a_leg: ['#e9f1fa', '#a9c0e0', '#ffd96a'], f_leg: ['#2c2a30', '#18161a', '#ff6a1f'], g_leg: ['#6b5a34', '#4a3d22', '#3f5a30'], l_leg: ['#2a6a78', '#1a4452', '#8be8f5'], rm_leg: ['#2a1250', '#160a2c', '#b070ff'], rv_leg: ['#2a6a38', '#174022', '#7dff7a'], rx_leg: ['#f0dca0', '#c9a24a', '#ffe27a'], rk_leg: ['#5a3a28', '#34200f', '#ff7a20'], ra_leg: ['#7a5a38', '#4a3620', '#ff9a40'], an_leg: ['#2a2040', '#150f24', '#6fe08a'] };
+  const CHEST_SPR = new Set(['t_chest', 's_chest', 'j_chest', 'a_chest', 'f_chest', 'g_chest', 'l_chest', 'rm_chest', 'rv_chest', 'rx_chest', 'rk_chest', 'ra_chest', 'an_chest', 'ig_chest']);
 
   /* ---------- sprites de píxel-art (monstruos y PNJ) ---------- */
   const SPR = {};
@@ -1795,6 +1829,28 @@
     c.strokeStyle = col; c.lineWidth = w; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
   }
 
+  /** Anubis y sus sombras: flotan, con aura verde/violeta; las sombras se tiñen y dejan estela. */
+  const _tc = document.createElement('canvas'); _tc.width = 200; _tc.height = 220; const _tg = _tc.getContext('2d');
+  function drawAnubisLike(c, e, d, skey, spr, cx, ground, now, sq) {
+    const shadow = !!d.shade, cast = (EXT.casts && EXT.casts.get(e.id) || 0) > now, t = now / 1000;
+    const fl = shadow ? 8 + Math.sin(t * 3 + e.id) * 3 : 5 + Math.sin(t * 2 + e.id) * 2 + (cast ? 5 : 0), gl = d.glow || '90,255,150';
+    const y = ground + 2 - Math.round(fl), flip = (e.face || 1) < 0;
+    const pulse = 0.5 + 0.5 * Math.sin(t * 3 + e.id);
+    const g = c.createRadialGradient(cx, y - spr.h * 0.5, 4, cx, y - spr.h * 0.5, spr.h * 0.85);
+    g.addColorStop(0, `rgba(${gl},${(shadow ? 0.28 : 0.2) + 0.12 * pulse + (cast ? 0.2 : 0)})`); g.addColorStop(1, `rgba(${gl},0)`);
+    c.fillStyle = g; c.fillRect(cx - spr.h, y - spr.h * 1.4, spr.h * 2, spr.h * 1.6);
+    if (shadow) {
+      _tg.clearRect(0, 0, 200, 220); drawSprite(_tg, skey, sprFrame(e, spr), 100, 200, flip, sq);
+      _tg.globalCompositeOperation = 'source-atop'; _tg.fillStyle = d.shade; _tg.fillRect(0, 0, 200, 220); _tg.globalCompositeOperation = 'source-over';
+      for (let i = 3; i >= 1; i--) { c.globalAlpha = 0.14 / i; c.drawImage(_tc, cx - 100 - i * 4 * (flip ? -1 : 1), y - 200 + 2 + i); }       // estela de sombra
+      c.globalAlpha = 0.78 + 0.12 * pulse; c.drawImage(_tc, cx - 100, y - 200 + 2); c.globalAlpha = 1;
+      c.fillStyle = `rgba(${gl},.95)`; c.fillRect(cx - 5, y - spr.h * 0.8, 3, 2); c.fillRect(cx + 2, y - spr.h * 0.8, 3, 2);
+    } else {
+      drawSprite(c, skey, sprFrame(e, spr), cx, y, flip, sq);
+      if (cast) { c.globalAlpha = 0.3 + 0.3 * pulse; c.globalCompositeOperation = 'lighter'; drawSprite(c, skey, sprFrame(e, spr), cx, y, flip, sq * 1.03); c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1; }
+    }
+    for (let i = 0; i < 3; i++) { const ph = (t * 0.7 + i / 3 + e.id * 0.13) % 1; c.fillStyle = `rgba(${gl},${0.7 * (1 - ph)})`; c.fillRect(cx + Math.sin(ph * 6 + i * 2) * spr.h * 0.28, y - ph * spr.h * 0.9, 2, 2); }
+  }
   function drawMonster(c, e, sx, sy, now) {
     const d = G.mons[e.t] || { icon: '❓', boss: false };
     const rig = RIG[e.t] || { kind: 'bi', col: '#8a7a66' };
@@ -1810,6 +1866,7 @@
       const hop = moving ? (spr.f.length < 2 ? Math.abs(Math.sin(ph)) * 3 : Math.abs(Math.sin(ph * spr.f.length / 2)) * 1.5) : 0;
       const float = flying ? (e.t === 'dragon_sombra' ? 14 + Math.sin(now / 450 + e.id) * 4 : 6 + Math.sin(now / 300 + e.id) * 2.2) : 0;
       const sq = 1 + (moving ? 0 : Math.sin(now / 520 + e.id) * 0.018);
+      if (e.t === 'anubis' || d.shade) { drawAnubisLike(c, e, d, skey, spr, cx, ground, now, sq); return; }
       drawSprite(c, skey, sprFrame(e, spr), cx, ground + 2 - Math.round(hop) - Math.round(float), (e.face || 1) < 0, sq);
       return;
     }
@@ -2052,7 +2109,7 @@
         c.save(); c.translate(sx + 16, sy + 29); c.transform(1, 0, k, 1 + Math.sin(now / 520 + ph) * 0.006, 0, 0); c.drawImage(TEXFG[sw[0]][v], -16, -29); c.restore();
         if (t === TILE.TREE && (h & 7) === 0 && now - lastLeaf > 380) { lastLeaf = now; G.leaves.push({ x: x + 0.3 + Math.random() * 0.4, y: y + 0.2 + Math.random() * 0.3, t: now, p: Math.random() * 6 }); }
       } else if (t === TILE.WATER) drawWater(c, x, y, sx, sy, now);
-      else { c.drawImage(texFor(t, x, y, frameW), sx, sy); if (t === TILE.CLOUDF) cloudFloorFx(c, x, y, sx, sy, now); else if (t === TILE.CLOUDW) cloudWallFx(c, x, y, sx, sy, now); else if (t === TILE.WEBF) webFloorFx(c, x, y, sx, sy, now); else if (t === TILE.WEBW) webWallFx(c, x, y, sx, sy, now); else if (t === TILE.AQF) aqFloorFx(c, x, y, sx, sy, now); else if (t === TILE.MAGF) magFloorFx(c, x, y, sx, sy, now); else if (t === TILE.AQW) aqWallFx(c, x, y, sx, sy, now); }
+      else { c.drawImage(texFor(t, x, y, frameW), sx, sy); if (t === TILE.CLOUDF) cloudFloorFx(c, x, y, sx, sy, now); else if (t === TILE.CLOUDW) cloudWallFx(c, x, y, sx, sy, now); else if (t === TILE.WEBF) webFloorFx(c, x, y, sx, sy, now); else if (t === TILE.WEBW) webWallFx(c, x, y, sx, sy, now); else if (t === TILE.AQF) aqFloorFx(c, x, y, sx, sy, now); else if (t === TILE.MAGF) magFloorFx(c, x, y, sx, sy, now); else if (t === TILE.TOMBF) tombFloorFx(c, x, y, sx, sy, now); else if (t === TILE.BRAZ) brazFx(c, x, y, sx, sy, now); else if (t === TILE.AQW) aqWallFx(c, x, y, sx, sy, now); }
     }
     EXT.ground(c, now, cw, ch);                                  // oclusión, mezcla de terreno, agua con profundidad (bajo los árboles)
     for (let i = 0; i < treeList.length; i += 3) drawNewTree(c, treeList[i], treeList[i + 1], treeList[i + 2], now);
@@ -2470,7 +2527,7 @@
     walkTo(t.x, t.y);
   });
 
-  const BLOCK = new Set([TILE.WATER, TILE.TREE, TILE.WALL, TILE.ROCK, TILE.PALM, TILE.PINE, TILE.DEADTREE, TILE.CACTUS, TILE.ICEBLOCK, TILE.BOG, TILE.CWALL, TILE.LAVA, TILE.CLOUDW, TILE.WEBW, TILE.AQW, TILE.MAGW]);
+  const BLOCK = new Set([TILE.WATER, TILE.TREE, TILE.WALL, TILE.ROCK, TILE.PALM, TILE.PINE, TILE.DEADTREE, TILE.CACTUS, TILE.ICEBLOCK, TILE.BOG, TILE.CWALL, TILE.LAVA, TILE.CLOUDW, TILE.WEBW, TILE.AQW, TILE.MAGW, TILE.TOMBW, TILE.BRAZ]);
   function walkable(x, y) { return x >= 0 && y >= 0 && x < G.W && y < G.H && !BLOCK.has(G.tiles[y * G.W + x]) && !G.npcTiles.has(y * G.W + x); }
   function walkTo(gx, gy) {
     if (!walkable(gx, gy)) return;

@@ -303,6 +303,14 @@ Cueva nueva en las Tierras de Lava (puerta al norte, justo al sur de la Guarida 
 - **Marea de lava**: la caldera se llena de lava y solo las **rocas azules** son seguras.
 Los personajes arden al ser golpeados (llamas sobre el cuerpo) y se hunden en la lava. Botín raro: Yelmo, Coraza, Capa, Anillo, Arco Ígneo y Bastón del Orbe Ardiente, además del Corazón de Magma y la cría de mascota. Código: `game/magma.js` (servidor) y bloque «Ignaros» de `public/ui2.js` (animaciones).
 
+## Anubis, Juez de las Sombras (Tumba de Anubis, Desierto de las Pirámides)
+Cueva nueva al sur del desierto (entrada por la pirámide grande, 2.000 de oro). Sala oval de losas violetas con pilares, altar y **braseros de llama verde**. Jefe de nivel 800 (480.000 de vida, armadura 50 %). Ataques:
+- **Miasma de las tumbas**: golpea el suelo con el báculo; grietas y nubes oscuras durante 9 s que dañan sin parar y **reducen la curación (pociones 40 %, regeneración 30 %) unos segundos**.
+- **Portales verdes**: se abren portales por toda la cueva y lanzan flechas de fuego verde; al caer explotan (hay marca roja/verde en el suelo para esquivar).
+- **Tres sombras**: se divide en una sombra cuerpo a cuerpo, una mágica y una a distancia; Anubis es inmune hasta derrotarlas (más vida con más jugadores).
+- **Momia Eterna**: con menos del 30 % de vida revive una momia; al morir explota y lanza **fuego negro** (8 rayos y lluvia de bolas) por toda la cueva.
+Botín raro: Máscara, Armadura, Guantelete, Pantalón, Botas, Cinturón, Sello, Corazón de la Balanza y Arco y Báculo del Chacal Alado, más la Balanza de Anubis. Misión diaria con Boris. Código: `game/anubis.js` (servidor) y `public/anubis.js` (animaciones).
+
 ## Banco ampliable y entrada a las cuevas
 - En el banco, el botón **Comprar +5 espacios** cuesta **1.000.000** de oro (se paga con el oro en mano y, si falta, con el del banco). Se puede repetir hasta 480 espacios. Los espacios se guardan con el personaje (`bankSlots`). Ajustes en `CFG` (`BANK_PACK`, `BANK_PACK_COST`, `BANK_MAX`).
 - Entrar a cada **cueva de jefe** (Dragón, Hidra, Nubes, Araña, Leviatán, Caldera de Magma) cuesta **2.000** de oro en mano cada vez (`CFG.CAVE_FEE`). Las salidas son gratis; la Raid y las zonas normales no cobran. Los aventureros automáticos no pagan.

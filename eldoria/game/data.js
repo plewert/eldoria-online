@@ -491,6 +491,7 @@ require('./mage').build(ITEMS, SHOPS, MONSTERS);
   MONSTERS[X.LEVIATAN.type] = X.LEVIATAN.def;
   require('./leviatan').build(ITEMS, MONSTERS, X.LEVIATAN.type);
   require('./magma').build(ITEMS, MONSTERS);
+  require('./anubis').build(ITEMS, MONSTERS);
   require('./raid').build(ITEMS, MONSTERS);
   require('./regiones').build(ITEMS, MONSTERS, SPAWN_PLAN);
   require('./bosspets').build(ITEMS, MONSTERS);

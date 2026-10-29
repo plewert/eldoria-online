@@ -106,6 +106,7 @@
     lgw: 'charge', lg: 'thunder', frw: 'charge', fr: 'fireball', fqw: 'charge', fq: 'quake', wbw: 'charge', wb: 'whoosh', spw: 'charge', sp: 'fireball', tpo: 'teleport', tpi: 'teleport', tn: 'whoosh', nvw: 'charge', nv: 'nova',
     twn: 'whoosh', olw: 'charge', ol: 'water', bmw: 'charge', bm: 'beam', bub: 'bubble', bubx: 'splash',
     mcast: 'charge', mgw: 'charge', mgf: 'inferno', mmw: 'charge', mmx: 'explosion', mlw: 'charge', mlw2: 'charge', ml: 'fireball', mlv: 'lava',
+    an_cast: 'charge', an_hw: 'charge', an_crack: 'quake', an_pt: 'teleport', an_bm: 'explosion', an_split: 'whoosh', an_merge: 'whoosh', an_rev: 'charge', an_mx: 'explosion', an_lw: 'charge', an_l: 'dragonbreath', an_bfw: 'charge', an_bf: 'fireball',
     rd_w: 'charge', rd_lw: 'charge', rd_pull: 'whoosh', rd_h: 'impact', rd_l: 'thunder', rd_pool: 'splash', rd_sh: 'shield',
   };
   const ELEM = { fire: 'fire', ice: 'ice', poison: 'poison', storm: 'storm', arcane: 'arcane', water: 'water', dark: 'dark', holy: 'holy', ranged: 'bow' };
@@ -162,6 +163,7 @@
     nube:    { root: 262, sc: [0, 2, 4, 6, 7, 11], bpm: 54, wave: 'sine', pad: [0, 4, 7, 11], lead: [0, 2, 4, 5, 3, 2, 4, 1], dens: 0.6, oct: 1, perc: 'none', long: 1 },
     arana:   { root: 117, sc: [0, 1, 3, 6, 7, 9], bpm: 62, wave: 'sawtooth', pad: [0, 6, 1], lead: [0, 3, 1, 5, 2, 4, 0, 5], dens: 0.4, oct: 2, perc: 'soft', dark: 1 },
     mar:     { root: 156, sc: [0, 2, 3, 7, 8, 10], bpm: 48, wave: 'sine', pad: [0, 3, 7], lead: [0, 2, 1, 3, 2, 4, 1, 0], dens: 0.55, oct: 2, perc: 'none', swell: 1, drone: 1 },
+    anubis:  { root: 62, sc: [0, 1, 4, 5, 7, 8, 11], bpm: 62, wave: 'triangle', pad: [0, 4, 7], lead: [0, 4, 3, 1, 0, 5, 4, 7], dens: 0.5, oct: 2, perc: 'tribal', drone: 1, dark: 1 },
     magma:   { root: 73, sc: [0, 1, 3, 6, 7, 8], bpm: 68, wave: 'sawtooth', pad: [0, 7, 8], lead: [0, 1, 0, 2, 3, 2, 4, 1], dens: 0.6, oct: 2, perc: 'tribal', drone: 1, dark: 1 },
     raidhall:{ root: 147, sc: [0, 2, 4, 7, 9, 12], bpm: 66, wave: 'triangle', pad: [0, 7, 12], lead: [0, 2, 4, 5, 4, 2, 3, 1], dens: 0.7, oct: 2, perc: 'soft' },
     raid:    { root: 110, sc: [0, 2, 3, 7, 8, 12], bpm: 100, wave: 'sawtooth', pad: [0, 3, 7], lead: [0, 2, 4, 3, 5, 3, 4, 1], dens: 0.85, oct: 2, perc: 'battle', pulse: 1, dark: 1 },
@@ -172,7 +174,7 @@
     ciudad: 'town', puerto: 'costa', aldea: 'pueblo', prado: 'prado', colinas: 'prado', sabana: 'prado', playa: 'costa',
     bosque: 'bosque', cumbres: 'cumbres', dunas: 'dunas', pantano: 'pantano', selva: 'selva', volcan: 'volcan',
     catacumbas: 'catac', minas: 'minas', abismo: 'pvp', piramide: 'pvp', fortaleza: 'pvp',
-    cueva: 'dragon', cueva_jade: 'jade', cueva_nube: 'nube', cueva_arana: 'arana', cueva_mar: 'mar', cueva_magma: 'magma',
+    cueva: 'dragon', cueva_jade: 'jade', cueva_nube: 'nube', cueva_arana: 'arana', cueva_mar: 'mar', cueva_magma: 'magma', cueva_anubis: 'anubis',
     montana_alta: 'cumbres', nubes_reino: 'nube', desierto_piramides: 'dunas', paraiso: 'costa', tierras_nuevas: 'prado', ciudad_alba: 'town',
   };
   let mood = 'town', nextT = 0, stepN = 0, moodAt = 0;

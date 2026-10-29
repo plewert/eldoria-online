@@ -275,7 +275,7 @@ class Game {
     if ((def.minLevel || 1) > p.level) { this.msg(p, `Necesitas nivel ${def.minLevel} para usar ${def.name}.`, 's'); return; }
     if (def.heal) {
       if (p.hp >= p.maxHp) return;
-      const h = Math.min(def.heal, p.maxHp - p.hp);
+      const h = Math.min(Math.round(def.heal * (p.antiHeal > now ? 0.4 : 1)), p.maxHp - p.hp);
       p.hp += h; this.fx.push({ k: 'd', x: p.x, y: p.y, v: '+' + h, c: 'g' });
     } else if (def.restore) {
       if (p.mana >= p.maxMana) return;
@@ -490,7 +490,7 @@ class Game {
     const monsDefs = {};
     for (const [k, d] of Object.entries(MONSTERS)) {
       monsDefs[k] = Object.assign({
-        name: d.name, icon: d.icon, spr: d.spr, fly: !!d.fly, boss: !!d.boss, range: d.range || 1, lv: d.lv || 1,
+        name: d.name, icon: d.icon, spr: d.spr, shade: d.shade, glow: d.glow, fly: !!d.fly, boss: !!d.boss, range: d.range || 1, lv: d.lv || 1,
         hp: d.hp, dmg: d.dmg, exp: Math.round(d.exp * CFG.XP_RATE), aggro: d.aggro, respawn: d.respawn, move: d.move,
       }, I.dropInfo(d));
     }
@@ -1175,7 +1175,7 @@ class Game {
       p.nextRegen = now + 1000;
       const town = zoneAt(p.x, p.y).kind === 'town';
       const mult = town ? 4 : 1;
-      if (p.hp > 0 && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + Math.round((1 + p.level * 0.3) * mult));
+      if (p.hp > 0 && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + Math.round((1 + p.level * 0.3) * mult * (p.antiHeal > now ? 0.3 : 1)));
       const ml = skillFromXp(p.sxp.magic);
       if (p.mana < p.maxMana) p.mana = Math.min(p.maxMana, p.mana + Math.round((1 + p.level * 0.25 + ml * 0.25) * mult));
     }
@@ -1237,6 +1237,6 @@ require('./ext')(Game);
 require('./fishing').install(Game);
 require('./mining').install(Game);
 require('./raid').install(Game);
-require('./magma').install(Game); require('./bots').install(Game);
+require('./magma').install(Game); require('./anubis').install(Game); require('./bots').install(Game);
 require('./petloot').install(Game);
 module.exports = { Game, NAME_RE, levelFromXp, xpForLevel, skillFromXp };
