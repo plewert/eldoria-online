@@ -319,3 +319,6 @@ Cueva propia (zona segura) a la que se entra por un portal junto a la ciudad, en
 
 ## Flechas de misión
 Al aceptar una misión aparece una flecha azul (hasta 3, las más cercanas) que señala a dónde ir: el monstruo de la misión, de dónde sale el objeto a recolectar, la **entrada de la cueva** del jefe (y, ya dentro, al jefe; si estás dentro de otra cueva, al portal de salida) o, con la misión lista, al PNJ al que entregarla. Si queda fuera de pantalla la flecha se pega al borde con el nombre y la distancia. Servidor: `questGuide` en `game/ext.js`; cliente: bloque `qguide` en `public/ui2.js`.
+
+## Estadísticas de objetos en el móvil
+En pantallas táctiles no hay cursor, así que el menú que se abre al tocar (o mantener pulsado) un objeto de la mochila o del equipo ahora muestra también sus estadísticas (ataque o defensa, bonus, ranuras, nivel requerido y valor). En la tienda, el banco y el comercio, mantener pulsado un objeto muestra esas estadísticas sin comprarlo ni moverlo.

@@ -386,6 +386,7 @@
     tipEl.style.left = Math.max(4, x) + 'px'; tipEl.style.top = Math.max(4, y) + 'px';
   }
   const hideTip = () => { tipEl.hidden = true; };
+  document.addEventListener('touchstart', hideTip, { passive: true });
   function withTip(node, getIt) {
     node.addEventListener('mouseenter', (ev) => { const it = getIt(); if (it) { tipEl.replaceChildren(tipNode(it)); tipEl.hidden = false; moveTip(ev); } });
     node.addEventListener('mousemove', (ev) => { if (!tipEl.hidden) moveTip(ev); });
@@ -435,6 +436,7 @@
     withTip(s, () => s._it);
     if (onClick) s.addEventListener('click', onClick);
     if (onCtx) { s.addEventListener('contextmenu', (ev) => { ev.preventDefault(); onCtx(ev); }); addLongPress(s, onCtx); }
+    else if (TOUCH) addLongPress(s, (a) => { const it = s._it; if (!it) return; tipEl.replaceChildren(tipNode(it)); tipEl.hidden = false; moveTip(a); });     // móvil: mantén pulsado para ver las estadísticas
     return s;
   }
 
@@ -446,6 +448,7 @@
     for (const r of rows) {
       if (r === '-') { ctxEl.append(el('hr')); continue; }
       if (r.hdr) { const h = el('div', 'hdr', r.hdr); if (r.color) h.style.color = r.color; ctxEl.append(h); continue; }
+      if (r.node) { const w = el('div', 'ctxstats'); w.append(r.node); ctxEl.append(w); continue; }
       const b = el('button', '', r.label); b.type = 'button'; b.setAttribute('role', 'menuitem');
       if (r.color) b.style.color = r.color;
       if (r.off) b.disabled = true;
@@ -470,6 +473,7 @@
 
   function invMenu(ev, i) {
     const it = G.inv[i], d = G.items[it[0]], rows = [{ hdr: itName(it), color: itColor(it) }];
+    if (TOUCH) rows.push({ node: tipNode(it) }, '-');      // en el móvil no hay cursor: las estadísticas se ven aquí
     if (isGear(it[0])) { rows.push({ label: 'Equipar', fn: () => send({ t: 'use', s: i }) }, ...unsocketRows(it, 'inv', i)); }
     else if (d.type === 'consumable') rows.push({ label: 'Usar', fn: () => send({ t: 'use', s: i }) });
     else if (d.type === 'gem') {
@@ -487,7 +491,7 @@
   }
   function eqMenu(ev, slot) {
     const it = G.eq[slot];
-    openCtx(ev, [{ hdr: itName(it), color: itColor(it) }, { label: 'Quitar', fn: () => send({ t: 'unequip', slot }) }, ...unsocketRows(it, 'eq', slot)]);
+    openCtx(ev, [{ hdr: itName(it), color: itColor(it) }, ...(TOUCH ? [{ node: tipNode(it) }, '-'] : []), { label: 'Quitar', fn: () => send({ t: 'unequip', slot }) }, ...unsocketRows(it, 'eq', slot)]);
   }
 
   /* ---------- inventario y equipo ---------- */
