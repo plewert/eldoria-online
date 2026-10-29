@@ -1829,6 +1829,26 @@
     c.strokeStyle = col; c.lineWidth = w; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
   }
 
+  /** Anubis «vivo»: respira, las plumas y la capa ondean, las alas laten, se inclina al andar y le brillan los ojos y el orbe. */
+  function drawLiving(c, key, spr, cx, feetY, flip, t, e, cast, plain) {
+    const f = spr.f[0], w = f[2], h = f[3], amp = Math.min(1, e.amp || 0), ph = e.id * 0.7;
+    const br = 1 + 0.014 * Math.sin(t * 1.9 + ph) + (cast ? 0.02 * Math.sin(t * 9) : 0);          // respiración
+    const H = h * br, step = 2;
+    c.save(); c.imageSmoothingEnabled = true; c.translate(Math.round(cx), Math.round(feetY)); if (flip) c.scale(-1, 1);
+    for (let r = 0; r < h; r += step) {
+      const u = (r + step / 2) / h, dy = -H + (r / h) * H, hh = (step / h) * H + 0.6;
+      const sway = Math.sin(t * 1.7 + u * 3.4 + ph) * 2.6 * u * u + Math.sin(t * 0.9 + ph) * 1.1 * (1 - u) + amp * 3.2 * u * Math.sin(t * 6 + u * 4) + (cast ? Math.sin(t * 12 + u * 6) * 1.2 : 0);
+      const wing = u > 0.04 && u < 0.5 ? 1 + 0.045 * Math.sin(t * 2.5 + ph) * Math.sin((u - 0.04) / 0.46 * Math.PI) : 1;   // aleteo suave de las alas
+      c.drawImage(sprImg, f[0], f[1] + r, w, step, -w * wing / 2 + sway, dy, w * wing, hh);
+    }
+    if (plain) { c.restore(); return; }
+    const pu = 0.5 + 0.5 * Math.sin(t * 3.2 + ph), fl = 0.8 + 0.2 * Math.sin(t * 21 + ph);
+    c.globalCompositeOperation = 'lighter';
+    for (const sx of [-0.085, 0.085]) { c.fillStyle = `rgba(110,255,170,${(0.55 + 0.4 * pu) * fl})`; c.beginPath(); c.ellipse(sx * w + Math.sin(t * 0.9 + ph) * 1.1, -H * 0.885, 2.6, 1.6, 0, 0, 7); c.fill(); }   // ojos
+    const g = c.createRadialGradient(-w * 0.38, -H * 0.86, 1, -w * 0.38, -H * 0.86, 20); g.addColorStop(0, `rgba(120,255,170,${0.45 + 0.35 * pu})`); g.addColorStop(1, 'rgba(120,255,170,0)');
+    c.fillStyle = g; c.fillRect(-w * 0.38 - 20, -H * 0.86 - 20, 40, 40);                                  // orbe del báculo
+    c.restore();
+  }
   /** Anubis y sus sombras: flotan, con aura verde/violeta; las sombras se tiñen y dejan estela. */
   const _tc = document.createElement('canvas'); _tc.width = 200; _tc.height = 220; const _tg = _tc.getContext('2d');
   function drawAnubisLike(c, e, d, skey, spr, cx, ground, now, sq) {
@@ -1840,14 +1860,14 @@
     g.addColorStop(0, `rgba(${gl},${(shadow ? 0.28 : 0.2) + 0.12 * pulse + (cast ? 0.2 : 0)})`); g.addColorStop(1, `rgba(${gl},0)`);
     c.fillStyle = g; c.fillRect(cx - spr.h, y - spr.h * 1.4, spr.h * 2, spr.h * 1.6);
     if (shadow) {
-      _tg.clearRect(0, 0, 200, 220); drawSprite(_tg, skey, sprFrame(e, spr), 100, 200, flip, sq);
+      _tg.clearRect(0, 0, 200, 220); drawLiving(_tg, skey, spr, 100, 200, flip, t * 1.25, e, false, true);
       _tg.globalCompositeOperation = 'source-atop'; _tg.fillStyle = d.shade; _tg.fillRect(0, 0, 200, 220); _tg.globalCompositeOperation = 'source-over';
       for (let i = 3; i >= 1; i--) { c.globalAlpha = 0.14 / i; c.drawImage(_tc, cx - 100 - i * 4 * (flip ? -1 : 1), y - 200 + 2 + i); }       // estela de sombra
       c.globalAlpha = 0.78 + 0.12 * pulse; c.drawImage(_tc, cx - 100, y - 200 + 2); c.globalAlpha = 1;
       c.fillStyle = `rgba(${gl},.95)`; c.fillRect(cx - 5, y - spr.h * 0.8, 3, 2); c.fillRect(cx + 2, y - spr.h * 0.8, 3, 2);
     } else {
-      drawSprite(c, skey, sprFrame(e, spr), cx, y, flip, sq);
-      if (cast) { c.globalAlpha = 0.3 + 0.3 * pulse; c.globalCompositeOperation = 'lighter'; drawSprite(c, skey, sprFrame(e, spr), cx, y, flip, sq * 1.03); c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1; }
+      drawLiving(c, skey, spr, cx, y, flip, t, e, cast);
+      if (cast) { c.globalAlpha = 0.3 + 0.3 * pulse; c.globalCompositeOperation = 'lighter'; drawLiving(c, skey, spr, cx, y, flip, t, e, true); c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1; }
     }
     for (let i = 0; i < 3; i++) { const ph = (t * 0.7 + i / 3 + e.id * 0.13) % 1; c.fillStyle = `rgba(${gl},${0.7 * (1 - ph)})`; c.fillRect(cx + Math.sin(ph * 6 + i * 2) * spr.h * 0.28, y - ph * spr.h * 0.9, 2, 2); }
   }
