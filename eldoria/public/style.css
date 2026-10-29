@@ -389,6 +389,11 @@ ol.rank li.me { color: #ffd96a; }
 .newver{position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:99999;background:#1b2a3a;border:2px solid #d8b24a;color:#ffe9a8;padding:8px 12px;border-radius:8px;font-size:14px;display:flex;gap:10px;align-items:center;box-shadow:0 4px 18px rgba(0,0,0,.6)}
 .gfxbtn { left: 52px; }
 .v3dbtn { top: 52px; left: 84px; }
+.safebtn { top: 52px; left: 116px; }
+.safebtn.on { border-color: #6fcf7f; box-shadow: 0 0 8px rgba(111, 207, 127, .5); }
+body.touch .safebtn { top: 104px; left: 52px; }
+#login .safechk { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; margin: 8px 0; cursor: pointer; }
+#login .safechk input { width: auto; margin-top: 2px; }
 .v3dbtn.on { border-color: var(--brass); box-shadow: 0 0 8px rgba(201, 162, 75, .5); }
 body.touch .gfxbtn { top: 62px; left: 52px; }
 body.touch .v3dbtn { top: 104px; left: 10px; }
@@ -410,6 +415,7 @@ body.touch .sheet { max-height: calc(100dvh - 12px); }
   body.touch .sndbtn { top: calc(8px + env(safe-area-inset-top)); left: calc(8px + env(safe-area-inset-left)); width: 36px; height: 36px; }
   body.touch .gfxbtn { top: calc(8px + env(safe-area-inset-top)); left: calc(48px + env(safe-area-inset-left)); }
   body.touch .v3dbtn { top: calc(50px + env(safe-area-inset-top)); left: calc(84px + env(safe-area-inset-left)); width: 36px; height: 36px; }
+  body.touch .safebtn { top: calc(50px + env(safe-area-inset-top)); left: calc(124px + env(safe-area-inset-left)); width: 36px; height: 36px; }
   body.touch .clock { top: calc(48px + env(safe-area-inset-top)); left: calc(8px + env(safe-area-inset-left)); }
   body.touch .menu2 { top: calc(8px + env(safe-area-inset-top)); left: calc(92px + env(safe-area-inset-left)); right: calc(122px + env(safe-area-inset-right)); display: flex; flex-wrap: wrap; gap: 4px; }
   body.touch .menu2 button { width: 36px; height: 36px; }

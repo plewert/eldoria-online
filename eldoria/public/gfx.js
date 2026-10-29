@@ -8,6 +8,7 @@
   const TS = 32;
   const touch = (() => { try { return 'ontouchstart' in window || matchMedia('(pointer:coarse)').matches; } catch (e) { return false; } })();
   let lvl = store.get('eldoria.gfx'); lvl = lvl === '0' || lvl === '1' || lvl === '2' || lvl === '3' ? +lvl : (touch ? 1 : 2);
+  if (window.EldSafe && window.EldSafe.on()) lvl = 0;
   const NAMES = ['Apagados', 'Básicos (sombras, viñeta y color)', 'Completos (luces, rayos de sol y partículas)', 'Cinematográficos (además: bloom, reflejos, profundidad de campo y color; exigente)'], ICON = ['🚫', '🔅', '✨', '🎬'];
 
   const btn = el('button', 'sndbtn gfxbtn'); btn.type = 'button';
@@ -16,7 +17,7 @@
   label();
   const mount = () => { const st = $('#stage'); if (st && !btn.parentNode) st.append(btn); };
   document.addEventListener('DOMContentLoaded', mount); if (document.readyState !== 'loading') mount();
-  X.gfx = { level: () => lvl };
+  X.gfx = { level: () => lvl, set: (v) => { lvl = v == null ? (touch ? 1 : 2) : v; label(); } };
 
   const hour = () => (X.env ? X.env.hour() : 12);
   const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };

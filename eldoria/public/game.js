@@ -1152,7 +1152,7 @@
   const cv = $('#view'), ctx = cv.getContext('2d');
   let cw = 0, ch = 0, dpr = 1;
   function resize() {
-    dpr = window.devicePixelRatio || 1;
+    dpr = (window.EldSafe && window.EldSafe.on()) ? 1 : (window.devicePixelRatio || 1);
     const r = cv.getBoundingClientRect(); cw = r.width / zoom; ch = r.height / zoom;    // zoom < 1 = se ve más mapa
     cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
   }
@@ -2151,10 +2151,10 @@
    *  MODO 3D (opcional): el suelo se dibuja en perspectiva y las figuras (jugadores, jefes, PNJ, objetos)
    *  se quedan de pie mirando a la cámara, más grandes cuanto más cerca. Todo es visual: el juego es el mismo.
    * ==================================================================== */
-  let mode3d = store.get('eldoria.3d') === '1';
+  let mode3d = store.get('eldoria.3d') === '1' && !(window.EldSafe && window.EldSafe.on());
   EXT.mode3d = () => mode3d;
-  EXT.proj3 = (x, y) => proj3(x, y);
-  EXT.set3d = (v) => { mode3d = !!v; store.set('eldoria.3d', mode3d ? '1' : '0'); G.path = G.path || []; };
+  EXT.proj3 = (x, y) => proj3(x, y); EXT.resize = () => resize();
+  EXT.set3d = (v) => { if (v && window.EldSafe && window.EldSafe.on()) { toast('🛡️ El Modo seguro está activo: desactívalo para usar el 3D.'); v = false; } mode3d = !!v; store.set('eldoria.3d', mode3d ? '1' : '0'); G.path = G.path || []; };
   let gcv = null, gx = null, shk = [0, 0];
   const K_TOP = 0.5;                                          // escala del borde superior (el inferior ronda 1,35)
   function geo3() { const yc = ch * 0.56, h = K_TOP * yc / (1 - K_TOP), hor = -h; return { yc, hor, Zp: yc - hor }; }

@@ -331,3 +331,6 @@ Gran ciudad segura (41 × 27 casillas, la más grande del juego) en el centro de
 
 ### Flechas de misión (mejoradas)
 Al aceptar una misión sale un aviso con la zona a la que ir, la flecha azul indica el lugar (también en modo 3D) y el minimapa marca el destino con un círculo azul que late.
+
+### Modo seguro 🛡️
+Para teléfonos/PC donde el juego se pone en blanco o se pega: apaga el 3D, los efectos, la portada animada y la resolución alta. Se activa con el botón 🛡️ (en el juego), con la casilla de la pantalla de inicio o añadiendo `?seguro=1` a la dirección (`?seguro=0` lo quita). Si el juego baja de 14 fps durante unos 7 segundos, lo activa solo y avisa.
