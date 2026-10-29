@@ -475,7 +475,7 @@
     const it = G.inv[i], d = G.items[it[0]], rows = [{ hdr: itName(it), color: itColor(it) }];
     if (TOUCH) rows.push({ node: tipNode(it) }, '-');      // en el móvil no hay cursor: las estadísticas se ven aquí
     if (isGear(it[0])) { rows.push({ label: 'Equipar', fn: () => send({ t: 'use', s: i }) }, ...unsocketRows(it, 'inv', i)); }
-    else if (d.type === 'consumable') rows.push({ label: 'Usar', fn: () => send({ t: 'use', s: i }) });
+    else if ((d.type === 'consumable' || d.type === 'tablet')) rows.push({ label: 'Usar', fn: () => send({ t: 'use', s: i }) });
     else if (d.type === 'gem') {
       const tg = gemTargets();
       rows.push({ hdr: 'Engarzar en…' });
