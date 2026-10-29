@@ -101,10 +101,10 @@ const RECIPES = [
 
 // Puntos de recolección: tipo → { icono, material, zonas, cantidad, tiempo de reaparición }
 const NODES = {
-  hierba: { icon: '🌿', name: 'Hierba curativa', give: [['hierba_curativa', 1, 2]], zones: ['prado', 'colinas', 'playa'], n: 70, respawn: 80000, xp: 2 },
+  hierba: { icon: '🌿', name: 'Hierba curativa', give: [['hierba_curativa', 1, 2]], zones: ['prado', 'colinas', 'playa', 'paraiso'], n: 70, respawn: 80000, xp: 2 },
   flor: { icon: '💠', name: 'Flor azul', give: [['flor_azul', 1, 2]], zones: ['prado', 'colinas', 'bosque', 'pantano'], n: 50, respawn: 90000, xp: 2 },
   mena: { icon: '⛏️', name: 'Veta de mineral', give: [['mineral_hierro', 1, 3]], zones: ['minas', 'catacumbas'], n: 45, respawn: 100000, xp: 3, gem: 0.05 },
-  cristal: { icon: '🔷', name: 'Cristal arcano', give: [['cristal_arcano', 1, 1]], zones: ['cumbres', 'fortaleza', 'abismo'], n: 28, respawn: 140000, xp: 5, gem: 0.04 },
+  cristal: { icon: '🔷', name: 'Cristal arcano', give: [['cristal_arcano', 1, 1]], zones: ['cumbres', 'fortaleza', 'abismo', 'montana_alta', 'nubes_reino'], n: 28, respawn: 140000, xp: 5, gem: 0.04 },
 };
 
 const BOSS = {

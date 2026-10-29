@@ -61,6 +61,10 @@ const ZONES = [
   { id: 'volcan',     name: 'Tierras de Lava y Fuego', pvp: true,  kind: 'wild',    rect: [250, 0, 319, 139], tint: 'rgba(255,70,20,.14)' },
   { id: 'gremio_minero', name: 'Gremio de Mineros',   pvp: false, kind: 'town',    rect: [34, 70, 61, 85] },
   { id: 'ciudad_alba', name: 'Ciudad de Alba Dorada', pvp: false, kind: 'town', rect: [380, 57, 420, 83] },        // gran ciudad segura en el centro de las Tierras Inexploradas
+  { id: 'montana_alta', name: 'Montañas del Trueno', pvp: false, kind: 'wild', rect: [320, 0, 399, 56], tint: 'rgba(150,170,210,.10)' },
+  { id: 'nubes_reino', name: 'Reino de las Nubes', pvp: false, kind: 'wild', rect: [400, 0, 479, 56], tint: 'rgba(200,225,255,.12)' },
+  { id: 'desierto_piramides', name: 'Desierto de las Pirámides', pvp: false, kind: 'wild', rect: [320, 84, 399, 139], tint: 'rgba(255,190,80,.10)' },
+  { id: 'paraiso', name: 'Paraíso de Coral', pvp: false, kind: 'field', rect: [400, 84, 479, 139], tint: 'rgba(80,220,220,.08)' },
   { id: 'tierras_nuevas', name: 'Tierras Inexploradas', pvp: false, kind: 'field', rect: [320, 0, 479, 139] },   // reservado para zonas futuras
   { id: 'prado',      name: 'Prado de los Novatos',   pvp: false, kind: 'field',   rect: [0, 0, 179, 139] },
 ];
@@ -175,6 +179,38 @@ for (let y = 0; y < H0; y++) {
   // paso despejado entre las Tierras de Lava y las Tierras Inexploradas (7 casillas de ancho)
   for (let y = 67; y <= 73; y++) for (let x = W1 - 10; x < W1 + 10; x++) tiles[idx(x, y)] = x < W1 ? T.ASH : T.GRASS;
 }
+
+// cuatro regiones nuevas alrededor de Alba Dorada: montañas, reino de las nubes, desierto con pirámides y paraíso de coral
+{
+  const r4 = mulberry32(27182818), n8 = makeNoise(303), n9 = makeNoise(404), n10 = makeNoise(505);
+  for (let y = 0; y < H0; y++) {
+    for (let x = W1; x < W; x++) {
+      const z = zoneAt(x, y).id; if (z === 'ciudad_alba' || z === 'tierras_nuevas') continue;
+      const a = n8(x / 5, y / 5), b = n9(x / 9, y / 9), c = n10(x / 12, y / 12);
+      let t;
+      if (z === 'montana_alta') {
+        t = y < 24 || c > 0.62 ? T.SNOW : T.HILL;
+        if (a > 0.7) t = T.CWALL; else if (b > 0.74) t = T.PINE; else if (r4() < 0.035) t = T.PINE; else if (r4() < 0.012) t = T.CWALL; else if (r4() < 0.01 && t === T.SNOW) t = T.ICEBLOCK; else if (t === T.HILL && r4() < 0.04) t = T.FLOWER;
+      } else if (z === 'nubes_reino') {
+        t = T.CLOUDF; if (a > 0.68 || r4() < 0.018) t = T.CLOUDW;
+      } else if (z === 'desierto_piramides') {
+        t = b > 0.5 ? T.DUNE : T.SAND; if (r4() < 0.022) t = T.CACTUS; else if (r4() < 0.01) t = T.CWALL; else if (r4() < 0.006) t = T.PALM; else if (a > 0.82) t = T.CWALL;
+      } else {                                                       // paraíso: playa de arena, laguna turquesa y palmeras
+        t = T.SAND; const lag = Math.hypot((x - 440) / 30, (y - 112) / 22) + (b - 0.5) * 0.6;
+        if (lag < 0.92 && lag > 0.0) t = T.WATER; else if (r4() < 0.05) t = T.PALM; else if (r4() < 0.03) t = T.FLOWER;
+        if (lag < 0.92 && (Math.hypot(x - 430, y - 108) < 3.2 || Math.hypot(x - 452, y - 118) < 3.8 || Math.hypot(x - 440, y - 126) < 3 || Math.hypot(x - 424, y - 118) < 2.6)) { t = T.SAND; if (r4() < 0.25) t = T.PALM; }   // islotes
+      }
+      tiles[idx(x, y)] = t;
+    }
+  }
+  // pirámides de arenisca (muros sólidos escalonados; la mayor guarda al jefe del desierto)
+  for (const [cx, by, hw] of [[352, 112, 9], [376, 124, 6], [335, 130, 5], [380, 96, 4]]) {
+    for (let k = 0; k <= hw; k++) for (let x = cx - hw + k; x <= cx + hw - k; x++) tiles[idx(x, by - k)] = T.CWALL;
+    tiles[idx(cx, by)] = T.SAND; tiles[idx(cx, by - 1)] = T.CWALL;      // la base queda cerrada
+  }
+  // montaña: cima nevada con un claro para el jefe, y cuevas (claros) en las laderas
+  for (let y = 9; y <= 17; y++) for (let x = 352; x <= 366; x++) if (Math.hypot(x - 359, y - 13) < 6.5) tiles[idx(x, y)] = T.SNOW;
+}
 // costa de agua alrededor del mapa
 for (let y = 0; y < H0; y++) {
   for (let x = 0; x < W; x++) {
@@ -212,7 +248,15 @@ buildTown('puerto', [99, 100, 101], [125, 126, 127],
 buildTown('ciudad_alba', [399, 400, 401], [69, 70, 71],
   [[398, 68], [402, 68], [398, 72], [402, 72], [400, 66], [400, 74], [383, 70], [417, 70], [383, 59], [417, 59], [383, 81], [417, 81]],
   [[384, 60, 394, 66, 389], [384, 74, 394, 80, 389], [406, 60, 416, 66, 411], [406, 74, 416, 80, 411]]);
-carvePath(331, 70, 379, 70);     // camino desde las Tierras de Lava hasta la puerta oeste de Alba Dorada
+carvePath(331, 70, 379, 70);
+// calles de las regiones nuevas (Alba Dorada en el centro)
+carvePath(400, 57, 400, 40); carvePath(336, 40, 464, 40);              // norte: montañas (oeste) y nubes (este)
+carvePath(359, 40, 359, 14); carvePath(424, 40, 424, 12); carvePath(452, 40, 452, 26);
+carvePath(400, 83, 400, 98); carvePath(336, 98, 464, 98);              // sur: desierto (oeste) y paraíso (este)
+carvePath(352, 98, 352, 114); carvePath(376, 98, 376, 124); carvePath(440, 98, 440, 106);
+for (let y = 0; y < H0; y++) for (let x = 400; x < 480; x++) if (y < 57 && tiles[idx(x, y)] === T.ROAD) tiles[idx(x, y)] = T.CLOUDF;    // en las nubes el camino es de nube
+for (let y = 84; y < H0; y++) for (let x = 400; x < 480; x++) if (tiles[idx(x, y)] === T.ROAD && zoneAt(x, y).id === 'paraiso') tiles[idx(x, y)] = T.SAND;
+for (let y = 0; y < 57; y++) for (let x = 320; x < 400; x++) if (tiles[idx(x, y)] === T.ROAD && zoneAt(x, y).id === 'montana_alta') tiles[idx(x, y)] = T.HILL;     // camino desde las Tierras de Lava hasta la puerta oeste de Alba Dorada
 
 /* 3) Mazmorras: habitaciones en cuadrícula conectadas con pasillos */
 function carveDungeon(zoneId, cols, rows, floor) {
@@ -580,7 +624,8 @@ monsterSpawns.push({ type: 'aracnido_fuego', x: CAVE4.lair[0], y: CAVE4.lair[1] 
     }
     return best;
   };
-  for (const [type, zone, px, py] of [['senor_orco', 'bosque', 20, 10], ['hidra', 'pantano', 40, 125], ['rey_escorpion', 'dunas', 160, 60], ['cangrejo_colosal', 'playa', 125, 128]]) {
+  for (const [type, zone, px, py] of [['senor_orco', 'bosque', 20, 10], ['hidra', 'pantano', 40, 125], ['rey_escorpion', 'dunas', 160, 60], ['cangrejo_colosal', 'playa', 125, 128],
+    ['serafin_fuego', 'montana_alta', 359, 13], ['serafin_tormenta', 'nubes_reino', 440, 24], ['amenkhet', 'desierto_piramides', 352, 116], ['reina_coral', 'paraiso', 440, 100]]) {
     const b = nearest(zone, px, py);
     monsterSpawns.push({ type, x: b[0], y: b[1] });
   }

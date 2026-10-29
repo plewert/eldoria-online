@@ -492,6 +492,7 @@ require('./mage').build(ITEMS, SHOPS, MONSTERS);
   require('./leviatan').build(ITEMS, MONSTERS, X.LEVIATAN.type);
   require('./magma').build(ITEMS, MONSTERS);
   require('./raid').build(ITEMS, MONSTERS);
+  require('./regiones').build(ITEMS, MONSTERS, SPAWN_PLAN);
   require('./bosspets').build(ITEMS, MONSTERS);
   require('./fishing').build(ITEMS, SHOPS);
   require('./mining').build(ITEMS, SHOPS);

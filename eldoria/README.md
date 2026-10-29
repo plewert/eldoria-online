@@ -334,3 +334,10 @@ Al aceptar una misión sale un aviso con la zona a la que ir, la flecha azul ind
 
 ### Modo seguro 🛡️
 Para teléfonos/PC donde el juego se pone en blanco o se pega: apaga el 3D, los efectos, la portada animada y la resolución alta. Se activa con el botón 🛡️ (en el juego), con la casilla de la pantalla de inicio o añadiendo `?seguro=1` a la dirección (`?seguro=0` lo quita). Si el juego baja de 14 fps durante unos 7 segundos, lo activa solo y avisa.
+
+### Cuatro regiones alrededor de Alba Dorada
+- **Montañas del Trueno** (noroeste): huestes de arcángeles (centinelas, cruzados, espadas celestiales, guardianes alados); jefe **Serafín de Fuego**.
+- **Reino de las Nubes** (noreste): ángeles, ángeles guerreros, celestiales sabias, serafines y querubines; jefe **Serafín de la Tormenta**.
+- **Desierto de las Pirámides** (suroeste): pirámides de arenisca, escorpiones dorados, momias, sacerdotes, cobras y la infantería del faraón (lanceros, escuderos, hacheros, arqueros y guardia real); jefe **Amenkhet**.
+- **Paraíso de Coral** (sureste): playa con laguna (pesca), cangrejos, tortugas, sirenas, querubines y ángeles; jefe **Reina Sirena**.
+Todas sin PvP, con calles desde la ciudad, misiones de Ilda y trofeos. Los monstruos nuevos reutilizan el dibujo de otro (`spr` en `game/regiones.js`).

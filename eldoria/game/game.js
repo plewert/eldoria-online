@@ -490,7 +490,7 @@ class Game {
     const monsDefs = {};
     for (const [k, d] of Object.entries(MONSTERS)) {
       monsDefs[k] = Object.assign({
-        name: d.name, icon: d.icon, boss: !!d.boss, range: d.range || 1, lv: d.lv || 1,
+        name: d.name, icon: d.icon, spr: d.spr, fly: !!d.fly, boss: !!d.boss, range: d.range || 1, lv: d.lv || 1,
         hp: d.hp, dmg: d.dmg, exp: Math.round(d.exp * CFG.XP_RATE), aggro: d.aggro, respawn: d.respawn, move: d.move,
       }, I.dropInfo(d));
     }

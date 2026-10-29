@@ -29,6 +29,8 @@ const ZONE_FISH = {
   cumbres: { name: 'Ríos de las cumbres',     fish: [['sardina', 20], ['salmon', 55]] },
   selva:   { name: 'Ríos de la selva',        fish: [['sardina', 20], ['salmon', 55]] },
   playa:   { name: 'Costa y mar abierto',     fish: [['sardina', 30], ['atun', 35], ['tiburon', 8]] },
+  paraiso: { name: 'Laguna del Paraíso de Coral', fish: [['sardina', 20], ['atun', 45], ['tiburon', 12]] },
+  montana_alta: { name: 'Lagos de montaña', fish: [['sardina', 15], ['salmon', 60]] },
   volcan:  { name: 'Mar del volcán (peligroso)', fish: [['atun', 40], ['tiburon', 18]], danger: 1 },
 };
 // cañas: nivel de pesca para usarla, espera (más bajo = más rápido) y bonus a la zona verde

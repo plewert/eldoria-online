@@ -655,6 +655,20 @@ ok('Ciudad de Alba Dorada: gran ciudad segura con banco, pescadera y brujo de ar
   assert.ok(world.reach[70 * world.W + 379] && world.reach[70 * world.W + 331], 'camino desde las Tierras de Lava');
 });
 
+ok('cuatro regiones nuevas: montañas, nubes, desierto con pirámides y paraíso, con monstruos y un jefe cada una', () => {
+  const { MONSTERS } = require('../game/data'), { QUESTS } = require('../game/quests');
+  const R = { montana_alta: 'serafin_fuego', nubes_reino: 'serafin_tormenta', desierto_piramides: 'amenkhet', paraiso: 'reina_coral' };
+  for (const [zid, boss] of Object.entries(R)) {
+    const z = world.zoneById(zid); assert.ok(z && !z.pvp, zid + ' existe y es segura');
+    const sp = world.monsterSpawns.filter((o) => world.zoneAt(o.x, o.y).id === zid); assert.ok(sp.length >= 40, zid + ' tiene monstruos');
+    const b = sp.find((o) => o.type === boss); assert.ok(b && MONSTERS[boss].boss, 'jefe de ' + zid);
+    assert.ok(world.reach[b.y * world.W + b.x], 'jefe alcanzable en ' + zid);
+    assert.ok(QUESTS.some((q) => q.mon === boss), 'misión del jefe ' + boss);
+  }
+  assert.ok(world.reach[57 * world.W + 400] && world.reach[40 * world.W + 440] && world.reach[98 * world.W + 340] && world.reach[98 * world.W + 440], 'calles desde Alba Dorada a las cuatro regiones');
+  const SJ = require('../public/sprites.json'); assert.ok(Object.values(MONSTERS).filter((m) => m.spr).every((m) => SJ[m.spr]), 'todos los dibujos de monstruos existen');
+});
+
 console.log(`\n${n} pruebas correctas`);
 try { require('fs').unlinkSync(store.file); } catch (e) { /* nada */ }
 

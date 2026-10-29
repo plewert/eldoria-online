@@ -109,7 +109,7 @@
 
   function onWelcome(m) {
     joined = true; if (G.autoRet) send({ t: 'autoret', on: true });
-    G.id = m.id; G.W = m.w; G.H = m.h; G.zones = m.zones; G.portals = m.portals; G.npcs = m.npcs; G.items = m.items; G.mons = m.mons; G.cfg = m.cfg; G.rar = m.rar; G.gems = m.gems;
+    G.id = m.id; G.W = m.w; G.H = m.h; G.zones = m.zones; G.portals = m.portals; G.npcs = m.npcs; G.items = m.items; G.mons = m.mons; aliasSprites(); G.cfg = m.cfg; G.rar = m.rar; G.gems = m.gems;
     for (const [iid, idf] of Object.entries(m.items)) if (idf.el) WEAPON_ELEM[iid] = idf.el;
     const CH = '0123456789abcdefghijklmnopqrstuvwxyzA';
     G.tiles = new Uint8Array(G.W * G.H);
@@ -914,6 +914,19 @@
     g.fillStyle = '#ff7a1a'; for (let i = 0; i < 3; i++) g.fillRect(8 + (r() * 14 | 0), 10 + i * 6, 2, 4);
     g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(0, 29, TS, 3);
   }); };
+  const sandwall = (v) => { const r = seeded(2600 + v); return mk((g) => {
+    g.fillStyle = '#c9a35c'; g.fillRect(0, 0, TS, TS);
+    for (let i = 0; i < 7; i++) dot(g, r() < 0.5 ? '#d9b676' : '#b58d45', (r() * 14 | 0) * 2, (r() * 14 | 0) * 2, 4, 2);
+    g.fillStyle = '#8a6a30'; g.fillRect(0, 15, TS, 2); g.fillRect(0, 0, TS, 1); g.fillRect(v % 2 ? 8 : 20, 0, 2, 16); g.fillRect(v % 2 ? 22 : 10, 16, 2, 16);
+    g.fillStyle = 'rgba(255,240,200,.35)'; g.fillRect(0, 1, TS, 1);
+  }); };
+  const granwall = (v) => { const r = seeded(2700 + v); return mk((g) => {
+    g.fillStyle = '#6f7380'; g.fillRect(0, 0, TS, TS);
+    for (let i = 0; i < 8; i++) dot(g, r() < 0.5 ? '#838896' : '#5a5e6b', (r() * 14 | 0) * 2, (r() * 14 | 0) * 2, 4, 4);
+    g.fillStyle = '#4a4d59'; g.beginPath(); g.moveTo(0, TS); g.lineTo(6 + v * 3, 12); g.lineTo(14, 20); g.lineTo(22, 6 + v * 2); g.lineTo(TS, TS); g.closePath(); g.fill();
+    g.fillStyle = '#f2f5fb'; g.beginPath(); g.moveTo(18, 8 + v * 2); g.lineTo(22, 6 + v * 2); g.lineTo(26, 12 + v * 2); g.lineTo(22, 11 + v * 2); g.closePath(); g.fill();
+    g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(0, 29, TS, 3);
+  }); };
   const cwall = (v) => { const r = seeded(2200 + v); return mk((g) => {
     g.fillStyle = '#14121a'; g.fillRect(0, 0, TS, TS);
     for (let i = 0; i < 9; i++) dot(g, r() < 0.5 ? '#201d29' : '#0c0b10', (r() * 14 | 0) * 2, (r() * 14 | 0) * 2, 4, 4);
@@ -938,7 +951,7 @@
     dfloor: [0, 1, 2, 3].map(dfloor), afloor: [0, 1, 2, 3].map(afloor), shop: [0, 1].map(shopFloor),
     sand: [0, 1, 2, 3].map(sand), snow: [0, 1, 2, 3].map(snow), dune: [0, 1, 2, 3].map(dune), swamp: [0, 1, 2, 3].map(swamp), bog: [bog(0), bog(1)], hill: [0, 1, 2, 3].map(hill),
     palm: [0, 1].map(palm), pine: [0, 1].map(pine), dead: [0, 1].map(dead), cactus: [0, 1].map(cactus), ice: [0, 1].map(ice),
-    mfloor: [0, 1, 2, 3].map(mfloor), pfloor: [0, 1, 2, 3].map(pfloor), ifloor: [0, 1, 2, 3].map(ifloor), cfloor: [0, 1, 2, 3].map(cfloor), lava: [lava(0), lava(1)], wfloor: [0, 1, 2, 3].map(wfloor), aqfloor: [0, 1, 2, 3].map(aqfloor), aqwall: [0, 1, 2].map(aqwall), magfloor: [0, 1, 2, 3].map(magfloor), magwall: [0, 1, 2].map(magwall), wwall: [0, 1, 2].map(wwall), nfloor: [0, 1, 2, 3].map(nfloor), nwall: [0, 1, 2].map(nwall), obsid: [0, 1, 2].map(obsid), ash: [0, 1, 2, 3].map(ash), cwall: [0, 1, 2].map(cwall),
+    mfloor: [0, 1, 2, 3].map(mfloor), pfloor: [0, 1, 2, 3].map(pfloor), ifloor: [0, 1, 2, 3].map(ifloor), cfloor: [0, 1, 2, 3].map(cfloor), lava: [lava(0), lava(1)], wfloor: [0, 1, 2, 3].map(wfloor), aqfloor: [0, 1, 2, 3].map(aqfloor), aqwall: [0, 1, 2].map(aqwall), magfloor: [0, 1, 2, 3].map(magfloor), magwall: [0, 1, 2].map(magwall), wwall: [0, 1, 2].map(wwall), nfloor: [0, 1, 2, 3].map(nfloor), nwall: [0, 1, 2].map(nwall), obsid: [0, 1, 2].map(obsid), sandwall: [0, 1, 2].map(sandwall), granwall: [0, 1, 2].map(granwall), ash: [0, 1, 2, 3].map(ash), cwall: [0, 1, 2].map(cwall),
   });
   const buildFG = () => { FG = true; const o = { tree: [0, 1].map(tree), palm: [0, 1].map(palm), pine: [0, 1].map(pine), dead: [0, 1].map(dead) }; FG = false; return o; };
   let TEX = buildTEX(), TEXFG = buildFG();
@@ -1096,7 +1109,7 @@
       case TILE.AQW: return TEX.aqwall[h % 3];
       case TILE.MAGF: return TEX.magfloor[h % 4];
       case TILE.MAGW: return TEX.magwall[h % 3];
-      case TILE.CWALL: return G.zoneGrid && zoneAt(x, y).id === 'volcan' ? TEX.obsid[h % 3] : TEX.cwall[h % 3];
+      case TILE.CWALL: return G.zoneGrid && zoneAt(x, y).id === 'volcan' ? TEX.obsid[h % 3] : G.zoneGrid && zoneAt(x, y).id === 'desierto_piramides' ? TEX.sandwall[h % 3] : G.zoneGrid && zoneAt(x, y).id === 'montana_alta' ? TEX.granwall[h % 3] : TEX.cwall[h % 3];
       default: return TEX.grass[0];
     }
   }
@@ -1738,7 +1751,8 @@
   const SPR = {};
   const sprImg = new Image();
   sprImg.src = 'sprites.png';
-  fetch('sprites.json').then((r) => r.json()).then((j) => Object.assign(SPR, j)).catch(() => { /* sin sprites: se usan emojis */ });
+  fetch('sprites.json').then((r) => r.json()).then((j) => { Object.assign(SPR, j); aliasSprites(); }).catch(() => { /* sin sprites: se usan emojis */ });
+  function aliasSprites() { for (const [k, d] of Object.entries(G.mons || {})) if (d.spr && SPR[d.spr] && !SPR[k]) SPR[k] = SPR[d.spr]; }      // monstruos nuevos que usan el dibujo de otro
   const sprReady = () => sprImg.complete && sprImg.naturalWidth > 0;
   /** Dibuja el fotograma `fi` del sprite `key` con los pies en (cx, feetY). */
   function drawSprite(c, key, fi, cx, feetY, flip, squash = 1) {
@@ -1792,7 +1806,7 @@
       const wide = spr.f[0][2];
       c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.ellipse(cx, ground + 1, Math.min(spr.sh || 22, 6 + wide * 0.28), 3.6 + (d.boss ? 1.5 : 0), 0, 0, 7); c.fill();
       if (d.boss) { c.fillStyle = 'rgba(212,80,59,.14)'; c.beginPath(); c.arc(cx, ground - spr.h * 0.4, spr.h * 0.5 + Math.sin(now / 300) * 2, 0, 7); c.fill(); }
-      const moving = amp > 0.3, flying = e.t === 'murcielago' || /espectro|reina_hielo|elemental|golem_lava|sirena|dragon_sombra/.test(e.t);
+      const moving = amp > 0.3, flying = d.fly || e.t === 'murcielago' || /espectro|reina_hielo|elemental|golem_lava|sirena|dragon_sombra/.test(e.t);
       const hop = moving ? (spr.f.length < 2 ? Math.abs(Math.sin(ph)) * 3 : Math.abs(Math.sin(ph * spr.f.length / 2)) * 1.5) : 0;
       const float = flying ? (e.t === 'dragon_sombra' ? 14 + Math.sin(now / 450 + e.id) * 4 : 6 + Math.sin(now / 300 + e.id) * 2.2) : 0;
       const sq = 1 + (moving ? 0 : Math.sin(now / 520 + e.id) * 0.018);
