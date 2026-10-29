@@ -179,7 +179,7 @@ module.exports = { build, SETS, BOSS_DEFS, BOSS_ORDER, MINIONS, MAX_PARTY, MAX_D
     const R = ROOMS[i], def = BOSS_DEFS[BOSS_ORDER[i - 1]];
     for (const q of members(this)) { if (q.hp <= 0) continue; tp(q, R.start[0] + rnd(0, 2), R.start[1] + rnd(-2, 2)); if (i > 1) { q.hp = Math.min(q.maxHp || q.hp, Math.max(q.hp, Math.round((q.maxHp || q.hp) * 0.6))); } }
     const n = members(this).length, m = this.spawnMonster(def.type, R.lair[0], R.lair[1]);
-    m.maxHp = m.hp = Math.round(def.hp * (1 + 0.75 * (Math.max(1, n) - 1)));
+    m.maxHp = m.hp = Math.round(MONSTERS[def.type].hp * (1 + 0.75 * (Math.max(1, n) - 1)));
     m.noRespawn = true; m.respawnAt = Infinity; m.raidRun = true; m.rIdx = i;
     m.shieldUntil = this.now + 9000; m.nextMove = m.nextAtk = this.now + 9000; m.nextSp = this.now + 10000; m.spN = 0;
     r.boss = m;

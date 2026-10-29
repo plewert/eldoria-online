@@ -352,3 +352,4 @@ Todas sin PvP, con calles desde la ciudad, misiones de Ilda y trofeos. Los monst
 
 ## Equilibrio de armas y armaduras
 Armas: ataque −5 % (nivel 1–40), −12 % (41–89), −20 % (90+, además +7 % de tiempo entre ataques). Bono de daño por nivel 1,0 % (antes 1,5 %). Armaduras: defensa −10 % (nivel 90+), ataque extra −40 %, vida extra −15 %; crítico total del equipo máx. 10 %. Se aplica en `game/data.js` (bloque «Equilibrio»). La vida de los jefes no cambia.
+Jefes: vida −10 % y armadura ×0,9 (p. ej. 50 % → 45 %), en el bloque «Equilibrio de jefes» de `game/data.js`.
