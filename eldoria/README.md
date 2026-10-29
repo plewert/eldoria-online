@@ -208,7 +208,7 @@ Al atacar con un arma cuerpo a cuerpo, el personaje balancea el arma con una est
 - Botín raro: Rastreador Ciego, Silbato Silencioso, Brazal de Garra, Pantalón de Fuego Negro, Botas de Garra, Cierre de Garra, Reserva Ígnea (carcaj) (4–6 % base) y Llama del Viento (gran espada), Garras de Fuego Negro y Arco Largo Llama del Viento (0,5 %).
 
 ## Tabletas de teletransporte
-Boris vende 11 tabletas (100 000 de oro cada una, de un solo uso): Ciudad, Bosque, Cumbres, Dunas, Aldea Pesquera, Selva, Sabana, Tierras de Lava, Pantano, Colinas y Puerto. Clic en la tableta para usarla; no funciona en combate. Ver `game/tablets.js`.
+Boris (y Zaroth en Alba Dorada) venden 17 tabletas (2 000 de oro cada una, de un solo uso): Ciudad, Bosque, Cumbres, Dunas, Aldea Pesquera, Selva, Sabana, Tierras de Lava, Pantano, Colinas, Puerto, Alba Dorada, Montañas del Trueno, Reino de las Nubes, Desierto de las Pirámides, Paraíso de Coral y Gremio de Mineros. Clic en la tableta para usarla; no funciona en combate. Ver `game/tablets.js`.
 
 ## Mapa del mundo
 - Ábrelo con el botón 🗺️, la tecla **N** o haciendo clic en el minimapa.

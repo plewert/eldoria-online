@@ -250,6 +250,10 @@ buildTown('ciudad_alba', [399, 400, 401], [69, 70, 71],
   [[384, 60, 394, 66, 389], [384, 74, 394, 80, 389], [406, 60, 416, 66, 411], [406, 74, 416, 80, 411]]);
 carvePath(331, 70, 379, 70);
 // calles de las regiones nuevas (Alba Dorada en el centro)
+{ // despeja crestas y columnas de nube que cortarían las calles del norte
+  const clr = (x0, y0, x1, y1) => { for (let y = Math.min(y0, y1); y <= Math.max(y0, y1); y++) for (let x = Math.min(x0, x1); x <= Math.max(x0, x1); x++) { const z = zoneAt(x, y).id, t = tiles[idx(x, y)]; if (z === 'montana_alta' && (t === T.CWALL || t === T.PINE)) tiles[idx(x, y)] = T.HILL; else if (z === 'nubes_reino' && t === T.CLOUDW) tiles[idx(x, y)] = T.CLOUDF; } };
+  clr(400, 57, 400, 40); clr(336, 40, 464, 40); clr(359, 40, 359, 14); clr(424, 40, 424, 12); clr(452, 40, 452, 26);
+}
 carvePath(400, 57, 400, 40); carvePath(336, 40, 464, 40);              // norte: montañas (oeste) y nubes (este)
 carvePath(359, 40, 359, 14); carvePath(424, 40, 424, 12); carvePath(452, 40, 452, 26);
 carvePath(400, 83, 400, 98); carvePath(336, 98, 464, 98);              // sur: desierto (oeste) y paraíso (este)

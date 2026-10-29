@@ -542,7 +542,7 @@ ok('minería: picos, rocas por nivel, experiencia, gemas raras y colección', ()
 });
 
 ok('tabletas de teletransporte: Boris las vende a 100k y llevan a la zona', () => {
-  const SH = require('../game/data').SHOPS; assert.equal(ITEMS.tp_lava.price, 100000); assert.ok(SH.boris.includes('tp_lava') && SH.boris.includes('tp_ciudad'));
+  const SH = require('../game/data').SHOPS; assert.equal(ITEMS.tp_lava.price, 2000); assert.ok(ITEMS.tp_paraiso && ITEMS.tp_alba.dest[0] === 400 && require('../game/data').SHOPS.zaroth.includes('tp_nubes')); assert.ok(SH.boris.includes('tp_lava') && SH.boris.includes('tp_ciudad'));
   const { p, ws } = login('Tab1'); place(p, ...TOWN); p.inv[0] = I.mk('tp_lava', 2); p.pvpLock = 0; game.now = T0 + 5;
   game.handle(p, { t: 'use', s: 0 });
   assert.equal(zoneOf([p.x, p.y]).id, 'volcan'); assert.equal(p.inv[0].qty, 1, 'se gasta una');

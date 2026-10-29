@@ -24,7 +24,7 @@
     const now = Date.now(), s = Math.floor(now / SLOT), f = (now % SLOT) / SLOT;
     const r = hash(s), edge = Math.min(1, f / 0.08, (1 - f) / 0.08);
     if (r < 0.22) return { kind: 'rain', k: edge * (0.55 + 0.45 * hash(s + 9)) };
-    if (r < 0.34) return { kind: 'fog', k: edge * 0.8 };
+    // la niebla / nublado se quitó: los degradados grandes hacían bajar los fps en teléfonos y PC
     return { kind: null, k: 0 };
   }
 
