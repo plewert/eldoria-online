@@ -2463,17 +2463,24 @@
     const sx = G.me.x, sy = G.me.y;
     const occ = new Set(); for (const e of G.ents.values()) if (e.kind === 'mo') occ.add(Math.round(e.y) * G.W + Math.round(e.x));
     const start = sy * G.W + sx, goal = gy * G.W + gx;
-    const prev = new Map([[start, -1]]), q = [start];
-    for (let i = 0; i < q.length && i < 6000; i++) {
-      const k = q[i]; if (k === goal) break;
-      const x = k % G.W, y = (k / G.W) | 0;
+    // A* con penalización por girar: caminos rectos y sin zigzag (el personaje no se voltea de lado a lado)
+    const prev = new Map([[start, -1]]), gc = new Map([[start, 0]]), dirOf = new Map([[start, 0]]), heap = [[0, start]], done = new Set();
+    const push = (it) => { heap.push(it); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
+    const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { let l = 2 * i + 1, r = l + 1, m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
+    const hf = (x, y) => Math.max(Math.abs(x - gx), Math.abs(y - gy)) + 0.001 * Math.hypot(x - gx, y - gy);
+    let n = 0;
+    while (heap.length && n++ < 8000) {
+      const k = pop()[1]; if (done.has(k)) continue; done.add(k); if (k === goal) break;
+      const x = k % G.W, y = (k / G.W) | 0, pd = dirOf.get(k);
       for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
         if (!dx && !dy) continue;
         const nx = x + dx, ny = y + dy, nk = ny * G.W + nx;
-        if (prev.has(nk) || !walkable(nx, ny) || occ.has(nk)) continue;
+        if (done.has(nk) || !walkable(nx, ny) || occ.has(nk)) continue;
         if (dx && dy && (!walkable(x + dx, y) || !walkable(x, y + dy))) continue;      // sin cortar esquinas
         if (G.tiles[nk] === TILE.PORTAL && nk !== goal) continue;
-        prev.set(nk, k); q.push(nk);
+        const d = (dx + 2) * 4 + (dy + 2), g = gc.get(k) + 1 + (pd && pd !== d ? 0.35 : 0) + (dx && dy ? 0.02 : 0);
+        if (gc.has(nk) && gc.get(nk) <= g) continue;
+        gc.set(nk, g); prev.set(nk, k); dirOf.set(nk, d); push([g + hf(nx, ny), nk]);
       }
     }
     if (!prev.has(goal)) { addChat({ n: '', m: 'No hay camino hasta ahí.', k: 's' }); return; }
