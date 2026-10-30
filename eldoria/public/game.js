@@ -476,6 +476,8 @@
     if (TOUCH) rows.push({ node: tipNode(it) }, '-');      // en el móvil no hay cursor: las estadísticas se ven aquí
     if (isGear(it[0])) { rows.push({ label: 'Equipar', fn: () => send({ t: 'use', s: i }) }, ...unsocketRows(it, 'inv', i)); }
     else if ((d.type === 'consumable' || d.type === 'tablet')) rows.push({ label: 'Usar', fn: () => send({ t: 'use', s: i }) });
+    else if (d.type === 'pet') { const me = G.ents.get(G.id), on = me && me.pt === it[0]; rows.push({ label: on ? '🐾 Guardar mascota' : '🐾 Sacar mascota (te acompaña)', fn: () => send({ t: 'use', s: i }) }); }
+    else if (d.type === 'mount') { const me = G.ents.get(G.id), on = me && me.mt === it[0]; rows.push({ label: on ? '🐎 Desmontar' : '🐎 Montar', fn: () => send({ t: 'use', s: i }) }); }
     else if (d.type === 'gem') {
       const tg = gemTargets();
       rows.push({ hdr: 'Engarzar en…' });

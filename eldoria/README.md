@@ -307,7 +307,7 @@ Los personajes arden al ser golpeados (llamas sobre el cuerpo) y se hunden en la
 Cueva nueva al sur del desierto (entrada por la pirámide grande, 2.000 de oro). Sala oval de losas violetas con pilares, altar y **braseros de llama verde**. Jefe de nivel 800 (480.000 de vida, armadura 50 %). Ataques:
 - **Miasma de las tumbas**: golpea el suelo con el báculo; grietas y nubes oscuras durante 9 s que dañan sin parar y **reducen la curación (pociones 40 %, regeneración 30 %) unos segundos**.
 - **Portales verdes**: se abren portales por toda la cueva y lanzan flechas de fuego verde; al caer explotan (hay marca roja/verde en el suelo para esquivar).
-- **Tres sombras**: se divide en una sombra cuerpo a cuerpo, una mágica y una a distancia; Anubis es inmune hasta derrotarlas (más vida con más jugadores).
+- **Tres sombras**: se divide en una sombra cuerpo a cuerpo, una mágica y una a distancia; Anubis es inmune hasta derrotarlas o durante 40 s como máximo (sombras de 4.000–5.000 de vida, más con más jugadores; salen 2 de cada 8 ataques).
 - **Momia Eterna**: con menos del 30 % de vida revive una momia; al morir explota y lanza **fuego negro** (8 rayos y lluvia de bolas) por toda la cueva.
 Botín raro: Máscara, Armadura, Guantelete, Pantalón, Botas, Cinturón, Sello, Corazón de la Balanza y Arco y Báculo del Chacal Alado, más la Balanza de Anubis. Misión diaria con Boris. Código: `game/anubis.js` (servidor) y `public/anubis.js` (animaciones).
 

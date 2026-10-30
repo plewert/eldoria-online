@@ -41,10 +41,10 @@ function build(ITEMS, MONSTERS) {
   boss.loot.push([RING[0], RING[6], 1, 1], [AMULET[0], AMULET[6], 1, 1], [BOW[0], BOW[8], 1, 1], [STAFF[0], STAFF[8], 1, 1]);
   // las tres sombras (invocadas) y la momia que revive; no sueltan nada
   const base = { lv: 300, exp: 1500, aggro: 24, respawn: 999999999, armor: 0.25, gold: [0, 0], loot: [] };
-  MONSTERS.anubis_sombra_m = Object.assign({ name: 'Sombra de Anubis (cuerpo a cuerpo)', icon: '🌑', hp: 70000, dmg: [260, 420], move: 340, atkCd: 1000, spr: 'anubis', shade: 'rgba(200,50,90,.6)', glow: '255,60,90' }, base);
-  MONSTERS.anubis_sombra_h = Object.assign({ name: 'Sombra de Anubis (mágica)', icon: '🌑', hp: 60000, dmg: [240, 400], move: 520, atkCd: 1500, range: 6, proj: 'poison', spr: 'anubis', shade: 'rgba(130,80,255,.6)', glow: '170,90,255' }, base);
-  MONSTERS.anubis_sombra_a = Object.assign({ name: 'Sombra de Anubis (a distancia)', icon: '🌑', hp: 60000, dmg: [220, 360], move: 420, atkCd: 1100, range: 8, proj: 'arrow', spr: 'anubis', shade: 'rgba(40,200,140,.6)', glow: '60,255,170' }, base);
-  MONSTERS.momia_eterna = { name: 'Momia Eterna del Juicio', icon: '🩹', lv: 320, hp: 90000, dmg: [260, 430], exp: 8000, move: 520, atkCd: 1200, aggro: 24, respawn: 999999999, armor: 0.2, gold: [0, 0], loot: [], spr: 'momia_eterna' };
+  MONSTERS.anubis_sombra_m = Object.assign({ name: 'Sombra de Anubis (cuerpo a cuerpo)', icon: '🌑', hp: 5000, dmg: [260, 420], move: 340, atkCd: 1000, spr: 'anubis', shade: 'rgba(200,50,90,.6)', glow: '255,60,90' }, base);
+  MONSTERS.anubis_sombra_h = Object.assign({ name: 'Sombra de Anubis (mágica)', icon: '🌑', hp: 4000, dmg: [240, 400], move: 520, atkCd: 1500, range: 6, proj: 'poison', spr: 'anubis', shade: 'rgba(130,80,255,.6)', glow: '170,90,255' }, base);
+  MONSTERS.anubis_sombra_a = Object.assign({ name: 'Sombra de Anubis (a distancia)', icon: '🌑', hp: 4000, dmg: [220, 360], move: 420, atkCd: 1100, range: 8, proj: 'arrow', spr: 'anubis', shade: 'rgba(40,200,140,.6)', glow: '60,255,170' }, base);
+  MONSTERS.momia_eterna = { name: 'Momia Eterna del Juicio', icon: '🩹', lv: 320, hp: 20000, dmg: [260, 430], exp: 8000, move: 520, atkCd: 1200, aggro: 24, respawn: 999999999, armor: 0.2, gold: [0, 0], loot: [], spr: 'momia_eterna' };
 }
 
 /* ============================== comportamiento del jefe (servidor) ============================== */
@@ -64,7 +64,7 @@ function install(Game) {
     if (m.shadowsUntil > now) return;
     let kind;
     if (!m.mummyDone && m.hp <= m.maxHp * 0.3) { kind = 'momia'; m.mummyDone = true; }
-    else { const order = ['miasma', 'portales', 'sombras', 'portales', 'miasma', 'sombras']; kind = order[(m.spN || 0) % order.length]; m.spN = (m.spN || 0) + 1; }
+    else { const order = ['miasma', 'portales', 'miasma', 'sombras', 'portales', 'miasma', 'portales', 'sombras']; kind = order[(m.spN || 0) % order.length]; m.spN = (m.spN || 0) + 1; }
     const dur = this.anubisCast(m, kind);
     m.nextSp = now + dur + 2500 + Math.random() * 2000;
     m.nextMove = Math.max(m.nextMove, now + 1500); m.nextAtk = Math.max(m.nextAtk, now + 1500);
@@ -146,14 +146,14 @@ function install(Game) {
       const sp = spots(this, 3, 3, m); while (sp.length < 3) sp.push({ x: Math.round(m.x) + sp.length - 1, y: Math.round(m.y) + 3 });
       say('🌑 ¡Anubis se divide en tres sombras! Derrótalas para que vuelva a ser vulnerable.'); cast(1800, 3200);
       this.fx.push({ k: 'an_split', x: m.x, y: m.y, id: m.id, T: 1800, sp });
-      m.shieldUntil = this.now + 60000; m.shadowsUntil = this.now + 60000;
-      m.nextAtk = this.now + 60000;
+      m.shieldUntil = this.now + 40000; m.shadowsUntil = this.now + 40000;
+      m.nextAtk = this.now + 40000;
       const kids = [];
       this.later(1700, () => {
         if (!alive()) return;
         ['anubis_sombra_m', 'anubis_sombra_h', 'anubis_sombra_a'].forEach((type, i) => {
           const s = sp[i], k = this.spawnMonster(type, s.x, s.y);
-          k.maxHp = k.hp = Math.round(k.def.hp * K); k.noRespawn = true; k.respawnAt = Infinity; k.parent = m; k.diesAt = this.now + 60000; k.target = m.target;
+          k.maxHp = k.hp = Math.round(k.def.hp * K); k.noRespawn = true; k.respawnAt = Infinity; k.parent = m; k.diesAt = this.now + 40000; k.target = m.target;
           this.fx.push({ k: 'an_sp', x: s.x, y: s.y }); kids.push(k);
         });
       });

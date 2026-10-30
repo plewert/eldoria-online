@@ -13,7 +13,7 @@
     const B = 'eldoria.boot', was = get(B);
     if (was === 'run' && get(K) !== '1') { put(K, '1'); put(PREV, get('eldoria.gfx') || ''); put('eldoria.gfx', '0'); put('eldoria.3d', '0'); put('eldoria.autonote', '1'); }
     put(B, 'run');
-    addEventListener('pagehide', () => put(B, null));
+    window.addEventListener('pagehide', () => put(B, null));
     document.addEventListener('visibilitychange', () => put(B, document.hidden ? null : 'run'));
   } catch (e) { /* sin almacenamiento */ }
   const subs = [];
