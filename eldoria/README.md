@@ -363,3 +363,6 @@ Solo visual: respiran, la cola/pelaje se balancea, andan con saltitos, se sienta
 ## Protección contra pantalla en blanco o congelada
 - Cada efecto gráfico (ganchos de `EldExt`) se ejecuta protegido: si lanza un error se omite ese efecto, se limpian los recortes del lienzo que haya dejado a medias y, tras 30 fallos seguidos, se desactiva solo. Si el dibujo completo falla 45 fotogramas seguidos se activa el Modo seguro.
 - Rescate tras cierre brusco (`public/safe.js`): si la página murió mientras se veía (memoria agotada o congelada) y se vuelve a abrir, entra sola en Modo seguro con un aviso. Cerrar con normalidad o pasar a segundo plano no lo activa.
+
+## Gemas con dibujo
+Rubí, zafiro, esmeralda, topacio, amatista y ópalo usan los dibujos de gemas octogonales (atlas `gear.png`, claves `i_rubi`…); el diamante es la gema azul pasada a blanco-celeste. Se ven en la mochila, la colección de minería y el suelo.
