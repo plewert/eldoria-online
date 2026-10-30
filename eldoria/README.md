@@ -390,5 +390,5 @@ Las armas de jefe (22: 16 de jefes normales y las 11 de la Raid, ya sin las anti
 
 - **Rey de Halloween** (jefe mundial, nivel 820) aparece en Ciudad de Aldea Real cada 30 min (el primero ~4 min tras arrancar el servidor). 60 s antes: truenos, el cielo se oscurece y hay aviso en el chat/banner. Dura 15 min.
 - Ataques: lluvia de llamaradas moradas, muro de viento de fuego morado, calabazas explosivas (dejan charcos de fuego) y guadaña. El daño se aplica también dentro de la ciudad.
-- Drop (por daño ≥2%): set Halloween (yelmo, peto, guantes, pantalón, botas), amuleto, 2 anillos y guadaña; trofeo, pluma de fénix, oro y XP. Top‑3 de daño tienen ×1.5 de probabilidad.
+- Drop (todos los que participen, ≥1% del daño; la probabilidad sube hasta ×3 según el daño hecho: el que más daño hace tiene más opciones de rarezas): set Halloween (yelmo, peto, guantes, pantalón, botas), amuleto, 2 anillos y guadaña; trofeo, pluma de fénix, oro y XP. Top‑3 de daño tienen ×1.5 de probabilidad.
 - Variables: `HALLOWEEN_MIN` (30), `HALLOWEEN_FIRST_MIN` (4), `HALLOWEEN_EVENT=0` desactiva, `HALLOWEEN_ADMIN=nombre1,nombre2` permite `/halloween` (invocar) y `/halloween parar`, `HALLOWEEN_OPEN=1` lo permite a todos.

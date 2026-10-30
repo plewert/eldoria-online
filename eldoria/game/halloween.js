@@ -108,7 +108,7 @@ function install(Game) {
 
   /* ---------- botín ---------- */
   P.hwRewards = function (m, parts, total) {
-    const need = total * 0.02, ranked = parts.slice().sort((a, b) => b[1] - a[1]), names = ranked.slice(0, 3).map((q) => `${q[0].name} (${q[1]})`).join(', ');
+    const need = total * 0.01, topDmg = Math.max(1, ...parts.map((q) => q[1])), ranked = parts.slice().sort((a, b) => b[1] - a[1]), names = ranked.slice(0, 3).map((q) => `${q[0].name} (${q[1]})`).join(', ');
     this.broadcastChat(`🏆 ¡El Rey de Halloween ha caído! Mayor daño: ${names}.`, 'k');
     ranked.forEach(([pl, dmg], rank) => {
       if (dmg < need) return;
@@ -116,9 +116,9 @@ function install(Game) {
       const gold = 5000 + pl.level * 100; pl.gold += gold; this.gainXp(pl, 12000);
       this.giveOrDrop(pl, 'trofeo_halloween', 1); this.giveOrDrop(pl, 'pluma_fenix', rnd(1, 2));
       this.msgC(pl, `🎃 Recompensa del Rey de Halloween: +${gold} de oro, 12000 xp y una Calabaza Maldita.`, '#ffb040');
-      const k = rank < 3 ? 1.5 : 1;                                                    // los tres que más daño hicieron tienen más suerte
+      const k = 1 + 2 * (dmg / topDmg);                                                // botín para todos; cuanto más daño, más suerte (×3 el que más hizo)
       for (const [id, ch] of LOOT_IDS) {
-        if (Math.random() >= ch * k) continue;
+        if (Math.random() >= Math.min(0.6, ch * k)) continue;
         this.giveOrDropInst(pl, I.rollGear(id, true)); if (this.logDrop) this.logDrop(pl, 'halloween_king', id);
         this.msgC(pl, `🎃✨ ¡Botín del Rey: ${ITEMS[id].name}!`, '#c58bff');
         this.broadcastChat(`🎃 ¡${pl.name} ha conseguido ${ITEMS[id].name}!`, 'k');

@@ -69,6 +69,14 @@ const SP = {
     mk('sp_flecha_viento', 'Flecha del viento', '🌪️', 'line', { col: '200,230,255', len: 9, mult: 3.2, cd: 30000, mana: 60, desc: 'Flecha huracanada que cruza 9 casillas (×3,2).' }),
     mk('sp_tormenta_llama', 'Tormenta de llamas', '🔥', 'rain', { col: '255,150,70', n: 7, r: 4, hr: 1.6, mult: 1.8, burn: { ticks: 4, mult: 0.3 }, cd: 80000, mana: 125, lv: 60, desc: '7 flechas ardientes caen alrededor del objetivo.' }),
   ],
+  sombra_arco: [
+    mk('sp_flecha_umbria', 'Flecha umbría', '🟣', 'line', { col: '170,100,255', len: 9, mult: 3.4, slow: 2000, cd: 30000, mana: 60, desc: 'Flecha de sombras que cruza 9 casillas (×3,4) y ralentiza.' }),
+    mk('sp_lluvia_sombras', 'Lluvia de sombras', '💜', 'rain', { col: '170,100,255', n: 8, r: 5, hr: 1.6, mult: 1.7, cd: 80000, mana: 130, lv: 60, desc: '8 flechas de sombras caen alrededor del objetivo (×1,7).' }),
+  ],
+  hw_guadana: [
+    mk('sp_siega', 'Siega nocturna', '🎃', 'fan', { col: '176,100,255', r: 4, mult: 3.4, cd: 30000, mana: 60, desc: 'Tajo de guadaña en abanico frente a ti (×3,4).' }),
+    mk('sp_cosecha', 'Cosecha de almas', '👻', 'nova', { col: '176,100,255', r: 4, mult: 3.8, pull: 3, cd: 80000, mana: 130, lv: 60, desc: 'Atrae y daña a los enemigos cercanos (×3,8).' }),
+  ],
   ig_arco: [
     mk('sp_meteoro', 'Flecha meteoro', '☄️', 'nova', { col: '255,120,40', r: 2, mult: 3.5, atTarget: 1, burn: { ticks: 4, mult: 0.3 }, cd: 30000, mana: 60, desc: 'Una flecha cae del cielo y explota (×3,5).' }),
     mk('sp_lluvia_fuego', 'Lluvia de fuego', '🔥', 'rain', { col: '255,120,40', n: 6, r: 4, hr: 1.6, mult: 1.8, cd: 80000, mana: 120, lv: 60, desc: '6 flechas de fuego caen alrededor del objetivo (×1,8 cada una).' }),
@@ -179,7 +187,7 @@ function install(Game) {
       });
     } else if (sk.kind === 'rain') {
       for (let i = 0; i < sk.n; i++) {
-        const a = Math.random() * 6.283, d = Math.random() * sk.r, x = Math.round(tx + Math.cos(a) * d), y = Math.round(ty + Math.sin(a) * d);
+        const a = Math.random() * 6.283, d = i === 0 ? 0 : Math.random() * sk.r, x = Math.round(tx + Math.cos(a) * d), y = Math.round(ty + Math.sin(a) * d);
         this.later(i * 260, () => this.fx.push({ k: 'wsw', x, y, r: sk.hr, T: 700, col }));
         this.later(i * 260 + 700, () => { this.fx.push({ k: 'wsi', x, y, r: sk.hr, col }); for (const m of foes(x, y, sk.hr)) hit(m, sk.mult); });
       }
