@@ -353,3 +353,9 @@ Todas sin PvP, con calles desde la ciudad, misiones de Ilda y trofeos. Los monst
 ## Equilibrio de armas y armaduras
 Armas: ataque −5 % (nivel 1–40), −12 % (41–89), −20 % (90+, además +7 % de tiempo entre ataques). Bono de daño por nivel 1,0 % (antes 1,5 %). Armaduras: defensa −10 % (nivel 90+), ataque extra −40 %, vida extra −15 %; crítico total del equipo máx. 10 %. Se aplica en `game/data.js` (bloque «Equilibrio»). La vida de los jefes no cambia.
 Jefes: vida −10 % y armadura ×0,9 (p. ej. 50 % → 45 %), en el bloque «Equilibrio de jefes» de `game/data.js`.
+
+## Gemas más escasas
+Monstruos y jefes: 0,08 % por muerte (antes 0,15 %); amatista, ópalo y diamante con menos peso (diamante a la mitad). Minería: probabilidad de gema ×0,6 y gemas raras a la mitad de peso dentro de cada roca.
+
+## Mascotas vivas (`public/pets.js`)
+Solo visual: respiran, la cola/pelaje se balancea, andan con saltitos, se sientan tras 5 s quietas (con «z» ocasional) y miran a los lados; saltan con corazones al subir de nivel o recoger oro/botín, y se ponen en guardia («!») cuando su dueño recibe daño. Las crías de jefe tienen aura de color, estela de partículas (brasas, burbujas, chispas, plumas, humo o polvo), sombra marcada y su nombre debajo con el color del aura.

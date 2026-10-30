@@ -184,13 +184,13 @@ function rollGear(id, boss) {
   return mk(id, 1, { up, an, ns });
 }
 
-const gemChance = () => CFG.GEM_CHANCE;      // 0,15 % por muerte (monstruos y jefes)
+const gemChance = () => CFG.GEM_CHANCE;      // 0,08 % por muerte (monstruos y jefes)
 
 function pickGem(def) {
   const w = { rubi: 10, zafiro: 10, esmeralda: 10, topacio: 10 };
-  if (def.exp >= 100) w.amatista = 4;
-  if (def.exp >= 300) { w.diamante = 3; w.opalo = 1.5; }
-  if (def.boss) { w.diamante = 6; w.opalo = 3; w.amatista = 8; }
+  if (def.exp >= 100) w.amatista = 2.5;
+  if (def.exp >= 300) { w.diamante = 1.5; w.opalo = 0.8; }
+  if (def.boss) { w.diamante = 3; w.opalo = 1.5; w.amatista = 5; }
   const tot = Object.values(w).reduce((a, b) => a + b, 0);
   let r = Math.random() * tot;
   for (const [g, v] of Object.entries(w)) { if ((r -= v) < 0) return g; }

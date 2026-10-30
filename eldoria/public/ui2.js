@@ -593,6 +593,7 @@
       if (dd > 6) { pp.x = tx; pp.y = ty; } else if (dd > 0.05) { const k = Math.min(1, dd * 0.09 + 0.02); pp.x += (tx - pp.x) * k * 1.4; pp.y += (ty - pp.y) * k * 1.4; pp.f = tx >= pp.x ? 1 : -1; }
       const sx = X.sxOf(pp.x) + TS / 2, sy = X.syOf(pp.y) + TS - 4, bob = Math.abs(Math.sin(now / 160 + e.id)) * (dd > 0.1 ? 3 : 0.8);
       if (sx < -60 || sy < -60 || sx > c.canvas.width + 60) continue;
+      if (X.drawPet && X.drawPet(c, e, d, pp, sx, sy, dd, now)) continue;
       c.fillStyle = 'rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(sx, sy, 8, 3, 0, 0, 7); c.fill();
       const ok = !d.emoji && X.SPR[d.mon] && X.sprReady() && X.drawSpriteS(c, d.mon, 0, sx, sy - bob, pp.f < 0, d.scale || 0.5);
       if (!ok) { c.font = '18px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif'; c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.fillStyle = '#fff'; c.fillText(d.emoji || d.icon, sx, sy - bob); }

@@ -79,10 +79,11 @@ module.exports = { build, ROCKS, PICKS, ORDER, MINE_MAX, install(Game) {
     this.fx.push({ k: 'd', x: p.x, y: p.y, v: `+${q} ${ITEMS[nd.rock].name}`, c: 'g' });
     this.fx.push({ k: 'mn', x: n.x, y: n.y, r: nd.rock });
     // gema: más probable con mejor pico y más nivel
-    const ch = r.gem * (1 + k.gem) * (1 + lv / 400);
+    const ch = r.gem * 0.6 * (1 + k.gem) * (1 + lv / 400);
     if (Math.random() < ch) {
-      let t = r.pool.reduce((a, o) => a + o[1], 0) * Math.random(), g = r.pool[0][0];
-      for (const [id, w] of r.pool) { t -= w; if (t <= 0) { g = id; break; } }
+      const wt = (id, w) => (RARE_GEMS.has(id) ? w * 0.5 : w);                      // las gemas raras salen la mitad de veces
+      let t = r.pool.reduce((a, o) => a + wt(o[0], o[1]), 0) * Math.random(), g = r.pool[0][0];
+      for (const [id, w0] of r.pool) { t -= wt(id, w0); if (t <= 0) { g = id; break; } }
       this.giveOrDrop(p, g, 1); this.logDrop(p, 'mineria', g); e.c[g] = (e.c[g] || 0) + 1;
       this.msgC(p, `${RARE_GEMS.has(g) ? '🌟 ¡RARO! ' : '💎 '}¡Encuentras ${ITEMS[g].name} en la roca!`, GEMS[g].col);
       this.fx.push({ k: 'd', x: n.x, y: n.y, v: `${GEM_ICON[g]} ${ITEMS[g].name}`, c: 'g' });

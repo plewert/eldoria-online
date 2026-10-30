@@ -280,8 +280,8 @@ ok('Tierras de Lava: zona PvP con lava intransitable y monstruos de fuego', () =
   ['golem_lava', 'demonio_menor', 'dragon'].forEach((t) => assert.ok(types.has(t), t));
   assert.equal(world.rows[0].length, world.W);
 });
-ok('gemas 0,15 %, equipo raro a la mitad y mascotas de jefe', () => {
-  assert.equal(I.gemChance(MONSTERS.rata), 0.0015); assert.equal(I.gemChance(MONSTERS.dragon_sombra), 0.0015);
+ok('gemas 0,08 %, equipo raro a la mitad y mascotas de jefe', () => {
+  assert.equal(I.gemChance(MONSTERS.rata), 0.0008); assert.equal(I.gemChance(MONSTERS.dragon_sombra), 0.0008);
   assert.ok(Math.abs(MONSTERS.dragon_sombra.loot.find((l) => l[0] === 'sombra_arco')[1] - 0.005) < 1e-9, 'arco 0,5 %');
   for (const [t, d] of Object.entries(MONSTERS)) if (d.boss) { const l = d.loot.find((q) => q[0] === 'pet_' + t); assert.ok(l, 'mascota de ' + t); assert.equal(ITEMS['pet_' + t].type, 'pet'); assert.equal(ITEMS['pet_' + t].mon, t); }
   const a = login('Pet9'); place(a.p, 50, 64); a.p.inv[0] = I.mk('pet_dragon_sombra'); game.use(a.p, 0); assert.equal(a.p.ext.pet, 'pet_dragon_sombra');

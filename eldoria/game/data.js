@@ -37,7 +37,7 @@ const CFG = {
   ANC_MULT: 1.5,                // los Ancient valen x1.5
   PLUS_CHANCE: 0.22,            // prob. de que un arma/armadura soltada venga con +N
   ANCIENT_CHANCE: 0.015,        // prob. de que un equipo soltado sea Ancient (x4 en jefes)
-  GEM_CHANCE: 0.0015,           // gemas: 0,15 % por muerte
+  GEM_CHANCE: 0.0008,           // gemas: 0,08 % por muerte
   GEAR_DROP_MULT: 0.5,          // los equipos raros que sueltan monstruos y jefes caen la mitad de seguido
   BOSS_RARE_MULT: 4,
   MAX_SOCKETS: 3,
