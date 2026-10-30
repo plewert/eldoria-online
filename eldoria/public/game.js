@@ -1758,10 +1758,32 @@
     c.drawImage(shimmerCv(f, th, Math.floor(now / 16)), 0, 0, f[2], f[3], ox, oy, w, h); themeFx(c, th, ox, oy, w, h, u, now, seed || 0);
   }
   const IGA = new Set(); let igOn = false, igLast = 0;
+  /** Gema animada: destello diagonal que recorre la piedra, brillo que respira y chispas que parpadean. */
+  function gemDraw(x, f, col, now, seed) {
+    const w = f[2], h = f[3], t = now / 1000, sd = seed * 6.28;
+    x.clearRect(0, 0, w, h);
+    x.drawImage(gearImg, f[0], f[1], w, h, 0, 0, w, h);
+    x.save(); x.globalCompositeOperation = 'source-atop';
+    const ph = ((t * 0.42 + seed) % 1.6) - 0.3, bx = ph * (w + h) - h;                  // barrido de luz (cada ~3,8 s)
+    const g = x.createLinearGradient(bx, 0, bx + h, h); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,.55)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    x.fillStyle = g; x.fillRect(0, 0, w, h);
+    x.fillStyle = `rgba(255,255,255,${0.06 + 0.07 * Math.sin(t * 2.2 + sd)})`; x.fillRect(0, 0, w, h);   // la piedra respira
+    x.restore();
+    x.save(); x.globalCompositeOperation = 'destination-over';                            // aura de color detrás
+    const gl = x.createRadialGradient(w / 2, h / 2, 3, w / 2, h / 2, w * 0.58); gl.addColorStop(0, col + '66'); gl.addColorStop(1, col + '00');
+    x.globalAlpha = 0.55 + 0.45 * Math.sin(t * 2.2 + sd) ** 2; x.fillStyle = gl; x.fillRect(0, 0, w, h); x.restore();
+    x.save(); x.globalCompositeOperation = 'lighter';                                     // chispas en cruz
+    for (let i = 0; i < 3; i++) {
+      const a = Math.max(0, Math.sin(t * 2.6 + sd * (i + 1) + i * 2.1)) ** 6; if (a < 0.05) continue;
+      const px = w * (0.28 + 0.44 * ((i * 0.37 + seed) % 1)), py = h * (0.22 + 0.5 * ((i * 0.53 + seed * 2) % 1)), r = 1 + 3.2 * a;
+      x.strokeStyle = `rgba(255,255,255,${a})`; x.lineWidth = 1; x.beginPath(); x.moveTo(px - r, py); x.lineTo(px + r, py); x.moveTo(px, py - r); x.lineTo(px, py + r); x.stroke();
+    }
+    x.restore();
+  }
   function igLoop(now) {
     if (now - igLast >= 33) {
       igLast = now;
-      for (const cv of IGA) { if (!cv.isConnected) { IGA.delete(cv); continue; } const x = cv.getContext('2d'), f = cv._f; x.clearRect(0, 0, f[2], f[3]); if (cv._th) themedDraw(x, f, cv._th, 0, 0, f[2], f[3], 36, now, cv._seed); else { x.drawImage(gearImg, f[0], f[1], f[2], f[3], 0, 0, f[2], f[3]); igFx(x, cv._spr, 0, 0, f[2], f[3], 36, now, true); } }
+      for (const cv of IGA) { if (!cv.isConnected) { IGA.delete(cv); continue; } const x = cv.getContext('2d'), f = cv._f; if (cv._gem) { gemDraw(x, f, cv._gem, now, cv._seed); continue; } x.clearRect(0, 0, f[2], f[3]); if (cv._th) themedDraw(x, f, cv._th, 0, 0, f[2], f[3], 36, now, cv._seed); else { x.drawImage(gearImg, f[0], f[1], f[2], f[3], 0, 0, f[2], f[3]); igFx(x, cv._spr, 0, 0, f[2], f[3], 36, now, true); } }
     }
     if (IGA.size) requestAnimationFrame(igLoop); else igOn = false;
   }
@@ -1771,6 +1793,7 @@
     if (!f || !gearReady()) return el('span', /^(trofeo_|pluma_fenix)/.test(id) ? 'trophy' : '', d ? d.icon : '?');
     const cv = document.createElement('canvas'); cv.width = f[2]; cv.height = f[3]; cv.className = 'gico';
     const x = cv.getContext('2d'); x.drawImage(gearImg, f[0], f[1], f[2], f[3], 0, 0, f[2], f[3]);
+    if (d && d.type === 'gem' && /^#[0-9a-f]{6}$/i.test(d.col || '')) { cv._gem = d.col; igAnimate(cv, id, f); gemDraw(x, f, d.col, performance.now(), cv._seed); return cv; }      // las gemas brillan y chispean
     if (d && /^ig_/.test(d.spr || '')) { igFx(x, d.spr, 0, 0, f[2], f[3], 36, performance.now(), true); igAnimate(cv, d.spr, f); }      // el equipo del Magma se anima
     { const th = d && themeOf(d.spr); if (th) { themedDraw(x, f, th, 0, 0, f[2], f[3], 36, performance.now(), 0); igAnimate(cv, d.spr, f, th); } }      // equipo de los demás jefes: brillo y partículas
     return cv;

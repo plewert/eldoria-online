@@ -366,3 +366,4 @@ Solo visual: respiran, la cola/pelaje se balancea, andan con saltitos, se sienta
 
 ## Gemas con dibujo
 Rubí, zafiro, esmeralda, topacio, amatista y ópalo usan los dibujos de gemas octogonales (atlas `gear.png`, claves `i_rubi`…); el diamante es la gema azul pasada a blanco-celeste. Se ven en la mochila, la colección de minería y el suelo.
+Las gemas están animadas (`gemDraw` en `public/game.js`): destello diagonal que recorre la piedra, aura de su color que respira y chispas en cruz que parpadean, en la mochila, la colección de minería y las ventanas de engarce.
