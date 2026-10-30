@@ -368,7 +368,7 @@ Solo visual: respiran, la cola/pelaje se balancea, andan con saltitos, se sienta
 Rubí, zafiro, esmeralda, topacio, amatista y ópalo usan los dibujos de gemas octogonales (atlas `gear.png`, claves `i_rubi`…); el diamante es la gema azul pasada a blanco-celeste. Se ven en la mochila, la colección de minería y el suelo.
 Las gemas están animadas (`gemDraw` en `public/game.js`): destello diagonal que recorre la piedra, aura de su color que respira y chispas en cruz que parpadean, en la mochila, la colección de minería y las ventanas de engarce.
 
-Sacar una gema de una ranura cuesta ahora **500.000** de oro (`GEM_REMOVE_COST` en `game/data.js`).
+Sacar una gema de una ranura cuesta ahora **50.000** de oro (`GEM_REMOVE_COST` en `game/data.js`).
 Robo de vida (ópalo, Anillo de Sangre, Amuleto del Abismo): tope total del 15 %; contra jefes roba la mitad; el miasma de Anubis lo reduce un 60 % durante su efecto.
 
 ## Especiales de armas de jefe
