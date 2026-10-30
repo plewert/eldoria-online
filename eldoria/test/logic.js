@@ -263,7 +263,7 @@ ok('el botín de un monstruo trae equipo con su propia rareza (instancia)', () =
 ok('gemas: se engarzan en zona segura, dan bonus y se pueden sacar pagando', () => {
   resetPair();
   D.p.eq.weapon = I.mk('espada_hierro', 1, { ns: 2 }); D.p.vis = null; game.recalc(D.p);
-  D.p.inv[0] = { id: 'rubi', qty: 2 }; D.p.inv[1] = { id: 'diamante', qty: 1 }; D.p.gold = 1000;
+  D.p.inv[0] = { id: 'rubi', qty: 2 }; D.p.inv[1] = { id: 'diamante', qty: 1 }; D.p.gold = 1000 + CFG.GEM_REMOVE_COST;
   const atk0 = game.weaponOf(D.p).atk, glow0 = game.visOf(D.p).g;
   game.handle(D.p, { t: 'socket', gem: 0, from: 'eq', at: 'weapon' });
   assert.equal(game.weaponOf(D.p).atk, atk0 + 3, 'rubí: +3 ataque');
@@ -272,7 +272,7 @@ ok('gemas: se engarzan en zona segura, dan bonus y se pueden sacar pagando', () 
   game.handle(D.p, { t: 'socket', gem: 0, from: 'eq', at: 'weapon' });
   assert.equal(D.p.inv[0].qty, 1, 'sin ranuras libres: no consume la gema');
   game.handle(D.p, { t: 'unsocket', from: 'eq', at: 'weapon', hole: 0 });
-  assert.equal(D.p.gold, 1000 - CFG.GEM_REMOVE_COST);
+  assert.equal(D.p.gold, 1000);
   assert.equal(D.p.eq.weapon.gm[0], null);
   assert.equal(game.weaponOf(D.p).atk, atk0 + 1, 'queda solo el +1 del diamante');
 });

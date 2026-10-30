@@ -41,7 +41,7 @@ const CFG = {
   GEAR_DROP_MULT: 0.5,          // los equipos raros que sueltan monstruos y jefes caen la mitad de seguido
   BOSS_RARE_MULT: 4,
   MAX_SOCKETS: 3,
-  GEM_REMOVE_COST: 250,         // oro por sacar una gema de una ranura
+  GEM_REMOVE_COST: 500000,      // oro por sacar una gema de una ranura
 };
 
 /* ------------------------------ OBJETOS ------------------------------ */

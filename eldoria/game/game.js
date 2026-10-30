@@ -1107,7 +1107,8 @@ class Game {
     if (t.kind === 'pl') this.hurtPlayer(t, dmg, p, now, p.name);
     else this.hurtMonster(t, dmg, p, now);
     if (gb.steal > 0 && p.hp > 0 && p.hp < p.maxHp) {       // Ópalo: robo de vida
-      const h = Math.min(p.maxHp - p.hp, Math.max(1, Math.round(dmg * gb.steal)));
+      const k = (t.kind === 'mo' && t.def && t.def.boss ? 0.5 : 1) * (p.antiHeal > now ? 0.4 : 1);          // contra jefes roba la mitad; el miasma reduce la curación
+      const h = Math.min(p.maxHp - p.hp, Math.max(1, Math.round(dmg * gb.steal * k)));
       p.hp += h; this.fx.push({ k: 'd', x: p.x, y: p.y, v: '+' + h, c: 'g' });
     }
   }

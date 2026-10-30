@@ -81,6 +81,7 @@ function gearBonus(eq) {
     if (b) for (const k of Object.keys(b)) out[k] += b[k];
   }
   if (out.crit > 0.10) out.crit = 0.10;                    // tope de crítico del equipo
+  if (out.steal > 0.15) out.steal = 0.15;                  // tope de robo de vida (gemas + equipo)
   return out;
 }
 
