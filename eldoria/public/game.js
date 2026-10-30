@@ -21,7 +21,7 @@
   /* Ganchos para los módulos extra (audio, clima, táctil, misiones, social...) */
   const HK = { ground: [], msg: [], fx: [], snap: [], draw: [], under: [], click: [], key: [], chat: [], inv: [], stats: [], ctx: [] };
   const EXT = (window.EldExt = {
-    G, el, $, store, joy: { dx: 0, dy: 0 }, handlers: {}, casts: new Map(),
+    G, el, $, store, joy: { dx: 0, dy: 0 }, handlers: {}, casts: new Map(), rdc: new Map(),
     on(n, f) { HK[n].push(f); },
     msg(m) { for (const f of HK.msg.slice()) safeCall(HK.msg, f, [m]); }, fx(f) { for (const h of HK.fx.slice()) safeCall(HK.fx, h, [f]); }, snap(m) { for (const f of HK.snap.slice()) safeCall(HK.snap, f, [m]); },
     ground(c, now, cw, ch) { for (const f of HK.ground.slice()) safeCall(HK.ground, f, [c, now, cw, ch]); },
@@ -1912,6 +1912,82 @@
     }
     for (let i = 0; i < 3; i++) { const ph = (t * 0.7 + i / 3 + e.id * 0.13) % 1; c.fillStyle = `rgba(${gl},${0.7 * (1 - ph)})`; c.fillRect(cx + Math.sin(ph * 6 + i * 2) * spr.h * 0.28, y - ph * spr.h * 0.9, 2, 2); }
   }
+
+  /* ---------- Jefes de la Raid: ilustración única animada por tiras (respira, se mece, alas, saltos y poses de ataque) ---------- */
+  const RB = {
+    raid_slyvra: { col: '120,255,120', sway: 5, breath: 0.02, drip: 1, eyes: [[0.455, 0.135], [0.545, 0.135]] },
+    raid_koros: { col: '255,120,40', sway: 1.2, breath: 0.03, cracks: 1, heavy: 1 },
+    raid_aranak: { col: '255,70,50', sway: 1.3, breath: 0.022, legs: 1, eyes: [[0.3, 0.6], [0.37, 0.62]] },
+    raid_xaelis: { col: '255,225,120', sway: 1.5, breath: 0.015, hover: 9, wings: 1, halo: 1 },
+    raid_malgathor: { col: '176,100,255', frames: 1, hover: 7, orbit: 1 },
+  };
+  const rdPose = (e, now) => { const r = EXT.rdc.get(e.id); if (!r || now > r.t + r.T + 260) return null; return { k: r.k, p: Math.min(1, (now - r.t) / r.T), r, fin: Math.max(0, (now - r.t - r.T) / 260) }; };
+  function rdWings(c, cx, cy, size, t, flap, cast) {
+    c.save(); c.translate(cx, cy);
+    for (const side of [-1, 1]) {
+      c.save(); c.scale(side, 1);
+      for (let layer = 0; layer < 2; layer++) for (let i = 0; i < 9; i++) {
+        const k = i / 8, ang = 0.18 + k * 1.55 - flap * (0.9 - k * 0.5) * (layer ? 0.8 : 1), L = size * (layer ? 0.5 : 0.95) * (0.62 + 0.5 * Math.sin(k * 2.4 + 0.5)) , wd = size * 0.075 * (layer ? 1.2 : 1);
+        c.save(); c.rotate(ang); c.translate(0, 0);
+        const g = c.createLinearGradient(0, 0, 0, -L); g.addColorStop(0, layer ? '#c98a22' : '#e0a73a'); g.addColorStop(0.65, layer ? '#f0c24e' : '#f8d867'); g.addColorStop(1, 'rgba(255,238,170,0.55)');
+        c.fillStyle = g; c.globalAlpha = 0.95; c.beginPath(); c.moveTo(-wd, 0); c.quadraticCurveTo(-wd * 1.3, -L * 0.6, 0, -L); c.quadraticCurveTo(wd * 1.3, -L * 0.6, wd, 0); c.closePath(); c.fill(); c.strokeStyle = 'rgba(110,64,8,.75)'; c.lineWidth = 1; c.stroke();
+        c.restore();
+      }
+      c.restore();
+    }
+    c.globalCompositeOperation = 'lighter'; const g2 = c.createRadialGradient(0, -size * 0.2, 4, 0, -size * 0.2, size * 1.2); g2.addColorStop(0, `rgba(255,225,130,${0.28 + (cast ? 0.25 : 0)})`); g2.addColorStop(1, 'rgba(255,225,130,0)'); c.fillStyle = g2; c.fillRect(-size * 1.3, -size * 1.4, size * 2.6, size * 2.2);
+    c.restore();
+  }
+  function drawRaidBoss(c, e, d, skey, spr, cx, ground, now) {
+    const P = RB[e.t], t = now / 1000, ph = e.id * 0.7, pose = rdPose(e, now), cast = !!pose, flip = (e.face || 1) < 0, col = P.col;
+    const f = spr.f[0], w = f[2], h = f[3], moving = (e.amp || 0) > 0.3;
+    let lift = P.hover ? P.hover + Math.sin(t * 2 + ph) * P.hover * 0.4 : 0, ox = 0, oy = 0, sy = 1, sx = 1, shk = 0, flap = Math.sin(t * 2.4 + ph) * 0.22;
+    if (pose) {
+      const p = pose.p, k = pose.k;
+      if (k === 'j') {                                                          // salto: arco hacia el objetivo y caída
+        const u = Math.min(1, p), ease = u * u * (3 - 2 * u), jx = pose.r.jx || 0, jy = pose.r.jy || 0;
+        ox = jx * TS * ease; oy = jy * TS * ease; lift += Math.sin(Math.PI * u) * (70 + Math.hypot(jx, jy) * 3); sy = u < 0.15 ? 1 - 0.1 * (u / 0.15) : u > 0.9 ? 0.92 + 0.08 * ((u - 0.9) / 0.1) : 1.05; sx = 2 - sy > 1.1 ? 1.1 : 2 - sy;
+      } else if (k === 's') { sy = 1 - 0.07 * p * p + (pose.fin > 0 ? 0.08 * Math.sin(pose.fin * 3) : 0); sx = 1 + 0.04 * p; shk = 1.2 * p; lift += pose.fin > 0 ? 5 * (1 - pose.fin) : 0; }
+      else if (k === 'z' || k === 'l' || k === 'w') { sy = 1.03; shk = 0.7; flap += 0.35 * Math.sin(t * 16); lift += 3; }
+      else if (k === 'k' || k === 'h' || k === 'v') { lift += 6 * Math.sin(Math.min(1, p * 1.6) * Math.PI / 2); sy = 1.03; shk = 0.6; flap -= 0.4 * Math.min(1, p * 2); }
+      else { lift += 3 + 3 * Math.sin(t * 10); shk = 0.5; flap += 0.3 * Math.sin(t * 13); }
+    }
+    const pulse = 0.5 + 0.5 * Math.sin(t * 3 + ph), gy = ground - spr.h * 0.5;
+    const aura = c.createRadialGradient(cx, gy, 6, cx, gy, spr.h * 0.95); aura.addColorStop(0, `rgba(${col},${0.12 + 0.1 * pulse + (cast ? 0.2 : 0)})`); aura.addColorStop(1, `rgba(${col},0)`);
+    c.fillStyle = aura; c.fillRect(cx - spr.h, gy - spr.h, spr.h * 2, spr.h * 2);
+    if (P.halo) {                                                                // rayos de luz que giran detrás de Xaelis
+      c.save(); c.translate(cx, gy - spr.h * 0.12 - lift * 0.4); c.globalCompositeOperation = 'lighter';
+      for (let i = 0; i < 12; i++) { const a = i / 12 * 6.283 + t * 0.25; c.fillStyle = `rgba(255,235,150,${0.05 + 0.04 * Math.sin(t * 2 + i)})`; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a - 0.07) * spr.h * 1.05, Math.sin(a - 0.07) * spr.h * 1.05); c.lineTo(Math.cos(a + 0.07) * spr.h * 1.05, Math.sin(a + 0.07) * spr.h * 1.05); c.fill(); }
+      c.restore();
+    }
+    if (P.wings) rdWings(c, cx + ox + (flip ? -1 : 1) * w * 0.17, ground + oy - lift - spr.h * 0.62, spr.h * 0.62, t, flap, cast);
+    if (P.frames) {                                                              // Malgathor: ciclo de marcos + órbita de vacío
+      drawSprite(c, skey, sprFrame(e, spr), cx + ox + (shk ? Math.sin(t * 40) * shk : 0), ground + 2 + oy - Math.round(lift), flip, sy);
+    } else {
+      const br = 1 + P.breath * Math.sin(t * 1.9 + ph) + (cast ? 0.02 * Math.sin(t * 9) : 0), H = h * br * sy, step = 2;
+      c.save(); c.imageSmoothingEnabled = true; c.translate(Math.round(cx + ox), Math.round(ground + 2 + oy - lift)); if (flip) c.scale(-1, 1);
+      for (let r = 0; r < h; r += step) {
+        const u = (r + step / 2) / h, dy = -H + (r / h) * H, hh = (step / h) * H + 0.6;
+        let sway = Math.sin(t * 1.5 + u * 3.2 + ph) * P.sway * (1 - u) * (1 - u) * (P.hover || P.legs || P.heavy ? 0.4 : 1) * (cast ? 1.8 : 1) + Math.sin(t * 0.9 + ph) * 0.8 * (1 - u) + (moving ? Math.sin(t * 7 + u * 4) * 1.2 * u : 0);
+        if (P.sway > 3) sway = Math.sin(t * 1.6 + (1 - u) * 3.4 + ph) * P.sway * (1 - u) * (1 - u) * (cast ? 1.8 : 1) * -1;      // la hidra se balancea desde la cola
+        if (P.legs && u > 0.62) sway += Math.sin(t * (moving ? 22 : 12) + r * 0.8 + ph) * (moving ? 1.3 : 0.55);                         // patas que tiemblan
+        if (shk) sway += Math.sin(t * 45 + r) * shk;
+        c.drawImage(sprImg, f[0], f[1] + r, w, step, -w * sx / 2 + sway, dy, w * sx, hh);
+      }
+      c.restore();
+    }
+    c.save(); c.globalCompositeOperation = 'lighter';
+    if (cast) { const g = c.createRadialGradient(cx + ox, gy + oy - lift, 4, cx + ox, gy + oy - lift, spr.h * 0.7); g.addColorStop(0, `rgba(${col},${0.22 + 0.18 * Math.sin(t * 14)})`); g.addColorStop(1, `rgba(${col},0)`); c.fillStyle = g; c.fillRect(cx + ox - spr.h, gy + oy - lift - spr.h, spr.h * 2, spr.h * 2); }
+    if (P.eyes) for (const [ex, ey] of P.eyes) { const X0 = cx + ox + ((flip ? 1 - ex : ex) - 0.5) * w, Y0 = ground + oy - lift - h * (1 - ey); c.fillStyle = `rgba(${col},${0.55 + 0.4 * pulse})`; c.beginPath(); c.ellipse(X0, Y0, 2.6, 1.7, 0, 0, 7); c.fill(); glow(c, X0, Y0, 9, col, 0.35); }
+    if (P.cracks) {                                                              // grietas de magma que palpitan
+      c.strokeStyle = `rgba(255,150,50,${0.35 + 0.35 * pulse + (cast ? 0.25 : 0)})`; c.lineWidth = 1.4; c.beginPath();
+      for (let i = 0; i < 6; i++) { const bx = cx + ox + (Math.sin(i * 2.3) * 0.28) * w, by = ground + oy - lift - h * (0.3 + 0.12 * i); c.moveTo(bx, by); c.lineTo(bx + 5 * Math.sin(i + 1), by + 5); c.lineTo(bx + 2, by + 11 * Math.cos(i)); }
+      c.stroke();
+    }
+    if (P.drip) for (let i = 0; i < 4; i++) { const u = (t * 0.7 + i / 4 + ph) % 1; c.fillStyle = `rgba(${col},${0.7 * (1 - u)})`; c.fillRect(cx + ox + Math.sin(i * 3.1 + ph) * w * 0.3, ground + oy - lift - h * 0.45 + u * h * 0.45, 2, 3); }
+    if (P.orbit) for (let i = 0; i < 6; i++) { const a = t * 1.3 + i * 1.047, rr = spr.h * 0.42; c.fillStyle = `rgba(${col},${0.7})`; c.beginPath(); c.arc(cx + ox + Math.cos(a) * rr, gy + oy - lift + Math.sin(a) * rr * 0.35, 2.6, 0, 7); c.fill(); }
+    c.restore();
+  }
   function drawMonster(c, e, sx, sy, now) {
     const d = G.mons[e.t] || { icon: '❓', boss: false };
     const rig = RIG[e.t] || { kind: 'bi', col: '#8a7a66' };
@@ -1928,6 +2004,7 @@
       const float = flying ? (e.t === 'dragon_sombra' ? 14 + Math.sin(now / 450 + e.id) * 4 : 6 + Math.sin(now / 300 + e.id) * 2.2) : 0;
       const sq = 1 + (moving ? 0 : Math.sin(now / 520 + e.id) * 0.018);
       if (e.t === 'anubis' || d.shade) { drawAnubisLike(c, e, d, skey, spr, cx, ground, now, sq); return; }
+      if (RB[e.t]) { drawRaidBoss(c, e, d, skey, spr, cx, ground, now); return; }
       drawSprite(c, skey, sprFrame(e, spr), cx, ground + 2 - Math.round(hop) - Math.round(float), (e.face || 1) < 0, sq);
       return;
     }

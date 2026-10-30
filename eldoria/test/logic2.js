@@ -554,8 +554,8 @@ ok('Anubis, Juez de las Sombras: tumba, botín, miasma, portales, sombras y momi
   const hp0 = a.p.hp = 1000; a.p.maxHp = 5000; a.p.antiHeal = game.now + 5000; const nm = a.p.hp; assert.ok(a.p.antiHeal > game.now && nm === hp0);
 });
 
-ok('especiales de armas de jefe: 16 armas x 2 especiales (teclas 4 y 5) con daño, espera, maná y controles reducidos en jefes', () => {
-  const { WSPEC } = require('../game/especiales'); const ids = Object.keys(WSPEC); assert.equal(ids.length, 16);
+ok('especiales de armas de jefe: 22 armas x 2 especiales (teclas 4 y 5) con daño, espera, maná y controles reducidos en jefes', () => {
+  const { WSPEC } = require('../game/especiales'); const ids = Object.keys(WSPEC); assert.equal(ids.length, 22);
   const run = (ms) => { for (let k = 0; k <= ms; k += 100) { game.now += 100; const due = game.sched.filter((e) => e.at <= game.now); game.sched = game.sched.filter((e) => e.at > game.now); due.forEach((e) => e.fn()); } };
   const { p } = login('Espec1'); place(p, 150, 70); p.hp = p.maxHp = 1e7; const SX = require('../game/skills');
   for (const id of ids) {
@@ -573,7 +573,7 @@ ok('especiales de armas de jefe: 16 armas x 2 especiales (teclas 4 y 5) con dañ
     }
   }
   // controles: contra un jefe duran la mitad
-  p.eq.weapon = I.mk('rd_rk_weapon', 1); p.skcd = {}; p.nextSkill = 0; game.now += 1000; clearAround(150, 70, 8);
+  p.eq.weapon = I.mk('rd_rk_hammer', 1); p.skcd = {}; p.nextSkill = 0; game.now += 1000; clearAround(150, 70, 8);
   const b = game.spawnMonster('dragon_sombra', 151, 70), r2 = game.spawnMonster('rata', 149, 70); b.maxHp = b.hp = 1e9; r2.maxHp = r2.hp = 1e9; p.target = r2.id; const n0 = game.now;
   game.useSkill(p, 3); run(300);
   assert.ok(r2.nextMove >= n0 + 1900 && r2.nextMove <= n0 + 2300, 'aturde 2 s a un monstruo normal'); assert.ok(b.nextMove > n0 && b.nextMove <= n0 + 1300, 'aturde 1 s a un jefe');
@@ -613,11 +613,11 @@ ok('tabletas de teletransporte: Boris las vende a 100k y llevan a la zona', () =
 
 ok('Raid: 5 cámaras, jefes, vidas, escalado por grupo, cofre final con botín raro y capa equipada', () => {
   const R = require('../game/raid'), RAID = world.RAID;
-  assert.equal(R.ALL_ITEMS.length, 50); for (const [p, s] of R.ALL_ITEMS) assert.ok(ITEMS[R.itemId(p, s)], p + s);
+  assert.equal(R.ALL_ITEMS.length, 56); for (const [p, s] of R.ALL_ITEMS) assert.ok(ITEMS[R.itemId(p, s)], p + s);
   const gj = require('../public/gear.json'), sj = require('../public/sprites.json');
   for (const [p, s] of R.ALL_ITEMS) assert.ok(gj['i_' + p + '_' + s], 'icono ' + p + s);
-  for (const id of R.BOSS_ORDER) { assert.ok(sj[id] && MONSTERS[id].special === 'raid' && MONSTERS[id].loot.length === 11, id); }
-  assert.ok(ITEMS.rd_rx_cape.wings && ITEMS.rd_rm_cape.type === 'cape' && ITEMS.rd_rm_weapon.style === 'melee');
+  for (const id of R.BOSS_ORDER) { assert.ok(sj[id] && MONSTERS[id].special === 'raid' && MONSTERS[id].loot.length >= 11, id); }
+  assert.ok(ITEMS.rd_rx_cape.wings && ITEMS.rd_rm_cape.type === 'cape' && ITEMS.rd_rm_staff.style === 'magic' && ITEMS.rd_rk_hammer.style === 'melee' && !ITEMS.rd_rm_weapon);
   assert.equal(RAID.rooms.length, 6);
   const A = login('RaidA'), B = login('RaidB'); const H = RAID.rooms[0];
   for (const q of [A.p, B.p]) { q.level = 150; q.hp = q.maxHp = 5e6; place(q, H.start[0] + 3, H.cy); q.dead = false; }
@@ -656,6 +656,38 @@ ok('Raid: 5 cámaras, jefes, vidas, escalado por grupo, cofre final con botín r
   game.now += 5000; A.p.hp = 0; place(A.p, 3, 3); T0 = game.now; advance(1100); assert.equal(game.raid, null, 'sin supervivientes la Raid termina');
   for (let i = 0; i < 12; i++) { const { p } = login('RaidX' + i); place(p, H.start[0] + 2 + (i % 3), H.cy + (i % 5)); p.hp = p.maxHp = 1e6; if (i === 0) var first = p; }
   game.raidGo(first); assert.equal(game.raid.members.size, 10, 'máximo 10 jugadores'); game.raidReset();
+});
+
+ok('Raid: mecánicas nuevas por sala (salto, rayos giratorios, olas en carriles, zonas seguras)', () => {
+  const R = require('../game/raid'), RAID = world.RAID, H = RAID.rooms[0];
+  const A = login('MecA'), B = login('MecB');
+  for (const q of [A.p, B.p]) { q.level = 150; q.hp = q.maxHp = 5e6; place(q, H.start[0] + 3, H.cy); q.dead = false; }
+  game.raidGo(A.p); const r = game.raid; assert.ok(r && r.boss);
+  const run = (ms) => { for (let k = 0; k <= ms; k += 100) { game.now += 100; const due = game.sched.filter((e) => e.at <= game.now); game.sched = game.sched.filter((e) => e.at > game.now); due.forEach((e) => e.fn()); } };
+  const seen = new Set();
+  for (let room = 1; room <= 5; room++) {
+    if (room > 1) { r.phase = 'fight'; game.raidEnterRoom(room); }
+    const m = r.boss, def = R.BOSS_DEFS[R.BOSS_ORDER[room - 1]]; m.shieldUntil = 0; m.target = A.p.id;
+    for (let i = 0; i < def.seq.length; i++) {
+      for (const q of [A.p, B.p]) { q.hp = q.maxHp = 5e6; q.dead = false; }
+      place(A.p, m.x - 4, m.y); place(B.p, m.x - 5, m.y + 3); game.fx.length = 0; m.nextSp = 0; m.spN = i; game.now += 10;
+      const kind = def.seq[i].k; seen.add(kind);
+      game.raidAI(m, game.now);
+      if (kind === 'k') {
+        const spots = game.fx.filter((f) => f.k === 'rd_safe'); assert.ok(spots.length >= 2, 'zonas seguras');
+        place(A.p, spots[0].x, spots[0].y); const far = RAID.rooms[room]; place(B.p, spots.every((s) => Math.hypot(far.x1 - 3 - s.x, far.y1 - 2 - s.y) > s.r + 1) ? far.x1 - 3 : far.x0 + 3, spots.every((s) => Math.hypot(far.x1 - 3 - s.x, far.y1 - 2 - s.y) > s.r + 1) ? far.y1 - 2 : far.y1 - 2);
+        const hb = B.p.hp, ha = A.p.hp; run(5000); assert.equal(A.p.hp, ha, 'dentro de la zona segura no hay daño');
+        if (!spots.some((s) => Math.hypot(B.p.x - s.x, B.p.y - s.y) <= s.r)) assert.ok(B.p.hp < hb, 'fuera de la zona segura sí');
+      } else run(9000);
+      assert.ok(game.fx.some((f) => f.k === 'rd_cast'), 'animación de lanzamiento ' + kind);
+      if (kind === 'z') assert.ok(game.fx.filter((f) => f.k === 'rd_lw').length >= def.seq[i].n - 1, 'rayos del barrido');
+      if (kind === 'w') assert.ok(game.fx.filter((f) => f.k === 'rd_lw').length >= 3, 'carriles');
+      if (kind === 'j') { assert.ok(game.fx.some((f) => f.k === 'rd_land'), 'aterriza'); assert.ok(world.zoneAt(m.x, m.y).id === RAID.rooms[room].id, 'sigue en su cámara'); }
+      for (const q of game.monsters.filter((z) => z.raidRun && z.parent)) game.raidRemoveMonster(q);
+    }
+  }
+  for (const k of ['j', 'z', 'w', 'k']) assert.ok(seen.has(k), 'ataque ' + k);
+  game.raidReset();
 });
 
 ok('Banco ampliable (1M por 5 espacios) y entrada de 2k a las cuevas de jefe', () => {

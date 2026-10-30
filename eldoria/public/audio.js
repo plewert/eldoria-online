@@ -101,6 +101,7 @@
   /* ---------- hooks del juego ---------- */
   X.sfx = play; X.musicMood = (m) => setMood(m); X.musicThemes = () => Object.keys(T);
   const BOSSFX = {
+    rd_cast: 'charge', rd_land: 'explosion', rd_safe: 'shield', rd_all: 'nova',
     dkw: 'charge', dk: 'dragonbreath', slw: 'charge', sl: 'quake', fiw: 'charge', fi: 'fireball',
     ykw: 'charge', yk: 'dragonbreath', acw: 'charge', ac: 'acid', hsw: 'charge', hs: 'quake', rcw: 'charge', rc: 'rubble',
     lgw: 'charge', lg: 'thunder', frw: 'charge', fr: 'fireball', fqw: 'charge', fq: 'quake', wbw: 'charge', wb: 'whoosh', spw: 'charge', sp: 'fireball', tpo: 'teleport', tpi: 'teleport', tn: 'whoosh', nvw: 'charge', nv: 'nova',

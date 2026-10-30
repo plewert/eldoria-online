@@ -114,6 +114,11 @@
       case 'rd_h': FXL.push({ k: 'h', t: now, T: 600, f }); X.burst(f.x, f.y, EL[f.th] || 'dark', f.big ? 40 : 18, { sp: f.big ? 7 : 4, up: 4, g: 5, life: 0.7, size: 3.2 }); X.ring(f.x, f.y, EL[f.th] || 'dark', 500, f.r * 30, f.big ? 6 : 4); G.shake = { t: now, m: f.big ? 9 : 3 }; break;
       case 'rd_lw': FXL.push({ k: 'lw', t: now, T: f.ms, f }); break;
       case 'rd_l': FXL.push({ k: 'l', t: now, T: 520, f }); G.shake = { t: now, m: 4 }; break;
+      case 'rd_cast': X.casts.set(f.id, now + f.T + 300); X.rdc.set(f.id, { k: f.kind, t: now, T: f.T }); break;
+      case 'rd_jump': { const q = X.rdc.get(f.id), e = G.ents.get(f.id); if (q && e) { q.jx = f.x - e.x; q.jy = f.y - e.y; } break; }
+      case 'rd_land': { const e = bossEnt(); if (e) { e.rx = f.x; e.ry = f.y; } G.shake = { t: now, m: 8 }; X.burst(f.x, f.y, EL[f.th] || 'stone', 34, { sp: 6, up: 4, g: 4, life: 0.9, size: 3.4 }); X.ring(f.x, f.y, EL[f.th] || 'stone', 700, 90, 6); break; }
+      case 'rd_safe': FXL.push({ k: 'safe', t: now, T: f.ms, f }); break;
+      case 'rd_all': FXL.push({ k: 'all', t: now, T: 700, f }); G.shake = { t: now, m: 9 }; break;
       case 'rd_pool': FXL.push({ k: 'pool', t: now, T: f.ms, f, s: Math.random() * 99 }); break;
       case 'rd_pull': FXL.push({ k: 'pull', t: now, T: f.ms, f }); break;
       case 'rd_sh': for (let i = FXL.length - 1; i >= 0; i--) if (FXL[i].k === 'sh') FXL.splice(i, 1); if (f.ms > 0) FXL.push({ k: 'sh', t: now, T: f.ms, f }); break;
@@ -150,6 +155,15 @@
         const x = px(f.x), y = py(f.y), r = f.r * TS;
         for (let i = 0; i < 3; i++) { const u = ((now / 600 + i / 3) % 1); c.strokeStyle = `rgba(${col},${0.7 * (1 - u)})`; c.lineWidth = 2; c.beginPath(); c.ellipse(x, y, r * (1 - u), r * 0.82 * (1 - u), 0, 0, 7); c.stroke(); }
         const g = c.createRadialGradient(x, y, 1, x, y, TS * 2.2); g.addColorStop(0, `rgba(0,0,0,${0.9 * p})`); g.addColorStop(1, `rgba(${col},0)`); c.fillStyle = g; c.beginPath(); c.arc(x, y, TS * 2.2, 0, 7); c.fill();
+      } else if (b.k === 'safe') {                                                       // zona segura: el resto del suelo estalla
+        const x = px(f.x), y = py(f.y), r = f.r * TS, al = p > 0.96 ? 0 : 1, pu = 0.5 + 0.5 * Math.sin(now / 120);
+        const g = c.createRadialGradient(x, y, 2, x, y, r); g.addColorStop(0, `rgba(190,255,200,${0.42 * al})`); g.addColorStop(0.8, `rgba(120,255,160,${(0.22 + 0.12 * pu) * al})`); g.addColorStop(1, 'rgba(120,255,160,0)');
+        c.fillStyle = g; c.beginPath(); c.ellipse(x, y, r, r * 0.82, 0, 0, 7); c.fill();
+        c.strokeStyle = `rgba(210,255,225,${0.7 + 0.3 * pu})`; c.lineWidth = 2.5; c.beginPath(); c.ellipse(x, y, r, r * 0.82, 0, 0, 7); c.stroke();
+        c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = 1.2; c.beginPath(); c.ellipse(x, y, r * (1 - p), r * 0.82 * (1 - p), 0, 0, 7); c.stroke();
+        c.fillStyle = 'rgba(0,0,0,.55)'; c.font = '700 11px sans-serif'; c.textAlign = 'center'; c.fillText('SEGURO', x + 1, y + 4); c.fillStyle = '#eafff0'; c.fillText('SEGURO', x, y + 3);
+      } else if (b.k === 'all') {
+        const x = px(f.x), y = py(f.y), g = c.createRadialGradient(x, y, 10, x, y, TS * 34); g.addColorStop(0, `rgba(${col},${0.5 * (1 - p)})`); g.addColorStop(1, `rgba(${col},0)`); c.fillStyle = g; c.fillRect(x - TS * 34, y - TS * 34, TS * 68, TS * 68);
       } else if (b.k === 'sh') {
         const e = bossEnt(), x = e ? X.sxOf(e.rx != null ? e.rx : e.x) + TS / 2 : px(f.x), y = e ? X.syOf(e.ry != null ? e.ry : e.y) + TS / 2 : py(f.y), r = TS * 3, al = Math.min(1, (1 - p) * 4);
         c.fillStyle = `rgba(150,220,255,${0.13 * al})`; c.beginPath(); c.ellipse(x, y - TS * 0.6, r, r * 1.05, 0, 0, 7); c.fill();

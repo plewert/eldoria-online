@@ -32,9 +32,12 @@ function mk(id, qty = 1, props) {
 }
 
 /** Valida un objeto leído del disco (acepta el formato antiguo: solo el id como texto). */
+// armas de Raid retiradas → su equivalente nuevo (para no perder objetos de los jugadores)
+const ALIAS = { rd_rk_weapon: 'rd_rk_hammer', rd_rv_weapon: 'rd_rv_bow', rd_ra_weapon: 'rd_ra_staff', rd_rx_weapon: 'rd_rx_staff', rd_rm_weapon: 'rd_rm_staff' };
 function normalize(raw) {
   if (!raw) return null;
-  if (typeof raw === 'string') return mk(raw);
+  if (typeof raw === 'string') return mk(ALIAS[raw] || raw);
+  if (raw.id && ALIAS[raw.id]) raw = Object.assign({}, raw, { id: ALIAS[raw.id] });
   if (!raw.id || !ITEMS[raw.id]) return null;
   if (!isGear(raw.id)) return { id: raw.id, qty: Math.max(1, raw.qty | 0) };
   const gm = Array.isArray(raw.gm) ? raw.gm.slice(0, CFG.MAX_SOCKETS).map((g) => (g && isGem(g) ? g : null)) : [];

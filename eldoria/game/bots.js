@@ -178,6 +178,8 @@ function install(Game) {
         const id = `rd_${sid}_${slot}`;
         if (ITEMS[id]) p.eq[eqs] = I.mk(id);
       }
+      const wk = { rm: 'rd_rk_hammer', rk: 'rd_rk_hammer', rv: 'rd_rv_bow', rx: 'rd_rx_staff' }[sid];       // arma de la Raid según el estilo
+      p.eq.weapon = I.mk(style === 'melee' ? (ei % 2 ? 'rd_rx_spear' : wk) : wk);
     } else {
       const g = TIERS[role].gear[style];
       p.eq.weapon = I.mk(g[0]); p.eq.head = I.mk(g[1]); p.eq.body = I.mk(g[2]);
@@ -573,6 +575,7 @@ function install(Game) {
       if (f.k === 'rd_w' && f.r > 1.5) this.botHaz.push({ x: f.x, y: f.y, r: f.r, until: now + f.ms + 350 });
       else if (f.k === 'rd_lw') this.botHaz.push({ line: 1, x: f.x, y: f.y, x2: f.x2, y2: f.y2, r: f.w, until: now + f.ms + 350 });
       else if (f.k === 'rd_pool') this.botHaz.push({ x: f.x, y: f.y, r: f.r, until: now + f.ms });
+      else if (f.k === 'rd_safe') { if (!f.i || !this.botSafe) this.botSafe = { spots: [], until: 0 }; this.botSafe.spots.push({ x: f.x, y: f.y, r: f.r }); this.botSafe.until = now + f.ms + 250; }
     }
     this._bfxN = fx.length;
     if (this.botHaz.length && this.tickN % 10 === 0) this.botHaz = this.botHaz.filter((h) => h.until > now);
@@ -585,8 +588,9 @@ function install(Game) {
   };
   P.botDodge = function (p, now) {
     const ai = p.ai;
-    if (!this.botHaz.length) { ai.dodging = false; return; }
-    const bad = (x, y) => this.botHaz.some((h) => h.until > now && inHaz(h, x, y, 0.8));
+    const sf = this.botSafe && this.botSafe.until > now ? this.botSafe : null;
+    if (!this.botHaz.length && !sf) { ai.dodging = false; return; }
+    const bad = (x, y) => this.botHaz.some((h) => h.until > now && inHaz(h, x, y, 0.8)) || (sf && !sf.spots.some((s) => Math.hypot(x - s.x, y - s.y) <= s.r - 0.6));
     if (!bad(p.x, p.y)) { ai.dodging = false; return; }
     ai.dodging = true; p.target = null;
     if (now < p.nextMove) return;

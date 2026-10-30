@@ -373,9 +373,15 @@ Robo de vida (ópalo, Anillo de Sangre, Amuleto del Abismo): tope total del 15 %
 
 ## Especiales de armas de jefe
 
-Las 16 armas de jefe (nivel ≥ 76) dan 2 habilidades extra en la barra: teclas **4** y **5** (botones ⭐).
+Las armas de jefe (22: 16 de jefes normales y las 11 de la Raid, ya sin las antiguas) (nivel ≥ 76) dan 2 habilidades extra en la barra: teclas **4** y **5** (botones ⭐).
 - **A (tecla 4)**: skill nv 30, más barata y de menor cooldown.
 - **B (tecla 5)**: ultimate, skill nv 60, cooldown 75–90 s.
 - Tipos: abanico, línea, nova, curación de grupo, rayo, salva, lluvia, nube; con aturdir, ralentizar, cegar, atraer o quemar.
 - A los jefes el control se les reduce a la mitad y no se les puede atraer.
 - Definidas en `game/especiales.js` (cliente: `public/especiales.js`).
+
+## Raid: armas nuevas, jefes animados y mecánicas por sala
+
+- **Armas de la Raid** (11, recortadas de las ilustraciones; las 5 antiguas `rd_*_weapon` se retiraron y los objetos que ya tenían los jugadores se convierten solos: martillo→`rd_rk_hammer`, arco→`rd_rv_bow`, resto→báculo de su set): Slyvra (arco + báculo cobra), Koros (martillo + maza), Aranak (hacha garra + báculo de máser), Xaelis (arco + cetro + lanza llameante), Malgathor (arco + báculo del vacío). Todas con 2 especiales (teclas 4 y 5).
+- **Jefes** con arte nuevo (Slyvra, Koros, Aranak, Xaelis) y animación por tiras: respiran, se mecen, tiemblan las patas del escorpión, grietas de magma, alas que baten y rayos de luz (Xaelis), órbita de vacío (Malgathor) y poses de ataque (salto, golpe, hechizo) con el aviso `rd_cast`.
+- **Ataques nuevos** (`game/raid.js`): `j` salto sobre un jugador, `z` barrido giratorio de rayos, `w` olas en carriles con huecos, `k` zonas seguras (quien queda fuera recibe el golpe). Cada sala los combina distinto; los bots esquivan y se refugian en las zonas seguras.

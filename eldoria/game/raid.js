@@ -21,34 +21,45 @@ const SETS = {
   rv: {
     boss: 'raid_slyvra', L: 100, k: 1.00, names: {
       helm: 'Corona de la Reina Venenosa', chest: 'Coraza de Escamas Ponzoñosas', glove: 'Garras de Ponzoña', leg: 'Grebas de Cieno Letal', boot: 'Botas del Cenagal',
-      belt: 'Cinto de Colmillos', ring: 'Anillo de Veneno Vivo', amulet: 'Amuleto del Nido Letal', cape: 'Capa de la Reina Víbora', weapon: 'Arco Compuesto Miasma',
-    }, weapon: { style: 'ranged', el: 'poison' }, cape: { cc: ['#5cd96a', '#1d5a2c', '#c9ff8a'], glow: '#7dff7a' },
+      belt: 'Cinto de Colmillos', ring: 'Anillo de Veneno Vivo', amulet: 'Amuleto del Nido Letal', cape: 'Capa de la Reina Víbora',
+    }, cape: { cc: ['#5cd96a', '#1d5a2c', '#c9ff8a'], glow: '#7dff7a' },
   },
   rk: {
     boss: 'raid_koros', L: 105, k: 1.08, names: {
       helm: 'Yelmo del Coloso Sísmico', chest: 'Peto de Roca Fundida', glove: 'Puños de Basalto', leg: 'Grebas de Magma', boot: 'Botas del Temblor',
-      belt: 'Cinto de Lava Solidificada', ring: 'Anillo del Cráter', amulet: 'Amuleto del Corazón de Piedra', cape: 'Capa de Ceniza Ardiente', weapon: 'Martillo Sísmico de Koros',
-    }, weapon: { style: 'melee', el: 'fire' }, cape: { cc: ['#e8742a', '#5a1a08', '#ffc060'], glow: '#ff7a20' },
+      belt: 'Cinto de Lava Solidificada', ring: 'Anillo del Cráter', amulet: 'Amuleto del Corazón de Piedra', cape: 'Capa de Ceniza Ardiente',
+    }, cape: { cc: ['#e8742a', '#5a1a08', '#ffc060'], glow: '#ff7a20' },
   },
   ra: {
     boss: 'raid_aranak', L: 110, k: 1.16, names: {
       helm: 'Casco Mecánico de Aranak', chest: 'Coraza de Engranajes', glove: 'Manoplas de Pinza', leg: 'Grebas de Pistones', boot: 'Botas de Acero Vivo',
-      belt: 'Cinto de Eslabones', ring: 'Anillo de Núcleo Ígneo', amulet: 'Amuleto del Reactor', cape: 'Capa de Placas Fundidas', weapon: 'Ballesta de Aguijón Mecánico',
-    }, weapon: { style: 'ranged', el: 'fire' }, cape: { cc: ['#b9824a', '#3b2410', '#ffd08a'], glow: '#ff9a40' },
+      belt: 'Cinto de Eslabones', ring: 'Anillo de Núcleo Ígneo', amulet: 'Amuleto del Reactor', cape: 'Capa de Placas Fundidas',
+    }, cape: { cc: ['#b9824a', '#3b2410', '#ffd08a'], glow: '#ff9a40' },
   },
   rx: {
     boss: 'raid_xaelis', L: 115, k: 1.24, names: {
       helm: 'Diadema de la Ira del Alba', chest: 'Vestidura Rayosolar', glove: 'Guanteletes del Trueno', leg: 'Calzas de Luz Dorada', boot: 'Sandalias del Relámpago',
-      belt: 'Faja del Amanecer', ring: 'Anillo del Rayo Dorado', amulet: 'Amuleto del Sol Naciente', cape: 'Capa y Alas de Xaelis', weapon: 'Cetro de la Ira del Alba',
-    }, weapon: { style: 'magic', el: 'sun' }, cape: { cc: ['#ffe68a', '#c98a1a', '#fff6c8'], glow: '#ffe27a', wings: true },
+      belt: 'Faja del Amanecer', ring: 'Anillo del Rayo Dorado', amulet: 'Amuleto del Sol Naciente', cape: 'Capa y Alas de Xaelis',
+    }, cape: { cc: ['#ffe68a', '#c98a1a', '#fff6c8'], glow: '#ffe27a', wings: true },
   },
   rm: {
     boss: 'raid_malgathor', L: 120, k: 1.35, names: {
       helm: 'Yelmo del Segador del Vacío', chest: 'Coraza de Singularidad', glove: 'Garras del Olvido', leg: 'Grebas del Abismo', boot: 'Botas del Vacío Eterno',
-      belt: 'Cinto de Materia Oscura', ring: 'Anillo del Horizonte de Sucesos', amulet: 'Amuleto de la Nada', cape: 'Capa del Segador del Vacío', weapon: 'Gran Espada Singularidad del Olvido',
-    }, weapon: { style: 'melee', el: 'void' }, cape: { cc: ['#8a3cff', '#1a0836', '#e0b8ff'], glow: '#b070ff' },
+      belt: 'Cinto de Materia Oscura', ring: 'Anillo del Horizonte de Sucesos', amulet: 'Amuleto de la Nada', cape: 'Capa del Segador del Vacío',
+    }, cape: { cc: ['#8a3cff', '#1a0836', '#e0b8ff'], glow: '#b070ff' },
   },
 };
+
+// armas de cada jefe (arte recortado de las ilustraciones): k = clave del objeto → rd_<set>_<k>
+const WEAPONS = {
+  rv: [{ k: 'bow', name: 'Arco de la Reina Víbora', style: 'ranged', el: 'poison' }, { k: 'staff', name: 'Báculo Cobra Esmeralda', style: 'magic', el: 'poison' }],
+  rk: [{ k: 'hammer', name: 'Martillo Sísmico de Koros', style: 'melee', el: 'fire' }, { k: 'mace', name: 'Maza del Corazón de Magma', style: 'melee', el: 'fire' }],
+  ra: [{ k: 'axe', name: 'Hacha Garra Mecánica', style: 'melee', el: 'fire' }, { k: 'staff', name: 'Báculo de Máser', style: 'magic', el: 'fire' }],
+  rx: [{ k: 'bow', name: 'Arco Alado del Alba', style: 'ranged', el: 'sun' }, { k: 'staff', name: 'Cetro Alado de Xaelis', style: 'magic', el: 'sun' }, { k: 'spear', name: 'Lanza Llameante del Alba', style: 'melee', el: 'sun' }],
+  rm: [{ k: 'bow', name: 'Arco del Segador del Vacío', style: 'ranged', el: 'void' }, { k: 'staff', name: 'Báculo del Olvido', style: 'magic', el: 'void' }],
+};
+const GEAR_SLOTS = Object.keys(SLOT_TYPE).filter((k) => k !== 'weapon');
+const slotsOf = (p) => [...GEAR_SLOTS, ...WEAPONS[p].map((w) => w.k)];
 // estadísticas base por ranura (se multiplican por k del set)
 const STATS = {
   helm: { def: 62, bonus: { hp: 360, atk: 6, crit: 0.03 } }, chest: { def: 84, bonus: { hp: 560, atk: 15 } }, glove: { def: 30, bonus: { hp: 160, atk: 13, crit: 0.02 } },
@@ -58,17 +69,17 @@ const STATS = {
 };
 const itemId = (p, s) => `rd_${p}_${s}`;
 const ALL_ITEMS = [];
-for (const [p, S] of Object.entries(SETS)) for (const s of Object.keys(SLOT_TYPE)) ALL_ITEMS.push([p, s]);
+for (const p of Object.keys(SETS)) for (const s of slotsOf(p)) ALL_ITEMS.push([p, s]);
 
 function build(ITEMS, MONSTERS) {
   const sell = (L, k) => Math.round(8 + L * L * 3.4) * k;
   const scale = (b, k) => { const o = {}; for (const [a, v] of Object.entries(b)) o[a] = a === 'crit' ? Math.round(v * k * 1000) / 1000 : Math.round(v * k); return o; };
   for (const [p, S] of Object.entries(SETS)) {
-    for (const s of Object.keys(SLOT_TYPE)) {
-      const type = SLOT_TYPE[s], st = STATS[s], id = itemId(p, s), name = S.names[s], spr = `${p}_${s}`;
-      if (s === 'weapon') {
-        ITEMS[id] = { name, icon: S.weapon.style === 'ranged' ? '🏹' : S.weapon.style === 'magic' ? '🔮' : '⚔️', spr, type: 'weapon', style: S.weapon.style, atk: Math.round(st.atk * S.k), cd: st.cd,
-          range: S.weapon.style === 'ranged' ? 8 : S.weapon.style === 'magic' ? 7 : 1, el: S.weapon.el, raid: 1, minLevel: S.L, sell: sell(S.L, 9) };
+    for (const s of slotsOf(p)) {
+      const wp = WEAPONS[p].find((w) => w.k === s), type = wp ? 'weapon' : SLOT_TYPE[s], st = wp ? STATS.weapon : STATS[s], id = itemId(p, s), name = wp ? wp.name : S.names[s], spr = `${p}_${s}`;
+      if (wp) {
+        ITEMS[id] = { name, icon: wp.style === 'ranged' ? '🏹' : wp.style === 'magic' ? '🔮' : '⚔️', spr, type: 'weapon', style: wp.style, atk: Math.round(st.atk * S.k), cd: st.cd,
+          range: wp.style === 'ranged' ? 8 : wp.style === 'magic' ? 7 : 1, el: wp.el, raid: 1, minLevel: S.L, sell: sell(S.L, 9) };
       } else {
         ITEMS[id] = { name, icon: ICON[type], spr, type, bonus: scale(st.bonus, S.k), raid: 1, minLevel: S.L, sell: sell(S.L, 6) };
         if (st.def) ITEMS[id].def = Math.round(st.def * S.k);
@@ -79,7 +90,7 @@ function build(ITEMS, MONSTERS) {
   // jefes (el botín de los sets sale del cofre; aquí solo se listan para la colección)
   for (const def of Object.values(BOSS_DEFS)) {
     const S = SETS[def.set];
-    const loot = Object.keys(SLOT_TYPE).map((s) => [itemId(def.set, s), CHEST_CHANCE(def.set, s), 1, 1]);
+    const loot = slotsOf(def.set).map((s) => [itemId(def.set, s), CHEST_CHANCE(def.set, s), 1, 1]);
     MONSTERS[def.type] = { name: def.name, icon: def.icon, lv: def.lv, hp: def.hp, dmg: def.dmg, dmgK: def.dmgK, exp: def.exp, move: def.move, atkCd: def.atkCd, aggro: 24, respawn: 999999999, armor: 0.5,
       shared: true, boss: true, special: 'raid', raidId: def.type, gold: [0, 0], loot, minLevelHint: S.L };
   }
@@ -87,27 +98,27 @@ function build(ITEMS, MONSTERS) {
 }
 
 /* ---------------------------------------------------------------- jefes ---------------------------------------------------------------- */
-// ataques: c = círculos sobre jugadores, s = golpe en torno al jefe, l = línea, p = charco persistente, u = invoca, h = escudo, v = atrae, r = lluvia aleatoria
+// ataques: j = salto del jefe, z = barrido giratorio de rayos, w = olas en carriles (dejan huecos), k = zonas seguras (el resto del suelo estalla), c = círculos sobre jugadores, s = golpe en torno al jefe, l = línea, p = charco persistente, u = invoca, h = escudo, v = atrae, r = lluvia aleatoria
 const BOSS_DEFS = {
   raid_slyvra: {
     type: 'raid_slyvra', set: 'rv', name: 'Slyvra, Reina Venenosa', icon: '🐍', lv: 700, hp: 520000, dmg: [260, 430], dmgK: 2.6, exp: 120000, move: 380, atkCd: 1300, th: 'poison',
-    seq: [{ k: 'p', n: 4, r: 2.6, dmg: [90, 140], life: 7 }, { k: 'u', t: 'raid_vibora', n: 3 }, { k: 'c', n: 5, r: 2.2, dmg: [520, 760], warn: 1300 }, { k: 'l', w: 1.7, len: 15, dmg: [700, 980], warn: 1400 }, { k: 'p', n: 5, r: 2.6, dmg: [100, 150], life: 8 }, { k: 'u', t: 'raid_vibora', n: 4 }],
+    seq: [{ k: 'p', n: 4, r: 2.6, dmg: [90, 140], life: 7 }, { k: 'u', t: 'raid_vibora', n: 3 }, { k: 'c', n: 5, r: 2.2, dmg: [520, 760], warn: 1300 }, { k: 'l', w: 1.5, len: 15, dmg: [650, 920], warn: 1400, multi: 3 }, { k: 'k', r: 3.2, dmg: [1000, 1400], warn: 2800, name: 'Nube tóxica' }, { k: 'p', n: 5, r: 2.6, dmg: [100, 150], life: 8 }, { k: 'c', n: 6, r: 2.2, dmg: [560, 800], warn: 1200 }, { k: 's', r: 5.5, dmg: [800, 1100], warn: 1500 }, { k: 'u', t: 'raid_vibora', n: 4 }],
   },
   raid_koros: {
     type: 'raid_koros', set: 'rk', name: 'Koros, el Rompetierras', icon: '🗿', lv: 720, hp: 600000, dmg: [290, 470], dmgK: 2.6, exp: 140000, move: 420, atkCd: 1400, th: 'quake',
-    seq: [{ k: 's', r: 6.5, dmg: [820, 1150], warn: 1500 }, { k: 'c', n: 6, r: 2.0, dmg: [560, 820], warn: 1300 }, { k: 'p', n: 4, r: 2.4, dmg: [110, 160], life: 7 }, { k: 's', r: 8, dmg: [900, 1250], warn: 1700 }, { k: 'r', n: 10, r: 1.7, dmg: [480, 700], warn: 1200 }],
+    seq: [{ k: 's', r: 6.5, dmg: [820, 1150], warn: 1500 }, { k: 'w', dir: 'h', w: 1.2, dmg: [820, 1100], warn: 1700, name: 'Ola sísmica' }, { k: 'j', r: 4, dmg: [900, 1300], warn: 1500 }, { k: 'c', n: 6, r: 2.0, dmg: [560, 820], warn: 1300 }, { k: 'p', n: 4, r: 2.4, dmg: [110, 160], life: 7 }, { k: 'j', r: 4.5, dmg: [950, 1350], warn: 1400 }, { k: 's', r: 8, dmg: [900, 1250], warn: 1700 }, { k: 'r', n: 10, r: 1.7, dmg: [480, 700], warn: 1200 }, { k: 'w', dir: 'v', w: 1.2, dmg: [820, 1100], warn: 1700, name: 'Ola sísmica' }],
   },
   raid_aranak: {
     type: 'raid_aranak', set: 'ra', name: 'Aranak, el Escorpión Mecanizado', icon: '🦂', lv: 740, hp: 680000, dmg: [310, 500], dmgK: 2.6, exp: 160000, move: 400, atkCd: 1300, th: 'fire',
-    seq: [{ k: 'l', w: 1.8, len: 16, dmg: [780, 1080], warn: 1300 }, { k: 'u', t: 'raid_escorpion', n: 4 }, { k: 'c', n: 6, r: 2.2, dmg: [560, 820], warn: 1300 }, { k: 'l', w: 1.8, len: 16, dmg: [800, 1100], warn: 1100, multi: 3 }, { k: 's', r: 7, dmg: [850, 1200], warn: 1600 }],
+    seq: [{ k: 'z', n: 9, step: 0.3, w: 1.25, len: 17, gap: 330, dmg: [650, 940], warn: 850, name: 'Láser giratorio' }, { k: 'u', t: 'raid_escorpion', n: 4 }, { k: 'j', r: 3.6, dmg: [900, 1250], warn: 1400, name: 'Salto de Aranak' }, { k: 'l', w: 1.6, len: 16, dmg: [800, 1100], warn: 1100, multi: 3 }, { k: 'c', n: 6, r: 2.2, dmg: [560, 820], warn: 1300 }, { k: 'z', n: 9, step: 0.3, w: 1.25, len: 17, gap: 330, dmg: [650, 940], warn: 850, name: 'Láser giratorio' }, { k: 'w', dir: 'v', w: 1.1, dmg: [780, 1050], warn: 1700, name: 'Red de láser' }, { k: 's', r: 7, dmg: [850, 1200], warn: 1600 }],
   },
   raid_xaelis: {
     type: 'raid_xaelis', set: 'rx', name: 'Xaelis, Ira del Alba', icon: '⚡', lv: 760, hp: 760000, dmg: [330, 530], dmgK: 2.6, exp: 180000, move: 360, atkCd: 1200, th: 'light',
-    seq: [{ k: 'r', n: 12, r: 1.8, dmg: [520, 760], warn: 1100 }, { k: 'l', w: 1.8, len: 18, dmg: [820, 1150], warn: 1300 }, { k: 'h', ms: 4500 }, { k: 'c', n: 7, r: 2.2, dmg: [600, 880], warn: 1200 }, { k: 's', r: 7.5, dmg: [900, 1250], warn: 1500 }],
+    seq: [{ k: 'r', n: 12, r: 1.8, dmg: [520, 760], warn: 1100 }, { k: 'z', n: 12, step: 0.26, w: 1.2, len: 19, gap: 300, dmg: [650, 950], warn: 800, name: 'Rayos del Alba' }, { k: 'h', ms: 4500 }, { k: 'k', r: 3.2, dmg: [1050, 1450], warn: 2700, name: 'Juicio solar' }, { k: 'l', w: 1.6, len: 18, dmg: [820, 1150], warn: 1300, multi: 2 }, { k: 'w', dir: 'h', w: 1.2, dmg: [820, 1100], warn: 1700, name: 'Muro de luz' }, { k: 'c', n: 7, r: 2.2, dmg: [600, 880], warn: 1200 }, { k: 's', r: 7.5, dmg: [900, 1250], warn: 1500 }],
   },
   raid_malgathor: {
     type: 'raid_malgathor', set: 'rm', name: 'Malgathor, Segador del Vacío', icon: '🌀', lv: 800, hp: 1100000, dmg: [380, 600], dmgK: 2.6, exp: 300000, move: 360, atkCd: 1100, th: 'void', final: true,
-    seq: [{ k: 'v', r: 12, pull: 4 }, { k: 's', r: 6, dmg: [1000, 1400], warn: 1100 }, { k: 'c', n: 8, r: 2.2, dmg: [650, 940], warn: 1200 }, { k: 'l', w: 2, len: 18, dmg: [950, 1300], warn: 1200, multi: 3 }, { k: 'p', n: 6, r: 2.6, dmg: [120, 180], life: 8 }, { k: 'r', n: 14, r: 1.8, dmg: [600, 880], warn: 1100 }, { k: 'h', ms: 4000 }],
+    seq: [{ k: 'v', r: 12, pull: 4 }, { k: 's', r: 6, dmg: [1000, 1400], warn: 1100 }, { k: 'c', n: 8, r: 2.2, dmg: [650, 940], warn: 1200 }, { k: 'l', w: 2, len: 18, dmg: [950, 1300], warn: 1200, multi: 3 }, { k: 'z', n: 11, step: 0.28, w: 1.3, len: 19, gap: 300, dmg: [700, 1000], warn: 800, name: 'Guadaña del vacío' }, { k: 'p', n: 6, r: 2.6, dmg: [120, 180], life: 8 }, { k: 'k', r: 3, dmg: [1150, 1550], warn: 2600, name: 'Colapso' }, { k: 'r', n: 14, r: 1.8, dmg: [600, 880], warn: 1100 }, { k: 'h', ms: 4000 }],
   },
 };
 const BOSS_ORDER = ['raid_slyvra', 'raid_koros', 'raid_aranak', 'raid_xaelis', 'raid_malgathor'];
@@ -116,10 +127,10 @@ const MINIONS = {
   raid_escorpion: { type: 'raid_escorpion', def: { name: 'Escorpión Mecánico', icon: '🦂', lv: 175, hp: 18000, dmg: [210, 320], exp: 600, move: 260, atkCd: 900, aggro: 20, respawn: 999999999, armor: 0.2, gold: [0, 0], loot: [] } },
 };
 // probabilidad (informativa) de cada pieza en el cofre final
-function CHEST_CHANCE(set, slot) { const tot = Object.values(SLOT_W).reduce((a, b) => a + b, 0), setW = set === 'rm' ? 0.3 : 0.175; return Math.round(SLOT_W[slot] / tot * setW * 1000) / 1000; }
+function CHEST_CHANCE(set, slot) { if (!SLOT_W[slot]) slot = 'weapon'; const nw = SLOT_W[slot] && slot === 'weapon' ? WEAPONS[set].length : 1; const tot = Object.values(SLOT_W).reduce((a, b) => a + b, 0), setW = set === 'rm' ? 0.3 : 0.175; return Math.round(SLOT_W[slot] / nw / tot * setW * 1000) / 1000; }
 
 /* ---------------------------------------------------------------- servidor ---------------------------------------------------------------- */
-module.exports = { build, SETS, BOSS_DEFS, BOSS_ORDER, MINIONS, MAX_PARTY, MAX_DEATHS, ALL_ITEMS, itemId, install(Game) {
+module.exports = { build, SETS, WEAPONS, BOSS_DEFS, BOSS_ORDER, MINIONS, MAX_PARTY, MAX_DEATHS, ALL_ITEMS, itemId, install(Game) {
   const world = require('./world');
   const I = require('./items');
   const { ITEMS, CFG, MONSTERS } = require('./data');
@@ -204,12 +215,13 @@ module.exports = { build, SETS, BOSS_DEFS, BOSS_ORDER, MINIONS, MAX_PARTY, MAX_D
   };
 
   /* ---------- botín ---------- */
-  const rollPiece = (wantSet) => {
+  const rollPiece = (wantSet, noWeapon) => {
     const sets = Object.keys(SETS), setW = (s) => (wantSet ? (s === wantSet ? 1 : 0) : s === 'rm' ? 0.3 : 0.175);
     let t = Math.random() * sets.reduce((a, s) => a + setW(s), 0), set = sets[0];
     for (const s of sets) { t -= setW(s); if (t <= 0) { set = s; break; } }
     const slots = Object.keys(SLOT_W); let u = Math.random() * slots.reduce((a, s) => a + SLOT_W[s], 0), slot = slots[0];
     for (const s of slots) { u -= SLOT_W[s]; if (u <= 0) { slot = s; break; } }
+    if (slot === 'weapon') { if (noWeapon) { const g = GEAR_SLOTS.filter((q) => SLOT_W[q]); slot = g[rnd(0, g.length - 1)]; } else slot = WEAPONS[set][rnd(0, WEAPONS[set].length - 1)].k; }
     return [set, slot];
   };
   P.raidGrant = function (p, set, slot) {
@@ -225,7 +237,7 @@ module.exports = { build, SETS, BOSS_DEFS, BOSS_ORDER, MINIONS, MAX_PARTY, MAX_D
       const g = 1500 + pl.level * 20; pl.gold += g; pl.dirty.inv = true;
       this.msgC(pl, `${def.icon} ${def.name} derrotado: +${g} de oro.`, '#ffd96a');
       if (Math.random() < 0.22 * Math.min(1.6, 0.4 + 1.2 * dmg / total * parts.length / 2 + 0.4)) {
-        const [, slot] = rollPiece(def.set), id = this.raidGrant(pl, def.set, slot);
+        const [, slot] = rollPiece(def.set, true), id = this.raidGrant(pl, def.set, slot);
         this.msgC(pl, `✨ ¡Botín de jefe: ${ITEMS[id].name}!`, '#c58bff');
         if (this.sendCol) this.sendCol(pl);
       }
@@ -243,7 +255,7 @@ module.exports = { build, SETS, BOSS_DEFS, BOSS_ORDER, MINIONS, MAX_PARTY, MAX_D
     const drops = [[...rollPiece()]]; if (Math.random() < extra) drops.push(rollPiece()); if (Math.random() < 0.08) drops.push(rollPiece());
     const out = [];
     if (Math.random() < 0.04) { const bt = BOSS_ORDER[Math.random() < 0.4 ? 4 : rnd(0, 3)], pid = 'pet_' + bt; this.giveOrDrop(p, pid, 1); if (this.logDrop) this.logDrop(p, bt, pid); out.push({ id: pid, rare: true, set: BOSS_DEFS[bt].set }); }
-    for (const [set, slot] of drops) { const id = this.raidGrant(p, set, slot); out.push({ id, rare: slot === 'weapon' || slot === 'cape' || set === 'rm' && slot === 'chest', set }); }
+    for (const [set, slot] of drops) { const id = this.raidGrant(p, set, slot); out.push({ id, rare: WEAPONS[set].some((w) => w.k === slot) || slot === 'cape' || set === 'rm' && slot === 'chest', set }); }
     const gold = 25000 + p.level * 120 + rnd(0, 8000); p.gold += gold;
     const phoenix = rnd(1, 2); this.giveOrDrop(p, 'pluma_fenix', phoenix);
     this.gainXp(p, 20000);
@@ -317,10 +329,12 @@ module.exports = { build, SETS, BOSS_DEFS, BOSS_ORDER, MINIONS, MAX_PARTY, MAX_D
     const tg = near(this, m, m.x, m.y, 40); if (!tg.length) return;
     const atk = def.seq[(m.spN || 0) % def.seq.length]; m.spN = (m.spN || 0) + 1;
     m.nextSp = now + (enr ? 3600 : 5200) + Math.random() * 1500;
-    m.nextMove = Math.max(m.nextMove, now + 900); m.nextAtk = Math.max(m.nextAtk, now + 900);
+    const hold = 900 + (atk.k === 'z' ? atk.n * (atk.gap || 340) + atk.warn : atk.k === 'j' ? (atk.warn || 1500) + 400 : 0);
+    m.nextMove = Math.max(m.nextMove, now + hold); m.nextAtk = Math.max(m.nextAtk, now + hold);
     const alive = () => !m.dead && r.boss === m && this.raid === r;
     const enrK = enr ? 1.25 : 1, dmgOf = (a) => Math.round(rnd(a[0], a[1]) * enrK);
     const th = def.th;
+    this.fx.push({ k: 'rd_cast', id: m.id, kind: atk.k, T: (atk.warn || 1000) + (atk.k === 'z' ? atk.n * (atk.gap || 340) : 0) });
     const spotsAtPlayers = (n) => { const out = []; for (let i = 0; i < n; i++) { const q = tg[i % tg.length]; out.push(i < tg.length ? [q.x, q.y] : [q.x + rnd(-3, 3), q.y + rnd(-3, 3)]); } return out; };
     const inRoomRand = () => [rnd(R.x0 + 4, R.x1 - 3), rnd(R.y0 + 3, R.y1 - 3)];
     const hitCircles = (spots, rad, dm, warn, tag) => {
@@ -332,6 +346,10 @@ module.exports = { build, SETS, BOSS_DEFS, BOSS_ORDER, MINIONS, MAX_PARTY, MAX_D
           for (const q of near(this, m, x, y, rad)) this.hurtPlayer(q, dmgOf(dm), m, this.now, tag || def.name);
         }
       });
+    };
+    const hitLine = (x1, y1, x2, y2, w, dm, tag) => {
+      const dx = x2 - x1, dy = y2 - y1, L2 = dx * dx + dy * dy || 1;
+      for (const z of near(this, m, x1, y1, 90)) { const u = Math.max(0, Math.min(1, ((z.x - x1) * dx + (z.y - y1) * dy) / L2)); if (Math.hypot(z.x - (x1 + dx * u), z.y - (y1 + dy * u)) <= w) this.hurtPlayer(z, dmgOf(dm), m, this.now, tag || def.name); }
     };
     switch (atk.k) {
       case 'c': hitCircles(spotsAtPlayers(Math.min(atk.n, 4 + tg.length * 2)), atk.r, atk.dmg, atk.warn, 'Impacto'); break;
@@ -381,6 +399,53 @@ module.exports = { build, SETS, BOSS_DEFS, BOSS_ORDER, MINIONS, MAX_PARTY, MAX_D
         const x = m.x, y = m.y; this.fx.push({ k: 'rd_pull', x, y, r: atk.r, ms: 1800, th });
         for (let i = 1; i <= 3; i++) this.later(500 * i, () => { if (!alive()) return; for (const q of near(this, m, x, y, atk.r)) { const dx = Math.sign(x - q.x), dy = Math.sign(y - q.y); for (let s = 0; s < atk.pull / 3 + 1; s++) { const nx = q.x + dx, ny = q.y + dy; if (world.isWalkable(nx, ny) && !this.pgrid.has(ny * world.W + nx) && !this.mgrid.has(ny * world.W + nx) && Math.hypot(nx - x, ny - y) > 1.5) { q.x = nx; q.y = ny; } } q.tpSeq++; q.target = null; } });
         this.later(1800, () => { if (!alive()) return; this.fx.push({ k: 'rd_h', x, y, r: 5, th, big: 1 }); for (const q of near(this, m, x, y, 5)) this.hurtPlayer(q, dmgOf([1100, 1500]), m, this.now, 'Singularidad'); });
+        break; }
+      case 'j': {                                                     // salto: el jefe cae sobre un jugador
+        const q = tg[rnd(0, tg.length - 1)], tx = q.x, ty = q.y, w = atk.warn || 1500;
+        this.fx.push({ k: 'rd_w', x: tx, y: ty, r: atk.r, ms: w, th, big: 1 }); this.fx.push({ k: 'rd_jump', id: m.id, x: tx, y: ty });
+        this.later(w, () => {
+          if (!alive()) return;
+          let lx = tx, ly = ty;
+          search: for (let d = 1; d <= 3; d++) for (let dy = -d; dy <= d; dy++) for (let dx = -d; dx <= d; dx++) {
+            if (Math.max(Math.abs(dx), Math.abs(dy)) !== d) continue;
+            const nx = tx + dx, ny = ty + dy;
+            if (world.isWalkable(nx, ny) && !this.mgrid.has(ny * world.W + nx) && !this.pgrid.has(ny * world.W + nx) && roomOf(nx, ny) === m.rIdx) { lx = nx; ly = ny; break search; }
+          }
+          this.mgrid.delete(m.y * world.W + m.x); m.x = lx; m.y = ly; this.mgrid.set(ly * world.W + lx, m); m.lpx = lx;
+          this.fx.push({ k: 'rd_h', x: lx, y: ly, r: atk.r, th, big: 1 }); this.fx.push({ k: 'rd_land', x: lx, y: ly, th });
+          for (const z of near(this, m, lx, ly, atk.r)) this.hurtPlayer(z, dmgOf(atk.dmg), m, this.now, atk.name || 'Salto');
+        });
+        break; }
+      case 'z': {                                                     // barrido giratorio de rayos
+        const x1 = m.x, y1 = m.y, gap = atk.gap || 340, dir = (m.spN % 2) ? 1 : -1, t0 = Math.atan2(tg[0].y - y1, tg[0].x - x1), span = atk.step * (atk.n - 1);
+        for (let i = 0; i < atk.n; i++) {
+          const a = t0 - dir * span / 2 + dir * atk.step * i, x2 = x1 + Math.cos(a) * atk.len, y2 = y1 + Math.sin(a) * atk.len;
+          this.later(i * gap, () => {
+            if (!alive()) return; this.fx.push({ k: 'rd_lw', x: x1, y: y1, x2, y2, w: atk.w, ms: atk.warn, th });
+            this.later(atk.warn, () => { if (!alive()) return; this.fx.push({ k: 'rd_l', x: x1, y: y1, x2, y2, w: atk.w, th }); hitLine(x1, y1, x2, y2, atk.w, atk.dmg, atk.name); });
+          });
+        }
+        break; }
+      case 'w': {                                                     // olas en carriles: quedan huecos seguros
+        const horiz = atk.dir !== 'v', lo = horiz ? R.y0 + 2 : R.x0 + 4, hi = horiz ? R.y1 - 2 : R.x1 - 3, lanes = [];
+        for (let v = lo; v <= hi; v += 3.4) lanes.push(Math.round(v));
+        const safe = new Set(); while (safe.size < Math.min(2, lanes.length - 1)) safe.add(rnd(0, lanes.length - 1));
+        lanes.forEach((v, i) => {
+          if (safe.has(i)) return;
+          const x1 = horiz ? R.x0 : v, y1 = horiz ? v : R.y0, x2 = horiz ? R.x1 : v, y2 = horiz ? v : R.y1;
+          this.fx.push({ k: 'rd_lw', x: x1, y: y1, x2, y2, w: atk.w, ms: atk.warn, th });
+          this.later(atk.warn, () => { if (!alive()) return; this.fx.push({ k: 'rd_l', x: x1, y: y1, x2, y2, w: atk.w, th }); hitLine(x1, y1, x2, y2, atk.w, atk.dmg, atk.name); });
+        });
+        break; }
+      case 'k': {                                                     // zonas seguras: quien esté fuera recibe el golpe
+        const n = Math.max(2, Math.ceil(tg.length / 2) + 1), spots = [];
+        for (let i = 0; i < n; i++) spots.push(i < Math.min(2, tg.length) ? [tg[i].x + rnd(-1, 1), tg[i].y + rnd(-1, 1)] : inRoomRand());
+        spots.forEach(([x, y], i) => this.fx.push({ k: 'rd_safe', x, y, r: atk.r, ms: atk.warn, th, i, n }));
+        this.later(atk.warn, () => {
+          if (!alive()) return;
+          this.fx.push({ k: 'rd_all', th, x: m.x, y: m.y });
+          for (const z of near(this, m, m.x, m.y, 90)) if (!spots.some(([x, y]) => Math.hypot(z.x - x, z.y - y) <= atk.r)) this.hurtPlayer(z, dmgOf(atk.dmg), m, this.now, atk.name || 'Juicio');
+        });
         break; }
       default: break;
     }

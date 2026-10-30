@@ -9,6 +9,31 @@
  */
 const mk = (id, name, icon, kind, o) => Object.assign({ id, name, icon, kind, cd: 30000, mana: 60, lv: 30, mult: 3, col: '255,200,90' }, o);
 const SP = {
+  // ---- armas de la Raid (nuevas) ----
+  rd_rk_mace: [
+    mk('sp_pulso_magma', 'Pulso de magma', '🔥', 'nova', { col: '255,130,40', r: 3, mult: 3, burn: { ticks: 5, mult: 0.35 }, stun: 1500, cd: 28000, mana: 60, desc: 'Onda de magma a tu alrededor (×3), quemadura y aturdimiento breve.' }),
+    mk('sp_erupcion', 'Erupción', '🌋', 'rain', { col: '255,130,40', n: 7, r: 4, hr: 1.7, mult: 2, burn: { ticks: 4, mult: 0.3 }, cd: 80000, mana: 125, lv: 60, desc: '7 géiseres de lava brotan alrededor del objetivo (×2).' }),
+  ],
+  rd_ra_axe: [
+    mk('sp_engranaje', 'Corte de engranaje', '⚙️', 'fan', { col: '255,200,120', mult: 3, cd: 25000, mana: 55, desc: 'Tres tajos de acero en abanico (×3).' }),
+    mk('sp_sierra', 'Giro de sierra', '🌀', 'nova', { col: '255,200,120', r: 3, mult: 3.6, stun: 1500, cd: 75000, mana: 110, lv: 60, desc: 'Giras con el hacha (×3,6) y aturdes a los cercanos.' }),
+  ],
+  rd_rv_bow: [
+    mk('sp_flecha_hidra', 'Flechas de la Hidra', '🐍', 'volley', { col: '110,255,120', hits: 5, span: 1500, mult: 1.5, cd: 28000, mana: 60, desc: 'Cinco flechas ponzoñosas al objetivo (×1,5 cada una).' }),
+    mk('sp_lluvia_ponzona', 'Lluvia ponzoñosa', '☠️', 'rain', { col: '110,255,120', n: 8, r: 5, hr: 1.6, mult: 1.6, cd: 80000, mana: 130, lv: 60, desc: '8 flechas de veneno caen alrededor del objetivo.' }),
+  ],
+  rd_rx_bow: [
+    mk('sp_flecha_solar', 'Flecha solar', '☀️', 'bolt', { col: '255,230,120', mult: 3.5, heal: 0.05, cd: 28000, mana: 60, desc: 'Flecha de luz (×3,5) que cura 5 % al grupo.' }),
+    mk('sp_cielo_dorado', 'Cielo dorado', '🌟', 'rain', { col: '255,230,120', n: 8, r: 5, hr: 1.6, mult: 1.6, cd: 80000, mana: 130, lv: 60, desc: '8 flechas doradas caen del cielo (×1,6).' }),
+  ],
+  rd_rx_spear: [
+    mk('sp_embestida', 'Embestida llameante', '🔥', 'line', { col: '255,170,70', len: 8, mult: 3.4, burn: { ticks: 4, mult: 0.3 }, cd: 25000, mana: 55, desc: 'Un lanzazo de fuego solar cruza 8 casillas (×3,4).' }),
+    mk('sp_lanzazo_alba', 'Lanzazo del alba', '🌅', 'nova', { col: '255,230,150', r: 4, mult: 4, blind: 3000, cd: 80000, mana: 120, lv: 60, desc: 'Explosión de luz a tu alrededor (×4) que ciega.' }),
+  ],
+  rd_rm_bow: [
+    mk('sp_flecha_vacio', 'Flecha del vacío', '🌑', 'volley', { col: '190,90,255', hits: 4, span: 1400, mult: 1.7, cd: 28000, mana: 60, desc: 'Cuatro flechas de vacío (×1,7 cada una).' }),
+    mk('sp_horizonte', 'Horizonte de sucesos', '🕳️', 'nova', { col: '190,90,255', r: 6, mult: 4.5, pull: 4, atTarget: 1, cd: 90000, mana: 140, lv: 60, desc: 'Un agujero negro atrae a los enemigos y estalla (×4,5).' }),
+  ],
   // ---- cuerpo a cuerpo ----
   fuego_garras: [
     mk('sp_zarpazo', 'Zarpazo infernal', '🔥', 'fan', { col: '190,80,255', mult: 3, burn: { ticks: 5, mult: 0.3 }, cd: 25000, mana: 55, desc: 'Tres cortes de fuego negro en abanico (×3) y quemadura 5 s.' }),
@@ -22,14 +47,15 @@ const SP = {
     mk('sp_marea', 'Marea', '🌊', 'nova', { col: '110,200,255', r: 3, mult: 2.5, slow: 4000, cd: 25000, mana: 55, desc: 'Una ola golpea a tu alrededor (×2,5) y ralentiza 4 s.' }),
     mk('sp_maremoto', 'Maremoto', '🌊', 'line', { col: '110,200,255', len: 10, mult: 3.6, slow: 4000, cd: 75000, mana: 110, lv: 60, desc: 'Un maremoto cruza 10 casillas (×3,6) y ralentiza.' }),
   ],
-  rd_rk_weapon: [
+  rd_rk_hammer: [
     mk('sp_temblor', 'Temblor', '💢', 'nova', { col: '255,150,60', r: 3, mult: 2.8, stun: 2000, cd: 30000, mana: 60, desc: 'Golpe al suelo (×2,8) que aturde 2 s.' }),
     mk('sp_cataclismo', 'Cataclismo', '🌋', 'nova', { col: '255,150,60', r: 5, mult: 3.4, stun: 3000, cd: 80000, mana: 130, lv: 60, desc: 'Sacudida enorme (×3,4) que aturde 3 s.' }),
   ],
-  rd_rm_weapon: [
-    mk('sp_singular', 'Singularidad', '⚫', 'nova', { col: '190,90,255', r: 3, mult: 4, pull: 3, atTarget: 1, cd: 35000, mana: 70, desc: 'Atrae a los enemigos al objetivo y explota (×4).' }),
-    mk('sp_horizonte', 'Horizonte de sucesos', '🕳️', 'nova', { col: '190,90,255', r: 6, mult: 4.5, pull: 4, cd: 90000, mana: 150, lv: 60, desc: 'Un agujero negro lo atrae todo hacia ti y estalla (×4,5).' }),
+  rd_rm_staff: [
+    mk('sp_singular', 'Singularidad', '⚫', 'nova', { col: '190,90,255', r: 3, mult: 4, pull: 3, atTarget: 1, cd: 35000, mana: 70, desc: 'Una singularidad atrae y daña a los enemigos (×4).' }),
+    mk('sp_agujero', 'Agujeros negros', '🌌', 'rain', { col: '190,90,255', n: 8, r: 5, hr: 1.6, mult: 1.8, cd: 90000, mana: 140, lv: 60, desc: '8 agujeros negros caen alrededor del objetivo (×1,8).' }),
   ],
+
   // ---- a distancia ----
   jade_arco: [
     mk('sp_veneno_hidra', 'Aliento de la Hidra', '🐍', 'cloud', { col: '90,230,110', r: 3, secs: 6, mult: 0.9, slow: 2500, cd: 30000, mana: 60, desc: 'Nube venenosa que daña cada segundo y ralentiza.' }),
@@ -51,13 +77,13 @@ const SP = {
     mk('sp_portal', 'Portal verde', '🟢', 'volley', { col: '120,255,170', hits: 3, span: 1200, mult: 1.5, cd: 30000, mana: 60, desc: 'Tres flechas de fuego verde (×1,5 cada una).' }),
     mk('sp_cielo_portales', 'Cielo de portales', '🌌', 'rain', { col: '120,255,170', n: 8, r: 5, hr: 1.6, mult: 1.5, cd: 80000, mana: 130, lv: 60, desc: '8 flechas verdes caen de portales (×1,5 cada una).' }),
   ],
-  rd_rv_weapon: [
+  rd_rv_staff: [
     mk('sp_nube', 'Nube tóxica', '☣️', 'cloud', { col: '90,220,110', r: 3, secs: 8, mult: 0.5, cd: 30000, mana: 60, desc: 'Deja una nube 8 s que daña cada segundo (×0,5).' }),
     mk('sp_epidemia', 'Epidemia', '☠️', 'cloud', { col: '90,220,110', r: 5, secs: 12, mult: 0.6, slow: 1500, cd: 80000, mana: 130, lv: 60, desc: 'Gran nube 12 s (×0,6 por segundo) que ralentiza.' }),
   ],
-  rd_ra_weapon: [
-    mk('sp_rafaga', 'Ráfaga mecánica', '⚙️', 'volley', { col: '255,200,90', hits: 8, span: 3000, mult: 0.8, cd: 30000, mana: 60, desc: '8 virotes en 3 s (×0,8 cada uno).' }),
-    mk('sp_sobrecarga', 'Sobrecarga', '⚡', 'volley', { col: '255,200,90', hits: 14, span: 4000, mult: 0.7, cd: 80000, mana: 130, lv: 60, desc: '14 virotes en 4 s (×0,7 cada uno).' }),
+  rd_ra_staff: [
+    mk('sp_rafaga', 'Ráfaga de máser', '⚙️', 'volley', { col: '255,200,90', hits: 8, span: 3000, mult: 0.8, cd: 30000, mana: 60, desc: '8 virotes en 3 s (×0,8 cada uno).' }),
+    mk('sp_sobrecarga', 'Sobrecarga de máser', '⚡', 'volley', { col: '255,200,90', hits: 14, span: 4000, mult: 0.7, cd: 80000, mana: 130, lv: 60, desc: '14 virotes en 4 s (×0,7 cada uno).' }),
   ],
   // ---- magia ----
   angel_cetro: [
@@ -72,7 +98,7 @@ const SP = {
     mk('sp_miasma', 'Miasma de tumbas', '💀', 'cloud', { col: '120,255,170', r: 3, secs: 6, mult: 0.6, cd: 30000, mana: 65, desc: 'Grietas y miasma 6 s: daño continuo (×0,6 por segundo).' }),
     mk('sp_grietas', 'Grietas del juicio', '⚖️', 'nova', { col: '120,255,170', r: 5, mult: 3.4, slow: 4000, atTarget: 1, cd: 80000, mana: 130, lv: 60, desc: 'El suelo se agrieta en 5 casillas (×3,4) y ralentiza.' }),
   ],
-  rd_rx_weapon: [
+  rd_rx_staff: [
     mk('sp_sol', 'Sol naciente', '🌅', 'nova', { col: '255,230,150', r: 3, mult: 3.8, blind: 3000, atTarget: 1, cd: 35000, mana: 70, desc: 'Explosión de luz (×3,8) que ciega 3 s.' }),
     mk('sp_amanecer', 'Amanecer', '☀️', 'heal', { col: '255,230,150', r: 6, mult: 3, heal: 0.15, cd: 90000, mana: 150, lv: 60, desc: 'Gran destello (×3) que cura un 15 % a tu grupo.' }),
   ],
