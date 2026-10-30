@@ -359,3 +359,7 @@ Monstruos y jefes: 0,08 % por muerte (antes 0,15 %); amatista, ópalo y diamante
 
 ## Mascotas vivas (`public/pets.js`)
 Solo visual: respiran, la cola/pelaje se balancea, andan con saltitos, se sientan tras 5 s quietas (con «z» ocasional) y miran a los lados; saltan con corazones al subir de nivel o recoger oro/botín, y se ponen en guardia («!») cuando su dueño recibe daño. Las crías de jefe tienen aura de color, estela de partículas (brasas, burbujas, chispas, plumas, humo o polvo), sombra marcada y su nombre debajo con el color del aura.
+
+## Protección contra pantalla en blanco o congelada
+- Cada efecto gráfico (ganchos de `EldExt`) se ejecuta protegido: si lanza un error se omite ese efecto, se limpian los recortes del lienzo que haya dejado a medias y, tras 30 fallos seguidos, se desactiva solo. Si el dibujo completo falla 45 fotogramas seguidos se activa el Modo seguro.
+- Rescate tras cierre brusco (`public/safe.js`): si la página murió mientras se veía (memoria agotada o congelada) y se vuelve a abrir, entra sola en Modo seguro con un aviso. Cerrar con normalidad o pasar a segundo plano no lo activa.

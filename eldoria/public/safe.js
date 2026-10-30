@@ -7,6 +7,15 @@
   const get = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
   const put = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) { /* sin almacenamiento */ } };
   try { const q = new URLSearchParams(location.search).get('seguro'); if (q === '1') { put(K, '1'); if (get('eldoria.gfx') !== '0') put(PREV, get('eldoria.gfx') || ''); put('eldoria.gfx', '0'); put('eldoria.3d', '0'); } else if (q === '0') put(K, null); } catch (e) { /* nada */ }
+  /* Rescate tras un cierre brusco: si la página murió mientras se veía (memoria agotada, pantalla congelada) y quien juega la
+   * vuelve a abrir, se activa solo el Modo seguro. Al cerrar normalmente o pasar a segundo plano la marca se borra. */
+  try {
+    const B = 'eldoria.boot', was = get(B);
+    if (was === 'run' && get(K) !== '1') { put(K, '1'); put(PREV, get('eldoria.gfx') || ''); put('eldoria.gfx', '0'); put('eldoria.3d', '0'); put('eldoria.autonote', '1'); }
+    put(B, 'run');
+    addEventListener('pagehide', () => put(B, null));
+    document.addEventListener('visibilitychange', () => put(B, document.hidden ? null : 'run'));
+  } catch (e) { /* sin almacenamiento */ }
   const subs = [];
   const S = window.EldSafe = {
     on: () => get(K) === '1',
@@ -33,6 +42,7 @@
       b.addEventListener('click', () => S.set(!S.on())); S.onChange(lab); lab(); st.append(b);
     };
     mk();
+    if (get('eldoria.autonote') === '1') { put('eldoria.autonote', null); const w = () => { const x = X(); if (x && x.toast && x.G && x.G.me) x.toast('🛡️ La página se cerró de golpe la última vez: activé el Modo seguro para que no se congele. Puedes quitarlo con el botón 🛡️.'); else setTimeout(w, 1500); }; w(); }
     /* vigilante de fotogramas: si va a menos de 14 fps durante ~7 s seguidos dentro del juego, activa el modo seguro */
     let last = performance.now(), acc = 0, frames = 0, slow = 0;
     const loop = (now) => {

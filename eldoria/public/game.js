@@ -23,10 +23,10 @@
   const EXT = (window.EldExt = {
     G, el, $, store, joy: { dx: 0, dy: 0 }, handlers: {}, casts: new Map(),
     on(n, f) { HK[n].push(f); },
-    msg(m) { for (const f of HK.msg) f(m); }, fx(f) { for (const h of HK.fx) h(f); }, snap(m) { for (const f of HK.snap) f(m); },
-    ground(c, now, cw, ch) { for (const f of HK.ground) f(c, now, cw, ch); },
-    draw(c, now, cw, ch, dt, tx, ty) { for (const f of HK.draw) f(c, now, cw, ch, dt, tx, ty); },
-    under(c, now, cw, ch) { for (const f of HK.under) f(c, now, cw, ch); }, click(t, ev) { return HK.click.some((f) => f(t, ev)); },
+    msg(m) { for (const f of HK.msg.slice()) safeCall(HK.msg, f, [m]); }, fx(f) { for (const h of HK.fx.slice()) safeCall(HK.fx, h, [f]); }, snap(m) { for (const f of HK.snap.slice()) safeCall(HK.snap, f, [m]); },
+    ground(c, now, cw, ch) { for (const f of HK.ground.slice()) safeCall(HK.ground, f, [c, now, cw, ch]); },
+    draw(c, now, cw, ch, dt, tx, ty) { for (const f of HK.draw.slice()) safeCall(HK.draw, f, [c, now, cw, ch, dt, tx, ty]); },
+    under(c, now, cw, ch) { for (const f of HK.under.slice()) safeCall(HK.under, f, [c, now, cw, ch]); }, click(t, ev) { return HK.click.some((f) => f(t, ev)); },
     ctx(t) { for (const f of HK.ctx) { const r = f(t); if (r) return r; } return null; },
     key(k, ev) { return HK.key.some((f) => f(k, ev)); }, chat(m) { for (const f of HK.chat) f(m); },
     inv(m) { for (const f of HK.inv) f(m); }, stats(m) { for (const f of HK.stats) f(m); },
@@ -1195,6 +1195,19 @@
    *  DIBUJO
    * ==================================================================== */
   const cv = $('#view'), ctx = cv.getContext('2d');
+  let ctxDepth = 0;                                          // profundidad de save/restore: permite limpiar clips «huérfanos» si un efecto falla a medias
+  { const sv = ctx.save, rs = ctx.restore; ctx.save = function () { ctxDepth++; return sv.call(this); }; ctx.restore = function () { if (ctxDepth > 0) ctxDepth--; return rs.call(this); }; }
+  const unwind = (d0) => { let n = 0; while (ctxDepth > d0 && n++ < 200) ctx.restore(); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; };
+  const hkErr = new Map();
+  /** ejecuta un gancho gráfico sin dejar que un error congele el juego; si falla muchas veces se desactiva solo */
+  const safeCall = (list, f, args) => {
+    const d0 = ctxDepth;
+    try { return f(...args); } catch (e) {
+      unwind(d0); const n = (hkErr.get(f) || 0) + 1; hkErr.set(f, n);
+      if (n === 1) { try { console.warn('Efecto con error (se omite):', e && e.message); } catch (_) { /* nada */ } }
+      if (n >= 30) { const i = list.indexOf(f); if (i >= 0) list.splice(i, 1); }
+    }
+  };
   let cw = 0, ch = 0, dpr = 1;
   function resize() {
     dpr = (window.EldSafe && window.EldSafe.on()) ? 1 : (window.devicePixelRatio || 1);
@@ -2369,8 +2382,16 @@
     if (EXT.draw3) EXT.draw3(c, now, cw, ch);
   }
 
+  let frameErr = 0, frameOk = 0;
   function frame(now) {
     requestAnimationFrame(frame);
+    const d0 = ctxDepth;
+    try { frame0(now); frameErr = 0; frameOk++; } catch (e) {
+      unwind(d0); frameErr++; if (frameErr === 1) { try { console.warn('Error de dibujo:', e && e.message); } catch (_) { /* nada */ } }
+      if (frameErr >= 45) { frameErr = 0; if (window.EldSafe && !window.EldSafe.on()) window.EldSafe.set(true, true); }       // dibujo roto: Modo seguro automático
+    }
+  }
+  function frame0(now) {
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
     if (!G.me) return;
     const c = ctx; c.setTransform(dpr * zoom, 0, 0, dpr * zoom, 0, 0); c.imageSmoothingEnabled = false;
