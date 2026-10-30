@@ -2292,8 +2292,17 @@
       c.fillStyle = 'rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(cx, cy + 8, 8, 3, 0, 0, 7); c.fill();
       c.font = '20px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#fff';
       const top = g.it[0], d = G.items[top[0]];
-      const gcol = g.n > 1 ? null : (G.items[top[0]] && G.items[top[0]].type === 'gem') ? G.items[top[0]].col : top[4] ? G.rar.ancient : top[3] > 0 ? G.rar.plus : null;
-      if (gcol) { const gl = c.createRadialGradient(cx, cy, 2, cx, cy, 17); gl.addColorStop(0, gcol + 'cc'); gl.addColorStop(1, gcol + '00'); c.fillStyle = gl; c.beginPath(); c.arc(cx, cy, 17, 0, 7); c.fill(); c.fillStyle = '#fff'; }
+      const bagCol = g.n > 1 ? (g.rr === 2 || (g.it || []).some((q) => q[4]) ? G.rar.ancient : g.rr === 1 || (g.it || []).some((q) => q[3] > 0) ? G.rar.plus : (() => { const q = (g.it || []).find((z) => G.items[z[0]] && G.items[z[0]].type === 'gem'); return q ? G.items[q[0]].col : null; })()) : null;   // el saco alumbra si lleva algo raro
+      const gcol = g.n > 1 ? bagCol : (G.items[top[0]] && G.items[top[0]].type === 'gem') ? G.items[top[0]].col : top[4] ? G.rar.ancient : top[3] > 0 ? G.rar.plus : null;
+      if (gcol) { const pr = g.n > 1 ? 17 + Math.sin(now / 250) * 3 : 17, gl = c.createRadialGradient(cx, cy, 2, cx, cy, pr); gl.addColorStop(0, gcol + 'cc'); gl.addColorStop(1, gcol + '00'); c.fillStyle = gl; c.beginPath(); c.arc(cx, cy, pr, 0, 7); c.fill(); c.fillStyle = '#fff'; }
+      if (g.n > 1 && bagCol) {                                                          // haz de luz del color de lo más raro, de arriba hacia el saco
+        const hh = 74, pu = 0.8 + Math.sin(now / 300 + g.x) * 0.2, lg = c.createLinearGradient(0, cy - hh, 0, cy + 4);
+        lg.addColorStop(0, bagCol + '00'); lg.addColorStop(1, bagCol + Math.round(235 * pu).toString(16).padStart(2, '0'));
+        c.fillStyle = lg; c.beginPath(); c.moveTo(cx - 6, cy - hh); c.lineTo(cx + 6, cy - hh); c.lineTo(cx + 17, cy + 4); c.lineTo(cx - 17, cy + 4); c.closePath(); c.fill();
+        c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = '#fff';
+        for (let i = 0; i < 4; i++) { const u = ((now / 1400 + i * 0.25 + g.x * 0.13) % 1), yy = cy - 4 - u * (hh - 8), xx = cx + Math.sin(i * 2.1 + now / 500) * (3 + 7 * (1 - u)); c.globalAlpha = Math.sin(u * Math.PI) * 0.85; c.fillRect(Math.round(xx), Math.round(yy), 2, 2); }
+        c.restore();
+      }
       c.font = '20px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
       const gf = g.n === 1 && d && gearReady() && GJ[iconKey(top[0])];
       const gth = gf && d && themeOf(d.spr);

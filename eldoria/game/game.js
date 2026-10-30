@@ -547,7 +547,7 @@ class Game {
     for (const [k, arr] of this.gtile) {
       const x = k % W, y = (k / W) | 0;
       if (!inView(x, y)) continue;
-      gi.push({ x, y, it: arr.slice(0, 4).map((g) => [g.item, g.qty, g.prot > now && g.owner !== p.id ? 1 : 0, g.inst ? g.inst.up || 0 : 0, g.inst && g.inst.an ? 1 : 0, g.gid]), n: arr.length });
+      gi.push({ x, y, it: arr.slice(0, 4).map((g) => [g.item, g.qty, g.prot > now && g.owner !== p.id ? 1 : 0, g.inst ? g.inst.up || 0 : 0, g.inst && g.inst.an ? 1 : 0, g.gid]), n: arr.length, rr: arr.some((g) => g.inst && g.inst.an) ? 2 : arr.some((g) => g.inst && g.inst.up > 0) ? 1 : 0 });
     }
     for (const f of this.fx) {
       const fx0 = f.x !== undefined ? f.x : f.x1, fy0 = f.y !== undefined ? f.y : f.y1;
