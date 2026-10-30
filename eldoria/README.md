@@ -373,7 +373,7 @@ Robo de vida (ópalo, Anillo de Sangre, Amuleto del Abismo): tope total del 15 %
 
 ## Especiales de armas de jefe
 
-Las 13 armas de jefe (nivel ≥ 76) dan 2 habilidades extra en la barra: teclas **4** y **5** (botones ⭐).
+Las 16 armas de jefe (nivel ≥ 76) dan 2 habilidades extra en la barra: teclas **4** y **5** (botones ⭐).
 - **A (tecla 4)**: skill nv 30, más barata y de menor cooldown.
 - **B (tecla 5)**: ultimate, skill nv 60, cooldown 75–90 s.
 - Tipos: abanico, línea, nova, curación de grupo, rayo, salva, lluvia, nube; con aturdir, ralentizar, cegar, atraer o quemar.

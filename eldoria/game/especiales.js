@@ -31,6 +31,18 @@ const SP = {
     mk('sp_horizonte', 'Horizonte de sucesos', '🕳️', 'nova', { col: '190,90,255', r: 6, mult: 4.5, pull: 4, cd: 90000, mana: 150, lv: 60, desc: 'Un agujero negro lo atrae todo hacia ti y estalla (×4,5).' }),
   ],
   // ---- a distancia ----
+  jade_arco: [
+    mk('sp_veneno_hidra', 'Aliento de la Hidra', '🐍', 'cloud', { col: '90,230,110', r: 3, secs: 6, mult: 0.9, slow: 2500, cd: 30000, mana: 60, desc: 'Nube venenosa que daña cada segundo y ralentiza.' }),
+    mk('sp_tres_cabezas', 'Tres cabezas', '🐉', 'volley', { col: '90,230,110', hits: 6, span: 1500, mult: 1.6, cd: 80000, mana: 125, lv: 60, desc: 'Seis dardos venenosos al objetivo (×1,6 cada uno).' }),
+  ],
+  angel_arco: [
+    mk('sp_flecha_luz', 'Flecha de luz', '✨', 'bolt', { col: '255,240,170', mult: 3.5, heal: 0.06, cd: 30000, mana: 60, desc: 'Flecha de luz (×3,5) que cura 6 % al grupo.' }),
+    mk('sp_lluvia_celestial', 'Lluvia celestial', '🌟', 'rain', { col: '255,240,170', n: 8, r: 5, hr: 1.6, mult: 1.6, cd: 80000, mana: 130, lv: 60, desc: '8 flechas de luz caen alrededor del objetivo (×1,6).' }),
+  ],
+  fuego_arco: [
+    mk('sp_flecha_viento', 'Flecha del viento', '🌪️', 'line', { col: '200,230,255', len: 9, mult: 3.2, cd: 30000, mana: 60, desc: 'Flecha huracanada que cruza 9 casillas (×3,2).' }),
+    mk('sp_tormenta_llama', 'Tormenta de llamas', '🔥', 'rain', { col: '255,150,70', n: 7, r: 4, hr: 1.6, mult: 1.8, burn: { ticks: 4, mult: 0.3 }, cd: 80000, mana: 125, lv: 60, desc: '7 flechas ardientes caen alrededor del objetivo.' }),
+  ],
   ig_arco: [
     mk('sp_meteoro', 'Flecha meteoro', '☄️', 'nova', { col: '255,120,40', r: 2, mult: 3.5, atTarget: 1, burn: { ticks: 4, mult: 0.3 }, cd: 30000, mana: 60, desc: 'Una flecha cae del cielo y explota (×3,5).' }),
     mk('sp_lluvia_fuego', 'Lluvia de fuego', '🔥', 'rain', { col: '255,120,40', n: 6, r: 4, hr: 1.6, mult: 1.8, cd: 80000, mana: 120, lv: 60, desc: '6 flechas de fuego caen alrededor del objetivo (×1,8 cada una).' }),
