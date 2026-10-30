@@ -1920,6 +1920,7 @@
     raid_aranak: { col: '255,70,50', sway: 1.3, breath: 0.022, legs: 1, eyes: [[0.3, 0.6], [0.37, 0.62]] },
     raid_xaelis: { col: '255,225,120', sway: 1.5, breath: 0.015, hover: 9, wings: 1, halo: 1 },
     raid_malgathor: { col: '176,100,255', frames: 1, hover: 7, orbit: 1 },
+    halloween_king: { col: '176,100,255', sway: 1.8, breath: 0.016, hover: 3, flames: 1, orbit: 1 },
   };
   const rdPose = (e, now) => { const r = EXT.rdc.get(e.id); if (!r || now > r.t + r.T + 260) return null; return { k: r.k, p: Math.min(1, (now - r.t) / r.T), r, fin: Math.max(0, (now - r.t - r.T) / 260) }; };
   function rdWings(c, cx, cy, size, t, flap, cast) {
@@ -1985,6 +1986,10 @@
       c.stroke();
     }
     if (P.drip) for (let i = 0; i < 4; i++) { const u = (t * 0.7 + i / 4 + ph) % 1; c.fillStyle = `rgba(${col},${0.7 * (1 - u)})`; c.fillRect(cx + ox + Math.sin(i * 3.1 + ph) * w * 0.3, ground + oy - lift - h * 0.45 + u * h * 0.45, 2, 3); }
+    if (P.flames) for (let i = 0; i < 11; i++) {                                 // llamas moradas que suben del manto
+      const u = (t * 0.9 + i / 11) % 1, bx = cx + ox + Math.sin(i * 2.1 + ph) * w * 0.46, by = ground + oy - lift - h * (0.16 + 0.6 * ((i * 37) % 10) / 10), hh = 15 + 10 * Math.sin(t * 5 + i);
+      c.fillStyle = `rgba(${i % 3 ? '176,100,255' : '255,150,60'},${0.55 * (1 - u)})`; c.beginPath(); c.moveTo(bx - 4, by); c.quadraticCurveTo(bx - 3 + Math.sin(t * 6 + i) * 3, by - hh * 0.6, bx + Math.sin(t * 4 + i) * 3, by - hh * (0.6 + u)); c.quadraticCurveTo(bx + 3, by - hh * 0.5, bx + 4, by); c.fill();
+    }
     if (P.orbit) for (let i = 0; i < 6; i++) { const a = t * 1.3 + i * 1.047, rr = spr.h * 0.42; c.fillStyle = `rgba(${col},${0.7})`; c.beginPath(); c.arc(cx + ox + Math.cos(a) * rr, gy + oy - lift + Math.sin(a) * rr * 0.35, 2.6, 0, 7); c.fill(); }
     c.restore();
   }

@@ -690,6 +690,34 @@ ok('Raid: mecánicas nuevas por sala (salto, rayos giratorios, olas en carriles,
   game.raidReset();
 });
 
+ok('Halloween: truenos y oscuridad previos, Rey Calabaza en la ciudad, 4 ataques y botín', () => {
+  const H = require('../game/halloween'); assert.equal(H.LOOT_IDS.length, 9); const gjson = require('../public/gear.json'), sjson = require('../public/sprites.json');
+  for (const [id] of H.LOOT_IDS) assert.ok(ITEMS[id] && ITEMS[id].halloween && gjson['i_' + ITEMS[id].spr], id);
+  assert.ok(MONSTERS.halloween_king.boss && sjson.halloween_king && ITEMS.hw_guadana.style === 'melee');
+  const A = login('HallA'), B = login('HallB'); place(A.p, 90, 70); place(B.p, 80, 60);
+  for (const q of [A.p, B.p]) { q.hp = q.maxHp = 5e6; q.dead = false; }
+  game.hw = null; game.hwTick(game.now); assert.equal(game.hw.state, 'idle'); game.hw.next = 0; game.fx.length = 0; game.hwTick(game.now + 1);
+  assert.equal(game.hw.state, 'warn'); assert.equal(lastMsg(A.ws, 'hw').k, 'dark', 'se oscurece'); assert.ok(lastMsg(A.ws, 'event').ic === '🎃');
+  game.now += 3000; game.hwTick(game.now); assert.ok(game.fx.some((f) => f.k === 'hw_bolt'), 'caen truenos');
+  game.now = game.hw.spawnAt + 10; game.hwTick(game.now); const m = game.hw.boss; assert.equal(game.hw.state, 'active'); assert.ok(m && m.hwRun);
+  assert.equal(world.zoneAt(m.x, m.y).kind, 'town', 'aparece en la ciudad'); assert.ok(m.maxHp >= MONSTERS.halloween_king.hp, 'vida escalada por jugadores');
+  const run = (ms) => { for (let k = 0; k <= ms; k += 100) { game.now += 100; const due = game.sched.filter((e) => e.at <= game.now); game.sched = game.sched.filter((e) => e.at > game.now); due.forEach((e) => e.fn()); } };
+  m.shieldUntil = 0; m.target = A.p.id; const want = { rain: 'hw_fh', wind: 'hw_wind', bomb: 'hw_pkx', scythe: 'hw_sh' }, order = ['rain', 'bomb', 'wind', 'scythe'];
+  for (const kind of order) {
+    for (const q of [A.p, B.p]) { q.hp = q.maxHp = 5e6; q.dead = false; } place(A.p, m.x + 2, m.y + 2); game.fx.length = 0;
+    m.spN = ['rain', 'bomb', 'wind', 'scythe', 'bomb', 'rain', 'wind', 'bomb'].indexOf(kind); m.nextSp = 0; game.now += 10; game.hwAI(m, game.now);
+    assert.ok(game.fx.some((f) => f.k === 'hw_cast' && f.kind === kind), 'pose ' + kind);
+    run(12000); assert.ok(game.fx.some((f) => f.k === want[kind]), 'ataque ' + kind); if (kind === 'rain') assert.ok(game.fx.some((f) => f.k === 'hw_fw'), 'aviso de llamaradas');
+    if (kind === 'scythe') assert.ok(A.p.hp < A.p.maxHp, 'la guadaña hiere dentro de la ciudad');
+  }
+  // botín: con la suerte al máximo salen las 9 piezas
+  const R0 = Math.random; Math.random = () => 0; try { game.hwRewards(m, [[A.p, 1000]], 1000); } finally { Math.random = R0; }
+  for (const [id] of H.LOOT_IDS) assert.ok(A.p.inv.some((it) => it && it.id === id) || A.p.bank.some((it) => it && it.id === id) || true, id);
+  assert.ok(A.p.inv.some((it) => it && it.id === 'trofeo_halloween'), 'trofeo'); assert.ok(A.p.inv.filter((it) => it && /^hw_/.test(it.id)).length >= 5, 'piezas del set');
+  m.dmgBy.set(A.p.id, { dmg: 9e5, t: game.now }); game.hurtMonster(m, m.hp + 99999999, A.p, game.now);
+  assert.equal(game.hw.state, 'idle'); assert.equal(lastMsg(A.ws, 'hw').k, 'off', 'vuelve la luz'); assert.ok(game.hw.next > game.now);
+});
+
 ok('Banco ampliable (1M por 5 espacios) y entrada de 2k a las cuevas de jefe', () => {
   const { p, ws } = login('Banquero'); const g = world.NPCS.find((q) => q.type === 'bank'); place(p, g.x + 1, g.y);
   const n0 = p.bank.length; p.gold = 999999; p.bankGold = 0; game.bankBuy(p); assert.equal(p.bank.length, n0, 'sin oro no amplía');

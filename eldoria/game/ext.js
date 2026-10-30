@@ -1096,6 +1096,7 @@ module.exports = function install(Game) {
     else if (m.def.special === 'magma' && !m.dead) this.magmaAI(m, now);
     else if (m.def.special === 'anubis' && !m.dead) this.anubisAI(m, now);
     else if (m.def.special === 'raid' && !m.dead) this.raidAI(m, now);
+    else if (m.def.special === 'halloween' && !m.dead) this.hwAI(m, now);
   };
 
   /* ============================ ENGANCHES DE COMBATE ============================ */

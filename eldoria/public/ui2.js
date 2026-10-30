@@ -544,8 +544,8 @@
   let bannerT = 0;
   X.handlers.event = (m) => {
     banner.hidden = false; banner.className = 'banner2 ' + m.k; banner.textContent = '';
-    banner.append(el('b', '', m.k === 'end' ? '🗿 Evento terminado' : m.k === 'warn' ? '⚠️ Evento inminente' : '🗿 ¡Jefe de evento!'), el('span', '', m.text || ''));
-    if (m.x != null) G.eventAt = { x: m.x, y: m.y, t: performance.now() };
+    banner.append(el('b', '', m.k === 'end' ? (m.ic || '🗿') + ' Evento terminado' : m.k === 'warn' ? '⚠️ Evento inminente' : (m.ic || '🗿') + ' ¡Jefe de evento!'), el('span', '', m.text || ''));
+    if (m.x != null) G.eventAt = { x: m.x, y: m.y, t: performance.now(), ic: m.ic };
     clearTimeout(bannerT); bannerT = setTimeout(() => { banner.hidden = true; }, m.k === 'start' ? 22000 : 12000);
     if (m.k === 'end') G.eventAt = null;
   };
@@ -558,7 +558,7 @@
     c.save(); c.translate(px, py); c.rotate(a); c.fillStyle = 'rgba(255,120,60,.9)'; c.strokeStyle = '#000'; c.lineWidth = 2;
     c.beginPath(); c.moveTo(12, 0); c.lineTo(-8, 8); c.lineTo(-3, 0); c.lineTo(-8, -8); c.closePath(); c.stroke(); c.fill(); c.restore();
     c.font = 'bold 11px sans-serif'; c.textAlign = 'center'; c.fillStyle = '#ffb48a'; c.strokeStyle = '#000'; c.lineWidth = 3;
-    c.strokeText(`🗿 ${Math.round(d)}`, px, py + 20); c.fillText(`🗿 ${Math.round(d)}`, px, py + 20);
+    c.strokeText(`${t.ic || '🗿'} ${Math.round(d)}`, px, py + 20); c.fillText(`${t.ic || '🗿'} ${Math.round(d)}`, px, py + 20);
   });
 
   /* ============================ MARCAS SOBRE LOS PNJ, NODOS Y MASCOTAS ============================ */

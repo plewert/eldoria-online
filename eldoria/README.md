@@ -385,3 +385,10 @@ Las armas de jefe (22: 16 de jefes normales y las 11 de la Raid, ya sin las anti
 - **Armas de la Raid** (11, recortadas de las ilustraciones; las 5 antiguas `rd_*_weapon` se retiraron y los objetos que ya tenían los jugadores se convierten solos: martillo→`rd_rk_hammer`, arco→`rd_rv_bow`, resto→báculo de su set): Slyvra (arco + báculo cobra), Koros (martillo + maza), Aranak (hacha garra + báculo de máser), Xaelis (arco + cetro + lanza llameante), Malgathor (arco + báculo del vacío). Todas con 2 especiales (teclas 4 y 5).
 - **Jefes** con arte nuevo (Slyvra, Koros, Aranak, Xaelis) y animación por tiras: respiran, se mecen, tiemblan las patas del escorpión, grietas de magma, alas que baten y rayos de luz (Xaelis), órbita de vacío (Malgathor) y poses de ataque (salto, golpe, hechizo) con el aviso `rd_cast`.
 - **Ataques nuevos** (`game/raid.js`): `j` salto sobre un jugador, `z` barrido giratorio de rayos, `w` olas en carriles con huecos, `k` zonas seguras (quien queda fuera recibe el golpe). Cada sala los combina distinto; los bots esquivan y se refugian en las zonas seguras.
+
+## Evento de Halloween
+
+- **Rey de Halloween** (jefe mundial, nivel 820) aparece en Ciudad de Aldea Real cada 30 min (el primero ~4 min tras arrancar el servidor). 60 s antes: truenos, el cielo se oscurece y hay aviso en el chat/banner. Dura 15 min.
+- Ataques: lluvia de llamaradas moradas, muro de viento de fuego morado, calabazas explosivas (dejan charcos de fuego) y guadaña. El daño se aplica también dentro de la ciudad.
+- Drop (por daño ≥2%): set Halloween (yelmo, peto, guantes, pantalón, botas), amuleto, 2 anillos y guadaña; trofeo, pluma de fénix, oro y XP. Top‑3 de daño tienen ×1.5 de probabilidad.
+- Variables: `HALLOWEEN_MIN` (30), `HALLOWEEN_FIRST_MIN` (4), `HALLOWEEN_EVENT=0` desactiva, `HALLOWEEN_ADMIN=nombre1,nombre2` permite `/halloween` (invocar) y `/halloween parar`, `HALLOWEEN_OPEN=1` lo permite a todos.
