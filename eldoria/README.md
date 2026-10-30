@@ -370,3 +370,12 @@ Las gemas están animadas (`gemDraw` en `public/game.js`): destello diagonal que
 
 Sacar una gema de una ranura cuesta ahora **500.000** de oro (`GEM_REMOVE_COST` en `game/data.js`).
 Robo de vida (ópalo, Anillo de Sangre, Amuleto del Abismo): tope total del 15 %; contra jefes roba la mitad; el miasma de Anubis lo reduce un 60 % durante su efecto.
+
+## Especiales de armas de jefe
+
+Las 13 armas de jefe (nivel ≥ 76) dan 2 habilidades extra en la barra: teclas **4** y **5** (botones ⭐).
+- **A (tecla 4)**: skill nv 30, más barata y de menor cooldown.
+- **B (tecla 5)**: ultimate, skill nv 60, cooldown 75–90 s.
+- Tipos: abanico, línea, nova, curación de grupo, rayo, salva, lluvia, nube; con aturdir, ralentizar, cegar, atraer o quemar.
+- A los jefes el control se les reduce a la mitad y no se les puede atraer.
+- Definidas en `game/especiales.js` (cliente: `public/especiales.js`).

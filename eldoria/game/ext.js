@@ -159,7 +159,7 @@ module.exports = function install(Game) {
   P.sendXinfo = function (p, defs) {
     const e = p.ext;
     const m = { t: 'xinfo', ach: e.ach, title: e.title, st: { kt: e.kt, bosses: e.bosses, pvp: e.pvp, deaths: e.deaths, quests: e.quests, crafts: e.crafts, gather: e.gather, events: e.events, sold: e.sold, party: e.partyKills, pet: e.hadPet ? 1 : 0, mount: e.hadMount ? 1 : 0, guild: e.guild ? 1 : 0, clv: craftLevel(e.cxp), cxp: e.cxp }, guild: e.guild };
-    if (defs) { m.defs = X.ACHS; m.skills = X.SKILLS; m.recipes = X.RECIPES; m.nodes = X.NODES; m.quests = QUESTS.map((q) => ({ id: q.id, npc: q.npc, lv: q.lv, title: q.title, desc: q.desc, type: q.type, mon: q.mon, item: q.item, n: q.n, reward: q.reward, after: q.after, repeat: q.repeat })); }
+    if (defs) { m.defs = X.ACHS; m.skills = X.SKILLS; m.wsk = require('./especiales').WSPEC; m.recipes = X.RECIPES; m.nodes = X.NODES; m.quests = QUESTS.map((q) => ({ id: q.id, npc: q.npc, lv: q.lv, title: q.title, desc: q.desc, type: q.type, mon: q.mon, item: q.item, n: q.n, reward: q.reward, after: q.after, repeat: q.repeat })); }
     this.send(p, m);
   };
   P.setTitle = function (p, id) {
@@ -323,7 +323,9 @@ module.exports = function install(Game) {
   P.useSkill = function (p, idx) {
     const now = this.now;
     if (now < p.nextSkill) return;
-    const w = this.weaponOf(p), style = w.style, list = X.SKILLS[style], sk = list && list[idx | 0];
+    const w = this.weaponOf(p), style = w.style, list = X.SKILLS[style];
+    const wsp = (p.eq.weapon && require('./especiales').WSPEC[p.eq.weapon.id]) || null;
+    const sk = (idx | 0) < 3 ? (list && list[idx | 0]) : (wsp && wsp[(idx | 0) - 3]);       // 4 y 5: especiales del arma de jefe
     if (!sk) return;
     const sl = skillFromXp(p.sxp[style]);
     if (sl < sk.lv) { this.msgThrottle(p, 'sklv', `${sk.name}: requiere habilidad ${sk.lv} de ${style === 'melee' ? 'combate cuerpo a cuerpo' : style === 'ranged' ? 'distancia' : 'magia'}.`); return; }
@@ -346,6 +348,7 @@ module.exports = function install(Game) {
     this.send(p, { t: 'skcd', id: sk.id, ms: sk.cd });
     p.dirty.stats = true;
     this.addSkillXp(p, style, 4);
+    if (sk.kind) { this.wspecial(p, sk, t, w, sl, now); return; }
     if (sk.buff) {
       for (const [k, m] of Object.entries(sk.buff)) this.addBuff(p, k, m, sk.secs);
       this.fx.push({ k: 'sk', id: sk.id, x: p.x, y: p.y, i: p.id });

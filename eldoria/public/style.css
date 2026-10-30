@@ -485,3 +485,5 @@ body.touch .sheet { max-height: calc(100dvh - 12px); }
 #ctx .ctxstats .tn { display: none; }
 #ctx .ctxstats .ts { color: var(--muted); } #ctx .ctxstats .tl { margin-top: 4px; } #ctx .ctxstats .bad { color: #ff7a66; }
 #ctx .ctxstats .gm { display: flex; gap: 6px; } #ctx .ctxstats .free { color: var(--muted); } #ctx .ctxstats .tsep { border-top: 1px solid var(--edge); margin: 6px 0 4px; }
+
+#hotbar .skb.skw { box-shadow: inset 0 0 0 2px #ffd96a, 0 0 8px rgba(255,200,80,.5); }

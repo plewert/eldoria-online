@@ -554,6 +554,34 @@ ok('Anubis, Juez de las Sombras: tumba, botín, miasma, portales, sombras y momi
   const hp0 = a.p.hp = 1000; a.p.maxHp = 5000; a.p.antiHeal = game.now + 5000; const nm = a.p.hp; assert.ok(a.p.antiHeal > game.now && nm === hp0);
 });
 
+ok('especiales de armas de jefe: 13 armas x 2 especiales (teclas 4 y 5) con daño, espera, maná y controles reducidos en jefes', () => {
+  const { WSPEC } = require('../game/especiales'); const ids = Object.keys(WSPEC); assert.equal(ids.length, 13);
+  const run = (ms) => { for (let k = 0; k <= ms; k += 100) { game.now += 100; const due = game.sched.filter((e) => e.at <= game.now); game.sched = game.sched.filter((e) => e.at > game.now); due.forEach((e) => e.fn()); } };
+  const { p } = login('Espec1'); place(p, 150, 70); p.hp = p.maxHp = 1e7; const SX = require('../game/skills');
+  for (const id of ids) {
+    assert.ok(ITEMS[id] && ITEMS[id].type === 'weapon', id); assert.equal(WSPEC[id].length, 2, id);
+    for (const [k, sk] of WSPEC[id].entries()) {
+      assert.ok(sk.id && sk.name && sk.icon && sk.cd >= 20000 && sk.mana >= 40 && sk.desc, sk.id);
+      p.eq.weapon = I.mk(id, 1); p.level = 120; p.sxp = { melee: 1e9, ranged: 1e9, magic: 1e9 }; p.mana = p.maxMana = 1e6; p.skcd = {}; p.nextSkill = 0; p.buffs = {}; game.fx.length = 0;
+      clearAround(150, 70, 8); const r = ITEMS[id].range || 1; place(p, 150, 70);
+      const m = game.spawnMonster('rata', r > 1 ? 153 : 151, 70); m.maxHp = m.hp = 1e9; p.target = m.id; m.target = null; const h0 = m.hp; game.now += 1000;
+      game.useSkill(p, 3 + k); run(16000);
+      assert.ok(m.hp < h0 || sk.kind === 'heal' && game.fx.some((f) => f.k === 'wsh'), id + '/' + sk.id + ' hace daño o cura');
+      assert.ok(game.fx.some((f) => /^ws/.test(f.k)), id + '/' + sk.id + ' tiene animación');
+      assert.ok(p.skcd[sk.id] > game.now - 16000, 'espera ' + sk.id);
+      game.mgrid.delete(m.y * world.W + m.x); m.dead = true; m.respawnAt = Infinity;
+    }
+  }
+  // controles: contra un jefe duran la mitad
+  p.eq.weapon = I.mk('rd_rk_weapon', 1); p.skcd = {}; p.nextSkill = 0; game.now += 1000; clearAround(150, 70, 8);
+  const b = game.spawnMonster('dragon_sombra', 151, 70), r2 = game.spawnMonster('rata', 149, 70); b.maxHp = b.hp = 1e9; r2.maxHp = r2.hp = 1e9; p.target = r2.id; const n0 = game.now;
+  game.useSkill(p, 3); run(300);
+  assert.ok(r2.nextMove >= n0 + 1900 && r2.nextMove <= n0 + 2300, 'aturde 2 s a un monstruo normal'); assert.ok(b.nextMove > n0 && b.nextMove <= n0 + 1300, 'aturde 1 s a un jefe');
+  // sin arma de jefe no hay especiales
+  p.eq.weapon = I.mk('espada_hierro', 1); p.skcd = {}; const mp = p.mana; game.useSkill(p, 3); assert.equal(p.mana, mp);
+  game.mgrid.delete(b.y * world.W + b.x); b.dead = true; b.respawnAt = Infinity; game.mgrid.delete(r2.y * world.W + r2.x); r2.dead = true; r2.respawnAt = Infinity;
+});
+
 ok('minería: picos, rocas por nivel, experiencia, gemas raras y colección', () => {
   const M = require('../game/mining');
   for (const id of M.ORDER) { assert.ok(ITEMS[id], id); assert.ok(game.nodes.some((q) => q.type === 'roca_' + id), 'hay rocas de ' + id); }

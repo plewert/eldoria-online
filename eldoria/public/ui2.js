@@ -223,7 +223,7 @@
   X.handlers.xinfo = (m) => {
     xi.ach = m.ach || {}; xi.title = m.title || ''; xi.st = m.st || {}; xi.guild = m.guild || '';
     if (m.defs) {
-      xi.defs = m.defs; xi.skills = m.skills; xi.recipes = m.recipes; xi.nodes = m.nodes; xi.quests = m.quests;
+      xi.defs = m.defs; xi.skills = m.skills; xi.wsk = m.wsk || {}; xi.recipes = m.recipes; xi.nodes = m.nodes; xi.quests = m.quests;
       for (const q of m.quests) QD[q.id] = q;
       send({ t: 'q_list' }); buildSkills();
     }
@@ -485,30 +485,31 @@
   const KEYS = { u: 'u', n: 'map', q: 'q', l: 'a', g: 's', r: 'r', p: 'm', f: 'c', b: 'b', o: 'o' };
   X.on('key', (k) => {
     if (KEYS[k]) { toggle(KEYS[k]); return true; }
-    if (k === '1' || k === '2' || k === '3') { useSkill(+k - 1); return true; }
+    if (k === '1' || k === '2' || k === '3' || k === '4' || k === '5') { if (+k > 3 && !(sk.list[+k - 1])) return false; useSkill(+k - 1); return true; }
     return false;
   });
 
   /* ============================ HABILIDADES ============================ */
-  const sk = { box: null, btns: [], cd: {}, style: '' };
+  const sk = { box: null, btns: [], cd: {}, style: '', wid: '', list: [] };
   const STYLE_ICON = { melee: '⚔️', ranged: '🏹', magic: '🔮' };
   function buildSkills() {
     const hb = $('#hotbar'); if (!hb || !G.stats || !xi.skills.melee) return;
     const style = G.stats.style; if (!style || !xi.skills[style]) return;
     if (!sk.box) { sk.box = el('span', 'skbox'); hb.append(el('span', 'gap'), sk.box); }
-    if (sk.style === style && sk.btns.length) return;
-    sk.style = style; sk.btns = []; sk.box.replaceChildren();
-    xi.skills[style].forEach((d, i) => {
-      const b = el('button', 'skb'); b.type = 'button'; b.dataset.i = i;
+    const wid = G.stats.wid || ''; const full = [...xi.skills[style], ...((xi.wsk && xi.wsk[wid]) || [])];
+    if (sk.style === style && sk.wid === wid && sk.btns.length === full.length) return;
+    sk.style = style; sk.wid = wid; sk.list = full; sk.btns = []; sk.box.replaceChildren();
+    full.forEach((d, i) => {
+      const b = el('button', 'skb' + (i > 2 ? ' skw' : '')); b.type = 'button'; b.dataset.i = i;
       b.append(el('b', '', d.icon), el('small', '', String(i + 1)), el('i', 'cdv'));
-      b.title = `${d.name} (${i + 1}) — ${d.desc} Maná ${d.mana}. Enfriamiento ${d.cd / 1000} s. Nivel ${d.lv} con ${STYLE_ICON[style]}.`;
+      b.title = `${d.name} (${i + 1}) — ${d.desc} Maná ${d.mana}. Enfriamiento ${d.cd / 1000} s. Nivel ${d.lv} con ${STYLE_ICON[style]}.${i > 2 ? ' ⭐ Especial de tu arma.' : ''}`;
       b.addEventListener('click', () => useSkill(i)); sk.box.append(b); sk.btns.push(b);
     });
     tickSkills();
   }
   const skLv = () => (G.stats && G.stats.sk && G.stats.sk[sk.style] ? G.stats.sk[sk.style][0] : 1);
   function useSkill(i) {
-    const d = xi.skills[sk.style] && xi.skills[sk.style][i]; if (!d) return;
+    const d = sk.list[i]; if (!d) return;
     if (skLv() < d.lv) { X.toast(`${d.name}: necesitas nivel ${d.lv} de ${STYLE_ICON[sk.style]}.`, null, 2500); return; }
     send({ t: 'skill', k: i });
   }
@@ -516,7 +517,7 @@
     if (!sk.btns.length) return;
     const now = performance.now(), lv = skLv(), mana = G.stats ? G.stats.mana : 0;
     sk.btns.forEach((b, i) => {
-      const d = xi.skills[sk.style][i], left = Math.max(0, (sk.cd[d.id] || 0) - now);
+      const d = sk.list[i]; if (!d) return; const left = Math.max(0, (sk.cd[d.id] || 0) - now);
       b.classList.toggle('lock', lv < d.lv); b.classList.toggle('nomana', lv >= d.lv && mana < d.mana);
       const cv = b.querySelector('.cdv'); cv.style.height = left > 0 ? Math.min(100, (left / d.cd) * 100) + '%' : '0';
     });

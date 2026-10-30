@@ -525,7 +525,7 @@ class Game {
     const w = this.weaponOf(p);
     this.send(p, {
       t: 'stats', lv: p.level, xp: p.xp, xpLo: xpForLevel(Math.min(p.level, LEVEL_MAX - 1)), xpHi: xpForLevel(Math.min(p.level + 1, LEVEL_MAX)),
-      maxHp: p.maxHp, maxMana: p.maxMana, gold: p.gold, sk, style: w.style, def: this.defOf(p), weapon: w.name,
+      maxHp: p.maxHp, maxMana: p.maxMana, gold: p.gold, sk, style: w.style, def: this.defOf(p), weapon: w.name, wid: p.eq.weapon ? p.eq.weapon.id : '',
       gb: I.gearBonus(p.eq), glow: this.visOf(p).g,
     });
   }
@@ -1238,6 +1238,6 @@ require('./ext')(Game);
 require('./fishing').install(Game);
 require('./mining').install(Game);
 require('./raid').install(Game);
-require('./magma').install(Game); require('./anubis').install(Game); require('./bots').install(Game);
+require('./magma').install(Game); require('./anubis').install(Game); require('./especiales').install(Game); require('./bots').install(Game);
 require('./petloot').install(Game);
 module.exports = { Game, NAME_RE, levelFromXp, xpForLevel, skillFromXp };

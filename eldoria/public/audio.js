@@ -106,6 +106,7 @@
     lgw: 'charge', lg: 'thunder', frw: 'charge', fr: 'fireball', fqw: 'charge', fq: 'quake', wbw: 'charge', wb: 'whoosh', spw: 'charge', sp: 'fireball', tpo: 'teleport', tpi: 'teleport', tn: 'whoosh', nvw: 'charge', nv: 'nova',
     twn: 'whoosh', olw: 'charge', ol: 'water', bmw: 'charge', bm: 'beam', bub: 'bubble', bubx: 'splash',
     mcast: 'charge', mgw: 'charge', mgf: 'inferno', mmw: 'charge', mmx: 'explosion', mlw: 'charge', mlw2: 'charge', ml: 'fireball', mlv: 'lava',
+    wsp: 'charge', wsf: 'whoosh', wsl: 'beam', wsn: 'nova', wsi: 'explosion', wsa: 'whoosh', wsc: 'acid', wsh: 'shield',
     an_cast: 'charge', an_hw: 'charge', an_crack: 'quake', an_pt: 'teleport', an_bm: 'explosion', an_split: 'whoosh', an_merge: 'whoosh', an_rev: 'charge', an_mx: 'explosion', an_lw: 'charge', an_l: 'dragonbreath', an_bfw: 'charge', an_bf: 'fireball',
     rd_w: 'charge', rd_lw: 'charge', rd_pull: 'whoosh', rd_h: 'impact', rd_l: 'thunder', rd_pool: 'splash', rd_sh: 'shield',
   };
