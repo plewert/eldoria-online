@@ -121,7 +121,7 @@
       }
       c.restore();
       // relámpagos en tormentas fuertes
-      if (kind === 'rain' && inten > 0.7) {
+      if (kind === 'rain' && inten > 0.7 && !(window.EldSafe && window.EldSafe.on())) {   // modo seguro: sin relámpagos ni truenos
         const t = performance.now();
         if (t > nextBolt) { flash = 1; X.bolt && X.bolt(); nextBolt = t + 9000 + Math.random() * 14000; setTimeout(() => X.sfx && X.sfx('thunder'), 400 + Math.random() * 600); }
       }
