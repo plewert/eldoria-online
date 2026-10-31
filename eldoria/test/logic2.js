@@ -143,7 +143,7 @@ ok('mercado: expira y devuelve el objeto por correo', () => {
   assert.equal(game.market().list.length, 0); assert.ok(s.p.inv.some((it) => it && it.id === 'arco_corto'));
 });
 ok('recolección y fabricación: nodos, recoger, receta, nivel de oficio', () => {
-  assert.ok(game.nodes.length > 100, 'hay puntos de recolección'); assert.ok(new Set(game.nodes.map((q) => q.type)).size === 17, 'oficios + 8 rocas + 5 del gremio');
+  assert.ok(game.nodes.length > 100, 'hay puntos de recolección'); assert.ok(new Set(game.nodes.map((q) => q.type)).size === 20, "oficios + 8 rocas + 5 del gremio + 3 del gremio profundo");
   const { p } = login('Craft1'); const nd = game.nodes.find((q) => q.type === 'hierba');
   place(p, nd.x, nd.y); game.gather(p, nd.id);
   assert.ok(p.inv.some((it) => it && it.id === 'hierba_curativa')); assert.equal(p.ext.gather, 1);
@@ -420,7 +420,7 @@ ok('pesca: set del Maestro Pescador (drop 0,5 %, 5 presas con el set completo)',
   const cast = () => { T0 += 20000; game.now = T0; game.fishCast(a.p, wx, wy); T0 += 20000; game.now = T0; game.fishTick(T0); const f = a.p.fishing; const mid = (f.lo + f.hi) / 2; let tt = f.t0; for (let q = 0; q < 4000; q++) { const ph = ((tt - f.t0) / 1000 * f.speed) % 2, pos = ph < 1 ? ph : 2 - ph; if (Math.abs(pos - mid) < 0.01) break; tt += 1; } game.now = tt; game.fishReel(a.p); };
   const count = () => a.p.inv.reduce((n, it) => n + (it && (it.id === 'sardina' || it.id === 'salmon') ? it.qty : 0), 0);
   try {
-    Math.random = () => 0.001;                                        // todo sale: pieza rara en cada captura
+    Math.random = () => 0.0005;                                        // todo sale: pieza rara en cada captura
     cast(); assert.ok(a.p.inv.some((it) => it && it.id === 'pesca_sombrero') && a.p.inv.some((it) => it && it.id === 'cana_maestra'), 'cae el set');
     for (const id of ['pet_pelicano', 'pet_pulpo']) { assert.equal(ITEMS[id].type, 'pet'); assert.ok(a.p.inv.some((it) => it && it.id === id), 'cae ' + id); assert.ok(a.p.ext.col.pesca[id], 'registrada en la colección'); }
     assert.ok(a.p.ext.col.pesca.sardina || a.p.ext.col.pesca.salmon, 'peces en la colección');
@@ -580,6 +580,18 @@ ok('especiales de armas de jefe: 24 armas x 2 especiales (teclas 4 y 5) con dañ
   // sin arma de jefe no hay especiales
   p.eq.weapon = I.mk('espada_hierro', 1); p.skcd = {}; const mp = p.mana; game.useSkill(p, 3); assert.equal(p.mana, mp);
   game.mgrid.delete(b.y * world.W + b.x); b.dead = true; b.respawnAt = Infinity; game.mgrid.delete(r2.y * world.W + r2.x); r2.dead = true; r2.respawnAt = Infinity;
+});
+
+ok('Gremio de Mineros Profundo: solo pómez, mármol y basalto; mascota Gólem de Brasas muy rara al minar', () => {
+  const z = world.zoneById('gremio_minero2'); assert.ok(z && z.kind === 'town' && !z.pvp); const { NODES } = require('../game/extra');
+  const inG = game.nodes.filter((nd) => world.zoneAt(nd.x, nd.y).id === 'gremio_minero2'); assert.ok(inG.length >= 12, 'hay rocas (' + inG.length + ')');
+  assert.deepEqual([...new Set(inG.map((nd) => NODES[nd.type].rock))].sort(), ['basalto', 'marmol', 'pomez']);
+  assert.ok(inG.every((nd) => world.reach[nd.y * world.W + nd.x]), 'alcanzables'); const pin = world.PORTALS.find((o) => /Gremio de Mineros Profundo/.test(o.label)); assert.ok(pin && world.zoneAt(pin.tx, pin.ty).id === 'gremio_minero2' && world.zoneAt(pin.x, pin.y).id !== 'gremio_minero2');
+  assert.ok(world.PORTALS.some((o) => o.label === 'Salir al Prado' && world.zoneAt(o.x, o.y).id === 'gremio_minero2'), 'salida');
+  const M = require('../game/mining'); assert.equal(ITEMS.pet_golem.type, 'pet'); assert.ok(M.petChance(1) < 0.001 && M.petChance(220) < 0.003, 'muy rara'); assert.ok(require('../public/sprites.json').pet_golem);
+  const { p } = login('MinaPet'); const nd = inG[0]; place(p, nd.x, nd.y + 0 > 0 ? nd.x : nd.x, nd.y); p.ext.mine = { xp: 1e9, c: {} }; p.inv[0] = I.mk('pico_abismo', 1); const n = game.nodes.find((q) => q === nd);
+  const r0 = Math.random; try { Math.random = () => 0.00001; game.now += 5000; game.mineRock(p, n, NODES[n.type]); } finally { Math.random = r0; }
+  assert.ok(p.inv.some((it) => it && it.id === 'pet_golem'), 'cae la mascota');
 });
 
 ok('minería: picos, rocas por nivel, experiencia, gemas raras y colección', () => {

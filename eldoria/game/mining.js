@@ -21,6 +21,7 @@ const ROCKS = {
   obsidiana: { name: 'Obsidiana',         lvl: 220, xp: 1500, zones: ['cueva_arana', 'cueva', 'cueva_jade', 'cueva_nube', 'cueva_mar'], n: 18, respawn: 120000, gem: 0.07, sell: 900, pool: [['amatista', 6], ['opalo', 5], ['diamante', 4]] },
 };
 const GUILD_ROCKS = ['granito', 'arenisca', 'pizarra', 'pedernal', 'pomez'];
+const GUILD2_ROCKS = ['pomez', 'marmol', 'basalto'];     // segundo gremio: solo rocas de nivel alto
 const ORDER = ['granito', 'arenisca', 'pizarra', 'pedernal', 'pomez', 'marmol', 'basalto', 'obsidiana'];
 // picos: nivel de minería para usarlos, velocidad (menos = más rápido), bonus de gemas y de piedra extra
 const PICKS = {
@@ -31,6 +32,9 @@ const PICKS = {
   pico_obsidiana: { name: 'Pico de Obsidiana', spr: 'pk_obsidiana', req: 180,  speed: 0.6,  gem: 0.5,  extra: 0.2,  price: 26000 },
   pico_abismo:    { name: 'Pico del Abismo',   spr: 'pk_abismo',    req: 240, speed: 0.5,  gem: 0.75, extra: 0.3,  price: 70000 },
 };
+// mascota de la minería: muy rara (más probable con rocas de más nivel)
+const PET = { id: 'pet_golem', name: 'Gólem de Brasas', gold: 0.3, base: 0.0004, perLvl: 0.000008 };
+const petChance = (lvl) => PET.base + PET.perLvl * lvl;
 const RARE_GEMS = new Set(['amatista', 'opalo', 'diamante']);
 const GEM_ICON = { rubi: '🔴', zafiro: '🔵', esmeralda: '🟢', topacio: '🟡', amatista: '🟣', opalo: '🟠', diamante: '💎' };
 
@@ -43,12 +47,14 @@ function build(ITEMS_, SHOPS) {
   }
   // Gremio de Mineros: solo rocas de nivel bajo y medio, más juntas y con reaparición rápida
   for (const id of GUILD_ROCKS) { const r = ROCKS[id]; NODES['roca_g_' + id] = { icon: '🪨', name: r.name, rock: id, spr: 'rock_' + id, lvl: r.lvl, give: [[id, 1, 2]], zones: ['gremio_minero'], n: 3, respawn: 40000, xp: r.xp, gem: r.gem }; }
+  ITEMS_[PET.id] = { name: PET.name, icon: '🪨', spr: 'pet_golem', type: 'pet', mon: 'pet_golem', scale: 0.62, gold: PET.gold, sell: 60000, desc: `${PET.name} te sigue y recoge el oro. +${Math.round(PET.gold * 100)}% de oro. Solo se consigue minando (muy raro).` };
+  for (const id of GUILD2_ROCKS) { const r = ROCKS[id]; NODES['roca_g2_' + id] = { icon: '🪨', name: r.name, rock: id, spr: 'rock_' + id, lvl: r.lvl, give: [[id, 1, 2]], zones: ['gremio_minero2'], n: 5, respawn: 40000, xp: r.xp, gem: r.gem }; }
   for (const [id, k] of Object.entries(PICKS)) ITEMS_[id] = { name: `${k.name} (minería ${k.req})`, icon: '⛏️', spr: k.spr, type: 'misc', pick: 1, price: k.price, sell: Math.round(k.price / 4) };
   SHOPS.boris.push(...Object.keys(PICKS));
   SHOPS.durgan.push(...Object.keys(PICKS));
 }
 
-module.exports = { build, ROCKS, PICKS, ORDER, MINE_MAX, install(Game) {
+module.exports = { build, ROCKS, PICKS, ORDER, MINE_MAX, PET, petChance, install(Game) {
   const { ITEMS, GEMS } = require('./data');
   const world = require('./world');
   const P = Game.prototype;
@@ -88,6 +94,10 @@ module.exports = { build, ROCKS, PICKS, ORDER, MINE_MAX, install(Game) {
       this.msgC(p, `${RARE_GEMS.has(g) ? '🌟 ¡RARO! ' : '💎 '}¡Encuentras ${ITEMS[g].name} en la roca!`, GEMS[g].col);
       this.fx.push({ k: 'd', x: n.x, y: n.y, v: `${GEM_ICON[g]} ${ITEMS[g].name}`, c: 'g' });
       if (RARE_GEMS.has(g)) this.broadcastChat(`⛏️ ¡${p.name} ha encontrado ${ITEMS[g].name} minando ${nd.name}!`, 'k');
+    }
+    if (Math.random() < petChance(nd.lvl)) {                                        // ¡mascota!
+      this.giveOrDrop(p, PET.id, 1); this.logDrop(p, 'mineria', PET.id);
+      this.msgC(p, `🪨🔥 ¡Una criatura sale de la roca: ${PET.name}! Es tu mascota.`, '#ff9a4a'); this.broadcastChat(`⛏️ ¡${p.name} ha encontrado la mascota ${PET.name} minando!`, 'k');
     }
     p.ext.gather++;
     const after = lvOf(p); if (after > before) this.msgC(p, `⛏️ ¡Tu nivel de minería sube a ${after}!`, '#ffd96a');

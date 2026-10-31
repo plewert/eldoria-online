@@ -254,7 +254,7 @@ module.exports = { build, SETS, WEAPONS, BOSS_DEFS, BOSS_ORDER, MINIONS, MAX_PAR
     const extra = Math.min(0.85, 0.25 + 0.5 * Math.min(1.5, share * n) / 1.5);                          // más aporte → más opciones de un segundo objeto
     const drops = [[...rollPiece()]]; if (Math.random() < extra) drops.push(rollPiece()); if (Math.random() < 0.08) drops.push(rollPiece());
     const out = [];
-    if (Math.random() < 0.04) { const bt = BOSS_ORDER[Math.random() < 0.4 ? 4 : rnd(0, 3)], pid = 'pet_' + bt; this.giveOrDrop(p, pid, 1); if (this.logDrop) this.logDrop(p, bt, pid); out.push({ id: pid, rare: true, set: BOSS_DEFS[bt].set }); }
+    if (Math.random() < 0.015) { const bt = BOSS_ORDER[Math.random() < 0.4 ? 4 : rnd(0, 3)], pid = 'pet_' + bt; this.giveOrDrop(p, pid, 1); if (this.logDrop) this.logDrop(p, bt, pid); out.push({ id: pid, rare: true, set: BOSS_DEFS[bt].set }); }
     for (const [set, slot] of drops) { const id = this.raidGrant(p, set, slot); out.push({ id, rare: WEAPONS[set].some((w) => w.k === slot) || slot === 'cape' || set === 'rm' && slot === 'chest', set }); }
     const gold = 25000 + p.level * 120 + rnd(0, 8000); p.gold += gold;
     const phoenix = rnd(1, 2); this.giveOrDrop(p, 'pluma_fenix', phoenix);

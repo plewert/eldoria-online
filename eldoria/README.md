@@ -392,3 +392,9 @@ Las armas de jefe (22: 16 de jefes normales y las 11 de la Raid, ya sin las anti
 - Ataques: lluvia de llamaradas moradas, muro de viento de fuego morado, calabazas explosivas (dejan charcos de fuego) y guadaña. El daño se aplica también dentro de la ciudad.
 - Drop (todos los que participen, ≥1% del daño; la probabilidad sube hasta ×3 según el daño hecho: el que más daño hace tiene más opciones de rarezas): set Halloween (yelmo, peto, guantes, pantalón, botas), amuleto, 2 anillos y guadaña; trofeo, pluma de fénix, oro y XP. Top‑3 de daño tienen ×1.5 de probabilidad.
 - Variables: `HALLOWEEN_MIN` (30), `HALLOWEEN_FIRST_MIN` (4), `HALLOWEEN_EVENT=0` desactiva, `HALLOWEEN_ADMIN=nombre1,nombre2` permite `/halloween` (invocar) y `/halloween parar`, `HALLOWEEN_OPEN=1` lo permite a todos.
+
+## Gremio de Mineros Profundo y Gólem de Brasas
+
+- **Gremio de Mineros Profundo** (zona segura): segunda cueva solo con rocas de **pómez, mármol y basalto** (nivel de minería 90 / 120 / 170), con reaparición rápida. Entrada por el portal al este de la Ciudad de Aldea Real; se sale por el portal "Salir al Prado".
+- **Gólem de Brasas** (mascota, +30 % de oro): muy rara al minar cualquier roca (≈0,04 % en granito, hasta ≈0,2 % en obsidiana; `petChance` en `game/mining.js`).
+- **Mascotas más difíciles en todo el juego** (×0,4): crías de jefe (0,16 % / 0,4 %), mascotas de monstruos comunes, pesca (0,08 %) y cofre de la Raid (1,5 %).

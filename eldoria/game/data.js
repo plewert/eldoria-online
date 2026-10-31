@@ -515,8 +515,8 @@ require('./mage').build(ITEMS, SHOPS, MONSTERS);
 
   SHOPS.marela.push(...SHOPS.nilo);
   SHOPS.brisa.push('mascota_lobito', 'mascota_murcielago', 'mascota_goblin', 'montura_lobo', 'montura_oso');
-  const rare = [['lobo', 'mascota_lobito', 0.004], ['murcielago', 'mascota_murcielago', 0.003], ['goblin', 'mascota_goblin', 0.003], ['dragon', 'mascota_dragoncito', 0.01],
-    ['espectro_helado', 'mascota_fantasma', 0.006], ['lobo_hielo', 'montura_lobo', 0.002], ['oso', 'montura_oso', 0.002], ['dragon', 'pluma_fenix', 0.08], ['faraon', 'pluma_fenix', 0.5],
+  const rare = [['lobo', 'mascota_lobito', 0.0016], ['murcielago', 'mascota_murcielago', 0.0012], ['goblin', 'mascota_goblin', 0.0012], ['dragon', 'mascota_dragoncito', 0.004],
+    ['espectro_helado', 'mascota_fantasma', 0.0024], ['lobo_hielo', 'montura_lobo', 0.002], ['oso', 'montura_oso', 0.002], ['dragon', 'pluma_fenix', 0.08], ['faraon', 'pluma_fenix', 0.5],
     ['elemental_hielo', 'cristal_arcano', 0.12], ['golem_hielo', 'cristal_arcano', 0.3], ['espectro_helado', 'cristal_arcano', 0.1], ['hidra', 'montura_dragon', 0.03], ['reina_hielo', 'montura_dragon', 0.2]];
   for (const [m, id, ch] of rare) if (MONSTERS[m]) MONSTERS[m].loot.push([id, ch, 1, 1]);
   SHOPS.zaroth.push('pocion_mana', 'pocion_mana_g', ...Object.keys(ITEMS).filter((k) => ITEMS[k].type === 'weapon' && ITEMS[k].style === 'magic' && ITEMS[k].price).sort((a, b) => ITEMS[a].price - ITEMS[b].price));   // Zaroth: todas las armas mágicas a la venta

@@ -226,7 +226,7 @@ module.exports = function install(Game) {
     const Z = zoneAt(tx, ty), cur = zoneAt(p.x, p.y);
     if (Z === cur) return { x: tx, y: ty };
     const exits = (z) => world.PORTALS.filter((o) => zoneAt(o.x, o.y) === z && zoneAt(o.tx, o.ty) !== z);     // portales de salida de una zona interior
-    const isInt = (z) => z.kind === 'dungeon' || z.id === 'gremio_minero';
+    const isInt = (z) => z.kind === 'dungeon' || z.id === 'gremio_minero' || z.id === 'gremio_minero2';
     const exit = isInt(cur) ? exits(cur) : [];
     if (exit.length) { const e = nearestOf(p, exit); return { x: e.x, y: e.y, via: 'Salida' }; }                // estás dentro de una cueva: sal primero
     if (isInt(Z)) { const ent = world.PORTALS.filter((o) => zoneAt(o.tx, o.ty) === Z && zoneAt(o.x, o.y) !== Z); if (ent.length) { const e = nearestOf(p, ent); return { x: e.x, y: e.y, via: 'Entrada' }; } }
@@ -690,7 +690,7 @@ module.exports = function install(Game) {
         if (!world.reach[kxy(x, y)] || !zoneAt(x, y) || !nd.zones.includes(zoneAt(x, y).id)) continue;
         const t = world.tiles[kxy(x, y)];
         if (t === T.PORTAL || t === T.ROAD || t === T.WATER || t === T.WALL) continue;
-        if (zoneAt(x, y).kind === 'town' && zoneAt(x, y).id !== 'gremio_minero') continue;
+        if (zoneAt(x, y).kind === 'town' && zoneAt(x, y).id !== 'gremio_minero' && zoneAt(x, y).id !== 'gremio_minero2') continue;
         cands.push([x, y]);
       }
       for (let i = cands.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [cands[i], cands[j]] = [cands[j], cands[i]]; }

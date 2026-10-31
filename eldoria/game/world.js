@@ -61,6 +61,7 @@ const ZONES = [
   { id: 'sabana',     name: 'Sabana Dorada',          pvp: false, kind: 'field',   rect: [180, 70, 249, 139] },
   { id: 'volcan',     name: 'Tierras de Lava y Fuego', pvp: true,  kind: 'wild',    rect: [250, 0, 319, 139], tint: 'rgba(255,70,20,.14)' },
   { id: 'gremio_minero', name: 'Gremio de Mineros',   pvp: false, kind: 'town',    rect: [34, 70, 61, 85] },
+  { id: 'gremio_minero2', name: 'Gremio de Mineros Profundo', pvp: false, kind: 'town', rect: [250, 142, 277, 157] },
   { id: 'ciudad_alba', name: 'Ciudad de Alba Dorada', pvp: false, kind: 'town', rect: [380, 57, 420, 83] },        // gran ciudad segura en el centro de las Tierras Inexploradas
   { id: 'montana_alta', name: 'Montañas del Trueno', pvp: false, kind: 'wild', rect: [320, 0, 399, 56], tint: 'rgba(150,170,210,.10)' },
   { id: 'nubes_reino', name: 'Reino de las Nubes', pvp: false, kind: 'wild', rect: [400, 0, 479, 56], tint: 'rgba(200,225,255,.12)' },
@@ -449,6 +450,13 @@ const GUILD = { rect: zoneById('gremio_minero').rect, door: [74, 64], outside: [
 
 /* Santuario de las Cinco Sombras (Raid): 6 salas en fila al sur del mundo. Todo el sur se cierra con roca y se talla cada sala. */
 for (let y = H0; y < H; y++) for (let x = 0; x < W; x++) tiles[idx(x, y)] = T.CWALL;
+// Segundo gremio (rocas de nivel alto: pómez, mármol y basalto): cueva propia al sur del mapa, entrada junto a la Ciudad de Aldea Real (este)
+const GUILD2 = { rect: zoneById('gremio_minero2').rect, door: [106, 64], outside: [106, 65], inside: [263, 155], exit: [263, 156] };
+(function carveGuild2(C) {
+  const [x0, y0, x1, y1] = C.rect;
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) tiles[idx(x, y)] = (x === x0 || x === x1 || y === y0 || y === y1) ? T.CWALL : T.MFLOOR;
+  for (const [px, py] of [[254, 146], [273, 146], [254, 153], [273, 153], [263, 150], [265, 150], [259, 148], [268, 148]]) tiles[idx(px, py)] = T.CWALL;     // columnas
+})(GUILD2);
 const RAID = { rooms: RAID_ROOMS, enter: { x: 85, y: 72 } };
 (function carveRaid() {
   const rr = mulberry32(777001), nz = makeNoise(9091);
@@ -534,6 +542,8 @@ addPortal(CAVE7.door[0], CAVE7.door[1], CAVE7.inside[0], CAVE7.inside[1], 'Tumba
 addPortal(CAVE7.exit[0], CAVE7.exit[1], CAVE7.door[0], CAVE7.door[1] - 1, 'Salir al Desierto de las Pirámides');
 addPortal(GUILD.door[0], GUILD.door[1], GUILD.inside[0], GUILD.inside[1], 'Cueva del Gremio de Mineros (zona segura)');
 addPortal(GUILD.exit[0], GUILD.exit[1], GUILD.outside[0], GUILD.outside[1], 'Salir al Prado');
+addPortal(GUILD2.door[0], GUILD2.door[1], GUILD2.inside[0], GUILD2.inside[1], 'Gremio de Mineros Profundo: pómez, mármol y basalto (zona segura)');
+addPortal(GUILD2.exit[0], GUILD2.exit[1], GUILD2.outside[0], GUILD2.outside[1], 'Salir al Prado');
 {
   const H1 = RAID_ROOMS[0];
   addPortal(RAID.enter.x, RAID.enter.y, H1.start[0] + 3, H1.cy, 'Santuario de las Cinco Sombras (Raid de 1 a 10 jugadores)');

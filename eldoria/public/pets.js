@@ -15,7 +15,7 @@
     raid_slyvra: ['150,110,255', '200,170,255', 'smoke'], raid_koros: ['255,150,60', '255,210,120', 'ember'], raid_aranak: ['120,255,160', '200,255,220', 'spark'],
     raid_xaelis: ['110,200,255', '190,235,255', 'bubble'], raid_malgathor: ['200,60,255', '255,140,255', 'smoke'],
   };
-  const COMMON = { lobo: '200,190,170', kobold: '200,170,140', murcielago: '150,140,170', goblin: '150,200,120', dragon: '255,160,100', espectro_helado: '180,220,255', pet_pelicano: '210,220,230', pet_pulpo: '190,150,230' };
+  const COMMON = { lobo: '200,190,170', kobold: '200,170,140', murcielago: '150,140,170', goblin: '150,200,120', dragon: '255,160,100', espectro_helado: '180,220,255', pet_pelicano: '210,220,230', pet_pulpo: '190,150,230', pet_golem: '255,150,60' };
   const rnd = (a, b) => a + Math.random() * (b - a);
   const lastOwner = new Map();                         // id dueño -> { lv, gold, hp }
 

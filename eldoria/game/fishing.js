@@ -53,7 +53,7 @@ const SET = [
 ];
 // mascotas raras de pesca (0,20 % por captura): [id, nombre, sprite, bonus de oro]
 const PETS = [['pet_pelicano', 'Pelícano Sombrerero', 'pet_pelicano', 0.2], ['pet_pulpo', 'Pulpito Naranja', 'pet_pulpo', 0.25]];
-const PET_DROP = 0.002;
+const PET_DROP = 0.0008;
 const RARE_LIST = () => PETS.map((x) => [x[0], PET_DROP, 1]).concat(SET.map((x) => [x[0], SET_DROP, 1]), [['cana_maestra', SET_DROP, 1]]);
 let RARE = [];
 const SET_ICON = { head: '🎩', body: '🦺', legs: '👖', boots: '🥾' };
