@@ -39,8 +39,8 @@ function build(ITEMS, MONSTERS) {
 /* ============================== comportamiento del jefe (servidor) ============================== */
 function install(Game) {
   const P = Game.prototype;
-  const cave = () => world.zoneById('cueva_magma').rect;
-  const inCave = (q) => { const R = cave(); return q.hp > 0 && q.x >= R[0] && q.x <= R[2] && q.y >= R[1] && q.y <= R[3]; };
+  const cave = (m) => world.zoneAt(m.x, m.y).rect;                   // la caldera donde está el jefe (la normal o una instancia privada)
+  const inCave = (q, R) => q.hp > 0 && q.x >= R[0] && q.x <= R[2] && q.y >= R[1] && q.y <= R[3];
 
   P.magmaAI = function (m, now) {
     if (m.lpx !== undefined && m.x !== m.lpx) m.lf = m.x < m.lpx ? -1 : 1;
@@ -57,8 +57,8 @@ function install(Game) {
 
   /** Lanza un ataque y devuelve cuánto dura (ms). */
   P.magmaCast = function (m, kind) {
-    const R = cave(), alive = () => !m.dead && this.monsters.includes(m);
-    const inside = () => [...this.players.values()].filter(inCave);
+    const R = cave(m), alive = () => !m.dead && this.monsters.includes(m);
+    const inside = () => [...this.players.values()].filter((q) => inCave(q, R));
     const floorOk = (x, y) => world.isWalkable(x, y) && world.tiles[y * world.W + x] === world.T.MAGF;
     const say = (txt) => { for (const q of inside()) this.msg(q, txt, 'x'); };
     const burn = (q, ms) => this.fx.push({ k: 'brn', id: q.id, ms: ms || 1800 });

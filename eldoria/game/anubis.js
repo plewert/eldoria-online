@@ -50,8 +50,8 @@ function build(ITEMS, MONSTERS) {
 /* ============================== comportamiento del jefe (servidor) ============================== */
 function install(Game) {
   const P = Game.prototype;
-  const rect = () => world.zoneById('cueva_anubis').rect;
-  const inCave = (q) => { const R = rect(); return q.hp > 0 && q.x >= R[0] && q.x <= R[2] && q.y >= R[1] && q.y <= R[3]; };
+  const rect = (m) => world.zoneAt(m.x, m.y).rect;                  // la cueva donde está el jefe (la normal o una instancia privada)
+  const inCave = (q, R) => q.hp > 0 && q.x >= R[0] && q.x <= R[2] && q.y >= R[1] && q.y <= R[3];
   const floorOk = (x, y) => world.isWalkable(x, y) && world.tiles[y * world.W + x] === world.T.TOMBF;
   const KIDS = ['anubis_sombra_m', 'anubis_sombra_h', 'anubis_sombra_a', 'momia_eterna'];
 
@@ -78,8 +78,8 @@ function install(Game) {
     for (const q of kids) if (q.dead || !bossUp || now >= (q.diesAt || Infinity)) { this.mgrid.delete(q.y * world.W + q.x); this.monsters = this.monsters.filter((z) => z !== q); this.ents.delete(q.id); }
   };
 
-  const spots = (g, n, minD, avoid) => {                                                          // casillas de suelo libres repartidas por la cueva
-    const R = rect(), out = [];
+  const spots = (g, n, minD, avoid, R) => {                                                       // casillas de suelo libres repartidas por la cueva
+    const out = [];
     for (let k = 0; k < n * 60 && out.length < n; k++) {
       const x = rnd(R[0] + 3, R[2] - 3), y = rnd(R[1] + 3, R[3] - 2);
       if (!floorOk(x, y) || g.mgrid.has(y * world.W + x) || g.pgrid.has(y * world.W + x)) continue;
@@ -90,8 +90,8 @@ function install(Game) {
   };
 
   P.anubisCast = function (m, kind) {
-    const R = rect(), alive = () => !m.dead && this.monsters.includes(m);
-    const inside = () => [...this.players.values()].filter(inCave);
+    const R = rect(m), alive = () => !m.dead && this.monsters.includes(m);
+    const inside = () => [...this.players.values()].filter((q) => inCave(q, R));
     const say = (txt) => { for (const q of inside()) this.msg(q, txt, 'x'); };
     const cc = { x: Math.round((R[0] + R[2]) / 2), y: Math.round((R[1] + R[3]) / 2) };                // los efectos de toda la cueva se anclan al centro
     const cast = (T, root) => { this.fx.push({ k: 'an_cast', x: m.x, y: m.y, id: m.id, T, kind }); m.nextMove = Math.max(m.nextMove, this.now + root); m.nextAtk = Math.max(m.nextAtk, this.now + root); };
@@ -107,7 +107,7 @@ function install(Game) {
         for (const q of inside()) if (Math.hypot(q.x - bx, q.y - by) <= 4.6) { this.hurtPlayer(q, rnd(330, 450), m, this.now, 'Golpe del báculo'); dot(q, 5000); }
         const pl = inside(), zones = [{ x: bx, y: by + 1 }];
         for (const q of pl.slice(0, 4)) zones.push({ x: Math.round(q.x), y: Math.round(q.y) });
-        for (const s of spots(this, 3, 6)) zones.push(s);
+        for (const s of spots(this, 3, 6, undefined, R)) zones.push(s);
         for (const z of zones) { z.r = 3.4; this.fx.push({ k: 'an_ms', x: z.x, y: z.y, r: z.r, T: 9500 }); }
         const until = this.now + 9500;
         const tick = () => {
@@ -121,7 +121,7 @@ function install(Game) {
     }
     if (kind === 'portales') {                                                                    // portales verdes: flechas de fuego verde que explotan al caer
       const n = 6 + Math.min(3, inside().length);
-      const pts = spots(this, n, 6, m);
+      const pts = spots(this, n, 6, m, R);
       say('🟢 ¡Se abren portales verdes! Esquiva las flechas de fuego verde.'); cast(1500, 3000);
       for (const p of pts) this.fx.push({ k: 'an_pt', x: p.x, y: p.y, T: 11500 });
       const rounds = 7;
@@ -143,7 +143,7 @@ function install(Game) {
     }
     if (kind === 'sombras') {                                                                     // se divide en 3 sombras; Anubis es inmune mientras duren
       const n = Math.max(1, inside().length), K = 1 + 0.35 * (n - 1);
-      const sp = spots(this, 3, 3, m); while (sp.length < 3) sp.push({ x: Math.round(m.x) + sp.length - 1, y: Math.round(m.y) + 3 });
+      const sp = spots(this, 3, 3, m, R); while (sp.length < 3) sp.push({ x: Math.round(m.x) + sp.length - 1, y: Math.round(m.y) + 3 });
       say('🌑 ¡Anubis se divide en tres sombras! Derrótalas para que vuelva a ser vulnerable.'); cast(1800, 3200);
       this.fx.push({ k: 'an_split', x: m.x, y: m.y, id: m.id, T: 1800, sp });
       m.shieldUntil = this.now + 40000; m.shadowsUntil = this.now + 40000;
@@ -171,7 +171,7 @@ function install(Game) {
       return 3500;
     }
     // momia: Anubis revive una momia que, al morir, explota y lanza fuego negro por toda la cueva
-    const spot = spots(this, 1, 3, m)[0] || { x: Math.round(m.x), y: Math.round(m.y) + 3 };
+    const spot = spots(this, 1, 3, m, R)[0] || { x: Math.round(m.x), y: Math.round(m.y) + 3 };
     say('🩹 Anubis revive a una Momia Eterna… ¡cuidado cuando muera!'); cast(2000, 3200);
     this.fx.push({ k: 'an_rev', x: spot.x, y: spot.y, T: 2000 });
     this.later(1900, () => {
@@ -185,9 +185,9 @@ function install(Game) {
 
   /** la momia murió: explosión y fuego negro por toda la cueva */
   P.anubisBoom = function (mu) {
-    const R = rect(), boss = mu.parent, bx = mu.x, by = mu.y;
+    const R = rect(mu.parent || mu), boss = mu.parent, bx = mu.x, by = mu.y;
     const alive = () => boss && !boss.dead && this.monsters.includes(boss);
-    const inside = () => [...this.players.values()].filter(inCave);
+    const inside = () => [...this.players.values()].filter((q) => inCave(q, R));
     const cc = { x: Math.round((R[0] + R[2]) / 2), y: Math.round((R[1] + R[3]) / 2) };
     for (const q of inside()) this.msg(q, '💥 ¡La momia explota y lanza fuego negro por toda la cueva!', 'x');
     this.fx.push({ k: 'an_mx', x: bx, y: by, r: 5 });

@@ -634,6 +634,39 @@ ok('pociones nuevas: regeneración, antídoto, furia, arcana, cazador de botín,
   game.addBuff(p, 'gem', 2, 60); game.addBuff(p, 'fish', 1.5, 60); assert.equal(game.buffMult(p, 'gem'), 2); assert.equal(game.buffMult(p, 'fish'), 1.5);
 });
 
+ok('Instancias privadas de jefes de cueva: copias, portales de pago, jefe más fuerte, botín y cierre', () => {
+  const IN = world.INSTANCES; assert.equal(IN.length, 7); const gj = require('../game/instancias');
+  for (const I of IN) {
+    assert.equal(I.slots.length, 6); assert.ok(I.fee >= 100000, 'cuesta ' + I.cave); const src = world.zoneById(I.cave).rect;
+    const ep = world.PORTALS.find((o) => o.inst === I.cave); assert.ok(ep && ep.fee === I.fee && world.zoneAt(ep.x, ep.y).kind !== 'dungeon' && world.isWalkable(ep.x, ep.y - 0), 'portal de entrada ' + I.cave);
+    for (const sl of I.slots) {
+      const z = world.zoneById(sl.id); assert.ok(z && z.kind === 'dungeon' && !z.pvp && world.zoneAt(sl.inside[0], sl.inside[1]).id === sl.id && world.zoneAt(sl.lair[0], sl.lair[1]).id === sl.id, sl.id);
+      assert.ok(sl.rect[3] < world.H && sl.rect[2] < world.W, 'dentro del mapa');
+      for (let y = src[1] + 1; y < src[3]; y++) for (let x = src[0] + 1; x < src[2]; x++) if (world.tiles[y * world.W + x] !== world.T.PORTAL) assert.equal(world.isWalkable(x + sl.dx, y + sl.dy), world.isWalkable(x, y), 'copia igual ' + sl.id + ' ' + x + ',' + y);
+      assert.ok(world.isWalkable(sl.inside[0], sl.inside[1]) && world.isWalkable(sl.lair[0], sl.lair[1])); assert.ok(world.PORTALS.some((o) => o.x === sl.exit[0] && o.y === sl.exit[1] && !o.inst && world.zoneAt(o.tx, o.ty).kind !== 'dungeon'), 'salida ' + sl.id);
+    }
+  }
+  // sin plazas solapadas
+  const all = IN.flatMap((I) => I.slots.map((sl) => sl.rect)); for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) assert.ok(all[i][2] < all[j][0] || all[j][2] < all[i][0] || all[i][3] < all[j][1] || all[j][3] < all[i][1], 'plazas separadas ' + i + ' ' + j);
+  const I = IN[0], portal = world.PORTALS.find((o) => o.inst === I.cave), a = login('InstA'), b = login('InstB'), c = login('InstC'), nog = login('InstPobre');
+  for (const q of [a, b, c]) { q.p.gold = 5e6; place(q.p, portal.x, portal.y - 0); } nog.p.gold = 10; place(nog.p, portal.x, portal.y);
+  game.instEnter(nog.p, portal); assert.ok(!world.zoneAt(nog.p.x, nog.p.y).id.startsWith('inst_'), 'sin oro no entra');
+  game.instEnter(a.p, portal); assert.equal(world.zoneAt(a.p.x, a.p.y).id, 'inst_cueva_1'); assert.equal(a.p.gold, 5e6 - I.fee, 'cobra');
+  const boss = game.monsters.find((m) => m.instSlot === 'inst_cueva_1'); assert.ok(boss && boss.type === 'dragon_sombra' && boss.maxHp === Math.round(boss.def.hp * gj.HP_K) && boss.noRespawn);
+  game.instEnter(b.p, portal); assert.equal(world.zoneAt(b.p.x, b.p.y).id, 'inst_cueva_2'); for (let k = 3; k <= 6; k++) game.instSt.set('inst_cueva_' + k, { key: 'otro' + k, boss: null, endAt: game.now + 1e9, cleared: false }); game.instEnter(c.p, portal); assert.ok(!world.zoneAt(c.p.x, c.p.y).id.startsWith('inst_'), 'sin plaza libre'); assert.equal(c.p.gold, 5e6, 'no cobra');
+  // el jefe pega más fuerte
+  a.p.hp = a.p.maxHp = 9e6; const hm = game.hurtPlayer(a.p, 1000, { kind: 'mo', x: boss.x, y: boss.y, def: boss.def, instMul: gj.DMG_K }, game.now, 'x'), hn = game.hurtPlayer(a.p, 1000, { kind: 'mo', x: boss.x, y: boss.y, def: boss.def }, game.now, 'x'); assert.ok(hm > hn * 1.1, 'más daño ' + hm + ' ' + hn);
+  // el jefe cae: botín y cierre a los 90 s
+  boss.dmgBy.set(a.p.id, { dmg: 1000, t: game.now }); const r0 = Math.random; let g0 = a.p.gold;
+  try { Math.random = () => 0.5; game.killMonster(boss, game.now); } finally { Math.random = r0; }
+  assert.ok(game.ground.size > 0, 'cae botín'); assert.ok(game.instSt.get('inst_cueva_1').cleared);
+  game.now += 100000; game.instTick(game.now); assert.ok(!game.monsters.some((m) => m.instSlot === 'inst_cueva_1'), 'jefe retirado'); assert.ok(!world.zoneAt(a.p.x, a.p.y).id.startsWith('inst_'), 'te saca'); assert.ok(!game.instSt.has('inst_cueva_1'), 'plaza libre');
+  // salir por tu cuenta o morir libera la plaza
+  place(b.p, 150, 70); game.instTick(game.now + 1000); assert.ok(!game.instSt.has('inst_cueva_2') && !game.monsters.some((m) => m.instSlot === 'inst_cueva_2'), 'plaza libre al salir');
+  game.instEnter(c.p, portal); assert.equal(world.zoneAt(c.p.x, c.p.y).id, 'inst_cueva_1', 'se puede reutilizar');
+  game.now += 21 * 60 * 1000; game.instTick(game.now); assert.ok(!world.zoneAt(c.p.x, c.p.y).id.startsWith('inst_'), 'límite de 20 min'); game.ground.clear();
+});
+
 ok('minería: picos, rocas por nivel, experiencia, gemas raras y colección', () => {
   const M = require('../game/mining');
   for (const id of M.ORDER) { assert.ok(ITEMS[id], id); assert.ok(game.nodes.some((q) => q.type === 'roca_' + id), 'hay rocas de ' + id); }
@@ -778,7 +811,7 @@ ok('Banco ampliable (1M por 5 espacios) y entrada de 2k a las cuevas de jefe', (
   p.bank[n0 + 14] = { id: 'pocion_vida', qty: 3 }; const d = game.serialize(p); assert.equal(d.bankSlots, n0 + 15);
   const q = game.createPlayer({ key: 'x', name: 'x', data: d }); assert.equal(q.bank.length, n0 + 15); assert.ok(q.bank[n0 + 14]);
   place(p, g.x + 40, g.y); p.gold = 2e6; game.bankBuy(p); assert.equal(p.bank.length, n0 + 15, 'hay que estar junto a la banquera');
-  const fees = world.PORTALS.filter((o) => o.fee); assert.equal(fees.length, 7, 'las 7 cuevas de jefe cobran'); assert.ok(fees.every((o) => o.fee === 2000));
+  const fees = world.PORTALS.filter((o) => o.fee && !o.inst); assert.equal(fees.length, 7, 'las 7 cuevas de jefe cobran'); assert.ok(fees.every((o) => o.fee === 2000));
   const po = fees[5], z0 = [po.tx, po.ty];
   const stepOn = (pl) => { const sx = po.x + 1, sy = po.y; place(pl, sx, sy); pl.pvpLock = 0; pl.nextMove = 0; game.tryStep(pl, -1, 0, game.now + 1e6); };
   const { p: r } = login('Pobre'); r.gold = 1999; stepOn(r); assert.ok(!(r.x === z0[0] && r.y === z0[1]), 'sin 2k no entra'); assert.equal(r.gold, 1999);

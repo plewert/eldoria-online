@@ -14,7 +14,7 @@ const { SPAWN_PLAN } = require('./data');
 const W0 = 180;                 // el mapa original (se genera igual que siempre)
 const W1 = 320;                 // ancho del mundo antes de la gran ampliación al este (esa parte se genera igual que siempre)
 const W = 480, H0 = 140;        // mundo exterior: Selva Esmeralda, Sabana Dorada, Aldea Pesquera, Tierras de Lava y, al este, las Tierras Inexploradas (vacías, para zonas futuras)
-const H = 200;                  // + 60 filas al sur con las salas de la Raid (el exterior se genera igual que siempre con H0)
+const H = 242;                  // + 102 filas al sur: salas de la Raid y copias de las instancias de jefe (el exterior se genera igual que siempre con H0)
 const T = {
   GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10,
   SAND: 11, SNOW: 12, SWAMP: 13, DUNE: 14, PALM: 15, PINE: 16, DEADTREE: 17, CACTUS: 18, ICEBLOCK: 19,
@@ -70,6 +70,35 @@ const ZONES = [
   { id: 'tierras_nuevas', name: 'Tierras Inexploradas', pvp: false, kind: 'field', rect: [320, 0, 479, 139] },   // reservado para zonas futuras
   { id: 'prado',      name: 'Prado de los Novatos',   pvp: false, kind: 'field',   rect: [0, 0, 179, 139] },
 ];
+// ---- Instancias privadas de los jefes de cueva: copias exactas de cada cueva al sur del mapa (6 por cueva) ----
+const INST_PER_CAVE = 6;
+const INST_CAVES = [                       // cueva (zona), jefe, precio por entrar (oro) — cámbialo aquí
+  { cave: 'cueva',        boss: 'dragon_sombra',  fee: 200000 },
+  { cave: 'cueva_jade',   boss: 'hidra_jade',     fee: 250000 },
+  { cave: 'cueva_nube',   boss: 'arcangel',       fee: 300000 },
+  { cave: 'cueva_arana',  boss: 'aracnido_fuego', fee: 400000 },
+  { cave: 'cueva_mar',    boss: 'leviatan',       fee: 500000 },
+  { cave: 'cueva_magma',  boss: 'ignaros',        fee: 600000 },
+  { cave: 'cueva_anubis', boss: 'anubis',         fee: 800000 },
+];
+const INST_POS = [];                        // esquinas (x0, y0) de las 18 plazas libres del sur
+for (let r = 0; r < 2; r++) for (let c = 0; c < 5; c++) INST_POS.push([282 + 36 * c, 142 + 22 * r]);
+INST_POS.push([240, 160], [240, 180]);
+for (let c = 0; c < 6; c++) INST_POS.push([2 + 36 * c, 176]);
+for (const y0 of [200, 222]) for (let c = 0; c < 13; c++) INST_POS.push([2 + 36 * c, y0]);       // dos filas nuevas al sur: 26 plazas más
+const INSTANCES = INST_CAVES.map((d, i) => {
+  const src = ZONES.find((z) => z.id === d.cave), [x0, y0, x1, y1] = src.rect;
+  const slots = [];
+  for (let n = 0; n < INST_PER_CAVE; n++) {
+    const [sx, sy] = INST_POS[i * INST_PER_CAVE + n], dx = sx - x0, dy = sy - y0, id = `inst_${d.cave}_${n + 1}`;
+    slots.push({ id, zone: id, dx, dy, rect: [x0 + dx, y0 + dy, x1 + dx, y1 + dy] });
+  }
+  return Object.assign({}, d, { name: src.name, slots });
+});
+for (const I of INSTANCES) for (const sl of I.slots) {
+  const src = ZONES.find((z) => z.id === I.cave);
+  ZONES.splice(ZONES.length - 1, 0, { id: sl.id, name: src.name + ' (instancia privada)', pvp: false, kind: 'dungeon', dark: src.dark, tint: src.tint, rect: sl.rect });
+}
 const zoneGrid = new Uint8Array(W * H);
 for (let y = 0; y < H; y++) {
   for (let x = 0; x < W; x++) {
@@ -544,6 +573,24 @@ addPortal(GUILD.door[0], GUILD.door[1], GUILD.inside[0], GUILD.inside[1], 'Cueva
 addPortal(GUILD.exit[0], GUILD.exit[1], GUILD.outside[0], GUILD.outside[1], 'Salir al Prado');
 addPortal(GUILD2.door[0], GUILD2.door[1], GUILD2.inside[0], GUILD2.inside[1], 'Gremio de Mineros Profundo: pómez, mármol y basalto (zona segura)');
 addPortal(GUILD2.exit[0], GUILD2.exit[1], GUILD2.outside[0], GUILD2.outside[1], 'Salir al Prado');
+const isWalkableRaw = (x, y) => inb(x, y) && !BLOCKED[tiles[idx(x, y)]];
+// Instancias de jefes de cueva: se copia el terreno de cada cueva en sus plazas y se crean los portales
+const CAVES_BY_ZONE = { cueva: CAVE, cueva_jade: CAVE2, cueva_nube: CAVE3, cueva_arana: CAVE4, cueva_mar: CAVE5, cueva_magma: CAVE6, cueva_anubis: CAVE7 };
+for (const I of INSTANCES) {
+  const C = CAVES_BY_ZONE[I.cave], [x0, y0, x1, y1] = C.rect, ex = PORTALS.find((q) => q.x === C.exit[0] && q.y === C.exit[1]);
+  I.door = C.door; I.out = [ex.tx, ex.ty];
+  for (const sl of I.slots) {
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) tiles[idx(x + sl.dx, y + sl.dy)] = tiles[idx(x, y)] === T.PORTAL ? T.MFLOOR : tiles[idx(x, y)];
+    sl.inside = [C.inside[0] + sl.dx, C.inside[1] + sl.dy]; sl.lair = [C.lair[0] + sl.dx, C.lair[1] + sl.dy]; sl.exit = [C.exit[0] + sl.dx, C.exit[1] + sl.dy];
+    const e = sl.exit; tiles[idx(e[0], e[1])] = tiles[idx(C.inside[0] + sl.dx, C.inside[1] + sl.dy)];
+    addPortal(e[0], e[1], I.out[0], I.out[1], 'Salir de la instancia');
+  }
+  // portal de entrada a la instancia, junto a la puerta de la cueva (en la zona exterior)
+  const spot = [[2, 0], [-2, 0], [3, 0], [-3, 0], [2, 1], [-2, 1], [2, -1], [-2, -1], [0, 2], [0, -2]].map(([a, b]) => [I.out[0] + a, I.out[1] + b])
+    .find(([x, y]) => isWalkableRaw(x, y) && !PORTALS.some((q) => q.x === x && q.y === y) && zoneAt(x, y).kind !== 'dungeon');
+  I.entry = spot; addPortal(spot[0], spot[1], I.slots[0].inside[0], I.slots[0].inside[1], `Instancia privada: ${I.name} (jefe más fuerte y más botín)`, I.fee);
+  PORTALS[PORTALS.length - 1].inst = I.cave;
+}
 {
   const H1 = RAID_ROOMS[0];
   addPortal(RAID.enter.x, RAID.enter.y, H1.start[0] + 3, H1.cy, 'Santuario de las Cinco Sombras (Raid de 1 a 10 jugadores)');
@@ -683,5 +730,5 @@ for (let y = 0; y < H; y++) {
 
 module.exports = {
   W, H, T, BLOCKED, tiles, ZONES, zoneAt, zoneById, PORTALS, portalAt, NPCS, SPAWN_POINT,
-  RAID, isWalkable, reach, monsterSpawns, rows, catRooms, abyRooms, minRooms, pirRooms, forRooms,
+  RAID, INSTANCES, isWalkable, reach, monsterSpawns, rows, catRooms, abyRooms, minRooms, pirRooms, forRooms,
 };

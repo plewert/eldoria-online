@@ -1143,7 +1143,9 @@ class Game {
     p.nextMove = now + CFG.STEP_MS * (sdx && sdy ? 1.35 : 1) * this.mountMult(p);
     this.pgrid.set(kxy(nx, ny), p);
     const portal = world.portalAt(nx, ny);
-    if (portal) {
+    if (portal && portal.inst) {
+      if (now < p.pvpLock) this.msgThrottle(p, 'lock', '¡Estás en combate! No puedes usar el portal todavía.'); else this.instEnter(p, portal);
+    } else if (portal) {
       if (now < p.pvpLock) { this.msgThrottle(p, 'lock', '¡Estás en combate! No puedes usar el portal todavía.'); }
       else if (portal.fee && !p.bot && p.gold < portal.fee) {
         this.msgThrottle(p, 'fee', `Entrar a esta cueva cuesta ${portal.fee.toLocaleString('es')} de oro (en mano).`);
@@ -1241,5 +1243,5 @@ require('./mining').install(Game);
 require('./raid').install(Game);
 require('./halloween').install(Game);
 require('./magma').install(Game); require('./anubis').install(Game); require('./especiales').install(Game); require('./bots').install(Game);
-require('./petloot').install(Game); require('./pociones').install(Game);
+require('./petloot').install(Game); require('./pociones').install(Game); require('./instancias').install(Game);
 module.exports = { Game, NAME_RE, levelFromXp, xpForLevel, skillFromXp };

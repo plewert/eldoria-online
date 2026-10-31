@@ -1026,7 +1026,7 @@ module.exports = function install(Game) {
     m.nextMove = Math.max(m.nextMove, now + 1700); m.nextAtk = Math.max(m.nextAtk, now + 1700);
     const alive = () => !m.dead && this.monsters.includes(m);
     const near = (cx, cy, r) => [...this.players.values()].filter((q) => q.hp > 0 && !inTownP(q) && Math.hypot(q.x - cx, q.y - cy) <= r);
-    const R = world.zoneById('cueva_mar').rect;
+    const R = zoneAt(m.x, m.y).rect;                               // la gruta del jefe (la normal o una instancia privada)
     if (kind === 'ray') {                                       // rayo de bolas de agua disparado por la boca (3 pulsos que re-apuntan)
       const mouth = () => [m.x + (m.lf || 1) * 3.2, m.y - 2.5];                                       // la boca del leviatán
       const aim = () => { const tg = this.ents.get(m.target); const tx = tg && tg.kind === 'pl' && tg.hp > 0 ? tg.x : t.x, ty = tg && tg.kind === 'pl' && tg.hp > 0 ? tg.y : t.y; const [ox, oy] = mouth(); let dx = tx - ox, dy = ty - oy; const L = Math.hypot(dx, dy) || 1; return [dx / L, dy / L]; };

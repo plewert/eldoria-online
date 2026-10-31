@@ -421,3 +421,12 @@ Pociones añadidas después (todas en Boris): **Poción de Rango** (+15 % de ata
 **Elixir de la Raid** (Boris, 1.000.000, nivel 40): solo se puede usar dentro de la Raid; da +20 % de ataque y +20 % de defensa y se acaba cuando termina la Raid o sales de ella (`raidOn` en `game/pociones.js`).
 
 **Elixir del Cazador de Botín (Raid)** (Boris, 1.200.000, nivel 40): solo dentro de la Raid; +50 % de probabilidad de botín (objeto de jefe, segundo y tercer objeto del cofre; las mascotas no cuentan) hasta que termine la Raid.
+
+## Instancias privadas de jefes de cueva (de pago)
+
+Junto a la puerta de cada cueva de jefe hay un segundo portal "Instancia privada: …" (`game/instancias.js`, datos en `INST_CAVES` de `game/world.js`):
+
+- **Individual:** cada jugador entra a su propia copia exacta de la cueva (6 copias por cueva; si todas están ocupadas, avisa). El oro se cobra al cruzar el portal.
+- **Más difícil, más botín:** el jefe sale al instante con +50 % de vida y +25 % de daño; da +50 % de oro y +50 % de probabilidad en cada objeto (las mascotas no suben).
+- **Límites:** 20 min como máximo; al derrotar al jefe quedan 90 s para recoger el botín. La instancia se cierra si sales, mueres o te desconectas.
+- **Precios** (editables en `INST_CAVES`): Dragón de las Sombras 200.000 · Hidra de Jade 250.000 · Arcángel 300.000 · Aracnídeo 400.000 · Leviatán 500.000 · Soberano del Magma 600.000 · Anubis 800.000.
