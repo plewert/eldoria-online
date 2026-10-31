@@ -527,14 +527,14 @@
   X.handlers.skcd = (m) => { sk.cd[m.id] = performance.now() + m.ms; tickSkills(); };
 
   /* ============================ MEJORAS ACTIVAS ============================ */
-  const BUFF = { atk: ['⚔️', 'Ataque'], def: ['🛡️', 'Defensa'], xp: ['📘', 'Experiencia'], shield: ['🔮', 'Escudo arcano'] };
+  const BUFF = { atk: ['⚔️', 'Ataque'], def: ['🛡️', 'Defensa'], xp: ['📘', 'Experiencia'], shield: ['🔮', 'Escudo arcano'], regen: ['💚', 'Regeneración'], antidote: ['🧪', 'Antídoto'], atkm: ['🗡️', 'Furia (cuerpo a cuerpo)'], atkg: ['🔮', 'Poder arcano'], atkr: ['🏹', 'Puntería (a distancia)'], crit: ['💥', 'Crítico'], raid: ['⚔️', 'Elixir de la Raid'], raidloot: ['🍀', 'Cazador de botín (Raid)'], eres: ['🛡️', 'Resistencia elemental'], loot: ['🍀', 'Cazador de botín'], gem: ['💎', 'Suerte del minero'], fish: ['🎣', 'Pescador'] };
   G.buffs = {};
   function renderBuffs() {
     buffsEl.replaceChildren(); const now = performance.now();
     for (const k in G.buffs) {
       const b = G.buffs[k], left = Math.max(0, Math.ceil((b.t - now) / 1000)); if (!left) { delete G.buffs[k]; continue; }
       const i = el('span', 'bf', ''); i.append(el('b', '', (BUFF[k] || ['✨'])[0]), el('small', '', left > 99 ? Math.ceil(left / 60) + 'm' : left + 's'));
-      i.title = `${(BUFF[k] || ['', k])[1]}${k === 'shield' ? ' (' + b.hp + ' de absorción)' : ' ×' + b.m}`; buffsEl.append(i);
+      i.title = `${(BUFF[k] || ['', k])[1]}${k === 'shield' ? ' (' + b.hp + ' de absorción)' : k === 'regen' ? ' (+' + Math.round(b.m * 1000) / 10 + ' % de vida por segundo)' : k === 'raid' ? ' (+20 % de ataque y defensa mientras dure la Raid)' : k === 'raidloot' ? ' (+50 % de botín mientras dure la Raid)' : k === 'antidote' ? ' (resistes veneno y quemaduras)' : k === 'crit' ? ' (+' + Math.round(b.m * 100) + ' % de crítico)' : k === 'eres' ? ' (−30 % de daño de fuego, hielo y veneno)' : ' ×' + b.m}`; buffsEl.append(i);
     }
   }
   X.handlers.buffs = (m) => { G.buffs = {}; const now = performance.now(); for (const k in m.b) G.buffs[k] = { t: now + m.b[k].s * 1000, m: m.b[k].m, hp: m.b[k].hp }; renderBuffs(); };

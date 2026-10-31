@@ -109,7 +109,7 @@ module.exports = { build, install(Game) {
     for (const b of ['cebo_dorado', 'cebo']) if (have(p, b)) { bait = b; break; }
     if (bait) take(p, bait, 1);
     const r = RODS[rod], b = bait ? BAITS[bait] : null;
-    const wait = Math.max(1500, rnd(4500, 9500) * r.wait * (1 - Math.min(0.5, lv / 640)) * (b ? b.wait : 1));
+    const wait = Math.max(1500, rnd(4500, 9500) * r.wait * (1 - Math.min(0.5, lv / 640)) * (b ? b.wait : 1) / this.buffMult(p, 'fish'));
     p.fishing = { x, y, px: p.x, py: p.y, state: 'wait', biteAt: this.now + wait, rod, bait, zone: zoneAt(x, y).id };
     (this.anglers || (this.anglers = new Set())).add(p);
     this.send(p, { t: 'fcast', x, y, wait: Math.round(wait), bait: bait ? 1 : 0 });
@@ -119,9 +119,9 @@ module.exports = { build, install(Game) {
     p.fishing = null; if (this.anglers) this.anglers.delete(p);
     this.send(p, { t: 'fend', ok: 0, silent: silent ? 1 : 0 });
   };
-  const pickFish = (p, f) => {
+  const pickFish = (p, f, fm = 1) => {
     const z = ZONE_FISH[f.zone], lv = lvOf(p), b = f.bait ? BAITS[f.bait] : null;
-    const opts = z.fish.filter(([id]) => FISH[id].lvl <= lv).map(([id, w], i) => [id, w * (i > 0 || z.fish.length === 1 ? 1 : 1) * (FISH[id].lvl > 1 ? (b ? b.rare : 1) * (1 + (lv - FISH[id].lvl) / 150) : 1)]);
+    const opts = z.fish.filter(([id]) => FISH[id].lvl <= lv).map(([id, w], i) => [id, w * (i > 0 || z.fish.length === 1 ? 1 : 1) * (FISH[id].lvl > 1 ? (b ? b.rare : 1) * fm * (1 + (lv - FISH[id].lvl) / 150) : 1)]);
     let t = opts.reduce((a, o) => a + o[1], 0) * Math.random();
     for (const [id, w] of opts) { t -= w; if (t <= 0) return id; }
     return opts[0][0];
@@ -133,7 +133,7 @@ module.exports = { build, install(Game) {
       if (!f || p.dead || !this.ents.has(p.id)) { this.anglers.delete(p); p.fishing = null; continue; }
       if (p.x !== f.px || p.y !== f.py || cheb(p.x, p.y, f.x, f.y) > 6) { this.msg(p, 'Te moviste: recoges el sedal.', 's'); this.fishStop(p, true); continue; }
       if (f.state === 'wait' && now >= f.biteAt) {
-        const fish = pickFish(p, f), d = FISH[fish].diff, lv = lvOf(p), r = RODS[f.rod];
+        const fish = pickFish(p, f, this.buffMult(p, 'fish')), d = FISH[fish].diff, lv = lvOf(p), r = RODS[f.rod];
         const w = Math.min(0.5, Math.max(0.12, 0.34 - d + lv * 0.0004 + r.bar)), c = 0.18 + w / 2 + Math.random() * (0.64 - w);
         f.state = 'bite'; f.fish = fish; f.lo = c - w / 2; f.hi = c + w / 2; f.speed = 0.75 + d * 1.6 + Math.random() * 0.2; f.t0 = now; f.end = now + BITE_MS;
         this.send(p, { t: 'fbite', fish, lo: +f.lo.toFixed(3), hi: +f.hi.toFixed(3), speed: +f.speed.toFixed(3), dur: BITE_MS });

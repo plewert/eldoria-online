@@ -85,7 +85,7 @@ module.exports = { build, ROCKS, PICKS, ORDER, MINE_MAX, PET, petChance, install
     this.fx.push({ k: 'd', x: p.x, y: p.y, v: `+${q} ${ITEMS[nd.rock].name}`, c: 'g' });
     this.fx.push({ k: 'mn', x: n.x, y: n.y, r: nd.rock });
     // gema: más probable con mejor pico y más nivel
-    const ch = r.gem * 0.6 * (1 + k.gem) * (1 + lv / 400);
+    const ch = r.gem * 0.6 * (1 + k.gem) * (1 + lv / 400) * this.buffMult(p, 'gem');
     if (Math.random() < ch) {
       const wt = (id, w) => (RARE_GEMS.has(id) ? w * 0.5 : w);                      // las gemas raras salen la mitad de veces
       let t = r.pool.reduce((a, o) => a + wt(o[0], o[1]), 0) * Math.random(), g = r.pool[0][0];

@@ -398,3 +398,26 @@ Las armas de jefe (22: 16 de jefes normales y las 11 de la Raid, ya sin las anti
 - **Gremio de Mineros Profundo** (zona segura): segunda cueva solo con rocas de **pómez, mármol y basalto** (nivel de minería 90 / 120 / 170), con reaparición rápida. Entrada por el portal al este de la Ciudad de Aldea Real; se sale por el portal "Salir al Prado".
 - **Gólem de Brasas** (mascota, +30 % de oro): muy rara al minar cualquier roca (≈0,04 % en granito, hasta ≈0,2 % en obsidiana; `petChance` en `game/mining.js`).
 - **Mascotas más difíciles en todo el juego** (×0,4): crías de jefe (0,16 % / 0,4 %), mascotas de monstruos comunes, pesca (0,08 %) y cofre de la Raid (1,5 %).
+
+## Pociones y elixirs nuevos
+
+Los iconos son las botellas de la hoja de pociones (`gear.json`: `i_p_*`); lógica en `game/pociones.js`.
+
+| Objeto | Efecto | Precio (todo en Boris) |
+|---|---|---|
+| Poción de Regeneración | cura 2,5 % de la vida por segundo durante 20 s | 50.000 |
+| Antídoto | quita veneno y quemaduras; 30 s de resistencia (−80 % de ese daño) | 50.000 |
+| Poción de Furia (cuerpo a cuerpo) | +15 % de ataque cuerpo a cuerpo y +10 % de defensa, 5 min (nivel 40) | 100.000 |
+| Poción Arcana (magia) | +15 % de ataque mágico y +10 % de defensa, 5 min (nivel 40) | 100.000 |
+| Poción de Rango (a distancia) | +15 % de ataque a distancia y +10 % de defensa, 5 min (nivel 40) | 100.000 |
+| Elixir del Cazador de Botín | +50 % de probabilidad de botín (las mascotas no cuentan), 5 min (nivel 30) | 1.000.000 |
+| Elixir de Suerte del Minero | el doble de gemas al minar, 10 min | 1.000.000 |
+| Elixir del Pescador | pesca más rápida (×1,5) y más piezas raras, 10 min | 1.000.000 |
+
+Los bonus de Furia/Arcana no se acumulan con los elixires de ataque generales: vale el mayor.
+
+Pociones añadidas después (todas en Boris): **Poción de Rango** (+15 % de ataque a distancia, +10 % de defensa; 100.000), **Poción de Crítico** (+15 % de crítico 5 min, nivel 40; 200.000; no se usa a la vez que Furia/Arcana/Rango), **Poción de Resistencia Elemental** (−30 % de daño de fuego, hielo y veneno 5 min, nivel 30; 100.000) y **Poción de Teletransporte corto** (salta hasta 6 casillas hacia donde miras, un uso; 30.000).
+
+**Elixir de la Raid** (Boris, 1.000.000, nivel 40): solo se puede usar dentro de la Raid; da +20 % de ataque y +20 % de defensa y se acaba cuando termina la Raid o sales de ella (`raidOn` en `game/pociones.js`).
+
+**Elixir del Cazador de Botín (Raid)** (Boris, 1.200.000, nivel 40): solo dentro de la Raid; +50 % de probabilidad de botín (objeto de jefe, segundo y tercer objeto del cofre; las mascotas no cuentan) hasta que termine la Raid.

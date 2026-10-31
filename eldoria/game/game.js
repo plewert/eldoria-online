@@ -1013,7 +1013,7 @@ class Game {
         const g = Math.round(gold * Math.max(0.1, share) * (pl === top ? 1.3 : 1));
         if (g > 0) this.addGround('gold', g, m.x, m.y, o);
         for (const [id, chance, qa, qb] of def.loot) {
-          if (Math.random() >= Math.min(1, chance * f)) continue;
+          if (Math.random() >= Math.min(1, chance * f * (this.lootMult ? this.lootMult(pl, id) : 1))) continue;
           if (I.isGear(id)) this.addGround(id, 1, m.x, m.y, Object.assign({ inst: I.rollGear(id, true) }, o));
           else this.addGround(id, rnd(qa, qb), m.x, m.y, o);
           if (this.logDrop) this.logDrop(pl, m.type, id);      // colección de jefes
@@ -1025,8 +1025,9 @@ class Game {
     } else {
     const gold = rnd(def.gold[0], def.gold[1]);
     if (gold > 0) this.addGround('gold', gold, m.x, m.y, opts);
+    const killer = opts.owner ? this.ents.get(opts.owner) : null;
     for (const [id, chance, a, b] of def.loot) {
-      if (Math.random() >= chance) continue;
+      if (Math.random() >= Math.min(1, chance * (this.lootMult ? this.lootMult(killer, id) : 1))) continue;
       if (I.isGear(id)) this.addGround(id, 1, m.x, m.y, Object.assign({ inst: I.rollGear(id, !!def.boss) }, opts));   // cada equipo trae su propia suerte (+N, Ancient, ranuras)
       else this.addGround(id, rnd(a, b), m.x, m.y, opts);
     }
@@ -1088,7 +1089,7 @@ class Game {
     let dmg = Math.round(w.atk * (0.55 + Math.random() * 0.45) * skillMult(skill) * (1 + 0.010 * (p.level - 1)));
     dmg = Math.max(1, dmg);
     let crit = 0;
-    if (gb.crit > 0 && Math.random() < gb.crit) {           // Amatista: golpe crítico
+    if ((gb.crit + (this.critBuff ? this.critBuff(p) : 0)) > 0 && Math.random() < gb.crit + (this.critBuff ? this.critBuff(p) : 0)) {           // Amatista y Poción de Crítico: golpe crítico
       crit = 1; dmg = Math.round(dmg * 1.8);
       this.fx.push({ k: 'd', x: p.x, y: p.y, v: '¡CRÍTICO!', c: 'x' });
     }
@@ -1240,5 +1241,5 @@ require('./mining').install(Game);
 require('./raid').install(Game);
 require('./halloween').install(Game);
 require('./magma').install(Game); require('./anubis').install(Game); require('./especiales').install(Game); require('./bots').install(Game);
-require('./petloot').install(Game);
+require('./petloot').install(Game); require('./pociones').install(Game);
 module.exports = { Game, NAME_RE, levelFromXp, xpForLevel, skillFromXp };

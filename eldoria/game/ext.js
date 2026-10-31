@@ -664,6 +664,7 @@ module.exports = function install(Game) {
       if ((d.minLevel || 1) > p.level) { this.msg(p, `Necesitas nivel ${d.minLevel} para usar ${d.name}.`, 's'); return; }
       if (this.now < p.nextPotion) return;
       for (const [k, m] of Object.entries(d.buff)) this.addBuff(p, k, m, d.secs);
+      if (d.cure && this.cleanse) this.cleanse(p);
       this.msg(p, `${d.name}: ${d.desc}`, 's');
       p.nextPotion = this.now + 1000; it.qty--; if (it.qty <= 0) p.inv[slot | 0] = null; p.dirty.inv = true; return;
     }

@@ -360,7 +360,7 @@
     if (d.type === 'weapon') box.append(el('div', 'tl', `Ataque ${it[6] != null ? it[6] : d.atk} · alcance ${d.range} · cada ${(d.cd / 1000).toFixed(2)} s${d.mana ? ` · ${d.mana} de maná` : ''}`));
     else if (d.type === 'ring' || d.type === 'amulet') box.append(el('div', 'tl', bonusTxt(it[7] || d.bonus || {})));
     else if (gear) { box.append(el('div', 'tl', `Defensa ${it[6] != null ? it[6] : d.def}`)); const bt = it[7] || d.bonus; if (bt) { const b2 = el('div', 'tl', bonusTxt(bt)); b2.style.color = '#8fd0ff'; box.append(b2); } }
-    else if (d.type === 'consumable') box.append(el('div', 'tl', d.buff ? d.desc : d.heal ? `Cura ${d.heal} de vida` : `Restaura ${d.restore} de maná`));
+    else if (d.type === 'consumable') box.append(el('div', 'tl', d.buff || d.blink ? d.desc : d.heal ? `Cura ${d.heal} de vida` : `Restaura ${d.restore} de maná`));
     else if (d.type === 'pet' || d.type === 'mount') { box.append(el('div', 'tl', d.desc)); box.append(el('div', 'ts', d.type === 'mount' && d.minLevel > 1 ? `Nivel ${d.minLevel} · clic para montar` : 'Clic para invocar o guardar')); }
     else if (d.type === 'gem') box.append(el('div', 'tl', d.desc));
     if (gear) {

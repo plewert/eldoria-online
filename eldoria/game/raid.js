@@ -236,7 +236,7 @@ module.exports = { build, SETS, WEAPONS, BOSS_DEFS, BOSS_ORDER, MINIONS, MAX_PAR
     for (const [pl, dmg] of parts) {
       const g = 1500 + pl.level * 20; pl.gold += g; pl.dirty.inv = true;
       this.msgC(pl, `${def.icon} ${def.name} derrotado: +${g} de oro.`, '#ffd96a');
-      if (Math.random() < 0.22 * Math.min(1.6, 0.4 + 1.2 * dmg / total * parts.length / 2 + 0.4)) {
+      if (Math.random() < 0.22 * Math.min(1.6, 0.4 + 1.2 * dmg / total * parts.length / 2 + 0.4) * this.buffMult(pl, 'raidloot')) {
         const [, slot] = rollPiece(def.set, true), id = this.raidGrant(pl, def.set, slot);
         this.msgC(pl, `✨ ¡Botín de jefe: ${ITEMS[id].name}!`, '#c58bff');
         if (this.sendCol) this.sendCol(pl);
@@ -252,7 +252,8 @@ module.exports = { build, SETS, WEAPONS, BOSS_DEFS, BOSS_ORDER, MINIONS, MAX_PAR
     r.opened.add(p.key);
     const tot = Object.values(r.contrib).reduce((a, b) => a + b, 0) || 1, n = r.members.size, share = (r.contrib[p.key] || 0) / tot;
     const extra = Math.min(0.85, 0.25 + 0.5 * Math.min(1.5, share * n) / 1.5);                          // más aporte → más opciones de un segundo objeto
-    const drops = [[...rollPiece()]]; if (Math.random() < extra) drops.push(rollPiece()); if (Math.random() < 0.08) drops.push(rollPiece());
+    const lk = this.buffMult(p, 'raidloot');                                                           // Elixir del Cazador de Botín (Raid)
+    const drops = [[...rollPiece()]]; if (Math.random() < Math.min(0.97, extra * lk)) drops.push(rollPiece()); if (Math.random() < 0.08 * lk) drops.push(rollPiece());
     const out = [];
     if (Math.random() < 0.015) { const bt = BOSS_ORDER[Math.random() < 0.4 ? 4 : rnd(0, 3)], pid = 'pet_' + bt; this.giveOrDrop(p, pid, 1); if (this.logDrop) this.logDrop(p, bt, pid); out.push({ id: pid, rare: true, set: BOSS_DEFS[bt].set }); }
     for (const [set, slot] of drops) { const id = this.raidGrant(p, set, slot); out.push({ id, rare: WEAPONS[set].some((w) => w.k === slot) || slot === 'cape' || set === 'rm' && slot === 'chest', set }); }

@@ -594,6 +594,46 @@ ok('Gremio de Mineros Profundo: solo pómez, mármol y basalto; mascota Gólem d
   assert.ok(p.inv.some((it) => it && it.id === 'pet_golem'), 'cae la mascota');
 });
 
+ok('pociones nuevas: regeneración, antídoto, furia, arcana, cazador de botín, suerte del minero y pescador', () => {
+  const PO = require('../game/pociones'); const gj = require('../public/gear.json'); const SH = require('../game/data').SHOPS;
+  for (const [id, d] of Object.entries(PO.POT)) { assert.ok(ITEMS[id] && ITEMS[id].type === 'consumable' && (ITEMS[id].buff || ITEMS[id].blink), id); assert.ok(gj['i_' + d.spr], 'icono de ' + id); }
+  for (const [npc, ids] of Object.entries(PO.SOLD)) for (const id of ids) assert.ok(SH[npc].includes(id), id + ' en ' + npc);
+  assert.equal(ITEMS.elixir_cazador.price, 1000000, 'muy caro');
+  const { p } = login('Pocion1'); place(p, 150, 70); p.level = 120; p.hp = 100; p.maxHp = 1000; p.buffs = {}; p.nextPotion = 0;
+  // regeneración: 2,5 % por segundo durante 20 s
+  p.inv[0] = I.mk('pocion_regen', 1); game.use(p, 0); assert.ok(p.buffs.regen && p.buffs.regen.until > game.now);
+  for (let k = 0; k < 5; k++) { game.now += 1000; game.tickExt(game.now); } assert.ok(p.hp >= 100 + 4 * 25 && p.hp <= 100 + 6 * 25 + 1, 'cura poco a poco ' + p.hp);
+  game.now += 25000; const hp1 = p.hp; game.tickExt(game.now); game.tickExt(game.now + 1000); assert.equal(p.hp, hp1, 'termina a los 20 s');
+  // antídoto: quita el veneno y reduce las quemaduras
+  game.dots.push({ src: 0, tid: p.id, left: 5, next: game.now + 1000, dmg: 50 }); p.nextPotion = 0; p.inv[0] = I.mk('pocion_antidoto', 1); game.use(p, 0);
+  assert.ok(!game.dots.some((d) => d.tid === p.id), 'sin veneno'); p.hp = p.maxHp = 5000; const dn = game.hurtPlayer(p, 400, null, game.now, 'Fuego negro'); const dm = game.hurtPlayer(p, 400, null, game.now, 'Golpe');
+  assert.ok(dn < dm / 3, 'resiste la quemadura (' + dn + ' vs ' + dm + ')');
+  // furia / arcana: solo para su estilo; no se acumulan con el elixir de ataque general
+  p.buffs = {}; p.nextPotion = 0; p.eq.weapon = I.mk('espada_hierro', 1); const base = game.weaponOf(p).atk; p.inv[0] = I.mk('elixir_furia', 1); game.use(p, 0);
+  assert.ok(game.weaponOf(p).atk >= base * 1.14, 'furia sube el ataque cuerpo a cuerpo'); p.eq.weapon = I.mk('baston_fuego', 1); p.buffs.atkm = p.buffs.atkm; const mb = game.weaponOf(p).atk; game.addBuff(p, 'atkg', 1.15, 60); assert.ok(game.weaponOf(p).atk >= mb * 1.14, 'arcana sube la magia');
+  p.buffs = {}; p.eq.weapon = I.mk('arco_largo', 1); const rb = game.weaponOf(p).atk; game.addBuff(p, 'atkr', 1.15, 60); assert.ok(game.weaponOf(p).atk >= rb * 1.14, 'rango sube el ataque a distancia'); assert.ok(ITEMS.elixir_rango.buff.atkr);
+  // salto corto, crítico (excluyente con las de ataque) y resistencia elemental
+  clearAround(150, 70, 8); place(p, 150, 70); p.dir = 1; p.buffs = {}; p.nextPotion = 0; p.inv[0] = I.mk('pocion_salto', 2); game.use(p, 0);
+  assert.ok(p.x > 150 && p.x <= 156 && p.y === 70, 'salta hacia donde mira (' + p.x + ')'); assert.equal(p.inv[0].qty, 1);
+  p.buffs = {}; p.nextPotion = 0; game.addBuff(p, 'atkm', 1.15, 60); p.inv[1] = I.mk('pocion_critico', 1); game.use(p, 1); assert.ok(!p.buffs.crit, 'no se usa con una de ataque');
+  p.buffs = {}; p.nextPotion = 0; game.use(p, 1); assert.ok(p.buffs.crit && Math.abs(game.critBuff(p) - 0.15) < 1e-9, 'da +15 % de crítico'); p.nextPotion = 0; p.inv[2] = I.mk('elixir_furia', 1); game.use(p, 2); assert.ok(!p.buffs.atkm, 'ni las de ataque con crítico activo');
+  p.buffs = {}; p.hp = p.maxHp = 90000; const mf = { kind: 'mo', x: p.x, y: p.y, def: { proj: 'fire', name: 'Bicho' } }; const d0 = game.hurtPlayer(p, 4000, mf, game.now, 'Bicho'); game.addBuff(p, 'eres', 0.7, 60); const d1 = game.hurtPlayer(p, 4000, mf, game.now, 'Bicho'); const d2 = game.hurtPlayer(p, 4000, { kind: 'mo', x: p.x, y: p.y, def: { name: 'Orco' } }, game.now, 'Orco');
+  assert.ok(d1 < d0 * 0.85, 'resiste fuego (' + d1 + ' vs ' + d0 + ')'); assert.ok(d2 > d0 * 0.85, 'el daño físico no cambia');
+  // Elixir de la Raid: solo dentro de la Raid y se acaba con ella
+  p.buffs = {}; p.nextPotion = 0; p.inv[3] = I.mk('elixir_raid', 1); game.use(p, 3); assert.ok(!p.buffs.raid, 'fuera de la Raid no se usa'); assert.equal(p.inv[3].qty, 1);
+  const rz = world.zoneById('raid_slyvra').rect, wasRaid = game.raid; game.raid = { members: new Set([p.key]) }; const ox = p.x, oy = p.y;
+  try { place(p, rz[0] + 10, rz[1] + 10); p.eq.weapon = I.mk('espada_hierro', 1); const b0 = game.weaponOf(p).atk, d0 = game.defOf(p); game.use(p, 3); assert.ok(p.buffs.raid, 'dentro de la Raid sí'); assert.ok(game.weaponOf(p).atk >= b0 * 1.19, '+20 % de ataque ' + b0 + ' ' + game.weaponOf(p).atk + ' ' + JSON.stringify(p.buffs.raid)); assert.ok(game.defOf(p) >= d0, 'defensa');
+    game.raid = null; assert.ok(game.weaponOf(p).atk <= b0 && game.defOf(p) <= d0, 'al terminar la Raid deja de valer'); game.tickExt(game.now + 100); assert.ok(!p.buffs.raid, 'se quita'); } finally { game.raid = wasRaid; place(p, ox, oy); }
+  // Elixir del Cazador de Botín (Raid): solo dentro de la Raid y se acaba con ella
+  assert.equal(ITEMS.elixir_cazador_raid.price, 1200000); assert.ok(SH.boris.includes('elixir_cazador_raid')); p.buffs = {}; p.nextPotion = 0; p.inv[4] = I.mk('elixir_cazador_raid', 1); game.use(p, 4); assert.ok(!p.buffs.raidloot, 'fuera de la Raid no se usa');
+  { const rz2 = world.zoneById('raid_slyvra').rect, wr = game.raid; game.raid = { members: new Set([p.key]) }; const ox2 = p.x, oy2 = p.y;
+    try { place(p, rz2[0] + 10, rz2[1] + 10); game.use(p, 4); assert.equal(game.buffMult(p, 'raidloot'), 1.5); game.raid = null; game.tickExt(game.now + 100); assert.ok(!p.buffs.raidloot, 'se acaba con la Raid'); } finally { game.raid = wr; place(p, ox2, oy2); } }
+  // cazador de botín: más probabilidad, pero no para mascotas
+  p.buffs = {}; game.addBuff(p, 'loot', 1.5, 60); assert.equal(game.lootMult(p, 'pet_golem'), 1); assert.equal(game.lootMult(p, 'pocion_vida'), 1.5);
+  // minero y pescador
+  game.addBuff(p, 'gem', 2, 60); game.addBuff(p, 'fish', 1.5, 60); assert.equal(game.buffMult(p, 'gem'), 2); assert.equal(game.buffMult(p, 'fish'), 1.5);
+});
+
 ok('minería: picos, rocas por nivel, experiencia, gemas raras y colección', () => {
   const M = require('../game/mining');
   for (const id of M.ORDER) { assert.ok(ITEMS[id], id); assert.ok(game.nodes.some((q) => q.type === 'roca_' + id), 'hay rocas de ' + id); }

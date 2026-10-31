@@ -498,6 +498,7 @@ require('./mage').build(ITEMS, SHOPS, MONSTERS);
   require('./bosspets').build(ITEMS, MONSTERS);
   require('./fishing').build(ITEMS, SHOPS);
   require('./mining').build(ITEMS, SHOPS);
+  require('./pociones').build(ITEMS, SHOPS);
   require('./tablets').build(ITEMS, SHOPS);
   // Equilibrio: armas y armaduras más suaves (se aplica una sola vez a todo el catálogo)
   for (const it of Object.values(ITEMS)) {
