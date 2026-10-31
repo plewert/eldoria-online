@@ -883,7 +883,7 @@
     for (let i = AF.length - 1; i >= 0; i--) if (now - AF[i].t > AF[i].T) AF.splice(i, 1);
     switch (f.k) {
       case 'lgw': AF.push({ k: 'lgw', t: now, T: 900, f }); break;
-      case 'lg': AF.push({ k: 'lg', t: now, T: 420, f, s: Math.random() * 99 }); X.burst(f.x, f.y, 'storm', 14, { sp: 4, up: 3, g: 5, life: 0.5, size: 2.8 }); X.ring(f.x, f.y, 'storm', 360, 28, 3); G.shake = { t: now, m: 3 }; break;
+      case 'lg': AF.push({ k: 'lg', t: now, T: 420, f, s: Math.random() * 99 }); X.burst(f.x, f.y, 'ice', 14, { sp: 4, up: 3, g: 5, life: 0.5, size: 2.8 }); X.ring(f.x, f.y, 'ice', 360, 28, 3); G.shake = { t: now, m: 3 }; break;
       case 'frw': AF.push({ k: 'frw', t: now, T: 900, f }); break;
       case 'fr': AF.push({ k: 'fr', t: now, T: 1800, f, s: Math.random() * 99 }); X.burst(f.x, f.y, 'fire', 18, { sp: 4, up: 4, g: 5, life: 0.7, size: 3 }); X.ring(f.x, f.y, 'fire', 380, 30, 4); G.shake = { t: now, m: 3 }; break;
       case 'fqw': AF.push({ k: 'fqw', t: now, T: 1300, f }); G.shake = { t: now, m: 2 }; break;
@@ -935,8 +935,8 @@
         const r = f.r * TS, al = 1 - p; c.strokeStyle = `rgba(255,120,30,${0.9 * al})`; c.lineWidth = 3;
         for (let i = 0; i < 10; i++) { const a = i * 0.63; c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * r * 0.5, y + Math.sin(a + 0.2) * r * 0.4); c.lineTo(x + Math.cos(a + 0.15) * r * 0.95, y + Math.sin(a) * r * 0.75); c.stroke(); }
       } else if (b.k === 'lgw') {
-        const r = 1.5 * TS; c.fillStyle = `rgba(255,240,120,${0.10 + 0.25 * p})`; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
-        c.strokeStyle = `rgba(255,250,190,${0.5 + 0.4 * Math.abs(Math.sin(now / 60))})`; c.lineWidth = 2; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke();
+        const r = 1.5 * TS; c.fillStyle = `rgba(70,140,255,${0.10 + 0.25 * p})`; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+        c.strokeStyle = `rgba(170,215,255,${0.5 + 0.4 * Math.abs(Math.sin(now / 60))})`; c.lineWidth = 2; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke();
       } else if (b.k === 'nvw') {
         const r = f.r * TS; c.fillStyle = `rgba(70,140,255,${0.10 + 0.28 * p})`; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
         c.strokeStyle = 'rgba(150,200,255,.9)'; c.lineWidth = 3; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke(); c.beginPath(); c.arc(x, y, r * p, 0, 7); c.stroke();
@@ -961,11 +961,11 @@
         c.fillStyle = 'rgba(255,230,120,.95)'; c.beginPath(); c.arc(x, fy, 9, 0, 7); c.fill(); c.fillStyle = 'rgba(255,120,20,.7)'; c.beginPath(); c.arc(x, fy, 15, 0, 7); c.fill(); c.restore();
       } else if (b.k === 'lg') {                                   // rayo zigzag desde arriba
         const al = 1 - p; c.save(); c.globalCompositeOperation = 'lighter';
-        for (const [w, col] of [[9, `rgba(120,170,255,${0.5 * al})`], [3, `rgba(255,255,230,${al})`]]) {
+        for (const [w, col] of [[10, `rgba(60,130,255,${0.6 * al})`], [3, `rgba(215,240,255,${al})`]]) {
           c.strokeStyle = col; c.lineWidth = w; c.beginPath(); c.moveTo(x, y);
           for (let i = 1; i <= 8; i++) c.lineTo(x + Math.sin(i * 2.3 + b.s) * 14 * (i / 8), y - i * 34); c.stroke();
         }
-        c.fillStyle = `rgba(255,255,220,${0.6 * al})`; c.beginPath(); c.ellipse(x, y, TS * 1.4 * (0.4 + p), TS * 0.8 * (0.4 + p), 0, 0, 7); c.fill(); c.restore();
+        c.fillStyle = `rgba(150,205,255,${0.6 * al})`; c.beginPath(); c.ellipse(x, y, TS * 1.4 * (0.4 + p), TS * 0.8 * (0.4 + p), 0, 0, 7); c.fill(); c.restore();
       } else if (b.k === 'tn') {                            // tornado: espiral de aire blanco-azulado
         const al = 1 - p * 0.6; c.save();
         for (let i = 0; i < 14; i++) {

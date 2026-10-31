@@ -363,6 +363,7 @@ function carveWeb(C) {
     const sp = Math.PI / 4, d = Math.abs(((a % sp) + sp * 1.5) % sp - sp / 2);   // radios cada 45 grados
     if (d < 0.2 && r < 15) floor(x, y);
   }
+  for (let y = y0 + 1; y < y1; y++) for (let x = x0 + 1; x < x1; x++) tiles[idx(x, y)] = T.WEBF;   // cueva despejada: todo el interior es suelo, sin muros que estorben al caminar y correr
   for (let y = y0 + 1; y <= y0 + 6; y++) for (let x = C.inside[0] - 2; x <= C.inside[0] + 2; x++) tiles[idx(x, y)] = T.WEBF;   // vestíbulo
   const seen = new Set([idx(C.inside[0], C.inside[1])]), q = [...seen];
   for (let i = 0; i < q.length; i++) { const k = q[i], x = k % W, y = (k / W) | 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) { const nk = idx(x + dx, y + dy); if (inb(x + dx, y + dy) && tiles[nk] === T.WEBF && !seen.has(nk)) { seen.add(nk); q.push(nk); } } }
