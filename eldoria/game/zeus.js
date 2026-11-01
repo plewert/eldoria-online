@@ -37,7 +37,7 @@ function build(ITEMS, MONSTERS) {
   { const [id, name, spr, style, L, atk, cd, el] = STAFF; ITEMS[id] = { name, icon: '⚡', spr, type: 'weapon', style, atk, cd, range: 7, el, zeus: 1, minLevel: L, sell: sell(L, 8) }; }
   ITEMS.trofeo_zeus = { name: 'Rayo de Zeus', icon: '⚡', type: 'misc', stack: true, sell: 42000 };
   MONSTERS.zeus = {
-    name: 'Zeus, Señor del Olimpo', icon: '⚡', lv: 850, hp: 560000, dmg: [290, 470], dmgK: 2.6, exp: 140000, move: 420, atkCd: 1250, aggro: 18, respawn: 60000, armor: 0.5, shared: true, boss: true, special: 'zeus',
+    name: 'Zeus, Señor del Olimpo', icon: '⚡', lv: 850, hp: 560000, dmg: [340, 540], dmgK: 2.6, exp: 140000, move: 420, atkCd: 1250, aggro: 18, respawn: 60000, armor: 0.5, shared: true, boss: true, special: 'zeus',
     gold: [25000, 36000], loot: [['trofeo_zeus', 1, 1, 2], ['pocion_vida_g', 1, 5, 10], ['pocion_mana_g', 1, 5, 10], ['pluma_fenix', 0.5, 1, 2]],
   };
   const boss = MONSTERS.zeus;
@@ -97,39 +97,43 @@ function install(Game) {
         this.later(WARN, () => {
           if (!alive()) return;
           this.fx.push({ k: 'zs_bolt', x: tx, y: ty, r: 1.4, sx: m.x, sy: m.y });
-          for (const z of inside()) if (Math.hypot(z.x - tx, z.y - ty) <= 1.5) { this.hurtPlayer(z, rnd(260, 360), m, this.now, 'Rayo de Zeus'); slow(z, 3500); }
+          for (const z of inside()) if (Math.hypot(z.x - tx, z.y - ty) <= 1.5) { this.hurtPlayer(z, rnd(300, 415), m, this.now, 'Rayo de Zeus'); slow(z, 3500); }
         });
       });
       return 900 + N * GAP + WARN;
     }
-    if (kind === 'truenos') {                                                                     // truenos que persiguen a los jugadores por toda la plataforma
-      const pl0 = inside(), n = Math.min(6, 2 + pl0.length);
-      say('🌩️ ¡Zeus invoca truenos que te persiguen por todo el Olimpo! Corre y no te dejes alcanzar.'); cast(1600, 3200);
+    if (kind === 'truenos') {                                                                     // truenos que persiguen y SE MULTIPLICAN: hay que correr
+      const pl0 = inside(), n = Math.min(4, 1 + pl0.length);
+      say('🌩️ ¡Zeus invoca truenos que te persiguen y se multiplican! ¡Corre y no te dejes alcanzar!'); cast(1600, 3200);
       const born = spots(this, n, 5, R, pl0.map((q) => ({ x: q.x, y: q.y })));
       while (born.length < n) born.push({ x: Math.round(m.x) + born.length - 2, y: Math.round(m.y) + 2 });
-      const STEP = 340, LIFE = 15000, until = this.now + 1500 + LIFE;
-      const hitAt = new Map();
-      born.forEach((b, i) => {
-        const c = { id: 'zt' + m.id + '_' + i + '_' + this.now, x: b.x, y: b.y };
-        this.fx.push({ k: 'zs_chs', x: c.x, y: c.y, id: c.id, T: 1500 });
+      const STEP = 290, LIFE = 15000, SPLIT = 3800, until = this.now + 1500 + LIFE, cap = 8 + 3 * pl0.length;
+      const hitAt = new Map(); let alive_n = 0, seq = 0;
+      const spawn = (x, y, delay, gen) => {
+        if (alive_n >= cap) return; alive_n++;
+        const c = { id: 'zt' + m.id + '_' + (seq++) + '_' + this.now, x, y, split: this.now + delay + SPLIT };
+        this.fx.push({ k: 'zs_chs', x: c.x, y: c.y, id: c.id, T: delay });
         const step = () => {
-          if (!alive() || this.now > until) { this.fx.push({ k: 'zs_che', id: c.id, x: c.x, y: c.y }); return; }
+          if (!alive() || this.now > until) { alive_n--; this.fx.push({ k: 'zs_che', id: c.id, x: c.x, y: c.y }); return; }
           const pl = inside();
           if (pl.length) {
             let best = pl[0], bd = 1e9; for (const q of pl) { const d = Math.hypot(q.x - c.x, q.y - c.y); if (d < bd) { bd = d; best = q; } }
             const sx = Math.sign(best.x - c.x), sy = Math.sign(best.y - c.y);
-            for (const [dx, dy] of [[sx, sy], [sx, 0], [0, sy], [sx, -sy], [-sx, sy]]) { if ((dx || dy) && floorOk(c.x + dx, c.y + dy)) { c.x += dx; c.y += dy; break; } }
+            const opts = Math.random() < 0.18 ? [[sx, -sy], [-sx, sy], [sx, sy], [sx, 0], [0, sy]] : [[sx, sy], [sx, 0], [0, sy], [sx, -sy], [-sx, sy]];
+            for (const [dx, dy] of opts) { if ((dx || dy) && floorOk(c.x + dx, c.y + dy)) { c.x += dx; c.y += dy; break; } }
             this.fx.push({ k: 'zs_ch', id: c.id, x: c.x, y: c.y, T: STEP });
             for (const q of pl) if (Math.hypot(q.x - c.x, q.y - c.y) <= 1.25) {
               const key = c.id + ':' + q.id; if ((hitAt.get(key) || 0) > this.now) continue; hitAt.set(key, this.now + 1100);
               this.fx.push({ k: 'zs_hit', x: q.x, y: q.y });
-              this.hurtPlayer(q, rnd(280, 390), m, this.now, 'Trueno perseguidor');
+              this.hurtPlayer(q, rnd(320, 440), m, this.now, 'Trueno perseguidor');
             }
+            if (this.now >= c.split && until - this.now > 2500 && alive_n < cap) { c.split = this.now + SPLIT; this.fx.push({ k: 'zs_mul', x: c.x, y: c.y }); spawn(c.x, c.y, 300, gen + 1); }   // se multiplica
           }
           this.later(STEP, step);
         };
-        this.later(1500, step);
-      });
+        this.later(delay, step);
+      };
+      for (const b of born) spawn(b.x, b.y, 1500, 0);
       return 1500 + LIFE;
     }
     // tormenta: miles de rayos; solo se está a salvo en los cuadros dorados
@@ -143,7 +147,7 @@ function install(Game) {
     this.fx.push({ k: 'zs_storm', T: WARN + STORM, w: WARN, x: Math.round((R[0] + R[2]) / 2), y: Math.round((R[1] + R[3]) / 2), r: R });
     const strike = (x, y, big) => {
       this.fx.push({ k: 'zs_bolt', x, y, r: big ? 1.6 : 1.3, small: big ? 0 : 1 });
-      for (const z of inside()) if (!inSafe(z.x, z.y) && Math.hypot(z.x - x, z.y - y) <= (big ? 1.7 : 1.4)) this.hurtPlayer(z, big ? rnd(420, 560) : rnd(170, 250), m, this.now, big ? 'Rayo de la tormenta' : 'Lluvia de rayos');
+      for (const z of inside()) if (!inSafe(z.x, z.y) && Math.hypot(z.x - x, z.y - y) <= (big ? 1.7 : 1.4)) this.hurtPlayer(z, big ? rnd(485, 645) : rnd(195, 285), m, this.now, big ? 'Rayo de la tormenta' : 'Lluvia de rayos');
     };
     const WAVES = Math.round(STORM / 230);
     for (let w = 0; w < WAVES; w++) this.later(WARN + w * 230, () => {

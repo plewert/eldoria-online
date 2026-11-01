@@ -433,6 +433,6 @@ Junto a la puerta de cada cueva de jefe hay un segundo portal "Instancia privada
 
 ## Zeus, Señor del Olimpo (Montañas del Trueno)
 - Cueva **El Olimpo** (zona `cueva_olimpo`): plataforma de mármol sobre el cielo con viento. Puerta en las Montañas del Trueno (342,39), entrada 2k como las demás cuevas de jefe.
-- Jefe `zeus` (lv 850, 560k vida) con sprite animado (reposo, paso, ataque, herido, muerte) y 4 habilidades: **diez rayos** seguidos que ralentizan, **truenos perseguidores** por toda la plataforma, **tormenta de miles de rayos** (solo a salvo en los cuadros dorados) y **chispas** en sus golpes que saltan a los cercanos.
+- Jefe `zeus` (lv 850, 560k vida) con sprite animado (reposo, paso, ataque, herido, muerte) y 4 habilidades: **diez rayos** seguidos que ralentizan, **truenos perseguidores** que se multiplican, **tormenta de miles de rayos** (solo a salvo en los cuadros dorados) y **chispas** en sus golpes que saltan a los cercanos.
 - Botín: yelmo, túnica, faldellín, sandalias, guantes, 2 anillos, collar, égida (escudo), Cetro de Zeus y Arco de las Tormentas (2 especiales cada uno) y el trofeo Rayo de Zeus. Misión repetible `cueva_olimpo` con Boris.
 - Código: `game/zeus.js`, `public/zeus.js`, tiles `OLYF/OLYW/OLYS`, lentitud de jugador `p.slowUntil`.

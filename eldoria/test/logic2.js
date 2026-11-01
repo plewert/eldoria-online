@@ -572,7 +572,7 @@ ok('Zeus, Señor del Olimpo: cueva celeste, botín, diez rayos, truenos que pers
   const t0 = game.now; a.p.slowUntil = t0 + 5000; a.p.nextMove = 0; place(a.p, 342, 30); game.tryStep(a.p, 1, 0, t0); assert.ok(a.p.nextMove - t0 >= require('../game/data').CFG.STEP_MS * 1.8, 'paso más lento');
   // 2) truenos perseguidores: se acercan y dañan
   place(a.p, 342, 30); a.p.hp = b.p.hp = 1e7; game.fx.length = 0; game.zeusCast(m, 'truenos'); run(17000);
-  assert.ok(game.fx.filter((f) => f.k === 'zs_ch').length > 20, 'los truenos avanzan'); assert.ok(game.fx.some((f) => f.k === 'zs_che'), 'los truenos se apagan'); assert.ok(game.fx.some((f) => f.k === 'zs_hit'), 'alcanzan a alguien');
+  assert.ok(game.fx.filter((f) => f.k === 'zs_ch').length > 20, 'los truenos avanzan'); assert.ok(game.fx.some((f) => f.k === 'zs_che'), 'los truenos se apagan'); assert.ok(game.fx.some((f) => f.k === 'zs_hit'), 'alcanzan a alguien'); assert.ok(game.fx.filter((f) => f.k === 'zs_mul').length >= 2, 'los truenos se multiplican');
   // 3) tormenta: nadie sufre dentro del cuadro seguro; fuera, sí
   game.fx.length = 0; place(a.p, 342, 30); a.p.hp = b.p.hp = 1e7; game.zeusCast(m, 'tormenta'); run(100);
   const safes = game.fx.filter((f) => f.k === 'zs_safe'); assert.ok(safes.length >= 2 && game.fx.some((f) => f.k === 'zs_storm'), 'cuadros seguros y tormenta');

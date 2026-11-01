@@ -29,6 +29,7 @@
       case 'zs_ch': { const c = CH.get(f.id) || { x1: f.x, y1: f.y }; CH.set(f.id, { x0: c.x1, y0: c.y1, x1: f.x, y1: f.y, t: now, T: f.T, born: 0 }); break; }
       case 'zs_che': CH.delete(f.id); ADD('zs_bolt', { x: f.x, y: f.y, r: 1.2, small: 1 }, 420); X.burst(f.x, f.y, 'storm', 10, { sp: 3, up: 3, g: 2, life: 0.6, size: 2.6 }); break;
       case 'zs_hit': X.burst(f.x, f.y, 'storm', 14, { sp: 4, up: 3, g: 3, life: 0.6, size: 3 }); X.ring(f.x, f.y, 'storm', 380, 40, 3); G.shake = { t: now, m: 3 }; break;
+      case 'zs_mul': ADD('zs_bolt', { x: f.x, y: f.y, r: 1, small: 1 }, 380); X.burst(f.x, f.y, 'storm', 12, { sp: 3.5, up: 3, g: 2, life: 0.5, size: 2.6 }); X.ring(f.x, f.y, 'storm', 360, 44, 3); break;
       case 'zs_spark': ADD('zs_spark', f, 500); X.burst(f.x, f.y, 'storm', 8, { sp: 3.5, up: 2.5, g: 3, life: 0.5, size: 2.4 }); break;
       case 'zs_die': DIE.push({ t: now, x: f.x, y: f.y, face: f.face }); X.burst(f.x, f.y, 'storm', 40, { sp: 6, up: 4, g: 2, life: 1.2, size: 3.4 }); X.ring(f.x, f.y, 'storm', 900, 120, 5); G.shake = { t: now, m: 8 }; break;
       default: break;
@@ -38,7 +39,7 @@
   const bolt = (c, x1, y1, x2, y2, seed, w, al) => {                                                    // rayo en zigzag
     const n = 9; c.beginPath(); c.moveTo(x1, y1);
     for (let i = 1; i < n; i++) { const u = i / n; c.lineTo(x1 + (x2 - x1) * u + (hs(seed, i) - 0.5) * 26 * (1 - u * 0.4), y1 + (y2 - y1) * u); }
-    c.lineTo(x2, y2); c.strokeStyle = `rgba(150,210,255,${0.55 * al})`; c.lineWidth = w * 3; c.lineJoin = 'round'; c.stroke(); c.strokeStyle = `rgba(255,255,255,${al})`; c.lineWidth = w; c.stroke();
+    c.lineTo(x2, y2); c.lineJoin = 'round'; c.strokeStyle = `rgba(30,100,255,${0.6 * al})`; c.lineWidth = w * 4.5; c.stroke(); c.strokeStyle = `rgba(70,160,255,${0.9 * al})`; c.lineWidth = w * 2.2; c.stroke(); c.strokeStyle = `rgba(190,225,255,${al})`; c.lineWidth = Math.max(1, w * 0.7); c.stroke();
   };
   const inOlimpo = () => G.me && X.zoneAt(G.me.x, G.me.y).id === 'cueva_olimpo';
 
@@ -50,7 +51,7 @@
       if (b.k === 'zs_mk') {
         const x = px(f.x), y = py(f.y), r = f.r * TS, al = f.small ? 0.5 : 1;
         c.save(); c.fillStyle = `rgba(150,200,255,${(0.08 + 0.16 * p) * al})`; c.beginPath(); c.ellipse(x, y, r, r * 0.8, 0, 0, 7); c.fill();
-        ring(c, x, y, r * (0.25 + 0.75 * p), '190,230,255', f.small ? 2 : 3, 0.9 * al); if (!f.small) ring(c, x, y, r, '255,255,255', 1.5, 0.5 + 0.4 * Math.sin(now / 60)); c.restore();
+        ring(c, x, y, r * (0.25 + 0.75 * p), '110,175,255', f.small ? 2 : 3, 0.9 * al); if (!f.small) ring(c, x, y, r, '120,180,255', 1.5, 0.5 + 0.4 * Math.sin(now / 60)); c.restore();
       } else if (b.k === 'zs_safe') {                                                  // cuadro seguro dorado
         const s = X.sxOf(f.x - 1), y = X.syOf(f.y - 1), w = 3 * TS, al = p > 0.92 ? (1 - p) / 0.08 : 1, pu = 0.5 + 0.5 * Math.sin(now / 240);
         c.save(); c.globalAlpha = al; c.fillStyle = `rgba(255,214,90,${0.38 + 0.18 * pu})`; c.fillRect(s, y, w, w);
@@ -78,9 +79,9 @@
         c.restore();
       } else if (b.k === 'zs_bolt') {                                                  // rayo que cae del cielo
         const x = px(f.x), y = py(f.y), al = 1 - p, sky = y - 420;
-        c.save(); c.globalCompositeOperation = 'lighter'; glow(c, x, y - 6, (f.small ? 46 : 80) * (0.6 + p), '150,210,255', 0.8 * al);
+        c.save(); c.globalCompositeOperation = 'lighter'; glow(c, x, y - 6, (f.small ? 46 : 80) * (0.6 + p), '50,130,255', 0.85 * al);
         if (p < 0.55) { bolt(c, x + (hs(Math.round(f.x), Math.round(f.y)) - 0.5) * 20, sky, x, y, Math.round(now / 70) + f.x * 3, f.small ? 2 : 3.5, 1 - p / 0.55); }
-        glow(c, x, y - 6, 24, '255,255,255', 0.9 * al); c.restore();
+        glow(c, x, y - 6, 24, '170,215,255', 0.9 * al); c.restore();
       } else if (b.k === 'zs_spark') {
         const x = px(f.x), y = py(f.y) - 14; c.save(); c.globalCompositeOperation = 'lighter';
         for (let i = 0; i < 4; i++) { const a = hs(i, Math.round(now / 60)) * 6.28, L = 10 + 14 * (1 - p); c.strokeStyle = `rgba(210,240,255,${1 - p})`; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * L, y + Math.sin(a) * L * 0.8); c.stroke(); }
@@ -92,8 +93,8 @@
       const u = o.born && now < o.born ? 0 : Math.min(1, (now - o.t) / (o.T || 340)), gx = o.x0 + (o.x1 - o.x0) * u, gy = o.y0 + (o.y1 - o.y0) * u;
       if (o.born && now < o.born) continue;
       const x = px(gx), y = py(gy) - 10, r = 20 + 4 * Math.sin(now / 60);
-      c.save(); c.globalCompositeOperation = 'lighter'; glow(c, x, y, 58, '120,190,255', 0.55); glow(c, x, y, r, '255,255,255', 0.85);
-      for (let i = 0; i < 5; i++) { const a = hs(i, Math.round(now / 50) + id.length) * 6.28; c.strokeStyle = 'rgba(200,235,255,.9)'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * 26, y + Math.sin(a) * 22); c.stroke(); }
+      c.save(); c.globalCompositeOperation = 'lighter'; glow(c, x, y, 58, '40,120,255', 0.65); glow(c, x, y, r, '170,215,255', 0.9);
+      for (let i = 0; i < 5; i++) { const a = hs(i, Math.round(now / 50) + id.length) * 6.28; c.strokeStyle = 'rgba(90,170,255,.95)'; c.lineWidth = 1.8; c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * 26, y + Math.sin(a) * 22); c.stroke(); }
       c.restore();
       if (Math.random() < 0.3) X.burst(gx, gy - 0.3, 'storm', 1, { sp: 1.5, up: 1, g: 2, life: 0.4, size: 2 });
     }
@@ -101,7 +102,7 @@
     for (const b of AN) {
       if (b.k !== 'zs_storm') continue; const p = (now - b.t) / b.T; if (p >= 1) continue; const f = b.f, warn = Math.min(1, (now - b.t) / f.w), tail = p > 0.9 ? (1 - p) / 0.1 : 1;
       c.save(); c.fillStyle = `rgba(14,20,50,${0.38 * warn * tail})`; c.fillRect(0, 0, cw, ch);
-      if (now - b.t > f.w && hs(Math.round(now / 90), 3) < 0.35) { c.fillStyle = 'rgba(220,235,255,.14)'; c.fillRect(0, 0, cw, ch); }
+      if (now - b.t > f.w && hs(Math.round(now / 90), 3) < 0.35) { c.fillStyle = 'rgba(120,170,255,.14)'; c.fillRect(0, 0, cw, ch); }
       c.restore();
     }
     if (inOlimpo()) {                                                                  // viento del Olimpo: rachas y jirones de nube que cruzan la pantalla
