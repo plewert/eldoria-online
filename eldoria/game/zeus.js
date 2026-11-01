@@ -37,7 +37,7 @@ function build(ITEMS, MONSTERS) {
   { const [id, name, spr, style, L, atk, cd, el] = STAFF; ITEMS[id] = { name, icon: '⚡', spr, type: 'weapon', style, atk, cd, range: 7, el, zeus: 1, minLevel: L, sell: sell(L, 8) }; }
   ITEMS.trofeo_zeus = { name: 'Rayo de Zeus', icon: '⚡', type: 'misc', stack: true, sell: 42000 };
   MONSTERS.zeus = {
-    name: 'Zeus, Señor del Olimpo', icon: '⚡', lv: 850, hp: 560000, dmg: [340, 540], dmgK: 2.6, exp: 140000, move: 420, atkCd: 1250, aggro: 18, respawn: 60000, armor: 0.5, shared: true, boss: true, special: 'zeus',
+    name: 'Zeus, Señor del Olimpo', icon: '⚡', lv: 850, hp: 560000, dmg: [380, 600], dmgK: 3.0, exp: 140000, move: 420, atkCd: 1250, aggro: 18, respawn: 60000, armor: 0.5, shared: true, boss: true, special: 'zeus',
     gold: [25000, 36000], loot: [['trofeo_zeus', 1, 1, 2], ['pocion_vida_g', 1, 5, 10], ['pocion_mana_g', 1, 5, 10], ['pluma_fenix', 0.5, 1, 2]],
   };
   const boss = MONSTERS.zeus;
@@ -183,12 +183,32 @@ function install(Game) {
     return r;
   };
 
+  const GEAR = new Set([...PIECES, ...RINGS, AMULET, BOW, STAFF].map((q) => q[0]));
+  const CH = new Map(); for (const q of PIECES) CH.set(q[0], q[7]); for (const q of RINGS) CH.set(q[0], q[6]); CH.set(AMULET[0], AMULET[6]); CH.set(BOW[0], BOW[8]); CH.set(STAFF[0], STAFF[8]);
   const K0 = P.killMonster;
   P.killMonster = function (m, now) {
-    const x = m.x, y = m.y, face = m.lf || 1;
-    const r = K0.call(this, m, now);
-    if (m.type === 'zeus') this.fx.push({ k: 'zs_die', x, y, face });
+    if (m.type !== 'zeus') return K0.call(this, m, now);
+    const x = m.x, y = m.y, face = m.lf || 1, parts = []; let total = 0;
+    for (const [pid, e] of m.dmgBy) { const pl = this.ents.get(pid); if (pl && pl.kind === 'pl' && now - e.t <= 180000) { parts.push([pl, e.dmg]); total += e.dmg; } }
+    const real = m.def, instK = m.instSlot ? require('./instancias').LOOT_K : 1;
+    m.def = Object.assign({}, real, { loot: real.loot.filter((l) => !GEAR.has(l[0])) });                 // oro, trofeo y pociones: reparto normal
+    let r; try { r = K0.call(this, m, now); } finally { m.def = real; }
+    // equipo del Olimpo: botín para todos los que participan; cuanto más daño haces, más suerte (hasta ×3 el que más daño hizo)
+    const I = require('./items'), need = total * 0.01, topDmg = Math.max(1, ...parts.map((q) => q[1])), ranked = parts.slice().sort((a, b) => b[1] - a[1]);
+    if (ranked.length) this.broadcastChat(`⚡ ¡Zeus ha caído! Mayor daño: ${ranked.slice(0, 3).map((q) => `${q[0].name} (${q[1]})`).join(', ')}.`, 'k');
+    for (const [pl, dmg] of ranked) {
+      if (dmg < need) continue;
+      const k = 1 + 2 * (dmg / topDmg);
+      for (const id of GEAR) {
+        if (Math.random() >= Math.min(0.6, CH.get(id) * 1.5 * k * instK * (this.lootMult ? this.lootMult(pl, id) : 1))) continue;
+        this.giveOrDropInst(pl, I.rollGear(id, true)); if (this.logDrop) this.logDrop(pl, 'zeus', id);
+        this.msgC(pl, `⚡✨ ¡Botín de Zeus: ${ITEMS_REF()[id].name}!`, '#7fb8ff'); this.broadcastChat(`⚡ ¡${pl.name} ha conseguido ${ITEMS_REF()[id].name}!`, 'k');
+      }
+      pl.dirty.inv = true; if (this.sendCol) this.sendCol(pl); if (this.checkAch) this.checkAch(pl);
+    }
+    this.fx.push({ k: 'zs_die', x, y, face });
     return r;
   };
 }
+const ITEMS_REF = () => require('./data').ITEMS;
 module.exports = { build, install, PIECES, RINGS, AMULET, BOW, STAFF };

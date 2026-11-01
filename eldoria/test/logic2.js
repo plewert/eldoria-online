@@ -225,11 +225,11 @@ ok('habilidades: tope 320 y cada nivel cuesta más', () => {
   const a = login('Sk1'); a.p.sxp.melee = S.skillXpFor(320) - 1; game.addSkillXp(a.p, 'melee', 99999); assert.equal(a.p.sxp.melee, S.skillXpFor(320)); assert.equal(S.skillFromXp(a.p.sxp.melee), 320);
   assert.ok(S.skillMult(320) < 10);
 });
-ok('los jefes pegan 1,5 veces más fuerte', () => {
+ok('los jefes pegan 1,9 veces más fuerte', () => {
   const a = login('Bd1'); place(a.p, 50, 64); a.p.hp = a.p.maxHp = 100000; a.p.eq = {}; game.recalc(a.p);
   const norm = { kind: 'mo', x: 50, y: 63, def: { boss: false } }, boss = { kind: 'mo', x: 50, y: 63, def: { boss: true } };
   let sn = 0, sb = 0; for (let i = 0; i < 300; i++) { a.p.hp = 100000; game.hurtPlayer(a.p, 200, norm, T0, 'x'); sn += 100000 - a.p.hp; a.p.hp = 100000; game.hurtPlayer(a.p, 200, boss, T0, 'x'); sb += 100000 - a.p.hp; }
-  assert.ok(sb / sn > 1.35 && sb / sn < 1.65, 'ratio ' + sb / sn);
+  assert.ok(sb / sn > 1.7 && sb / sn < 2.1, 'ratio ' + sb / sn);
 });
 ok('colección de jefes: registra lo que suelta el jefe y se guarda', () => {
   const a = login('Col1'); place(a.p, 122, 86);
@@ -582,6 +582,11 @@ ok('Zeus, Señor del Olimpo: cueva celeste, botín, diez rayos, truenos que pers
   // 4) chispas: un golpe normal salta a los cercanos
   place(a.p, 342, 26); place(b.p, 343, 26); a.p.hp = b.p.hp = 1e7; game.fx.length = 0; game.hurtPlayer(a.p, 1000, m, game.now);
   assert.ok(game.fx.some((f) => f.k === 'zs_spark'), 'chispas'); assert.ok(b.p.hp < 1e7, 'las chispas saltan al vecino');
+  // reparto del equipo: participan todos y el que más daño hace tiene más suerte
+  { let nA = 0, nB = 0; const A = a.p, B = b.p;
+    for (let i = 0; i < 300; i++) { const z = game.spawnMonster('zeus', sp.x, sp.y); z.dmgBy.set(A.id, { dmg: 300000, t: game.now }); z.dmgBy.set(B.id, { dmg: 60000, t: game.now }); game.gtile.clear(); A.inv.fill(null); B.inv.fill(null);
+      game.killMonster(z, game.now); const cnt = (pl) => pl.inv.filter((it) => it && /^zs_/.test(it.id)).length + [...game.gtile.values()].flat().filter((g) => g.owner === pl.id && /^zs_/.test(g.id)).length; nA += cnt(A); nB += cnt(B); }
+    assert.ok(nA > 0 && nB > 0, 'reparte a todos los participantes'); assert.ok(nA > nB * 1.4, 'más daño, más botín: ' + nA + ' vs ' + nB); }
   game.fx.length = 0; game.killMonster(m, game.now); assert.ok(game.fx.some((f) => f.k === 'zs_die'), 'animación de muerte');
   assert.ok(game.fx.filter((f) => /^zs_/.test(f.k)).every((f) => Number.isFinite(f.x ?? 0) && Number.isFinite(f.y ?? 0)), 'fx con coordenadas');
 });

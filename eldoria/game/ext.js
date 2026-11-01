@@ -13,7 +13,7 @@ const { zoneAt, NPCS, W, H, T } = world;
 
 const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const kxy = (x, y) => y * W + x;
-const BOSS_DMG = 1.5;
+const BOSS_DMG = 1.9;
 const cheb = (ax, ay, bx, by) => Math.max(Math.abs(ax - bx), Math.abs(ay - by));
 const { LEVEL_MAX } = require('./skills');
 const levelFromXp = (xp) => Math.min(LEVEL_MAX, 1 + Math.floor(Math.sqrt(xp / 50)));
