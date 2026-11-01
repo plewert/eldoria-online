@@ -14,7 +14,7 @@ const { SPAWN_PLAN } = require('./data');
 const W0 = 180;                 // el mapa original (se genera igual que siempre)
 const W1 = 320;                 // ancho del mundo antes de la gran ampliación al este (esa parte se genera igual que siempre)
 const W = 480, H0 = 140;        // mundo exterior: Selva Esmeralda, Sabana Dorada, Aldea Pesquera, Tierras de Lava y, al este, las Tierras Inexploradas (vacías, para zonas futuras)
-const H = 242;                  // + 102 filas al sur: salas de la Raid y copias de las instancias de jefe (el exterior se genera igual que siempre con H0)
+const H = 264;                  // + 124 filas al sur: salas de la Raid y copias de las instancias de jefe (el exterior se genera igual que siempre con H0)
 const T = {
   GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10,
   SAND: 11, SNOW: 12, SWAMP: 13, DUNE: 14, PALM: 15, PINE: 16, DEADTREE: 17, CACTUS: 18, ICEBLOCK: 19,
@@ -70,8 +70,8 @@ const ZONES = [
   { id: 'tierras_nuevas', name: 'Tierras Inexploradas', pvp: false, kind: 'field', rect: [320, 0, 479, 139] },   // reservado para zonas futuras
   { id: 'prado',      name: 'Prado de los Novatos',   pvp: false, kind: 'field',   rect: [0, 0, 179, 139] },
 ];
-// ---- Instancias privadas de los jefes de cueva: copias exactas de cada cueva al sur del mapa (6 por cueva) ----
-const INST_PER_CAVE = 6;
+// ---- Instancias privadas de los jefes de cueva: copias exactas de cada cueva al sur del mapa (7 por cueva) ----
+const INST_PER_CAVE = 7;
 const INST_CAVES = [                       // cueva (zona), jefe, precio por entrar (oro) — cámbialo aquí
   { cave: 'cueva',        boss: 'dragon_sombra',  fee: 200000 },
   { cave: 'cueva_jade',   boss: 'hidra_jade',     fee: 250000 },
@@ -85,7 +85,7 @@ const INST_POS = [];                        // esquinas (x0, y0) de las 18 plaza
 for (let r = 0; r < 2; r++) for (let c = 0; c < 5; c++) INST_POS.push([282 + 36 * c, 142 + 22 * r]);
 INST_POS.push([240, 160], [240, 180]);
 for (let c = 0; c < 6; c++) INST_POS.push([2 + 36 * c, 176]);
-for (const y0 of [200, 222]) for (let c = 0; c < 13; c++) INST_POS.push([2 + 36 * c, y0]);       // dos filas nuevas al sur: 26 plazas más
+for (const y0 of [200, 222, 244]) for (let c = 0; c < 13; c++) INST_POS.push([2 + 36 * c, y0]);       // tres filas nuevas al sur: 39 plazas más
 const INSTANCES = INST_CAVES.map((d, i) => {
   const src = ZONES.find((z) => z.id === d.cave), [x0, y0, x1, y1] = src.rect;
   const slots = [];

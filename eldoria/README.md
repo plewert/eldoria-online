@@ -426,7 +426,7 @@ Pociones añadidas después (todas en Boris): **Poción de Rango** (+15 % de ata
 
 Junto a la puerta de cada cueva de jefe hay un segundo portal "Instancia privada: …" (`game/instancias.js`, datos en `INST_CAVES` de `game/world.js`):
 
-- **Individual:** cada jugador entra a su propia copia exacta de la cueva (6 copias por cueva; si todas están ocupadas, avisa). El oro se cobra al cruzar el portal.
+- **Individual:** cada jugador entra a su propia copia exacta de la cueva (7 copias por cueva; si todas están ocupadas, avisa). El oro se cobra al cruzar el portal.
 - **Más difícil, más botín:** el jefe sale al instante con +50 % de vida y +25 % de daño; da +50 % de oro y +50 % de probabilidad en cada objeto (las mascotas no suben).
 - **Límites:** 20 min como máximo; al derrotar al jefe quedan 90 s para recoger el botín. La instancia se cierra si sales, mueres o te desconectas.
 - **Precios** (editables en `INST_CAVES`): Dragón de las Sombras 200.000 · Hidra de Jade 250.000 · Arcángel 300.000 · Aracnídeo 400.000 · Leviatán 500.000 · Soberano del Magma 600.000 · Anubis 800.000.

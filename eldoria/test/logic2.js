@@ -637,7 +637,7 @@ ok('pociones nuevas: regeneración, antídoto, furia, arcana, cazador de botín,
 ok('Instancias privadas de jefes de cueva: copias, portales de pago, jefe más fuerte, botín y cierre', () => {
   const IN = world.INSTANCES; assert.equal(IN.length, 7); const gj = require('../game/instancias');
   for (const I of IN) {
-    assert.equal(I.slots.length, 6); assert.ok(I.fee >= 100000, 'cuesta ' + I.cave); const src = world.zoneById(I.cave).rect;
+    assert.equal(I.slots.length, 7); assert.ok(I.fee >= 100000, 'cuesta ' + I.cave); const src = world.zoneById(I.cave).rect;
     const ep = world.PORTALS.find((o) => o.inst === I.cave); assert.ok(ep && ep.fee === I.fee && world.zoneAt(ep.x, ep.y).kind !== 'dungeon' && world.isWalkable(ep.x, ep.y - 0), 'portal de entrada ' + I.cave);
     for (const sl of I.slots) {
       const z = world.zoneById(sl.id); assert.ok(z && z.kind === 'dungeon' && !z.pvp && world.zoneAt(sl.inside[0], sl.inside[1]).id === sl.id && world.zoneAt(sl.lair[0], sl.lair[1]).id === sl.id, sl.id);
@@ -653,7 +653,7 @@ ok('Instancias privadas de jefes de cueva: copias, portales de pago, jefe más f
   game.instEnter(nog.p, portal); assert.ok(!world.zoneAt(nog.p.x, nog.p.y).id.startsWith('inst_'), 'sin oro no entra');
   game.instEnter(a.p, portal); assert.equal(world.zoneAt(a.p.x, a.p.y).id, 'inst_cueva_1'); assert.equal(a.p.gold, 5e6 - I.fee, 'cobra');
   const boss = game.monsters.find((m) => m.instSlot === 'inst_cueva_1'); assert.ok(boss && boss.type === 'dragon_sombra' && boss.maxHp === Math.round(boss.def.hp * gj.HP_K) && boss.noRespawn);
-  game.instEnter(b.p, portal); assert.equal(world.zoneAt(b.p.x, b.p.y).id, 'inst_cueva_2'); for (let k = 3; k <= 6; k++) game.instSt.set('inst_cueva_' + k, { key: 'otro' + k, boss: null, endAt: game.now + 1e9, cleared: false }); game.instEnter(c.p, portal); assert.ok(!world.zoneAt(c.p.x, c.p.y).id.startsWith('inst_'), 'sin plaza libre'); assert.equal(c.p.gold, 5e6, 'no cobra');
+  game.instEnter(b.p, portal); assert.equal(world.zoneAt(b.p.x, b.p.y).id, 'inst_cueva_2'); for (let k = 3; k <= 7; k++) game.instSt.set('inst_cueva_' + k, { key: 'otro' + k, boss: null, endAt: game.now + 1e9, cleared: false }); game.instEnter(c.p, portal); assert.ok(!world.zoneAt(c.p.x, c.p.y).id.startsWith('inst_'), 'sin plaza libre'); assert.equal(c.p.gold, 5e6, 'no cobra');
   // el jefe pega más fuerte
   a.p.hp = a.p.maxHp = 9e6; const hm = game.hurtPlayer(a.p, 1000, { kind: 'mo', x: boss.x, y: boss.y, def: boss.def, instMul: gj.DMG_K }, game.now, 'x'), hn = game.hurtPlayer(a.p, 1000, { kind: 'mo', x: boss.x, y: boss.y, def: boss.def }, game.now, 'x'); assert.ok(hm > hn * 1.1, 'más daño ' + hm + ' ' + hn);
   // el jefe cae: botín y cierre a los 90 s
