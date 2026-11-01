@@ -74,6 +74,7 @@ function noviceTypes(level) {
 /* ---------- campos de distancia (viajes largos, incluidos los portales) ---------- */
 const revPortal = new Map();
 for (const pt of world.PORTALS) {
+  if (pt.inst) continue;                       // las instancias de pago no sirven de atajo: los bots no las usan
   const k = kxy(pt.tx, pt.ty);
   if (!revPortal.has(k)) revPortal.set(k, []);
   revPortal.get(k).push(kxy(pt.x, pt.y));

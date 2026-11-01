@@ -112,3 +112,12 @@ game.handle(me, { t: 'chat', text: '/top' });
 const topMsg = ws.got.filter((m) => m.t === 'chat').pop().m;
 assert.ok(!game.bots.some((b) => topMsg.includes(b.name)), '/top no lista bots');
 console.log('OK bots (' + game.bots.length + ' aventureros; jefe derrotado, Raid hasta cámara ' + room + ')');
+
+/* ---- los portales de instancias no son atajos para los bots ---- */
+{
+  const w = require('../game/world');
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../game/bots.js'), 'utf8');
+  if (!w.PORTALS.some((p) => p.inst)) throw new Error('no hay portales de instancia');
+  if (!/if \(pt\.inst\) continue;/.test(src)) throw new Error('bots: las instancias deben excluirse del campo de rutas');
+  console.log('ok  bots: portales de instancia excluidos de las rutas');
+}
