@@ -1,7 +1,7 @@
 'use strict';
 /**
  * Instancias privadas de los jefes de cueva (pagas, individuales).
- *  - Cada cueva tiene 7 copias exactas al sur del mapa (zonas inst_<cueva>_<n>); los precios están en `INST_CAVES` (game/world.js).
+ *  - Cada cueva (8 con El Olimpo, entrada 1M) tiene 7 copias exactas al sur del mapa (zonas inst_<cueva>_<n>); los precios están en `INST_CAVES` (game/world.js).
  *  - Entras por un portal junto a la puerta de la cueva y pagas al cruzarlo. Solo tú estás dentro.
  *  - El jefe sale al instante: +50 % de vida, +25 % de daño y +50 % de oro y de botín (las mascotas no suben). Duración máxima: 20 min.
  *  - Termina cuando el jefe cae (90 s para recoger el botín), se acaba el tiempo, sales por el portal, mueres o te desconectas.

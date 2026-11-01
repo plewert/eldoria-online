@@ -554,8 +554,40 @@ ok('Anubis, Juez de las Sombras: tumba, botín, miasma, portales, sombras y momi
   const hp0 = a.p.hp = 1000; a.p.maxHp = 5000; a.p.antiHeal = game.now + 5000; const nm = a.p.hp; assert.ok(a.p.antiHeal > game.now && nm === hp0);
 });
 
-ok('especiales de armas de jefe: 24 armas x 2 especiales (teclas 4 y 5) con daño, espera, maná y controles reducidos en jefes', () => {
-  const { WSPEC } = require('../game/especiales'); const ids = Object.keys(WSPEC); assert.equal(ids.length, 24);
+ok('Zeus, Señor del Olimpo: cueva celeste, botín, diez rayos, truenos que persiguen, tormenta con cuadros seguros y chispas', () => {
+  assert.equal(MONSTERS.zeus.special, 'zeus'); assert.equal(typeof Game.prototype.zeusAI, 'function');
+  const loot = MONSTERS.zeus.loot.map((l) => l[0]);
+  ['zs_yelmo', 'zs_peto', 'zs_guantes', 'zs_pantalon', 'zs_botas', 'zs_escudo', 'zs_anillo', 'zs_anillo2', 'zs_amuleto', 'zs_arco', 'zs_cetro', 'trofeo_zeus'].forEach((id) => { assert.ok(loot.includes(id), id); assert.ok(ITEMS[id], id); });
+  const sj = require('../public/sprites.json'), gj = require('../public/gear.json');
+  assert.ok(sj.zeus && sj.zeus.anim && ['idle', 'walk', 'atk', 'hurt', 'death'].every((k) => sj.zeus.anim[k].length >= 3), 'sprite animado');
+  for (const k of ['zs_helm', 'zs_chest', 'zs_leg', 'zs_boot', 'zs_glove', 'zs_belt', 'zs_ring', 'zs_ring2', 'zs_amulet', 'zs_shield', 'zs_staff', 'zs_bow']) assert.ok(gj['i_' + k], 'icono ' + k);
+  const sp = world.monsterSpawns.find((q) => q.type === 'zeus'); assert.equal(zoneOf([sp.x, sp.y]).id, 'cueva_olimpo'); assert.ok(world.reach[sp.y * world.W + sp.x], 'alcanzable');
+  const pt = world.PORTALS.find((q) => q.x === 342 && q.y === 39); assert.ok(pt && pt.fee === 2000);
+  const run = (ms) => { for (let k = 0; k <= ms; k += 100) { game.now += 100; const due = game.sched.filter((e) => e.at <= game.now); game.sched = game.sched.filter((e) => e.at > game.now); due.forEach((e) => e.fn()); } };
+  const a = login('Zeu1'), b = login('Zeu2'); place(a.p, 342, 30); place(b.p, 338, 31); for (const q of [a.p, b.p]) q.hp = q.maxHp = 1e7;
+  const m = game.spawnMonster('zeus', sp.x, sp.y); m.target = a.p.id; game.fx.length = 0;
+  // 1) diez rayos: golpean y ralentizan
+  game.zeusCast(m, 'rayos'); run(7000);
+  assert.equal(game.fx.filter((f) => f.k === 'zs_bolt').length, 10, 'diez rayos'); assert.ok(a.p.hp < 1e7 || b.p.hp < 1e7, 'los rayos dañan'); assert.ok(game.fx.some((f) => f.k === 'zs_slow') && (a.p.slowUntil > 0 || b.p.slowUntil > 0), 'ralentiza');
+  const t0 = game.now; a.p.slowUntil = t0 + 5000; a.p.nextMove = 0; place(a.p, 342, 30); game.tryStep(a.p, 1, 0, t0); assert.ok(a.p.nextMove - t0 >= require('../game/data').CFG.STEP_MS * 1.8, 'paso más lento');
+  // 2) truenos perseguidores: se acercan y dañan
+  place(a.p, 342, 30); a.p.hp = b.p.hp = 1e7; game.fx.length = 0; game.zeusCast(m, 'truenos'); run(17000);
+  assert.ok(game.fx.filter((f) => f.k === 'zs_ch').length > 20, 'los truenos avanzan'); assert.ok(game.fx.some((f) => f.k === 'zs_che'), 'los truenos se apagan'); assert.ok(game.fx.some((f) => f.k === 'zs_hit'), 'alcanzan a alguien');
+  // 3) tormenta: nadie sufre dentro del cuadro seguro; fuera, sí
+  game.fx.length = 0; place(a.p, 342, 30); a.p.hp = b.p.hp = 1e7; game.zeusCast(m, 'tormenta'); run(100);
+  const safes = game.fx.filter((f) => f.k === 'zs_safe'); assert.ok(safes.length >= 2 && game.fx.some((f) => f.k === 'zs_storm'), 'cuadros seguros y tormenta');
+  place(a.p, safes[0].x, safes[0].y); place(b.p, 333, 24); if (safes.some((s) => Math.max(Math.abs(s.x - 333), Math.abs(s.y - 24)) <= 2)) place(b.p, 352, 33); const bx = b.p.x, by = b.p.y;
+  run(13000); assert.equal(a.p.hp, 1e7, 'a salvo en el cuadro'); assert.ok(b.p.hp < 1e7 || !safes.every((s) => Math.max(Math.abs(s.x - bx), Math.abs(s.y - by)) > 1), 'fuera del cuadro se recibe daño');
+  assert.ok(game.fx.filter((f) => f.k === 'zs_bolt').length > 100, 'miles de rayos (muchos)');
+  // 4) chispas: un golpe normal salta a los cercanos
+  place(a.p, 342, 26); place(b.p, 343, 26); a.p.hp = b.p.hp = 1e7; game.fx.length = 0; game.hurtPlayer(a.p, 1000, m, game.now);
+  assert.ok(game.fx.some((f) => f.k === 'zs_spark'), 'chispas'); assert.ok(b.p.hp < 1e7, 'las chispas saltan al vecino');
+  game.fx.length = 0; game.killMonster(m, game.now); assert.ok(game.fx.some((f) => f.k === 'zs_die'), 'animación de muerte');
+  assert.ok(game.fx.filter((f) => /^zs_/.test(f.k)).every((f) => Number.isFinite(f.x ?? 0) && Number.isFinite(f.y ?? 0)), 'fx con coordenadas');
+});
+
+ok('especiales de armas de jefe: 26 armas x 2 especiales (teclas 4 y 5) con daño, espera, maná y controles reducidos en jefes', () => {
+  const { WSPEC } = require('../game/especiales'); const ids = Object.keys(WSPEC); assert.equal(ids.length, 26);
   const run = (ms) => { for (let k = 0; k <= ms; k += 100) { game.now += 100; const due = game.sched.filter((e) => e.at <= game.now); game.sched = game.sched.filter((e) => e.at > game.now); due.forEach((e) => e.fn()); } };
   const { p } = login('Espec1'); place(p, 150, 70); p.hp = p.maxHp = 1e7; const SX = require('../game/skills');
   for (const id of ids) {
@@ -635,7 +667,7 @@ ok('pociones nuevas: regeneración, antídoto, furia, arcana, cazador de botín,
 });
 
 ok('Instancias privadas de jefes de cueva: copias, portales de pago, jefe más fuerte, botín y cierre', () => {
-  const IN = world.INSTANCES; assert.equal(IN.length, 7); const gj = require('../game/instancias');
+  const IN = world.INSTANCES; assert.equal(IN.length, 8); const gj = require('../game/instancias');
   for (const I of IN) {
     assert.equal(I.slots.length, 7); assert.ok(I.fee >= 100000, 'cuesta ' + I.cave); const src = world.zoneById(I.cave).rect;
     const ep = world.PORTALS.find((o) => o.inst === I.cave); assert.ok(ep && ep.fee === I.fee && world.zoneAt(ep.x, ep.y).kind !== 'dungeon' && world.isWalkable(ep.x, ep.y - 0), 'portal de entrada ' + I.cave);
@@ -811,7 +843,7 @@ ok('Banco ampliable (1M por 5 espacios) y entrada de 2k a las cuevas de jefe', (
   p.bank[n0 + 14] = { id: 'pocion_vida', qty: 3 }; const d = game.serialize(p); assert.equal(d.bankSlots, n0 + 15);
   const q = game.createPlayer({ key: 'x', name: 'x', data: d }); assert.equal(q.bank.length, n0 + 15); assert.ok(q.bank[n0 + 14]);
   place(p, g.x + 40, g.y); p.gold = 2e6; game.bankBuy(p); assert.equal(p.bank.length, n0 + 15, 'hay que estar junto a la banquera');
-  const fees = world.PORTALS.filter((o) => o.fee && !o.inst); assert.equal(fees.length, 7, 'las 7 cuevas de jefe cobran'); assert.ok(fees.every((o) => o.fee === 2000));
+  const fees = world.PORTALS.filter((o) => o.fee && !o.inst); assert.equal(fees.length, 8, 'las 8 cuevas de jefe cobran'); assert.ok(fees.every((o) => o.fee === 2000));
   const po = fees[5], z0 = [po.tx, po.ty];
   const stepOn = (pl) => { const sx = po.x + 1, sy = po.y; place(pl, sx, sy); pl.pvpLock = 0; pl.nextMove = 0; game.tryStep(pl, -1, 0, game.now + 1e6); };
   const { p: r } = login('Pobre'); r.gold = 1999; stepOn(r); assert.ok(!(r.x === z0[0] && r.y === z0[1]), 'sin 2k no entra'); assert.equal(r.gold, 1999);

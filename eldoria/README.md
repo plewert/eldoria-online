@@ -430,3 +430,9 @@ Junto a la puerta de cada cueva de jefe hay un segundo portal "Instancia privada
 - **Más difícil, más botín:** el jefe sale al instante con +50 % de vida y +25 % de daño; da +50 % de oro y +50 % de probabilidad en cada objeto (las mascotas no suben).
 - **Límites:** 20 min como máximo; al derrotar al jefe quedan 90 s para recoger el botín. La instancia se cierra si sales, mueres o te desconectas.
 - **Precios** (editables en `INST_CAVES`): Dragón de las Sombras 200.000 · Hidra de Jade 250.000 · Arcángel 300.000 · Aracnídeo 400.000 · Leviatán 500.000 · Soberano del Magma 600.000 · Anubis 800.000.
+
+## Zeus, Señor del Olimpo (Montañas del Trueno)
+- Cueva **El Olimpo** (zona `cueva_olimpo`): plataforma de mármol sobre el cielo con viento. Puerta en las Montañas del Trueno (342,39), entrada 2k como las demás cuevas de jefe.
+- Jefe `zeus` (lv 850, 560k vida) con sprite animado (reposo, paso, ataque, herido, muerte) y 4 habilidades: **diez rayos** seguidos que ralentizan, **truenos perseguidores** por toda la plataforma, **tormenta de miles de rayos** (solo a salvo en los cuadros dorados) y **chispas** en sus golpes que saltan a los cercanos.
+- Botín: yelmo, túnica, faldellín, sandalias, guantes, 2 anillos, collar, égida (escudo), Cetro de Zeus y Arco de las Tormentas (2 especiales cada uno) y el trofeo Rayo de Zeus. Misión repetible `cueva_olimpo` con Boris.
+- Código: `game/zeus.js`, `public/zeus.js`, tiles `OLYF/OLYW/OLYS`, lentitud de jugador `p.slowUntil`.

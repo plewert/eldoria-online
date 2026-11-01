@@ -1140,7 +1140,7 @@ class Game {
     const sdx = nx - p.x, sdy = ny - p.y;
     p.x = nx; p.y = ny;
     p.dir = sdx > 0 ? 1 : sdx < 0 ? 3 : sdy > 0 ? 2 : 0;
-    p.nextMove = now + CFG.STEP_MS * (sdx && sdy ? 1.35 : 1) * this.mountMult(p);
+    p.nextMove = now + CFG.STEP_MS * (sdx && sdy ? 1.35 : 1) * this.mountMult(p) * (p.slowUntil > now ? 1.9 : 1);
     this.pgrid.set(kxy(nx, ny), p);
     const portal = world.portalAt(nx, ny);
     if (portal && portal.inst) {
@@ -1242,6 +1242,6 @@ require('./fishing').install(Game);
 require('./mining').install(Game);
 require('./raid').install(Game);
 require('./halloween').install(Game);
-require('./magma').install(Game); require('./anubis').install(Game); require('./especiales').install(Game); require('./bots').install(Game);
+require('./magma').install(Game); require('./anubis').install(Game); require('./zeus').install(Game); require('./especiales').install(Game); require('./bots').install(Game);
 require('./petloot').install(Game); require('./pociones').install(Game); require('./instancias').install(Game);
 module.exports = { Game, NAME_RE, levelFromXp, xpForLevel, skillFromXp };

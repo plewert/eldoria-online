@@ -106,6 +106,14 @@ const SP = {
     mk('sp_miasma', 'Miasma de tumbas', '💀', 'cloud', { col: '120,255,170', r: 3, secs: 6, mult: 0.6, cd: 30000, mana: 65, desc: 'Grietas y miasma 6 s: daño continuo (×0,6 por segundo).' }),
     mk('sp_grietas', 'Grietas del juicio', '⚖️', 'nova', { col: '120,255,170', r: 5, mult: 3.4, slow: 4000, atTarget: 1, cd: 80000, mana: 130, lv: 60, desc: 'El suelo se agrieta en 5 casillas (×3,4) y ralentiza.' }),
   ],
+  zs_arco: [
+    mk('sp_rayo_arco', 'Flecha de rayo', '⚡', 'line', { col: '170,220,255', len: 10, mult: 3.4, slow: 2000, cd: 30000, mana: 60, desc: 'Flecha eléctrica que cruza 10 casillas (×3,4) y ralentiza.' }),
+    mk('sp_lluvia_rayos', 'Lluvia de rayos', '🌩️', 'rain', { col: '170,220,255', n: 8, r: 5, hr: 1.6, mult: 1.7, cd: 80000, mana: 130, lv: 60, desc: '8 rayos caen alrededor del objetivo (×1,7).' }),
+  ],
+  zs_cetro: [
+    mk('sp_trueno', 'Trueno divino', '⚡', 'nova', { col: '170,220,255', r: 3, mult: 3.4, stun: 1500, atTarget: 1, cd: 30000, mana: 65, desc: 'Un trueno cae sobre el objetivo (×3,4) y lo aturde.' }),
+    mk('sp_tormenta_olimpo', 'Tormenta del Olimpo', '🌩️', 'rain', { col: '170,220,255', n: 9, r: 5, hr: 1.6, mult: 1.9, cd: 85000, mana: 140, lv: 60, desc: '9 rayos caen alrededor del objetivo (×1,9).' }),
+  ],
   rd_rx_staff: [
     mk('sp_sol', 'Sol naciente', '🌅', 'nova', { col: '255,230,150', r: 3, mult: 3.8, blind: 3000, atTarget: 1, cd: 35000, mana: 70, desc: 'Explosión de luz (×3,8) que ciega 3 s.' }),
     mk('sp_amanecer', 'Amanecer', '☀️', 'heal', { col: '255,230,150', r: 6, mult: 3, heal: 0.15, cd: 90000, mana: 150, lv: 60, desc: 'Gran destello (×3) que cura un 15 % a tu grupo.' }),

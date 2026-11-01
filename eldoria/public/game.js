@@ -21,7 +21,7 @@
   /* Ganchos para los módulos extra (audio, clima, táctil, misiones, social...) */
   const HK = { ground: [], msg: [], fx: [], snap: [], draw: [], under: [], click: [], key: [], chat: [], inv: [], stats: [], ctx: [] };
   const EXT = (window.EldExt = {
-    G, el, $, store, joy: { dx: 0, dy: 0 }, handlers: {}, casts: new Map(), rdc: new Map(),
+    G, el, $, store, joy: { dx: 0, dy: 0 }, handlers: {}, casts: new Map(), rdc: new Map(), zs: new Map(),
     on(n, f) { HK[n].push(f); },
     msg(m) { for (const f of HK.msg.slice()) safeCall(HK.msg, f, [m]); }, fx(f) { for (const h of HK.fx.slice()) safeCall(HK.fx, h, [f]); }, snap(m) { for (const f of HK.snap.slice()) safeCall(HK.snap, f, [m]); },
     ground(c, now, cw, ch) { for (const f of HK.ground.slice()) safeCall(HK.ground, f, [c, now, cw, ch]); },
@@ -111,7 +111,7 @@
     joined = true; if (G.autoRet) send({ t: 'autoret', on: true });
     G.id = m.id; G.W = m.w; G.H = m.h; G.zones = m.zones; G.portals = m.portals; G.npcs = m.npcs; G.items = m.items; G.mons = m.mons; aliasSprites(); G.cfg = m.cfg; G.rar = m.rar; G.gems = m.gems;
     for (const [iid, idf] of Object.entries(m.items)) if (idf.el) WEAPON_ELEM[iid] = idf.el;
-    const CH = '0123456789abcdefghijklmnopqrstuvwxyzABCD';
+    const CH = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFG';
     G.tiles = new Uint8Array(G.W * G.H);
     m.rows.forEach((row, y) => { for (let x = 0; x < G.W; x++) G.tiles[y * G.W + x] = CH.indexOf(row[x]); });
     G.zoneGrid = new Uint8Array(G.W * G.H);
@@ -712,7 +712,7 @@
   /* ======================================================================
    *  TEXTURAS DEL MAPA (generadas por código, estilo píxel)
    * ==================================================================== */
-  const TILE = { GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10, SAND: 11, SNOW: 12, SWAMP: 13, DUNE: 14, PALM: 15, PINE: 16, DEADTREE: 17, CACTUS: 18, ICEBLOCK: 19, MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24, CFLOOR: 25, CWALL: 26, LAVA: 27, ASH: 28, CLOUDF: 29, CLOUDW: 30, WEBF: 31, WEBW: 32, AQF: 33, AQW: 34, MAGF: 35, MAGW: 36, TOMBF: 37, TOMBW: 38, BRAZ: 39 };
+  const TILE = { GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10, SAND: 11, SNOW: 12, SWAMP: 13, DUNE: 14, PALM: 15, PINE: 16, DEADTREE: 17, CACTUS: 18, ICEBLOCK: 19, MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24, CFLOOR: 25, CWALL: 26, LAVA: 27, ASH: 28, CLOUDF: 29, CLOUDW: 30, WEBF: 31, WEBW: 32, AQF: 33, AQW: 34, MAGF: 35, MAGW: 36, TOMBF: 37, TOMBW: 38, BRAZ: 39, OLYF: 40, OLYW: 41, OLYS: 42 };
   const seeded = (s) => () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
   const mk = (fn) => { const c = document.createElement('canvas'); c.width = c.height = TS; const g = c.getContext('2d'); fn(g); return c; };
   const dot = (g, c, x, y, w = 2, h = 2) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
@@ -884,6 +884,23 @@
     g.strokeStyle = '#0a0710'; g.strokeRect(0.5, 0.5, 31, 15); g.strokeRect(0.5, 16.5, 31, 15);
     g.fillStyle = 'rgba(120,230,150,.28)'; if (r() < 0.6) { const gx = 4 + (r() * 20 | 0), gy = 3 + (r() < 0.5 ? 0 : 16); g.fillRect(gx, gy, 2, 6); g.fillRect(gx + 4, gy + 1, 4, 2); g.fillRect(gx + 10, gy, 2, 6); }
   }); };
+  const olyfloor = (v) => { const r = seeded(3600 + v); return mk((g) => {                                // mármol blanco del Olimpo con vetas y filo dorado
+    g.fillStyle = '#dfe3ee'; g.fillRect(0, 0, TS, TS);
+    for (let i = 0; i < 12; i++) dot(g, r() < 0.5 ? '#e8ebf4' : '#cfd5e4', (r() * 16 | 0) * 2, (r() * 16 | 0) * 2, 2 + (r() < 0.3 ? 2 : 0), 2);
+    g.strokeStyle = 'rgba(120,135,170,.45)'; g.lineWidth = 1; g.beginPath(); let x = r() * 32, y = 0; g.moveTo(x, y); for (let i = 0; i < 4; i++) { x += (r() - 0.5) * 14; y += 8; g.lineTo(x, y); } g.stroke();
+    g.strokeStyle = 'rgba(176,150,70,.55)'; g.strokeRect(0.5, 0.5, 31, 31); g.fillStyle = 'rgba(214,178,70,.7)'; g.fillRect(0, 0, 3, 1); g.fillRect(0, 0, 1, 3);
+  }); };
+  const olywall = (v) => { const r = seeded(3700 + v); return mk((g) => {                              // columna de mármol con capitel dorado
+    g.fillStyle = '#8fb4e8'; g.fillRect(0, 0, TS, TS);
+    g.fillStyle = '#c9cfde'; g.fillRect(7, 3, 18, 28); g.fillStyle = '#eef0f7'; g.fillRect(9, 3, 6, 28); g.fillStyle = '#a4acc2'; g.fillRect(21, 3, 4, 28);
+    g.strokeStyle = 'rgba(110,120,150,.6)'; for (let x = 12; x < 24; x += 4) { g.beginPath(); g.moveTo(x + 0.5, 6); g.lineTo(x + 0.5, 29); g.stroke(); }
+    g.fillStyle = '#d6b14a'; g.fillRect(4, 1, 24, 4); g.fillRect(5, 27, 22, 4); g.fillStyle = '#f2d878'; g.fillRect(4, 1, 24, 1); g.fillRect(5, 27, 22, 1);
+    if (r() < 0.5) { g.fillStyle = 'rgba(80,120,60,.35)'; g.fillRect(8 + (r() * 12 | 0), 12 + (r() * 10 | 0), 3, 2); }
+  }); };
+  const olysky = (v) => { const r = seeded(3800 + v); return mk((g) => {                                // cielo abierto
+    const gr = g.createLinearGradient(0, 0, 0, TS); gr.addColorStop(0, '#79b2ee'); gr.addColorStop(1, '#bcdcf8'); g.fillStyle = gr; g.fillRect(0, 0, TS, TS);
+    for (let i = 0; i < 3; i++) { g.fillStyle = `rgba(255,255,255,${0.35 + r() * 0.3})`; g.beginPath(); g.ellipse(r() * 32, r() * 32, 5 + r() * 8, 2 + r() * 3, 0, 0, 7); g.fill(); }
+  }); };
   const brazfloor = (v) => { const r = seeded(3500 + v); return mk((g) => {
     g.drawImage(tombfloor(v), 0, 0);
     g.fillStyle = '#4a4258'; g.fillRect(9, 20, 14, 8); g.fillStyle = '#2a2436'; g.fillRect(7, 26, 18, 4); g.fillRect(12, 28, 8, 3);
@@ -971,7 +988,7 @@
     dfloor: [0, 1, 2, 3].map(dfloor), afloor: [0, 1, 2, 3].map(afloor), shop: [0, 1].map(shopFloor),
     sand: [0, 1, 2, 3].map(sand), snow: [0, 1, 2, 3].map(snow), dune: [0, 1, 2, 3].map(dune), swamp: [0, 1, 2, 3].map(swamp), bog: [bog(0), bog(1)], hill: [0, 1, 2, 3].map(hill),
     palm: [0, 1].map(palm), pine: [0, 1].map(pine), dead: [0, 1].map(dead), cactus: [0, 1].map(cactus), ice: [0, 1].map(ice),
-    mfloor: [0, 1, 2, 3].map(mfloor), pfloor: [0, 1, 2, 3].map(pfloor), ifloor: [0, 1, 2, 3].map(ifloor), cfloor: [0, 1, 2, 3].map(cfloor), lava: [lava(0), lava(1)], wfloor: [0, 1, 2, 3].map(wfloor), aqfloor: [0, 1, 2, 3].map(aqfloor), aqwall: [0, 1, 2].map(aqwall), magfloor: [0, 1, 2, 3].map(magfloor), magwall: [0, 1, 2].map(magwall), tombfloor: [0, 1, 2, 3].map(tombfloor), tombwall: [0, 1, 2].map(tombwall), braz: [0].map(brazfloor), wwall: [0, 1, 2].map(wwall), nfloor: [0, 1, 2, 3].map(nfloor), nwall: [0, 1, 2].map(nwall), obsid: [0, 1, 2].map(obsid), sandwall: [0, 1, 2].map(sandwall), granwall: [0, 1, 2].map(granwall), ash: [0, 1, 2, 3].map(ash), cwall: [0, 1, 2].map(cwall),
+    mfloor: [0, 1, 2, 3].map(mfloor), pfloor: [0, 1, 2, 3].map(pfloor), ifloor: [0, 1, 2, 3].map(ifloor), cfloor: [0, 1, 2, 3].map(cfloor), lava: [lava(0), lava(1)], wfloor: [0, 1, 2, 3].map(wfloor), aqfloor: [0, 1, 2, 3].map(aqfloor), aqwall: [0, 1, 2].map(aqwall), magfloor: [0, 1, 2, 3].map(magfloor), magwall: [0, 1, 2].map(magwall), tombfloor: [0, 1, 2, 3].map(tombfloor), tombwall: [0, 1, 2].map(tombwall), braz: [0].map(brazfloor), olyfloor: [0, 1, 2, 3].map(olyfloor), olywall: [0, 1, 2].map(olywall), olysky: [0, 1, 2, 3].map(olysky), wwall: [0, 1, 2].map(wwall), nfloor: [0, 1, 2, 3].map(nfloor), nwall: [0, 1, 2].map(nwall), obsid: [0, 1, 2].map(obsid), sandwall: [0, 1, 2].map(sandwall), granwall: [0, 1, 2].map(granwall), ash: [0, 1, 2, 3].map(ash), cwall: [0, 1, 2].map(cwall),
   });
   const buildFG = () => { FG = true; const o = { tree: [0, 1].map(tree), palm: [0, 1].map(palm), pine: [0, 1].map(pine), dead: [0, 1].map(dead) }; FG = false; return o; };
   let TEX = buildTEX(), TEXFG = buildFG();
@@ -1015,6 +1032,16 @@
     c.fillStyle = `rgba(190,215,245,${a})`; c.beginPath(); c.ellipse(sx + 16 + Math.sin(t * 0.5 + ph) * 9, sy + 16 + Math.cos(t * 0.4 + ph * 1.3) * 7, 12, 7, 0, 0, 7); c.fill();
     const hs = hash(x * 5 + 1, y * 3 + ((now / 650) | 0));
     if ((hs & 7) === 0) { const px = sx + 3 + (hs >> 4) % 26, py = sy + 3 + (hs >> 9) % 26; c.fillStyle = 'rgba(255,255,255,.95)'; c.fillRect(px, py, 2, 2); c.fillStyle = 'rgba(255,240,170,.8)'; c.fillRect(px - 1, py + 0.5, 4, 1); c.fillRect(px + 0.5, py - 1, 1, 4); }
+  }
+  /** Cielo del Olimpo: nubes que corren con el viento y rachas claras */
+  function skyFx(c, x, y, sx, sy, now) {
+    const t = now / 1000, ph = x * 0.7 + y * 1.3, wind = (t * 26 + ph * 11) % 64 - 16;
+    c.fillStyle = `rgba(255,255,255,${0.24 + 0.14 * Math.sin(t * 0.6 + ph)})`; c.beginPath(); c.ellipse(sx + wind, sy + 8 + (ph * 7) % 16, 15, 4.5, 0, 0, 7); c.fill();
+    if (((x * 7 + y * 3) & 3) === 0) { c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 1; const u = (t * 1.4 + ph) % 1; c.beginPath(); c.moveTo(sx + u * 40 - 8, sy + 20 + (ph * 3) % 8); c.lineTo(sx + u * 40 + 8, sy + 20 + (ph * 3) % 8); c.stroke(); }
+  }
+  function olyFloorFx(c, x, y, sx, sy, now) {
+    const t = now / 1000, a = 0.05 + 0.05 * Math.sin(t * 0.9 + x * 0.5 + y * 0.35);
+    c.fillStyle = `rgba(160,205,255,${a})`; c.fillRect(sx, sy, TS, TS);
   }
   function cloudWallFx(c, x, y, sx, sy, now) {
     const t = now / 1000, ph = (x * 1.3 + y * 0.8);
@@ -1143,6 +1170,9 @@
       case TILE.TOMBF: return TEX.tombfloor[h % 4];
       case TILE.TOMBW: return TEX.tombwall[h % 3];
       case TILE.BRAZ: return TEX.braz[0];
+      case TILE.OLYF: return TEX.olyfloor[h % 4];
+      case TILE.OLYW: return TEX.olywall[h % 3];
+      case TILE.OLYS: return TEX.olysky[h % 4];
       case TILE.CWALL: return G.zoneGrid && zoneAt(x, y).id === 'volcan' ? TEX.obsid[h % 3] : G.zoneGrid && zoneAt(x, y).id === 'desierto_piramides' ? TEX.sandwall[h % 3] : G.zoneGrid && zoneAt(x, y).id === 'montana_alta' ? TEX.granwall[h % 3] : TEX.cwall[h % 3];
       default: return TEX.grass[0];
     }
@@ -1151,14 +1181,15 @@
   /* ======================================================================
    *  MINIMAPA
    * ==================================================================== */
-  const MINI_COL = ['#3f6b3a', '#2b5d8a', '#234a2a', '#8a8271', '#59606e', '#3a3948', '#b07cff', '#77797f', '#3f6b3a', '#7a5634', '#4a2a2e', '#d6c188', '#e4ecf3', '#3f5a33', '#d2b878', '#2f7d3a', '#2d6a4a', '#5a4a3a', '#3f8a45', '#8fd0f0', '#3a342c', '#b89a5e', '#9fbfd6', '#2e4a2a', '#8d9a45', '#2a2833', '#0c0b10', '#d8480a', '#3b2e2a', '#e9f1fa', '#b4c6e0', '#3a2a30', '#241418', '#2a7a96', '#10303c', '#3a2f52', '#1a1424', '#2a3a2c', '#6a9a4a'];
+  const MINI_COL = ['#3f6b3a', '#2b5d8a', '#234a2a', '#8a8271', '#59606e', '#3a3948', '#b07cff', '#77797f', '#3f6b3a', '#7a5634', '#4a2a2e', '#d6c188', '#e4ecf3', '#3f5a33', '#d2b878', '#2f7d3a', '#2d6a4a', '#5a4a3a', '#3f8a45', '#8fd0f0', '#3a342c', '#b89a5e', '#9fbfd6', '#2e4a2a', '#8d9a45', '#2a2833', '#0c0b10', '#d8480a', '#3b2e2a', '#e9f1fa', '#b4c6e0', '#3a2a30', '#241418', '#2a7a96', '#10303c', '#3a2f52', '#1a1424', '#2a3a2c', '#6a9a4a', '#dfe3ee', '#c9cfde', '#79b2ee'];
   let miniBase = null;
   function buildMiniBase() {
     const c = document.createElement('canvas'); c.width = G.W; c.height = G.H;
     const g = c.getContext('2d');
     for (let y = 0; y < G.H; y++) for (let x = 0; x < G.W; x++) {
-      g.fillStyle = MINI_COL[G.tiles[y * G.W + x]]; g.fillRect(x, y, 1, 1);
-      if (zoneAt(x, y).pvp) { g.fillStyle = 'rgba(212,80,59,.22)'; g.fillRect(x, y, 1, 1); }
+      const zi = zoneAt(x, y);
+      g.fillStyle = zi.id.startsWith('inst_') ? '#000' : MINI_COL[G.tiles[y * G.W + x]]; g.fillRect(x, y, 1, 1);      // las instancias privadas no se ven en el mapa
+      if (zi.pvp) { g.fillStyle = 'rgba(212,80,59,.22)'; g.fillRect(x, y, 1, 1); }
     }
     miniBase = c; EXT.miniBase = () => miniBase;
   }
@@ -1384,7 +1415,7 @@
   function drawHead(c, id, hx, hy, view, side, now) {
     const d = G.items[id];
     if (d && d.spr && GJ['c_' + d.spr]) {
-      const hood = /^hat1[234]$/.test(d.spr), boss = /^(t_helm|s_hood|j_helm|a_helm|f_helm|l_helm|ig_helm|an_helm|r[mvxka]_helm)$/.test(d.spr), dy = hood ? 7.5 : d.spr === 't_helm' ? 9.5 : d.spr === 'a_helm' || d.spr === 'f_helm' || d.spr === 'l_helm' || d.spr === 'ig_helm' || d.spr === 'an_helm' || /^r[mvxka]_helm$/.test(d.spr) ? 8.5 : d.spr === 'g_helm' ? 3.5 : boss ? 5.5 : 0.5;   // capuchas y cascos de jefe: cubren el rostro
+      const hood = /^hat1[234]$/.test(d.spr), boss = /^(t_helm|s_hood|j_helm|a_helm|f_helm|l_helm|ig_helm|an_helm|zs_helm|r[mvxka]_helm)$/.test(d.spr), dy = hood ? 7.5 : d.spr === 't_helm' ? 9.5 : d.spr === 'a_helm' || d.spr === 'f_helm' || d.spr === 'l_helm' || d.spr === 'ig_helm' || d.spr === 'an_helm' || d.spr === 'zs_helm' || /^r[mvxka]_helm$/.test(d.spr) ? 8.5 : d.spr === 'g_helm' ? 3.5 : boss ? 5.5 : 0.5;   // capuchas y cascos de jefe: cubren el rostro
       if ((hood || boss) && view === 'b') { drawLayer(c, d.spr, hx, hy + dy, 0.5, 1, false, 0); return; }
       if ((hood || boss) && view !== 'f') {                                       // de perfil: se estrecha y se voltea hacia donde mira el personaje
         const f = GJ['c_' + d.spr]; c.save(); c.translate(hx + side * 1.4, hy + dy); if (side < 0) c.scale(-1, 1); c.scale(0.84, 1);
@@ -1717,9 +1748,10 @@
     forge:  { glow: '255,150,40', mote: '255,225,130', sweep: 1700, star: 1, ember: 1 },
     ice:    { glow: '150,215,255', mote: '235,250,255', sweep: 2300, star: 1 },
     anubis: { glow: '90,255,150', mote: '190,150,255', sweep: 2200, rise: 1, star: 1 },
+    zeus:   { glow: '120,190,255', mote: '235,248,255', sweep: 1700, star: 1 },
     blood:  { glow: '230,30,50', mote: '255,110,120', sweep: 2100, rise: 1 },
   };
-  const THM_P = { s: 'shadow', j: 'jade', a: 'angel', f: 'fire', l: 'sea', t: 'titan', rv: 'jade', rk: 'fire', ra: 'forge', rx: 'angel', rm: 'shadow', an: 'anubis' };
+  const THM_P = { s: 'shadow', j: 'jade', a: 'angel', f: 'fire', l: 'sea', t: 'titan', rv: 'jade', rk: 'fire', ra: 'forge', rx: 'angel', rm: 'shadow', an: 'anubis', zs: 'zeus' };
   const THM_S = { robe10: 'fire', robe11: 'fire', robe12: 'ice', hat12: 'blood', hat13: 'fire', hat14: 'ice', staff14: 'shadow', staff15: 'angel', staff16: 'forge', staff17: 'ice', staff18: 'sea', book5: 'angel' };
   const themeOf = (spr) => { if (!spr || spr.startsWith('ig_')) return null; const m = /^([a-z]+)_/.exec(spr); return THM_S[spr] || (m && THM_P[m[1]]) || null; };
   const SHM = new Map();
@@ -1817,7 +1849,7 @@
   const GLOVE_COL = { glove0: '#b8a88a', glove1: '#b8a88a', glove2: '#8a5a30', glove3: '#7a4a28', glove4: '#6a3e20', glove5: '#6a3e20', t_glove1: '#7a5a48', t_glove2: '#7a5a48', s_gauntlet: '#2f2a3c', j_glove: '#2f7a4a', a_glove: '#e9f1fa', f_glove: '#2f2a30', l_glove: '#2a7a8a', rm_glove: '#3a1a66', rv_glove: '#2f7a3a', rx_glove: '#e8c860', rk_glove: '#5a3a2a', ra_glove: '#7a5a3a', an_glove: '#3a2f58' };
   const BOOT_COL = { t_boot: ['#5d4637', '#ff8a1f'], s_boot: ['#2c2838', '#9a6ad8'], j_boot: ['#24603a', '#9ee85a'], a_boot: ['#e9f1fa', '#ffd96a'], f_boot: ['#26242a', '#ff6a1f'], g_boot: ['#3e4a30', '#8a7a50'], l_boot: ['#234f5c', '#7fe3f2'], rm_boot: ['#241040', '#b070ff'], rv_boot: ['#1f4a2a', '#7dff7a'], rx_boot: ['#e8d49a', '#ffe27a'], rk_boot: ['#3a2418', '#ff7a20'], ra_boot: ['#5a4630', '#ff9a40'], an_boot: ['#241a3a', '#6fe08a'] };
   const LEG_COL = { j_leg: ['#2f8a4a', '#1f5c33', '#9ee85a'], s_leg: ['#2c2838', '#1c1928', '#9a6ad8'], a_leg: ['#e9f1fa', '#a9c0e0', '#ffd96a'], f_leg: ['#2c2a30', '#18161a', '#ff6a1f'], g_leg: ['#6b5a34', '#4a3d22', '#3f5a30'], l_leg: ['#2a6a78', '#1a4452', '#8be8f5'], rm_leg: ['#2a1250', '#160a2c', '#b070ff'], rv_leg: ['#2a6a38', '#174022', '#7dff7a'], rx_leg: ['#f0dca0', '#c9a24a', '#ffe27a'], rk_leg: ['#5a3a28', '#34200f', '#ff7a20'], ra_leg: ['#7a5a38', '#4a3620', '#ff9a40'], an_leg: ['#2a2040', '#150f24', '#6fe08a'] };
-  const CHEST_SPR = new Set(['t_chest', 's_chest', 'j_chest', 'a_chest', 'f_chest', 'g_chest', 'l_chest', 'rm_chest', 'rv_chest', 'rx_chest', 'rk_chest', 'ra_chest', 'an_chest', 'ig_chest']);
+  const CHEST_SPR = new Set(['t_chest', 's_chest', 'j_chest', 'a_chest', 'f_chest', 'g_chest', 'l_chest', 'rm_chest', 'rv_chest', 'rx_chest', 'rk_chest', 'ra_chest', 'an_chest', 'zs_chest', 'ig_chest']);
 
   /* ---------- sprites de píxel-art (monstruos y PNJ) ---------- */
   const SPR = {};
@@ -1889,6 +1921,21 @@
     c.fillStyle = g; c.fillRect(X0 - 22, Y0 - 22, 44, 44);
     for (let k = 0; k < 4; k++) { const u = (t * 0.7 + k * 0.25 + ph) % 1; c.fillStyle = `rgba(255,${200 + k * 12},120,${0.8 * (1 - u)})`; c.fillRect(X0 + Math.sin(u * 6 + k * 2) * 9, Y0 - u * 26, 1.6, 1.6); }   // chispas
     c.restore();
+  }
+  /** Zeus: fotogramas animados (reposo, paso, ataque, herido) con aura de rayos; el estado lo marca public/zeus.js */
+  function drawZeus(c, e, spr, cx, ground, now) {
+    const A = spr.anim, st = (EXT.zs && EXT.zs.get(e.id)) || {}, t = now / 1000, moving = (e.amp || 0) > 0.3, cast = (EXT.casts.get(e.id) || 0) > now;
+    let fi;
+    if (st.hurt > now) fi = A.hurt[Math.min(2, Math.floor((1 - (st.hurt - now) / 320) * 3))];
+    else if (cast || st.atk > now) { const T = cast ? 1200 : 460, left = cast ? EXT.casts.get(e.id) - now : st.atk - now, p = Math.max(0, Math.min(0.99, 1 - left / T)); fi = A.atk[cast ? (p < 0.3 ? 0 : p < 0.55 ? 1 : p < 0.8 ? 2 : 3) : (p < 0.35 ? 1 : p < 0.7 ? 2 : 3)]; }
+    else if (moving) fi = A.walk[Math.floor(now / 110) % A.walk.length];
+    else fi = A.idle[Math.floor(now / 520) % A.idle.length];
+    const y = ground + 2, pulse = 0.5 + 0.5 * Math.sin(t * 3 + e.id), hot = cast || st.atk > now;
+    const g = c.createRadialGradient(cx, y - spr.h * 0.5, 4, cx, y - spr.h * 0.5, spr.h * 0.85);
+    g.addColorStop(0, `rgba(130,200,255,${0.18 + 0.1 * pulse + (hot ? 0.25 : 0)})`); g.addColorStop(1, 'rgba(130,200,255,0)'); c.fillStyle = g; c.fillRect(cx - spr.h, y - spr.h * 1.4, spr.h * 2, spr.h * 1.6);
+    drawSprite(c, 'zeus', fi, cx, y - Math.round(Math.sin(t * 2 + e.id) * 1.5) - 3, (e.face || 1) < 0, 1);
+    if (hot) { c.save(); c.globalAlpha = 0.28 + 0.2 * Math.sin(t * 40); c.globalCompositeOperation = 'lighter'; drawSprite(c, 'zeus', fi, cx, y - 3, (e.face || 1) < 0, 1); c.restore(); }
+    for (let i = 0; i < 4; i++) { const ph = (t * 0.9 + i / 4 + e.id * 0.13) % 1; c.fillStyle = `rgba(200,235,255,${0.8 * (1 - ph)})`; c.fillRect(cx + Math.sin(ph * 7 + i * 2) * spr.h * 0.26, y - ph * spr.h * 0.95, 2, 2); }
   }
   /** Anubis y sus sombras: flotan, con aura verde/violeta; las sombras se tiñen y dejan estela. */
   const _tc = document.createElement('canvas'); _tc.width = 200; _tc.height = 220; const _tg = _tc.getContext('2d');
@@ -2008,6 +2055,7 @@
       const hop = moving ? (spr.f.length < 2 ? Math.abs(Math.sin(ph)) * 3 : Math.abs(Math.sin(ph * spr.f.length / 2)) * 1.5) : 0;
       const float = flying ? (e.t === 'dragon_sombra' ? 14 + Math.sin(now / 450 + e.id) * 4 : 6 + Math.sin(now / 300 + e.id) * 2.2) : 0;
       const sq = 1 + (moving ? 0 : Math.sin(now / 520 + e.id) * 0.018);
+      if (e.t === 'zeus' && spr.anim) { drawZeus(c, e, spr, cx, ground, now); return; }
       if (e.t === 'anubis' || d.shade) { drawAnubisLike(c, e, d, skey, spr, cx, ground, now, sq); return; }
       if (RB[e.t]) { drawRaidBoss(c, e, d, skey, spr, cx, ground, now); return; }
       drawSprite(c, skey, sprFrame(e, spr), cx, ground + 2 - Math.round(hop) - Math.round(float), (e.face || 1) < 0, sq);
@@ -2252,7 +2300,7 @@
         c.save(); c.translate(sx + 16, sy + 29); c.transform(1, 0, k, 1 + Math.sin(now / 520 + ph) * 0.006, 0, 0); c.drawImage(TEXFG[sw[0]][v], -16, -29); c.restore();
         if (t === TILE.TREE && (h & 7) === 0 && now - lastLeaf > 380) { lastLeaf = now; G.leaves.push({ x: x + 0.3 + Math.random() * 0.4, y: y + 0.2 + Math.random() * 0.3, t: now, p: Math.random() * 6 }); }
       } else if (t === TILE.WATER) drawWater(c, x, y, sx, sy, now);
-      else { c.drawImage(texFor(t, x, y, frameW), sx, sy); if (t === TILE.CLOUDF) cloudFloorFx(c, x, y, sx, sy, now); else if (t === TILE.CLOUDW) cloudWallFx(c, x, y, sx, sy, now); else if (t === TILE.WEBF) webFloorFx(c, x, y, sx, sy, now); else if (t === TILE.WEBW) webWallFx(c, x, y, sx, sy, now); else if (t === TILE.AQF) aqFloorFx(c, x, y, sx, sy, now); else if (t === TILE.MAGF) magFloorFx(c, x, y, sx, sy, now); else if (t === TILE.TOMBF) tombFloorFx(c, x, y, sx, sy, now); else if (t === TILE.BRAZ) brazFx(c, x, y, sx, sy, now); else if (t === TILE.AQW) aqWallFx(c, x, y, sx, sy, now); }
+      else { c.drawImage(texFor(t, x, y, frameW), sx, sy); if (t === TILE.CLOUDF) cloudFloorFx(c, x, y, sx, sy, now); else if (t === TILE.CLOUDW) cloudWallFx(c, x, y, sx, sy, now); else if (t === TILE.WEBF) webFloorFx(c, x, y, sx, sy, now); else if (t === TILE.WEBW) webWallFx(c, x, y, sx, sy, now); else if (t === TILE.AQF) aqFloorFx(c, x, y, sx, sy, now); else if (t === TILE.MAGF) magFloorFx(c, x, y, sx, sy, now); else if (t === TILE.TOMBF) tombFloorFx(c, x, y, sx, sy, now); else if (t === TILE.BRAZ) brazFx(c, x, y, sx, sy, now); else if (t === TILE.AQW) aqWallFx(c, x, y, sx, sy, now); else if (t === TILE.OLYS) skyFx(c, x, y, sx, sy, now); else if (t === TILE.OLYF) olyFloorFx(c, x, y, sx, sy, now); }
     }
     EXT.ground(c, now, cw, ch);                                  // oclusión, mezcla de terreno, agua con profundidad (bajo los árboles)
     for (let i = 0; i < treeList.length; i += 3) drawNewTree(c, treeList[i], treeList[i + 1], treeList[i + 2], now);
@@ -2687,7 +2735,7 @@
     walkTo(t.x, t.y);
   });
 
-  const BLOCK = new Set([TILE.WATER, TILE.TREE, TILE.WALL, TILE.ROCK, TILE.PALM, TILE.PINE, TILE.DEADTREE, TILE.CACTUS, TILE.ICEBLOCK, TILE.BOG, TILE.CWALL, TILE.LAVA, TILE.CLOUDW, TILE.WEBW, TILE.AQW, TILE.MAGW, TILE.TOMBW, TILE.BRAZ]);
+  const BLOCK = new Set([TILE.WATER, TILE.TREE, TILE.WALL, TILE.ROCK, TILE.PALM, TILE.PINE, TILE.DEADTREE, TILE.CACTUS, TILE.ICEBLOCK, TILE.BOG, TILE.CWALL, TILE.LAVA, TILE.CLOUDW, TILE.WEBW, TILE.AQW, TILE.MAGW, TILE.TOMBW, TILE.BRAZ, TILE.OLYW, TILE.OLYS]);
   function walkable(x, y) { return x >= 0 && y >= 0 && x < G.W && y < G.H && !BLOCK.has(G.tiles[y * G.W + x]) && !G.npcTiles.has(y * G.W + x); }
   function walkTo(gx, gy) {
     if (!walkable(gx, gy)) return;

@@ -18,10 +18,10 @@ const H = 264;                  // + 124 filas al sur: salas de la Raid y copias
 const T = {
   GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10,
   SAND: 11, SNOW: 12, SWAMP: 13, DUNE: 14, PALM: 15, PINE: 16, DEADTREE: 17, CACTUS: 18, ICEBLOCK: 19,
-  MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24, CFLOOR: 25, CWALL: 26, LAVA: 27, ASH: 28, CLOUDF: 29, CLOUDW: 30, WEBF: 31, WEBW: 32, AQF: 33, AQW: 34, MAGF: 35, MAGW: 36, TOMBF: 37, TOMBW: 38, BRAZ: 39,
+  MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24, CFLOOR: 25, CWALL: 26, LAVA: 27, ASH: 28, CLOUDF: 29, CLOUDW: 30, WEBF: 31, WEBW: 32, AQF: 33, AQW: 34, MAGF: 35, MAGW: 36, TOMBF: 37, TOMBW: 38, BRAZ: 39, OLYF: 40, OLYW: 41, OLYS: 42,
 };
 const BLOCKED = new Uint8Array(64);   // (con 32 casillas, WEBW=32 quedaba fuera y no bloqueaba)
-[T.WATER, T.TREE, T.WALL, T.ROCK, T.PALM, T.PINE, T.DEADTREE, T.CACTUS, T.ICEBLOCK, T.BOG, T.CWALL, T.LAVA, T.CLOUDW, T.WEBW, T.AQW, T.MAGW, T.TOMBW, T.BRAZ].forEach((t) => { BLOCKED[t] = 1; });
+[T.WATER, T.TREE, T.WALL, T.ROCK, T.PALM, T.PINE, T.DEADTREE, T.CACTUS, T.ICEBLOCK, T.BOG, T.CWALL, T.LAVA, T.CLOUDW, T.WEBW, T.AQW, T.MAGW, T.TOMBW, T.BRAZ, T.OLYW, T.OLYS].forEach((t) => { BLOCKED[t] = 1; });
 
 // El orden importa: gana la primera zona cuyo rectángulo contiene la casilla.
 const RAID_Y0 = 146, RAID_Y1 = 170, RAID_W = 36;
@@ -63,6 +63,7 @@ const ZONES = [
   { id: 'gremio_minero', name: 'Gremio de Mineros',   pvp: false, kind: 'town',    rect: [34, 70, 61, 85] },
   { id: 'gremio_minero2', name: 'Gremio de Mineros Profundo', pvp: false, kind: 'town', rect: [250, 142, 277, 157] },
   { id: 'ciudad_alba', name: 'Ciudad de Alba Dorada', pvp: false, kind: 'town', rect: [380, 57, 420, 83] },        // gran ciudad segura en el centro de las Tierras Inexploradas
+  { id: 'cueva_olimpo', name: 'El Olimpo, Hogar de Zeus', pvp: false, kind: 'dungeon', tint: 'rgba(205,228,255,.10)', rect: [326, 20, 359, 38] },
   { id: 'montana_alta', name: 'Montañas del Trueno', pvp: false, kind: 'wild', rect: [320, 0, 399, 56], tint: 'rgba(150,170,210,.10)' },
   { id: 'nubes_reino', name: 'Reino de las Nubes', pvp: false, kind: 'wild', rect: [400, 0, 479, 56], tint: 'rgba(200,225,255,.12)' },
   { id: 'desierto_piramides', name: 'Desierto de las Pirámides', pvp: false, kind: 'wild', rect: [320, 84, 399, 139], tint: 'rgba(255,190,80,.10)' },
@@ -80,6 +81,7 @@ const INST_CAVES = [                       // cueva (zona), jefe, precio por ent
   { cave: 'cueva_mar',    boss: 'leviatan',       fee: 500000 },
   { cave: 'cueva_magma',  boss: 'ignaros',        fee: 600000 },
   { cave: 'cueva_anubis', boss: 'anubis',         fee: 800000 },
+  { cave: 'cueva_olimpo', boss: 'zeus',           fee: 1000000 },
 ];
 const INST_POS = [];                        // esquinas (x0, y0) de las 18 plazas libres del sur
 for (let r = 0; r < 2; r++) for (let c = 0; c < 5; c++) INST_POS.push([282 + 36 * c, 142 + 22 * r]);
@@ -469,6 +471,21 @@ const CAVE7 = { rect: zoneById('cueva_anubis').rect, door: [377, 117], inside: [
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (tiles[idx(x, y)] === T.TOMBF && !seen.has(idx(x, y))) tiles[idx(x, y)] = T.TOMBW;
 })(CAVE7);
 
+// El Olimpo: plataforma de mármol sobre el cielo (Montañas del Trueno). Columnas, escalinata al trono y la puerta al sur; fuera de la plataforma solo hay cielo
+const CAVE8 = { rect: zoneById('cueva_olimpo').rect, door: [342, 39], inside: [342, 35], exit: [342, 37], lair: [342, 24] };
+(function carveOlimpo(C) {
+  const [x0, y0, x1, y1] = C.rect, cx = 342.5, cy = 28.5;
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) tiles[idx(x, y)] = T.OLYS;
+  const floor = (x, y) => { if (x > x0 && x < x1 && y > y0 && y < y1) tiles[idx(x, y)] = T.OLYF; };
+  for (let y = y0 + 1; y < y1; y++) for (let x = x0 + 1; x < x1; x++) { const dx = (x - cx) / 15.2, dy = (y - cy) / 8.6; if (dx * dx + dy * dy < 1) floor(x, y); }
+  for (let y = 33; y <= 37; y++) for (let x = 339; x <= 346; x++) floor(x, y);                  // escalinata de entrada
+  for (const [px, py] of [[331, 27], [354, 27], [335, 23], [350, 23], [335, 32], [350, 32], [339, 29], [346, 29], [333, 29], [352, 29]]) if (tiles[idx(px, py)] === T.OLYF) tiles[idx(px, py)] = T.OLYW;   // columnas
+  for (let x = 338; x <= 347; x++) if (tiles[idx(x, 21)] === T.OLYF) tiles[idx(x, 21)] = T.OLYW;     // el trono, al fondo
+  const seen = new Set([idx(C.inside[0], C.inside[1])]), q = [...seen];
+  for (let i = 0; i < q.length; i++) { const k = q[i], x = k % W, y = (k / W) | 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) { const nk = idx(x + dx, y + dy); if (inb(x + dx, y + dy) && tiles[nk] === T.OLYF && !seen.has(nk)) { seen.add(nk); q.push(nk); } } }
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (tiles[idx(x, y)] === T.OLYF && !seen.has(idx(x, y))) tiles[idx(x, y)] = T.OLYS;
+})(CAVE8);
+
 // Cueva del Gremio de Mineros: cueva propia (zona segura) con portal de entrada junto a la ciudad. Solo rocas de nivel bajo y medio
 const GUILD = { rect: zoneById('gremio_minero').rect, door: [74, 64], outside: [74, 65], inside: [47, 83], exit: [47, 84] };
 (function carveGuild(C) {
@@ -569,13 +586,15 @@ addPortal(CAVE6.door[0], CAVE6.door[1], CAVE6.inside[0], CAVE6.inside[1], 'Calde
 addPortal(CAVE6.exit[0], CAVE6.exit[1], CAVE6.door[0], CAVE6.door[1] - 1, 'Salir a las Tierras de Lava');
 addPortal(CAVE7.door[0], CAVE7.door[1], CAVE7.inside[0], CAVE7.inside[1], 'Tumba de Anubis (peligro extremo)', CAVE_FEE);
 addPortal(CAVE7.exit[0], CAVE7.exit[1], CAVE7.door[0], CAVE7.door[1] - 1, 'Salir al Desierto de las Pirámides');
+addPortal(CAVE8.door[0], CAVE8.door[1], CAVE8.inside[0], CAVE8.inside[1], 'El Olimpo, hogar de Zeus (peligro extremo)', CAVE_FEE);
+addPortal(CAVE8.exit[0], CAVE8.exit[1], CAVE8.door[0], CAVE8.door[1] + 1, 'Salir a las Montañas del Trueno');
 addPortal(GUILD.door[0], GUILD.door[1], GUILD.inside[0], GUILD.inside[1], 'Cueva del Gremio de Mineros (zona segura)');
 addPortal(GUILD.exit[0], GUILD.exit[1], GUILD.outside[0], GUILD.outside[1], 'Salir al Prado');
 addPortal(GUILD2.door[0], GUILD2.door[1], GUILD2.inside[0], GUILD2.inside[1], 'Gremio de Mineros Profundo: pómez, mármol y basalto (zona segura)');
 addPortal(GUILD2.exit[0], GUILD2.exit[1], GUILD2.outside[0], GUILD2.outside[1], 'Salir al Prado');
 const isWalkableRaw = (x, y) => inb(x, y) && !BLOCKED[tiles[idx(x, y)]];
 // Instancias de jefes de cueva: se copia el terreno de cada cueva en sus plazas y se crean los portales
-const CAVES_BY_ZONE = { cueva: CAVE, cueva_jade: CAVE2, cueva_nube: CAVE3, cueva_arana: CAVE4, cueva_mar: CAVE5, cueva_magma: CAVE6, cueva_anubis: CAVE7 };
+const CAVES_BY_ZONE = { cueva: CAVE, cueva_jade: CAVE2, cueva_nube: CAVE3, cueva_arana: CAVE4, cueva_mar: CAVE5, cueva_magma: CAVE6, cueva_anubis: CAVE7, cueva_olimpo: CAVE8 };
 for (const I of INSTANCES) {
   const C = CAVES_BY_ZONE[I.cave], [x0, y0, x1, y1] = C.rect, ex = PORTALS.find((q) => q.x === C.exit[0] && q.y === C.exit[1]);
   I.door = C.door; I.out = [ex.tx, ex.ty];
@@ -703,6 +722,7 @@ monsterSpawns.push({ type: 'aracnido_fuego', x: CAVE4.lair[0], y: CAVE4.lair[1] 
   monsterSpawns.push({ type: 'leviatan', x: CAVE5.lair[0], y: CAVE5.lair[1] });
   monsterSpawns.push({ type: 'ignaros', x: CAVE6.lair[0], y: CAVE6.lair[1] });
   monsterSpawns.push({ type: 'anubis', x: CAVE7.lair[0], y: CAVE7.lair[1] });
+  monsterSpawns.push({ type: 'zeus', x: CAVE8.lair[0], y: CAVE8.lair[1] });
   const nearest = (zoneId, px, py) => {
     let best = null, bd = 1e9;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -720,7 +740,7 @@ monsterSpawns.push({ type: 'aracnido_fuego', x: CAVE4.lair[0], y: CAVE4.lair[1] 
 })();
 
 // Versión compacta del mapa para el cliente (un carácter por casilla)
-const CH = '0123456789abcdefghijklmnopqrstuvwxyzABCD';
+const CH = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFG';
 const rows = [];
 for (let y = 0; y < H; y++) {
   let s = '';
