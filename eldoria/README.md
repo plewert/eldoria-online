@@ -443,7 +443,7 @@ Junto a la puerta de cada cueva de jefe hay un segundo portal "Instancia privada
 
 
 ### Tabletas de teletransporte a las cuevas de jefe
-Boris vende 8 tabletas (una por cueva de jefe) a 250 000 de oro; de un solo uso, te dejan dentro de la cueva cerca de la entrada. Código: `CAVE_TABLETS` en `game/tablets.js`.
+Boris vende 9 tabletas (una por cueva de jefe) a 100 000 de oro; de un solo uso, te dejan dentro de la cueva cerca de la entrada. Código: `CAVE_TABLETS` en `game/tablets.js`.
 
 ### Botín de jefes: menos equipo, más materiales
 - Armas y armaduras de monstruos y jefes salen a **1/3** de la probabilidad anterior (`GEAR_K` en `game/botin.js`; Zeus y el Rey de Halloween usan el mismo factor).
@@ -471,6 +471,9 @@ Boris vende 8 tabletas (una por cueva de jefe) a 250 000 de oro; de un solo uso,
 - Datos en `game/demonios.js` (tabla `ROSTER` / `BOSSES`); dibujos en `public/sprites.json`.
 
 ## Gemas solo en las rocas, botín de jefes y banco
-- **Las gemas ya solo se consiguen minando rocas** (Granito … Obsidiana): ningún monstruo ni jefe las suelta y se quitaron las recetas de «pulir gema». La probabilidad por roca bajó a la mitad.
+- **Las gemas ya solo se consiguen minando rocas** (Granito … Obsidiana): los monstruos normales no las sueltan (los jefes solo muy muy raro, 0,1 %) y se quitaron las recetas de «pulir gema». La probabilidad por roca bajó a la mitad.
 - **Botín de jefes −20 %** (`CFG.BOSS_DROP_K = 0.8`): afecta a lo que no es seguro (equipo, materiales, mascotas…); el trofeo y las pociones siguen cayendo igual. Hades y Zeus aplican el mismo factor a su equipo.
 - **Banco**: arrastra objetos de la mochila al banco (depositar), del banco a la mochila (retirar) y reordena el banco; también con el dedo (mantén pulsado ~¼ s y arrastra). En la mochila, soltar sobre una casilla de equipo equipa.
+
+### Gemas en la tienda de Boris
+Boris vende y compra las 7 gemas **al mismo precio**: topacio 1 000 000 (la más barata), rubí/zafiro/esmeralda 1 100 000, amatista 3 000 000, diamante 5 500 000, ópalo 7 000 000 (`GEM_PRICE` en `game/data.js`).

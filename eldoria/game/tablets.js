@@ -20,8 +20,8 @@ const TABLETS = [
   ['tp_paraiso',  'Tableta de Teletransporte: Paraíso de Coral',     440, 98],
   ['tp_gremio',   'Tableta de Teletransporte: Gremio de Mineros',    74, 65],
 ];
-/** Tabletas de las cuevas de jefe: 250 000 de oro en Boris; te dejan dentro de la cueva, cerca de la entrada. */
-const CAVE_PRICE = 250000;
+/** Tabletas de las cuevas de jefe: 100 000 de oro en Boris; te dejan dentro de la cueva, cerca de la entrada. */
+const CAVE_PRICE = 100000;
 const CAVE_TABLETS = [
   ['tp_cueva_dragon', 'Tableta de Teletransporte: Cueva del Dragón de las Sombras', 122, 85],
   ['tp_cueva_jade',   'Tableta de Teletransporte: Cueva del Hidra de Jade',         52, 52],

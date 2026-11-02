@@ -37,7 +37,8 @@ const CFG = {
   ANC_MULT: 1.5,                // los Ancient valen x1.5
   PLUS_CHANCE: 0.22,            // prob. de que un arma/armadura soltada venga con +N
   ANCIENT_CHANCE: 0.015,        // prob. de que un equipo soltado sea Ancient (x4 en jefes)
-  GEM_CHANCE: 0,                // las gemas YA NO caen de monstruos ni jefes: solo se consiguen minando rocas
+  GEM_CHANCE: 0,                // monstruos normales: no sueltan gemas (solo se consiguen minando rocas)
+  GEM_CHANCE_BOSS: 0.001,       // jefes: 0,1 % por participante (muy muy raro; el que más daño hace tiene algo más de suerte)
   BOSS_DROP_K: 0.8,             // el botín de jefes (lo que no es seguro) cae un 20 % menos
   GEAR_DROP_MULT: 0.5,          // los equipos raros que sueltan monstruos y jefes caen la mitad de seguido
   BOSS_RARE_MULT: 4,
@@ -195,7 +196,9 @@ const GEMS = {
   opalo:     { name: 'Ópalo',     icon: '🟠', col: '#f09a5a', sell: 2000, desc: 'Roba el 3% del daño como vida',    fx: { steal: 0.03 } },
   diamante:  { name: 'Diamante',  icon: '💎', col: '#bfe9ff', sell: 1500, desc: 'Brillo +1: tu set resplandece (+1 ataque)', fx: { glow: 1, atk: 1 } },
 };
-for (const [id, g] of Object.entries(GEMS)) ITEMS[id] = { name: g.name, icon: g.icon, type: 'gem', stack: true, sell: g.sell, col: g.col, desc: g.desc };
+// Boris compra y vende las gemas al MISMO precio (la más barata, 1 M)
+const GEM_PRICE = { topacio: 1000000, rubi: 1100000, zafiro: 1100000, esmeralda: 1100000, amatista: 3000000, diamante: 5500000, opalo: 7000000 };
+for (const [id, g] of Object.entries(GEMS)) { g.sell = GEM_PRICE[id]; ITEMS[id] = { name: g.name, icon: g.icon, type: 'gem', stack: true, sell: g.sell, price: g.sell, col: g.col, desc: g.desc }; }
 
 // Colores de rareza de los nombres de equipo
 const RAR = { normal: '#9aa3ad', plus: '#5fd16a', ancient: '#4aa8ff', none: '#e8e2d0' };
@@ -245,6 +248,7 @@ const SHOPS = {
     'casco_cuero', 'casco_hierro', 'casco_acero',
     'armadura_cuero', 'cota_malla', 'armadura_placas',
     'escudo_madera', 'escudo_hierro', 'escudo_torre',
+    'topacio', 'rubi', 'zafiro', 'esmeralda', 'amatista', 'diamante', 'opalo',      // gemas: mismo precio de compra y de venta
   ],
   nilo: [
     'sardina', 'salmon', 'tiburon', 'pocion_vida', 'pocion_vida_g', 'pocion_mana', 'pocion_mana_g',

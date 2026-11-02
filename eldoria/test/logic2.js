@@ -280,9 +280,9 @@ ok('Tierras de Lava: zona PvP con lava intransitable y monstruos de fuego', () =
   ['golem_lava', 'demonio_menor', 'dragon'].forEach((t) => assert.ok(types.has(t), t));
   assert.equal(world.rows[0].length, world.W);
 });
-ok('las gemas solo salen de las rocas (ningún monstruo ni jefe las suelta), equipo raro a un tercio y mascotas de jefe', () => {
-  assert.equal(I.gemChance(MONSTERS.rata), 0); assert.equal(I.gemChance(MONSTERS.dragon_sombra), 0);
-  for (const [t, d] of Object.entries(MONSTERS)) for (const q of d.loot) assert.ok(!require('../game/data').GEMS[q[0]], t + ' no suelta gemas');
+ok('las gemas salen de las rocas; los jefes solo las sueltan muy muy raro (0,1 %), los monstruos normales nunca; equipo raro a un tercio y mascotas de jefe', () => {
+  assert.equal(I.gemChance(MONSTERS.rata), 0); assert.equal(I.gemChance(MONSTERS.dragon_sombra), 0.001);
+  for (const [t, d] of Object.entries(MONSTERS)) for (const q of d.loot) assert.ok(!require('../game/data').GEMS[q[0]], t + ' no tiene gemas en su tabla de botín');
   assert.ok(!require('../game/extra').RECIPES.some((r) => /^@gem/.test(r.out[0])), 'no se fabrican gemas');
   assert.ok(Math.abs(MONSTERS.dragon_sombra.loot.find((l) => l[0] === 'sombra_arco')[1] - 0.005 / 3) < 1e-9, 'arco a un tercio de 0,5 %');
   for (const [t, d] of Object.entries(MONSTERS)) if (d.boss) { const l = d.loot.find((q) => q[0] === 'pet_' + t); assert.ok(l, 'mascota de ' + t); assert.equal(ITEMS['pet_' + t].type, 'pet'); assert.equal(ITEMS['pet_' + t].mon, t); }
@@ -789,7 +789,7 @@ ok('tabletas de las cuevas de jefe: Boris las vende a 250k y te dejan cerca de l
   const { CAVE_TABLETS } = require('../game/tablets'), SH = require('../game/data').SHOPS;
   assert.equal(CAVE_TABLETS.length, 9);
   const caves = ['cueva', 'cueva_jade', 'cueva_nube', 'cueva_arana', 'cueva_mar', 'cueva_magma', 'cueva_anubis', 'cueva_olimpo', 'cueva_hades'];
-  CAVE_TABLETS.forEach(([id, , x, y], i) => { assert.equal(ITEMS[id].price, 250000); assert.ok(SH.boris.includes(id)); assert.equal(world.zoneAt(x, y).id, caves[i], id); assert.ok(world.isWalkable(x, y), 'camina ' + id); });
+  CAVE_TABLETS.forEach(([id, , x, y], i) => { assert.equal(ITEMS[id].price, 100000); assert.ok(SH.boris.includes(id)); assert.equal(world.zoneAt(x, y).id, caves[i], id); assert.ok(world.isWalkable(x, y), 'camina ' + id); });
   const { p } = login('TabC1'); place(p, ...TOWN); p.inv[0] = I.mk('tp_cueva_olimpo', 1); p.pvpLock = 0; game.now = T0 + 5; game.handle(p, { t: 'use', s: 0 });
   assert.equal(zoneOf([p.x, p.y]).id, 'cueva_olimpo'); assert.ok(!p.inv[0], 'se gasta');
 });
@@ -995,6 +995,11 @@ ok('legiones del Inframundo: 46 demonios con dibujo, botín y apariciones en la 
     for (const q of sp) { assert.equal(zoneOf([q.x, q.y]).id, 'inframundo', t + ' en el Inframundo'); assert.ok(world.reach[q.y * world.W + q.x], t + ' alcanzable'); }
   }
   assert.ok(D.BOSSES.every((b) => MONSTERS[b[0]].boss));
+});
+ok('Boris compra y vende gemas al mismo precio; la más barata cuesta 1 M', () => {
+  const SH = require('../game/data').SHOPS, G = require('../game/data').GEMS, ids = Object.keys(G);
+  for (const id of ids) { assert.ok(SH.boris.includes(id), id + ' en la tienda de Boris'); assert.equal(ITEMS[id].price, ITEMS[id].sell, id + ': compra = venta'); }
+  assert.equal(Math.min(...ids.map((id) => ITEMS[id].price)), 1000000);
 });
 ok('modo historia: toda cueva de jefe tiene historia; entrada, tablillas, final, logros y guardado', () => {
   const H = require('../game/historia');

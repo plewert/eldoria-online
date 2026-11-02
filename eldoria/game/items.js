@@ -188,7 +188,7 @@ function rollGear(id, boss) {
   return mk(id, 1, { up, an, ns });
 }
 
-const gemChance = () => CFG.GEM_CHANCE;      // 0,08 % por muerte (monstruos y jefes)
+const gemChance = (def) => (def && def.boss ? CFG.GEM_CHANCE_BOSS : CFG.GEM_CHANCE);      // solo los jefes, y muy raro
 
 function pickGem(def) {
   const w = { rubi: 10, zafiro: 10, esmeralda: 10, topacio: 10 };
