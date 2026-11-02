@@ -200,7 +200,7 @@ function install(Game) {
       if (dmg < need) continue;
       const k = 1 + 2 * (dmg / topDmg);
       for (const id of GEAR) {
-        if (Math.random() >= Math.min(0.6, CH.get(id) * 0.5 * k * instK * (this.lootMult ? this.lootMult(pl, id) : 1))) continue;
+        if (Math.random() >= Math.min(0.6, CH.get(id) * 0.5 * require('./data').CFG.BOSS_DROP_K * k * instK * (this.lootMult ? this.lootMult(pl, id) : 1))) continue;
         this.giveOrDropInst(pl, I.rollGear(id, true)); if (this.logDrop) this.logDrop(pl, 'zeus', id);
         this.msgC(pl, `⚡✨ ¡Botín de Zeus: ${ITEMS_REF()[id].name}!`, '#7fb8ff'); this.broadcastChat(`⚡ ¡${pl.name} ha conseguido ${ITEMS_REF()[id].name}!`, 'k');
       }

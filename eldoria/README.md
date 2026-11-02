@@ -81,7 +81,7 @@ En el registro de Render verás `Base remota conectada: N cuentas cargadas.` Se 
 - **Misiones** con PNJ (marcas ❗ sobre ellos, tecla `Q`), **logros y títulos** (`L`), **ranking** (`R`).
 - **Habilidades activas** por estilo con las teclas `1`, `2`, `3` (se desbloquean a nivel 1, 8 y 15 del estilo).
 - **Grupos y gremios** (`G`; clic derecho sobre un jugador → invitar). Chat: `/p` grupo, `/gc` gremio.
-- **Mercado entre jugadores** (`P`, solo en ciudades, comisión 5 %), **oficios** (`F`): recolecta 🌿💠⛏️🔷 con clic y fabrica pociones, elixires y gemas.
+- **Mercado entre jugadores** (`P`, solo en ciudades, comisión 5 %), **oficios** (`F`): recolecta 🌿💠⛏️🔷 con clic y fabrica pociones y elixires.
 - **Mascotas y monturas** (tienda de Brisa y botín): clic en el objeto para invocarlas.
 - **Jefe de evento**: el Coloso Ancestral aparece cada cierto tiempo; variables `EVENT_MIN` (minutos entre eventos) y `EVENT_FIRST_MIN` (primer evento tras arrancar).
 - **Día/noche y clima**, **música y sonidos** (botón 🔊), **controles táctiles** para móvil.
@@ -368,7 +368,7 @@ Solo visual: respiran, la cola/pelaje se balancea, andan con saltitos, se sienta
 Rubí, zafiro, esmeralda, topacio, amatista y ópalo usan los dibujos de gemas octogonales (atlas `gear.png`, claves `i_rubi`…); el diamante es la gema azul pasada a blanco-celeste. Se ven en la mochila, la colección de minería y el suelo.
 Las gemas están animadas (`gemDraw` en `public/game.js`): destello diagonal que recorre la piedra, aura de su color que respira y chispas en cruz que parpadean, en la mochila, la colección de minería y las ventanas de engarce.
 
-Sacar una gema de una ranura cuesta ahora **50.000** de oro (`GEM_REMOVE_COST` en `game/data.js`).
+Sacar una gema de una ranura cuesta **50.000** de oro (`GEM_REMOVE_COST` en `game/data.js`) y tiene una probabilidad de **rotura total**: 10 % en las comunes (rubí, zafiro, esmeralda, topacio) y 3 % en las raras (amatista, ópalo, diamante). Se cobra aunque se rompa; no hay protección ni gemas agrietadas. El menú muestra el porcentaje.
 Robo de vida (ópalo, Anillo de Sangre, Amuleto del Abismo): tope total del 15 %; contra jefes roba la mitad; el miasma de Anubis lo reduce un 60 % durante su efecto.
 
 ## Especiales de armas de jefe
@@ -461,7 +461,7 @@ Boris vende 8 tabletas (una por cueva de jefe) a 250 000 de oro; de un solo uso,
 - **Cueva de Hades** (obsidiana con venas de lava, viento de fuego y viñeta de miedo al entrar). Se llega por el portal del **Inframundo** (431,70, Tierras Inexploradas): una zona enorme al sur del mapa, sin monstruos normales, con lava, ceniza y obsidiana.
 - **Especiales**: Dragón de fuego (recorre la cueva incendiándolo todo), Temblor (erupciones de lava: hay que esquivar), Ráfagas de fuego a todos, Absorber (absorbe daño y especiales y los devuelve), Salto (reaparece junto a un jugador) y golpes de guadaña.
 - **Arcos hacen solo 45 % de daño** (`ARCO_K`); magia y cuerpo a cuerpo, completos.
-- **Botín**: set Tenebris (casco, armadura, piernas, botas, 2 anillos, amuleto, guadaña, arco), materiales y elixir del Inframundo; tableta de teletransporte (Boris). Reparto por daño como el resto de jefes.
+- **Botín**: set Tenebris (casco, armadura, piernas, botas, cinturón, 2 anillos, amuleto, guadaña, arco), materiales y elixir del Inframundo; tableta de teletransporte (Boris). Reparto por daño como el resto de jefes.
 - Instancia privada: 9.ª cueva, entrada 1.200.000. Modo historia: capítulo de Hades (3 tablillas, final y logro). Precios de materiales reequilibrados (Hades = 100k).
 
 ## Legiones del Inframundo (46 demonios)
@@ -469,3 +469,8 @@ Boris vende 8 tabletas (una por cueva de jefe) a 250 000 de oro; de un solo uso,
 - Dónde: los más débiles en el centro (donde apareces) y los más fuertes en los extremos oeste y este. La cueva de Hades sigue sin monstruos normales.
 - Botín: cada familia suelta su material (Cuerno de Diablillo, Ala Demoníaca, Esencia Sombría, Garra Infernal, Lágrima Infernal, Colmillo Demoníaco, Sello Demoníaco), pociones y gemas; los jefes sueltan trofeo.
 - Datos en `game/demonios.js` (tabla `ROSTER` / `BOSSES`); dibujos en `public/sprites.json`.
+
+## Gemas solo en las rocas, botín de jefes y banco
+- **Las gemas ya solo se consiguen minando rocas** (Granito … Obsidiana): ningún monstruo ni jefe las suelta y se quitaron las recetas de «pulir gema». La probabilidad por roca bajó a la mitad.
+- **Botín de jefes −20 %** (`CFG.BOSS_DROP_K = 0.8`): afecta a lo que no es seguro (equipo, materiales, mascotas…); el trofeo y las pociones siguen cayendo igual. Hades y Zeus aplican el mismo factor a su equipo.
+- **Banco**: arrastra objetos de la mochila al banco (depositar), del banco a la mochila (retirar) y reordena el banco; también con el dedo (mantén pulsado ~¼ s y arrastra). En la mochila, soltar sobre una casilla de equipo equipa.

@@ -20,13 +20,14 @@ const PIECES = [
   ['hd_guantes',  'Guanteletes de Ceniza',       'hd_glove', 'gloves', 104, 39, { hp: 220, atk: 16, crit: 0.02 }, 0.05],
   ['hd_pantalon', 'Grebas de Obsidiana',         'hd_leg',   'legs',   104, 54, { hp: 360, atk: 13 }, 0.05],
   ['hd_botas',    'Botas del Abismo',            'hd_boot',  'boots',  103, 43, { hp: 260, atk: 10 }, 0.05],
+  ['hd_cinto',    'Cinturón del Corazón de Fuego', 'hd_belt', 'belt',   102, 32, { hp: 340, atk: 12, crit: 0.02 }, 0.05],
 ];
 const RING = ['hd_anillo', 'Sello del Rey del Inframundo', 'hd_ring', 'ring', 103, { atk: 20, hp: 280, mana: 110, crit: 0.03 }, 0.05];
 const RING2 = ['hd_anillo2', 'Banda de las Almas Ardientes', 'hd_ring2', 'ring', 101, { atk: 14, hp: 360, mana: 150, crit: 0.02 }, 0.05];
 const AMULET = ['hd_amuleto', 'Corazón de Brasas', 'hd_amulet', 'amulet', 104, { hp: 640, mana: 190, atk: 17, crit: 0.04 }, 0.04];
 const SCYTHE = ['hd_guadana', 'Guadaña del Eclipse', 'hd_scythe', 'melee', 105, 270, 1150, 'fire', 0.012];
 const BOW = ['hd_arco', 'Arco del Sol Negro', 'hd_bow', 'ranged', 105, 260, 1100, 'fire', 0.012];
-const ICON = { head: '⛑️', body: '🛡️', gloves: '🧤', legs: '👖', boots: '🥾', ring: '💍', amulet: '📿' };
+const ICON = { head: '⛑️', body: '🛡️', gloves: '🧤', legs: '👖', boots: '🥾', belt: '🎗️', ring: '💍', amulet: '📿' };
 const ARCO_K = 0.45;                         // los arcos le hacen menos de la mitad del daño
 
 function build(ITEMS, MONSTERS) {
@@ -213,7 +214,7 @@ function install(Game) {
       if (dmg < need) continue;
       const k = 1 + 2 * (dmg / topDmg);
       for (const id of GEAR) {
-        if (Math.random() >= Math.min(0.6, CH.get(id) * 0.5 * k * instK * (this.lootMult ? this.lootMult(pl, id) : 1))) continue;
+        if (Math.random() >= Math.min(0.6, CH.get(id) * 0.5 * require('./data').CFG.BOSS_DROP_K * k * instK * (this.lootMult ? this.lootMult(pl, id) : 1))) continue;
         this.giveOrDropInst(pl, I.rollGear(id, true)); if (this.logDrop) this.logDrop(pl, 'hades', id);
         this.msgC(pl, `🔥✨ ¡Botín de Hades: ${require('./data').ITEMS[id].name}!`, '#ff9a4a'); this.broadcastChat(`🔥 ¡${pl.name} ha conseguido ${require('./data').ITEMS[id].name}!`, 'k');
       }

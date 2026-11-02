@@ -418,6 +418,22 @@
   // móvil/tableta: no hay clic derecho, así que un toque largo abre el mismo menú y, en la mochila y el equipo, un toque normal también
   const TOUCH = ('ontouchstart' in window) || (window.matchMedia && matchMedia('(pointer: coarse)').matches);
   const anchorOf = (node) => { const r = node.getBoundingClientRect(); return { clientX: r.left + 6, clientY: r.bottom - 4, preventDefault() {} }; };
+  /** Arrastre con el dedo: mantén pulsado un instante y mueve (si mueves antes, es un desplazamiento normal). */
+  function touchDrag(s, canDrag, selector, onDrop) {
+    let sx = 0, sy = 0, timer = 0, armed = false, ghost = null, over = null;
+    const reset = () => { clearTimeout(timer); timer = 0; armed = false; if (ghost) ghost.remove(); ghost = null; s.classList.remove('dragging'); if (over) over.classList.remove('dragover'); over = null; };
+    s.addEventListener('touchstart', (e) => { reset(); if (e.touches.length !== 1 || !canDrag()) return; sx = e.touches[0].clientX; sy = e.touches[0].clientY; timer = setTimeout(() => { timer = 0; armed = true; }, 260); }, { passive: true });
+    s.addEventListener('touchmove', (e) => {
+      const t = e.touches[0];
+      if (!armed) { if (timer && Math.hypot(t.clientX - sx, t.clientY - sy) > 10) { clearTimeout(timer); timer = 0; } return; }
+      if (!ghost) { hideTip(); ghost = s.cloneNode(true); ghost.removeAttribute('draggable'); Object.assign(ghost.style, { position: 'fixed', zIndex: 90, pointerEvents: 'none', opacity: .85, transform: 'scale(1.25)' }); document.body.append(ghost); s.classList.add('dragging'); }
+      e.preventDefault(); ghost.style.left = (t.clientX - 22) + 'px'; ghost.style.top = (t.clientY - 22) + 'px';
+      const el_ = document.elementFromPoint(t.clientX, t.clientY), q = el_ && el_.closest ? el_.closest(selector) : null;
+      if (over && over !== q) over.classList.remove('dragover'); over = q && q !== s ? q : null; if (over) over.classList.add('dragover');
+    }, { passive: false });
+    s.addEventListener('touchend', (e) => { if (!ghost) { reset(); return; } const q = over; reset(); if (q) onDrop(q); e.preventDefault(); });
+    s.addEventListener('touchcancel', reset);
+  }
   function addLongPress(node, fn) {
     let timer = 0, fired = false, sx = 0, sy = 0;
     const cancel = () => { clearTimeout(timer); timer = 0; };
@@ -469,7 +485,7 @@
     G.inv.forEach((it, i) => { if (it && isGear(it[0]) && freeSockets(it)) out.push({ from: 'inv', at: i, it, where: 'mochila' }); });
     return out;
   }
-  const unsocketRows = (it, from, at) => (it[5] || []).map((g, h) => (g ? { label: `Sacar ${G.items[g].icon} ${G.items[g].name} (${G.cfg.gemCost} 💰)`, color: G.items[g].col, fn: () => send({ t: 'unsocket', from, at, hole: h }) } : null)).filter(Boolean);
+  const unsocketRows = (it, from, at) => (it[5] || []).map((g, h) => (g ? { label: `Sacar ${G.items[g].icon} ${G.items[g].name} (${G.cfg.gemCost} 💰 · ${Math.round(100 * (['amatista', 'opalo', 'diamante'].includes(g) ? G.cfg.gemBreakRare : G.cfg.gemBreak))}% de romperse)`, color: G.items[g].col, fn: () => send({ t: 'unsocket', from, at, hole: h }) } : null)).filter(Boolean);
 
   function invMenu(ev, i) {
     const it = G.inv[i], d = G.items[it[0]], rows = [{ hdr: itName(it), color: itColor(it) }];
@@ -513,22 +529,11 @@
       s.addEventListener('dragover', (ev) => { ev.preventDefault(); ev.dataTransfer.dropEffect = 'move'; s.classList.add('dragover'); });
       s.addEventListener('dragleave', () => s.classList.remove('dragover'));
       s.addEventListener('drop', (ev) => { ev.preventDefault(); s.classList.remove('dragover'); const a = parseInt(ev.dataTransfer.getData('text/plain'), 10); if (a >= 0 && a !== i) send({ t: 'swap', a, b: i }); });
-      // móvil/tablet: arrastrar con el dedo (el arrastre HTML5 no funciona al tocar)
-      { let sx = 0, sy = 0, ghost = null, over = null;
-        const slotAt = (t) => { const e = document.elementFromPoint(t.clientX, t.clientY); const q = e && e.closest && e.closest('#inv .slot, #equip .slot'); return q || null; };
-        const endDrag = () => { if (ghost) ghost.remove(); ghost = null; s.classList.remove('dragging'); if (over) over.classList.remove('dragover'); over = null; };
-        s.addEventListener('touchstart', (e) => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; endDrag(); }, { passive: true });
-        s.addEventListener('touchmove', (e) => {
-          const t = e.touches[0]; if (!G.inv[i]) return;
-          if (!ghost) {
-            if (Math.hypot(t.clientX - sx, t.clientY - sy) < 10) return;
-            hideTip(); ghost = s.cloneNode(true); ghost.removeAttribute('draggable'); Object.assign(ghost.style, { position: 'fixed', zIndex: 90, pointerEvents: 'none', opacity: .85, transform: 'scale(1.25)' }); document.body.append(ghost); s.classList.add('dragging');
-          }
-          e.preventDefault(); ghost.style.left = (t.clientX - 22) + 'px'; ghost.style.top = (t.clientY - 22) + 'px';
-          const q = slotAt(t); if (over && over !== q) over.classList.remove('dragover'); over = q && q !== s ? q : null; if (over) over.classList.add('dragover');
-        }, { passive: false });
-        s.addEventListener('touchend', (e) => { if (!ghost) return; const q = over, b = q && q.dataset.i !== undefined ? +q.dataset.i : -1, eq = q && q.dataset.eq; endDrag(); if (b >= 0 && b !== i) send({ t: 'swap', a: i, b }); else if (eq && G.inv[i] && isGear(G.inv[i][0])) send({ t: 'use', s: i }); e.preventDefault(); });
-        s.addEventListener('touchcancel', endDrag); }
+      // móvil/tablet: mantén pulsado y arrastra con el dedo (soltar en otra casilla = intercambiar; en el equipo = equipar)
+      touchDrag(s, () => !!G.inv[i], '#inv .slot, #equip .slot', (q) => {
+        const b = q.dataset.i !== undefined ? +q.dataset.i : -1;
+        if (b >= 0 && b !== i) send({ t: 'swap', a: i, b }); else if (q.dataset.eq && G.inv[i] && isGear(G.inv[i][0])) send({ t: 'use', s: i });
+      });
       grid.append(s);
     }
     document.querySelectorAll('#equip .slot').forEach((s) => {
@@ -627,12 +632,26 @@
   function closeBank() { G.bankOpen = false; $('#bank').hidden = true; hideTip(); }
   $('#bankClose').addEventListener('click', closeBank);
   $('#bank').addEventListener('mousedown', (ev) => { if (ev.target === $('#bank')) closeBank(); });
+  /** Arrastrar y soltar en el banco (ratón y dedo): `drop(origen, índice)` se llama en la casilla de destino. */
+  function bankDnD(s, kind, i, it, drop) {
+    s.dataset.dk = kind; s.dataset.di = i; s._drop = drop;
+    if (it) {
+      s.draggable = true;
+      s.addEventListener('dragstart', (ev) => { hideTip(); ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', kind + ':' + i); setTimeout(() => s.classList.add('dragging'), 0); });
+      s.addEventListener('dragend', () => s.classList.remove('dragging'));
+    }
+    s.addEventListener('dragover', (ev) => { ev.preventDefault(); ev.dataTransfer.dropEffect = 'move'; s.classList.add('dragover'); });
+    s.addEventListener('dragleave', () => s.classList.remove('dragover'));
+    s.addEventListener('drop', (ev) => { ev.preventDefault(); s.classList.remove('dragover'); const [k, a] = String(ev.dataTransfer.getData('text/plain')).split(':'); if ((k === 'i' || k === 'b') && a !== undefined && !(k === kind && +a === i)) drop(k, +a); });
+    touchDrag(s, () => !!it, '#bank .slot[data-dk]', (q) => { const k = q.dataset.dk, a = +q.dataset.di; if (q._drop && !(k === kind && a === i)) q._drop(kind, i); });
+    return s;
+  }
   function renderBank() {
     if (!G.bankOpen) return;
     const inv = $('#bankInv'); inv.replaceChildren();
-    G.inv.forEach((it, i) => inv.append(mkSlot(it, (ev) => { if (it) send({ t: 'bdep', s: i, q: ev.ctrlKey || ev.altKey ? 1 : it[1] }); })));
+    G.inv.forEach((it, i) => inv.append(bankDnD(mkSlot(it, (ev) => { if (it) send({ t: 'bdep', s: i, q: ev.ctrlKey || ev.altKey ? 1 : it[1] }); }), 'i', i, it, (k, a) => { if (k === 'i' && a !== i) send({ t: 'swap', a, b: i }); else if (k === 'b') send({ t: 'bwd', s: a, q: 0 }); })));
     const box = $('#bankBox'); box.replaceChildren();
-    for (let i = 0; i < G.bank.size; i++) { const it = G.bank.bank[i]; box.append(mkSlot(it, (ev) => { if (it) send({ t: 'bwd', s: i, q: ev.ctrlKey || ev.altKey ? 1 : it[1] }); })); }
+    for (let i = 0; i < G.bank.size; i++) { const it = G.bank.bank[i]; box.append(bankDnD(mkSlot(it, (ev) => { if (it) send({ t: 'bwd', s: i, q: ev.ctrlKey || ev.altKey ? 1 : it[1] }); }), 'b', i, it, (k, a) => { if (k === 'b' && a !== i) send({ t: 'bswap', a, b: i }); else if (k === 'i') send({ t: 'bdep', s: a, q: 0 }); })); }
     $('#bankSlots').textContent = G.bank.size; const bb = $('#bankBuy'); bb.textContent = G.bank.size + (G.bank.pack || 5) > (G.bank.max || 480) ? 'Banco al máximo' : `Comprar +${G.bank.pack || 5} espacios (${fmt(G.bank.cost || 1000000)} 💰)`; bb.disabled = G.bank.size + (G.bank.pack || 5) > (G.bank.max || 480);
     $('#bankHand').textContent = fmt(G.gold); $('#bankGold').textContent = fmt(G.bank.gold);
   }
@@ -721,7 +740,7 @@
       const qty = a === c ? (a > 1 ? ` ×${a}` : '') : ` ×${a}–${c}`;
       addRow(it.icon, it.name + qty, gear ? G.rar.normal : G.rar.none, gear ? 'Equipo · puede venir +N, Ancient y con ranuras' : TYPE_NAME[it.type] || '', ch, gear && ch < 0.06);
     });
-    addRow('💎', 'Gema al azar', '#bfe9ff', 'Rubí, zafiro, esmeralda, topacio… (los jefes y monstruos fuertes sueltan las mejores)', d.gem, d.gem < 0.06 && !d.boss);
+    if (d.gem > 0) addRow('💎', 'Gema al azar', '#bfe9ff', 'Rubí, zafiro, esmeralda, topacio… (los jefes y monstruos fuertes sueltan las mejores)', d.gem, d.gem < 0.06 && !d.boss);
     $('#dropNote').textContent = `Por cada muerte: ${pctTxt(d.plus)} de soltar un equipo +N (verde) y ${pctTxt(d.anc)} de soltar uno Ancient (azul). Pasa el ratón por un objeto para ver su detalle.`;
     $('#drops').hidden = false; $('#dropClose').focus();
   }

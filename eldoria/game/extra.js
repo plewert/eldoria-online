@@ -95,8 +95,6 @@ const RECIPES = [
   { id: 'r_roca', name: 'Elixir de Piel de Roca', lvl: 6, ing: [['hierba_curativa', 5], ['piel_lobo', 2]], out: ['elixir_defensa', 1], xp: 24 },
   { id: 'r_sabio', name: 'Elixir de Sabiduría', lvl: 9, ing: [['hierba_curativa', 6], ['flor_azul', 6], ['cristal_arcano', 1]], out: ['elixir_sabiduria', 1], xp: 40 },
   { id: 'r_poder', name: 'Elixir de Poder', lvl: 12, ing: [['flor_azul', 6], ['cristal_arcano', 2], ['cuerno_demonio', 1]], out: ['elixir_poder', 1], xp: 60 },
-  { id: 'r_pulir', name: 'Pulir gema (al azar)', lvl: 8, ing: [['mineral_hierro', 6]], out: ['@gem', 1], xp: 30 },
-  { id: 'r_pulir2', name: 'Gema rara (amatista, ópalo o diamante)', lvl: 15, ing: [['mineral_hierro', 10], ['cristal_arcano', 3]], out: ['@gem2', 1], xp: 80 },
 ];
 
 // Puntos de recolección: tipo → { icono, material, zonas, cantidad, tiempo de reaparición }

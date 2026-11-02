@@ -271,10 +271,22 @@ ok('gemas: se engarzan en zona segura, dan bonus y se pueden sacar pagando', () 
   assert(game.visOf(D.p).g > glow0, 'diamante: más brillo');
   game.handle(D.p, { t: 'socket', gem: 0, from: 'eq', at: 'weapon' });
   assert.equal(D.p.inv[0].qty, 1, 'sin ranuras libres: no consume la gema');
-  game.handle(D.p, { t: 'unsocket', from: 'eq', at: 'weapon', hole: 0 });
+  { const r0 = Math.random; Math.random = () => 0.99; try { game.handle(D.p, { t: 'unsocket', from: 'eq', at: 'weapon', hole: 0 }); } finally { Math.random = r0; } }
   assert.equal(D.p.gold, 1000);
   assert.equal(D.p.eq.weapon.gm[0], null);
   assert.equal(game.weaponOf(D.p).atk, atk0 + 1, 'queda solo el +1 del diamante');
+});
+ok('al sacar una gema puede romperse del todo: 10 % las comunes y 3 % las raras, se cobra igual y no hay protección', () => {
+  resetPair(); D.p.eq.weapon = I.mk('espada_hierro', 1, { ns: 2 }); D.p.vis = null; game.recalc(D.p);
+  D.p.inv.fill(null); D.p.inv[0] = { id: 'rubi', qty: 1 }; D.p.inv[1] = { id: 'diamante', qty: 1 }; D.p.gold = 5 * CFG.GEM_REMOVE_COST; assert.equal(CFG.GEM_REMOVE_COST, 50000);
+  game.handle(D.p, { t: 'socket', gem: 0, from: 'eq', at: 'weapon' }); game.handle(D.p, { t: 'socket', gem: 1, from: 'eq', at: 'weapon' });
+  const r0 = Math.random, has = (id) => D.p.inv.some((q) => q && q.id === id);
+  try {
+    Math.random = () => 0.05; game.handle(D.p, { t: 'unsocket', from: 'eq', at: 'weapon', hole: 0 });          // rubí (común, 10 %): se rompe
+    assert.ok(!has('rubi'), 'el rubí se rompió'); assert.equal(D.p.eq.weapon.gm[0], null); assert.equal(D.p.gold, 4 * CFG.GEM_REMOVE_COST, 'se cobra aunque se rompa');
+    game.handle(D.p, { t: 'unsocket', from: 'eq', at: 'weapon', hole: 1 });                                      // diamante (raro, 3 %): con 0,05 no se rompe
+    assert.ok(has('diamante'), 'el diamante se salva');
+  } finally { Math.random = r0; }
 });
 ok('no se puede engarzar en zona PvP', () => {
   const g0 = JSON.stringify(D.p.eq.weapon.gm);
@@ -347,7 +359,7 @@ ok('la ficha de cada monstruo incluye su tabla de botín (clic derecho)', () => 
   const w = D.ws.got.find((m) => m.t === 'welcome');
   const dr = w.mons.dragon;
   assert(dr && Array.isArray(dr.loot) && dr.loot.length > 3 && dr.hp === MONSTERS.dragon.hp);
-  assert(dr.loot.some((l) => l[4] === 1), 'marca los equipos'); assert(dr.anc > 0 && dr.plus > 0 && dr.gem > 0);
+  assert(dr.loot.some((l) => l[4] === 1), 'marca los equipos'); assert(dr.anc > 0 && dr.plus > 0 && dr.gem === 0);
   assert(w.mons.demonio_supremo.anc > w.mons.dragon.anc, 'los jefes tienen más prob. de Ancient');
 });
 ok('guardar y cargar conserva +N, Ancient, gemas y banco', () => {

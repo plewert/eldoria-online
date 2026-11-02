@@ -503,7 +503,7 @@ class Game {
       npcs: NPCS, items: ITEMS, mons: monsDefs, gems, rar: RAR,
       cfg: {
         pvpMin: CFG.PVP_MIN_LEVEL, step: CFG.STEP_MS, invSize: CFG.INV_SIZE, bankSize: CFG.BANK_SIZE, caveFee: CFG.CAVE_FEE,
-        tradeMax: CFG.TRADE_MAX_ITEMS, gemCost: CFG.GEM_REMOVE_COST, plusChance: CFG.PLUS_CHANCE, ancChance: CFG.ANCIENT_CHANCE,
+        tradeMax: CFG.TRADE_MAX_ITEMS, gemCost: CFG.GEM_REMOVE_COST, gemBreak: CFG.GEM_BREAK, gemBreakRare: CFG.GEM_BREAK_RARE, plusChance: CFG.PLUS_CHANCE, ancChance: CFG.ANCIENT_CHANCE,
       },
     });
     this.sendInv(p); this.sendStats(p);
@@ -581,6 +581,12 @@ class Game {
         const a = msg.a | 0, b = msg.b | 0, n = p.inv.length;
         if (a < 0 || b < 0 || a >= n || b >= n || a === b) break;
         const t = p.inv[a]; p.inv[a] = p.inv[b]; p.inv[b] = t; p.dirty.inv = true; break;
+      }
+      case 'bswap': {                                 // reorganizar el banco
+        if (!this.nearBank(p)) break;
+        const a = msg.a | 0, b = msg.b | 0, n = p.bank.length;
+        if (a < 0 || b < 0 || a >= n || b >= n || a === b) break;
+        const t = p.bank[a]; p.bank[a] = p.bank[b]; p.bank[b] = t; p.dirty.inv = true; this.sendBank(p); break;
       }
       case 'use': this.use(p, msg.s | 0); break;
       case 'drop': this.drop(p, msg.s | 0, msg.q | 0); break;
@@ -792,10 +798,12 @@ class Game {
     const hole = m.hole | 0, gid = item && item.gm[hole];
     if (!gid) return;
     if (p.gold < CFG.GEM_REMOVE_COST) { this.msg(p, `Sacar una gema cuesta ${CFG.GEM_REMOVE_COST} de oro.`, 's'); return; }
-    if (this.giveItem(p, gid, 1) > 0) { this.msg(p, 'Tu inventario está lleno.', 's'); return; }
+    const broke = Math.random() < (['amatista', 'opalo', 'diamante'].includes(gid) ? CFG.GEM_BREAK_RARE : CFG.GEM_BREAK);       // rotura total (sin protección)
+    if (!broke && this.giveItem(p, gid, 1) > 0) { this.msg(p, 'Tu inventario está lleno.', 's'); return; }
     p.gold -= CFG.GEM_REMOVE_COST;
     item.gm[hole] = null;
-    this.msgC(p, `Sacas ${ITEMS[gid].name} de ${I.nameOf(item)}.`, ITEMS[gid].col);
+    if (broke) this.msgC(p, `💥 ¡${ITEMS[gid].name} se ha roto al sacarla de ${I.nameOf(item)}!`, '#ff6b5a');
+    else this.msgC(p, `Sacas ${ITEMS[gid].name} de ${I.nameOf(item)}.`, ITEMS[gid].col);
     p.vis = null; this.recalc(p);
     p.dirty.inv = true; p.dirty.stats = true;
   }
@@ -1013,7 +1021,7 @@ class Game {
         const g = Math.round(gold * Math.max(0.1, share) * (pl === top ? 1.3 : 1));
         if (g > 0) this.addGround('gold', g, m.x, m.y, o);
         for (const [id, chance, qa, qb] of def.loot) {
-          if (Math.random() >= Math.min(1, chance * f * (this.lootMult ? this.lootMult(pl, id) : 1))) continue;
+          if (Math.random() >= Math.min(1, (chance >= 1 ? chance : chance * CFG.BOSS_DROP_K) * f * (this.lootMult ? this.lootMult(pl, id) : 1))) continue;
           if (I.isGear(id)) this.addGround(id, 1, m.x, m.y, Object.assign({ inst: I.rollGear(id, true) }, o));
           else this.addGround(id, rnd(qa, qb), m.x, m.y, o);
           if (this.logDrop) this.logDrop(pl, m.type, id);      // colección de jefes

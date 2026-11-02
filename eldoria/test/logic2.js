@@ -280,8 +280,10 @@ ok('Tierras de Lava: zona PvP con lava intransitable y monstruos de fuego', () =
   ['golem_lava', 'demonio_menor', 'dragon'].forEach((t) => assert.ok(types.has(t), t));
   assert.equal(world.rows[0].length, world.W);
 });
-ok('gemas 0,08 %, equipo raro a la mitad y mascotas de jefe', () => {
-  assert.equal(I.gemChance(MONSTERS.rata), 0.0008); assert.equal(I.gemChance(MONSTERS.dragon_sombra), 0.0008);
+ok('las gemas solo salen de las rocas (ningún monstruo ni jefe las suelta), equipo raro a un tercio y mascotas de jefe', () => {
+  assert.equal(I.gemChance(MONSTERS.rata), 0); assert.equal(I.gemChance(MONSTERS.dragon_sombra), 0);
+  for (const [t, d] of Object.entries(MONSTERS)) for (const q of d.loot) assert.ok(!require('../game/data').GEMS[q[0]], t + ' no suelta gemas');
+  assert.ok(!require('../game/extra').RECIPES.some((r) => /^@gem/.test(r.out[0])), 'no se fabrican gemas');
   assert.ok(Math.abs(MONSTERS.dragon_sombra.loot.find((l) => l[0] === 'sombra_arco')[1] - 0.005 / 3) < 1e-9, 'arco a un tercio de 0,5 %');
   for (const [t, d] of Object.entries(MONSTERS)) if (d.boss) { const l = d.loot.find((q) => q[0] === 'pet_' + t); assert.ok(l, 'mascota de ' + t); assert.equal(ITEMS['pet_' + t].type, 'pet'); assert.equal(ITEMS['pet_' + t].mon, t); }
   const a = login('Pet9'); place(a.p, 50, 64); a.p.inv[0] = I.mk('pet_dragon_sombra'); game.use(a.p, 0); assert.equal(a.p.ext.pet, 'pet_dragon_sombra');
@@ -594,11 +596,11 @@ ok('Zeus, Señor del Olimpo: cueva celeste, botín, diez rayos, truenos que pers
 ok('Hades, Rey del Inframundo: zona grande, botín, dragón de fuego, temblor, ráfagas, absorción con daño devuelto, resistencia a arcos y salto', () => {
   assert.equal(MONSTERS.hades.special, 'hades'); assert.equal(typeof Game.prototype.hadesAI, 'function');
   const loot = MONSTERS.hades.loot.map((l) => l[0]);
-  ['hd_yelmo', 'hd_peto', 'hd_guantes', 'hd_pantalon', 'hd_botas', 'hd_anillo', 'hd_anillo2', 'hd_amuleto', 'hd_guadana', 'hd_arco', 'trofeo_hades', 'llama_inframundo', 'alma_condenada'].forEach((id) => { assert.ok(loot.includes(id), id); assert.ok(ITEMS[id], id); });
+  ['hd_yelmo', 'hd_peto', 'hd_guantes', 'hd_pantalon', 'hd_botas', 'hd_cinto', 'hd_anillo', 'hd_anillo2', 'hd_amuleto', 'hd_guadana', 'hd_arco', 'trofeo_hades', 'llama_inframundo', 'alma_condenada'].forEach((id) => { assert.ok(loot.includes(id), id); assert.ok(ITEMS[id], id); });
   assert.ok(ITEMS.elixir_inframundo && ITEMS.hd_guadana.style === 'melee' && ITEMS.hd_arco.style === 'ranged');
   const sj = require('../public/sprites.json'), gj = require('../public/gear.json');
   assert.ok(sj.hades && sj.hades.anim && ['idle', 'walk', 'atk', 'hurt', 'death'].every((k) => sj.hades.anim[k].length >= 3), 'sprite animado');
-  for (const k of ['hd_helm', 'hd_chest', 'hd_leg', 'hd_boot', 'hd_glove', 'hd_ring', 'hd_ring2', 'hd_amulet', 'hd_scythe', 'hd_bow']) assert.ok(gj['i_' + k], 'icono ' + k);
+  for (const k of ['hd_helm', 'hd_chest', 'hd_leg', 'hd_boot', 'hd_belt', 'hd_glove', 'hd_ring', 'hd_ring2', 'hd_amulet', 'hd_scythe', 'hd_bow']) assert.ok(gj['i_' + k], 'icono ' + k);
   for (const k of ['hd_scythe', 'hd_bow', 'hd_helm', 'hd_chest']) assert.ok(gj['c_' + k], 'capa ' + k);
   const sp = world.monsterSpawns.find((q) => q.type === 'hades'); assert.equal(zoneOf([sp.x, sp.y]).id, 'cueva_hades'); assert.ok(world.reach[sp.y * world.W + sp.x], 'alcanzable');
   assert.ok(world.reach[world.INFRA.spawn[1] * world.W + world.INFRA.spawn[0]], 'llegada al Inframundo alcanzable'); assert.equal(zoneOf(world.INFRA.spawn).id, 'inframundo');

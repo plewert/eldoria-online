@@ -37,11 +37,14 @@ const CFG = {
   ANC_MULT: 1.5,                // los Ancient valen x1.5
   PLUS_CHANCE: 0.22,            // prob. de que un arma/armadura soltada venga con +N
   ANCIENT_CHANCE: 0.015,        // prob. de que un equipo soltado sea Ancient (x4 en jefes)
-  GEM_CHANCE: 0.0008,           // gemas: 0,08 % por muerte
+  GEM_CHANCE: 0,                // las gemas YA NO caen de monstruos ni jefes: solo se consiguen minando rocas
+  BOSS_DROP_K: 0.8,             // el botín de jefes (lo que no es seguro) cae un 20 % menos
   GEAR_DROP_MULT: 0.5,          // los equipos raros que sueltan monstruos y jefes caen la mitad de seguido
   BOSS_RARE_MULT: 4,
   MAX_SOCKETS: 3,
   GEM_REMOVE_COST: 50000,      // oro por sacar una gema de una ranura
+  GEM_BREAK: 0.10,             // probabilidad de que una gema común (rubí, zafiro, esmeralda, topacio) se rompa del todo al sacarla
+  GEM_BREAK_RARE: 0.03,        // ídem para las raras (amatista, ópalo, diamante)
 };
 
 /* ------------------------------ OBJETOS ------------------------------ */
@@ -530,4 +533,6 @@ require('./mage').build(ITEMS, SHOPS, MONSTERS);
 // Nivel de cada monstruo (se muestra sobre su cabeza): sale de la experiencia que da, salvo los que fijan el suyo.
 for (const d of Object.values(MONSTERS)) if (!d.lv) d.lv = Math.max(1, Math.round(0.6 * Math.sqrt(d.exp)));
 
+// las gemas solo salen de las rocas (minería): se quitan de toda tabla de botín de monstruos y jefes
+for (const m of Object.values(MONSTERS)) if (m.loot) m.loot = m.loot.filter((q) => !GEMS[q[0]]);
 module.exports = { CFG, ITEMS, GEMS, RAR, SHOP, SHOPS, START_KIT, MONSTERS, SPAWN_PLAN, NPC_TIPS };
