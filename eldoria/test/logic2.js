@@ -733,6 +733,15 @@ ok('tabletas de teletransporte: Boris las vende a 100k y llevan a la zona', () =
   assert.equal(zoneOf([p.x, p.y]).id, 'ciudad', 'no se puede usar en combate'); assert.equal(p.inv[0].qty, 1);
 });
 
+ok('tabletas de las cuevas de jefe: Boris las vende a 250k y te dejan cerca de la entrada', () => {
+  const { CAVE_TABLETS } = require('../game/tablets'), SH = require('../game/data').SHOPS;
+  assert.equal(CAVE_TABLETS.length, 8);
+  const caves = ['cueva', 'cueva_jade', 'cueva_nube', 'cueva_arana', 'cueva_mar', 'cueva_magma', 'cueva_anubis', 'cueva_olimpo'];
+  CAVE_TABLETS.forEach(([id, , x, y], i) => { assert.equal(ITEMS[id].price, 250000); assert.ok(SH.boris.includes(id)); assert.equal(world.zoneAt(x, y).id, caves[i], id); assert.ok(world.isWalkable(x, y), 'camina ' + id); });
+  const { p } = login('TabC1'); place(p, ...TOWN); p.inv[0] = I.mk('tp_cueva_olimpo', 1); p.pvpLock = 0; game.now = T0 + 5; game.handle(p, { t: 'use', s: 0 });
+  assert.equal(zoneOf([p.x, p.y]).id, 'cueva_olimpo'); assert.ok(!p.inv[0], 'se gasta');
+});
+
 ok('Raid: 5 cámaras, jefes, vidas, escalado por grupo, cofre final con botín raro y capa equipada', () => {
   const R = require('../game/raid'), RAID = world.RAID;
   assert.equal(R.ALL_ITEMS.length, 56); for (const [p, s] of R.ALL_ITEMS) assert.ok(ITEMS[R.itemId(p, s)], p + s);

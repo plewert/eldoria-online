@@ -440,3 +440,7 @@ Junto a la puerta de cada cueva de jefe hay un segundo portal "Instancia privada
 ### Botín de Zeus y daño de jefes
 - El equipo de Zeus se reparte entre todos los que participan (≥1 % del daño); cuanto más daño haces, más suerte (hasta ×3 el que más daño hizo). Se anuncia en el chat.
 - Los jefes pegan ×1,9 (antes ×1,5); Zeus además tiene `dmgK` 3,0.
+
+
+### Tabletas de teletransporte a las cuevas de jefe
+Boris vende 8 tabletas (una por cueva de jefe) a 250 000 de oro; de un solo uso, te dejan dentro de la cueva cerca de la entrada. Código: `CAVE_TABLETS` en `game/tablets.js`.

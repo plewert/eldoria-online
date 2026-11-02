@@ -31,7 +31,7 @@
       case 'zs_hit': X.burst(f.x, f.y, 'storm', 14, { sp: 4, up: 3, g: 3, life: 0.6, size: 3 }); X.ring(f.x, f.y, 'storm', 380, 40, 3); G.shake = { t: now, m: 3 }; break;
       case 'zs_mul': ADD('zs_bolt', { x: f.x, y: f.y, r: 1, small: 1 }, 380); X.burst(f.x, f.y, 'storm', 12, { sp: 3.5, up: 3, g: 2, life: 0.5, size: 2.6 }); X.ring(f.x, f.y, 'storm', 360, 44, 3); break;
       case 'zs_spark': ADD('zs_spark', f, 500); X.burst(f.x, f.y, 'storm', 8, { sp: 3.5, up: 2.5, g: 3, life: 0.5, size: 2.4 }); break;
-      case 'zs_die': DIE.push({ t: now, x: f.x, y: f.y, face: f.face }); X.burst(f.x, f.y, 'storm', 40, { sp: 6, up: 4, g: 2, life: 1.2, size: 3.4 }); X.ring(f.x, f.y, 'storm', 900, 120, 5); G.shake = { t: now, m: 8 }; break;
+      case 'zs_die': CH.clear(); DIE.push({ t: now, x: f.x, y: f.y, face: f.face }); X.burst(f.x, f.y, 'storm', 40, { sp: 6, up: 4, g: 2, life: 1.2, size: 3.4 }); X.ring(f.x, f.y, 'storm', 900, 120, 5); G.shake = { t: now, m: 8 }; break;
       default: break;
     }
   });
@@ -90,6 +90,7 @@
     }
     // truenos perseguidores: bola eléctrica que avanza con estela
     for (const [id, o] of CH) {
+      if (now - Math.max(o.t, o.born || 0) > 1500 || !inOlimpo()) { CH.delete(id); continue; }                      // un trueno que dejó de actualizarse (jefe muerto, viste lejos…) desaparece solo
       const u = o.born && now < o.born ? 0 : Math.min(1, (now - o.t) / (o.T || 340)), gx = o.x0 + (o.x1 - o.x0) * u, gy = o.y0 + (o.y1 - o.y0) * u;
       if (o.born && now < o.born) continue;
       const x = px(gx), y = py(gy) - 10, r = 20 + 4 * Math.sin(now / 60);
