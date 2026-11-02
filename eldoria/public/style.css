@@ -487,3 +487,20 @@ body.touch .sheet { max-height: calc(100dvh - 12px); }
 #ctx .ctxstats .gm { display: flex; gap: 6px; } #ctx .ctxstats .free { color: var(--muted); } #ctx .ctxstats .tsep { border-top: 1px solid var(--edge); margin: 6px 0 4px; }
 
 #hotbar .skb.skw { box-shadow: inset 0 0 0 2px #ffd96a, 0 0 8px rgba(255,200,80,.5); }
+
+/* ---------- modo historia ---------- */
+.hist-scene{position:absolute;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 35%,#1d2a52cc 0,#07080fe6 70%);opacity:0;transition:opacity .3s}
+.hist-scene.on{opacity:1}
+.hist-box{max-width:560px;width:calc(100% - 32px);text-align:center;padding:22px 24px;background:#0b0912d9;border:2px solid #7a6a3a;border-radius:10px;color:#e8dfc8;font-family:Georgia,serif;box-shadow:0 0 40px #000}
+.hist-box h2{margin:6px 0 10px;color:#ffd76a;font-size:22px}
+.hist-box p{font-size:16px;line-height:1.6;margin:8px 0}
+.hist-ic{font-size:54px;filter:drop-shadow(0 0 18px #6fa8ff)}
+.hist-cap{display:block;letter-spacing:3px;color:#9fb4e8;font:11px sans-serif;text-transform:uppercase}
+.hist-sub{color:#9fb4e8;font:12px sans-serif;margin-bottom:6px}
+.hist-go{margin-top:12px;padding:8px 18px;background:#3a2f12;color:#ffd76a;border:1px solid #7a6a3a;border-radius:6px;cursor:pointer;font:14px sans-serif}
+.hist-esc{display:block;margin-top:6px;color:#7d7a8c;font:11px sans-serif}
+.hist-head{font-weight:bold;margin:0 0 6px}
+.hist-bar{height:6px;background:#2c2840;border-radius:3px;margin:4px 0 10px}.hist-bar i{display:block;height:100%;background:#e0b84a;border-radius:3px}
+.hist-sec{border:1px solid #2c2840;border-radius:6px;padding:8px 10px;margin-bottom:8px;background:#1b1728}
+.hist-sec.done{border-color:#7a6a3a}.hist-sec h3{margin:0 0 6px;font-size:14px}.hist-sec h3 small{color:#9fb4e8;margin-left:6px}
+.hist-sec details{margin:3px 0;font-size:13px}.hist-sec summary{cursor:pointer}.hist-sec details p{margin:4px 0 6px 14px;line-height:1.5;color:#d9d0b8}.lockd{opacity:.5}

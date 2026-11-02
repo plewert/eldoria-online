@@ -31,6 +31,7 @@ const CAVE_TABLETS = [
   ['tp_cueva_magma',  'Tableta de Teletransporte: Caldera del Magma',               288, 123],
   ['tp_cueva_anubis', 'Tableta de Teletransporte: Tumba de Anubis',                 377, 122],
   ['tp_cueva_olimpo', 'Tableta de Teletransporte: El Olimpo de Zeus',               342, 35],
+  ['tp_cueva_hades',  'Tableta de Teletransporte: Trono de Hades (Inframundo)',      240, 311],
 ];
 function build(ITEMS, SHOPS) {
   for (const [id, name, x, y] of CAVE_TABLETS) ITEMS[id] = { name, icon: '📜', type: 'tablet', dest: [x, y], stack: true, price: CAVE_PRICE, sell: 20000, desc: 'De un solo uso: te deja dentro de la cueva, cerca de la entrada (no se puede usar en combate).' };

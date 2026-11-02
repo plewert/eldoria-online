@@ -186,7 +186,7 @@
   const wA = win('a', '🏆 Logros', true); mkBtn('🏆', 'Logros y títulos', 'l', 'a');
   const achVal = (type) => {
     const s = xi.st;
-    switch (type) { case 'lv': return G.me ? G.me.l : 0; case 'gold': return (G.gold || 0) + (G.bankGold || 0); case 'kt': return s.kt; default: return s[type]; }
+    switch (type) { case 'lv': return G.me ? G.me.l : 0; case 'gold': return (G.gold || 0) + (G.bankGold || 0); case 'kt': return s.kt; default: return s[type] || 0; }
   };
   function renderAch() {
     const b = wA.body; b.replaceChildren();

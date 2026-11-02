@@ -19,6 +19,7 @@ const { LEVEL_MAX } = require('./skills');
 const levelFromXp = (xp) => Math.min(LEVEL_MAX, 1 + Math.floor(Math.sqrt(xp / 50)));
 const { skillFromXp, skillMult } = require('./skills');
 const craftLevel = (cxp) => 1 + Math.floor(Math.sqrt(cxp / 15));
+require('./historia').addAchs(X.ACHS);                  // logros del modo historia (uno por cueva + Cronista)
 const ACH_BY = Object.fromEntries(X.ACHS.map((a) => [a[0], a]));
 const num = (v, max = 1e12) => Math.max(0, Math.min(max, Math.floor(Number(v) || 0)));
 const GUILD_RE = /^[A-Za-zÁÉÍÓÚÑáéíóúñ0-9][A-Za-zÁÉÍÓÚÑáéíóúñ0-9 ]{2,15}$/;
@@ -26,7 +27,7 @@ const PARTY_MAX = 5;
 const MARKET_MAX = 8, MARKET_FEE = 0.05, MARKET_HOURS = 72;
 const EVENT_EVERY = (parseFloat(process.env.EVENT_MIN) || 35) * 60000;
 
-const defExt = () => ({ q: {}, ach: {}, title: '', kt: 0, kills: {}, bosses: 0, pvp: 0, deaths: 0, quests: 0, crafts: 0, gather: 0, cxp: 0, events: 0, sold: 0, pet: '', mount: '', hadPet: 0, hadMount: 0, partyKills: 0, guild: '', grole: '', mail: [], grave: null, col: {}, fish: { xp: 0, c: {} }, mine: { xp: 0, c: {} } });
+const defExt = () => ({ q: {}, ach: {}, title: '', kt: 0, kills: {}, bosses: 0, pvp: 0, deaths: 0, quests: 0, crafts: 0, gather: 0, cxp: 0, events: 0, sold: 0, pet: '', mount: '', hadPet: 0, hadMount: 0, partyKills: 0, guild: '', grole: '', mail: [], grave: null, col: {}, story: {}, fish: { xp: 0, c: {} }, mine: { xp: 0, c: {} } });
 
 function sanitizeExt(raw) {
   const e = defExt();
@@ -39,6 +40,7 @@ function sanitizeExt(raw) {
   if (raw.col && typeof raw.col === 'object') for (const [b, items] of Object.entries(raw.col)) if ((MONSTERS[b] || b === 'pesca' || b === 'mineria') && items && typeof items === 'object') { e.col[b] = {}; for (const [id, n] of Object.entries(items)) if (ITEMS[id]) e.col[b][id] = num(n, 1e9) || 1; }
   if (raw.fish && typeof raw.fish === 'object') { e.fish.xp = num(raw.fish.xp, 1e9); if (raw.fish.c && typeof raw.fish.c === 'object') for (const [id, n] of Object.entries(raw.fish.c)) if (ITEMS[id]) e.fish.c[id] = num(n, 1e9); }
   if (raw.mine && typeof raw.mine === 'object') { e.mine.xp = num(raw.mine.xp, 1e9); if (raw.mine.c && typeof raw.mine.c === 'object') for (const [id, n] of Object.entries(raw.mine.c)) if (ITEMS[id]) e.mine.c[id] = num(n, 1e9); }
+  e.story = require('./historia').sanitize(raw.story);
   e.title = typeof raw.title === 'string' ? raw.title.slice(0, 30) : '';
   e.pet = ITEMS[raw.pet] && ITEMS[raw.pet].type === 'pet' ? raw.pet : '';
   e.mount = ITEMS[raw.mount] && ITEMS[raw.mount].type === 'mount' ? raw.mount : '';
@@ -139,7 +141,7 @@ module.exports = function install(Game) {
       case 'kt': return e.kt; case 'bosses': return e.bosses; case 'lv': return p.level; case 'pvp': return e.pvp; case 'quests': return e.quests;
       case 'gold': return p.gold + p.bankGold; case 'crafts': return e.crafts; case 'gather': return e.gather; case 'deaths': return e.deaths; case 'events': return e.events;
       case 'pet': return e.hadPet; case 'mount': return e.hadMount; case 'sold': return e.sold; case 'guild': return e.guild ? 1 : 0; case 'party': return e.partyKills;
-      default: if (type.startsWith('mon:')) return e.kills[type.slice(4)] || 0; return 0;
+      default: if (type.startsWith('story')) return require('./historia').value(p, type); if (type.startsWith('mon:')) return e.kills[type.slice(4)] || 0; return 0;
     }
   };
   P.checkAch = function (p, quiet) {
@@ -1096,6 +1098,7 @@ module.exports = function install(Game) {
     else if (m.def.special === 'leviathan' && !m.dead) this.leviathanAI(m, now);
     else if (m.def.special === 'magma' && !m.dead) this.magmaAI(m, now);
     else if (m.def.special === 'anubis' && !m.dead) this.anubisAI(m, now);
+    else if (m.def.special === 'hades' && !m.dead) this.hadesAI(m, now);
     else if (m.def.special === 'zeus' && !m.dead) this.zeusAI(m, now);
     else if (m.def.special === 'raid' && !m.dead) this.raidAI(m, now);
     else if (m.def.special === 'halloween' && !m.dead) this.hwAI(m, now);
@@ -1200,6 +1203,7 @@ module.exports = function install(Game) {
       case 'xinfo': this.sendXinfo(p, false); break;
       case 'rank': this.send(p, { t: 'rank', v: this.rankings() }); break;
       case 'col': this.sendCol(p); break;
+      case 'story': this.sendStory(p); break;
       case 'autoret': p.autoRet = !!msg.on; break;
       case 'p_inv': this.partyInvite(p, msg.id); break;
       case 'p_acc': this.partyAccept(p, msg.id); break;

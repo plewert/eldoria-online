@@ -106,6 +106,14 @@ const SP = {
     mk('sp_miasma', 'Miasma de tumbas', '💀', 'cloud', { col: '120,255,170', r: 3, secs: 6, mult: 0.6, cd: 30000, mana: 65, desc: 'Grietas y miasma 6 s: daño continuo (×0,6 por segundo).' }),
     mk('sp_grietas', 'Grietas del juicio', '⚖️', 'nova', { col: '120,255,170', r: 5, mult: 3.4, slow: 4000, atTarget: 1, cd: 80000, mana: 130, lv: 60, desc: 'El suelo se agrieta en 5 casillas (×3,4) y ralentiza.' }),
   ],
+  hd_guadana: [
+    mk('sp_siega', 'Siega de eclipse', '🌑', 'fan', { col: '255,120,30', mult: 3.4, burn: { ticks: 4, mult: 0.3 }, cd: 28000, mana: 60, desc: 'Tres tajos de fuego negro en abanico (×3,4) y quemadura.' }),
+    mk('sp_cosecha', 'Cosecha de almas', '☠️', 'nova', { col: '255,120,30', r: 4, mult: 3.8, stun: 1500, cd: 80000, mana: 130, lv: 60, desc: 'Giras la guadaña (×3,8), aturdes y quemas a los cercanos.' }),
+  ],
+  hd_arco: [
+    mk('sp_flecha_eclipse', 'Flecha de eclipse', '🌑', 'line', { col: '255,120,30', len: 10, mult: 3.4, burn: { ticks: 4, mult: 0.3 }, cd: 30000, mana: 60, desc: 'Flecha de fuego negro que cruza 10 casillas (×3,4).' }),
+    mk('sp_lluvia_brasas', 'Lluvia de brasas', '🔥', 'rain', { col: '255,120,30', n: 8, r: 5, hr: 1.6, mult: 1.7, burn: { ticks: 3, mult: 0.3 }, cd: 80000, mana: 130, lv: 60, desc: '8 flechas incendiarias caen alrededor del objetivo (×1,7).' }),
+  ],
   zs_arco: [
     mk('sp_rayo_arco', 'Flecha de rayo', '⚡', 'line', { col: '170,220,255', len: 10, mult: 3.4, slow: 2000, cd: 30000, mana: 60, desc: 'Flecha eléctrica que cruza 10 casillas (×3,4) y ralentiza.' }),
     mk('sp_lluvia_rayos', 'Lluvia de rayos', '🌩️', 'rain', { col: '170,220,255', n: 8, r: 5, hr: 1.6, mult: 1.7, cd: 80000, mana: 130, lv: 60, desc: '8 rayos caen alrededor del objetivo (×1,7).' }),

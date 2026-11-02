@@ -449,3 +449,17 @@ Boris vende 8 tabletas (una por cueva de jefe) a 250 000 de oro; de un solo uso,
 - Armas y armaduras de monstruos y jefes salen a **1/3** de la probabilidad anterior (`GEAR_K` en `game/botin.js`; Zeus y el Rey de Halloween usan el mismo factor).
 - Cada jefe de cueva suelta **2 materiales propios** (50 % c/u, 1–3 uds, se venden entre 40 000 y 100 000 según el jefe): Dragón, Hidra, Arcángel, Aracnídeo, Leviatán, Magma, Anubis y Zeus.
 - Con 4+4 materiales se fabrica en la mesa de una ciudad (oficio 5) el **elixir del jefe**: ataque, regeneración, defensa, crítico, resistencia elemental, experiencia o botín (5–15 min).
+
+## Modo historia de las cuevas
+- Saga «Los Ocho Sellos»: cada cueva de jefe tiene escena de entrada (primera vez), 3 tablillas con capítulos (se leen al acercarse; brillan en el suelo) y un final que desbloquean los participantes al derrotar al jefe (≥1 % del daño).
+- Diario de Historia: tecla **Y** o botón 📚. Lo no descubierto no envía su texto al cliente.
+- Logros: «Historia: <jefe>» (20k–60k de oro) y «Cronista de Eldoria» (250k + título) al completar todas.
+- **Jefe/cueva nuevos:** añade un objeto a `STORIES` en `game/historia.js` (misma `cave` que en `INST_CAVES`). Las tablillas se colocan solas; un test falla si una cueva no tiene historia.
+- Código: `game/historia.js`, `public/historia.js`. Estado en `p.ext.story`.
+
+## Hades, Rey del Inframundo (jefe de cueva nº 9)
+- **Cueva de Hades** (obsidiana con venas de lava, viento de fuego y viñeta de miedo al entrar). Se llega por el portal del **Inframundo** (431,70, Tierras Inexploradas): una zona enorme al sur del mapa, sin monstruos normales, con lava, ceniza y obsidiana.
+- **Especiales**: Dragón de fuego (recorre la cueva incendiándolo todo), Temblor (erupciones de lava: hay que esquivar), Ráfagas de fuego a todos, Absorber (absorbe daño y especiales y los devuelve), Salto (reaparece junto a un jugador) y golpes de guadaña.
+- **Arcos hacen solo 45 % de daño** (`ARCO_K`); magia y cuerpo a cuerpo, completos.
+- **Botín**: set Tenebris (casco, armadura, piernas, botas, 2 anillos, amuleto, guadaña, arco), materiales y elixir del Inframundo; tableta de teletransporte (Boris). Reparto por daño como el resto de jefes.
+- Instancia privada: 9.ª cueva, entrada 1.200.000. Modo historia: capítulo de Hades (3 tablillas, final y logro). Precios de materiales reequilibrados (Hades = 100k).

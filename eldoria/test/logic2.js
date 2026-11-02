@@ -591,8 +591,58 @@ ok('Zeus, Señor del Olimpo: cueva celeste, botín, diez rayos, truenos que pers
   assert.ok(game.fx.filter((f) => /^zs_/.test(f.k)).every((f) => Number.isFinite(f.x ?? 0) && Number.isFinite(f.y ?? 0)), 'fx con coordenadas');
 });
 
+ok('Hades, Rey del Inframundo: zona grande, botín, dragón de fuego, temblor, ráfagas, absorción con daño devuelto, resistencia a arcos y salto', () => {
+  assert.equal(MONSTERS.hades.special, 'hades'); assert.equal(typeof Game.prototype.hadesAI, 'function');
+  const loot = MONSTERS.hades.loot.map((l) => l[0]);
+  ['hd_yelmo', 'hd_peto', 'hd_guantes', 'hd_pantalon', 'hd_botas', 'hd_anillo', 'hd_anillo2', 'hd_amuleto', 'hd_guadana', 'hd_arco', 'trofeo_hades', 'llama_inframundo', 'alma_condenada'].forEach((id) => { assert.ok(loot.includes(id), id); assert.ok(ITEMS[id], id); });
+  assert.ok(ITEMS.elixir_inframundo && ITEMS.hd_guadana.style === 'melee' && ITEMS.hd_arco.style === 'ranged');
+  const sj = require('../public/sprites.json'), gj = require('../public/gear.json');
+  assert.ok(sj.hades && sj.hades.anim && ['idle', 'walk', 'atk', 'hurt', 'death'].every((k) => sj.hades.anim[k].length >= 3), 'sprite animado');
+  for (const k of ['hd_helm', 'hd_chest', 'hd_leg', 'hd_boot', 'hd_glove', 'hd_ring', 'hd_ring2', 'hd_amulet', 'hd_scythe', 'hd_bow']) assert.ok(gj['i_' + k], 'icono ' + k);
+  for (const k of ['hd_scythe', 'hd_bow', 'hd_helm', 'hd_chest']) assert.ok(gj['c_' + k], 'capa ' + k);
+  const sp = world.monsterSpawns.find((q) => q.type === 'hades'); assert.equal(zoneOf([sp.x, sp.y]).id, 'cueva_hades'); assert.ok(world.reach[sp.y * world.W + sp.x], 'alcanzable');
+  assert.ok(world.reach[world.INFRA.spawn[1] * world.W + world.INFRA.spawn[0]], 'llegada al Inframundo alcanzable'); assert.equal(zoneOf(world.INFRA.spawn).id, 'inframundo');
+  const gate = world.portalAt(...world.INFRA.gate); assert.ok(gate && gate.tx === world.INFRA.spawn[0], 'portal maldito'); assert.ok(world.portalAt(240, 315).fee === 2000);
+  assert.ok(world.W * world.H > 0 && world.rows.length === world.H);
+  const run = (ms) => { for (let k = 0; k <= ms; k += 100) { game.now += 100; const due = game.sched.filter((e) => e.at <= game.now); game.sched = game.sched.filter((e) => e.at > game.now); due.forEach((e) => e.fn()); } };
+  const a = login('Had1'), b = login('Had2'); place(a.p, 240, 308); place(b.p, 236, 309); for (const q of [a.p, b.p]) q.hp = q.maxHp = 1e7;
+  const m = game.spawnMonster('hades', sp.x, sp.y); m.target = a.p.id; game.fx.length = 0;
+  // 1) dragón de fuego: recorre la cueva dos veces, daña y deja el suelo ardiendo
+  game.hadesCast(m, 'dragon'); run(12000);
+  assert.equal(game.fx.filter((f) => f.k === 'hd_dragon').length, 2, 'dos pasadas'); assert.ok(game.fx.some((f) => f.k === 'hd_lane'), 'avisa el carril'); assert.ok(a.p.hp < 1e7 || b.p.hp < 1e7, 'el dragón daña');
+  // 2) temblor: erupciones de lava
+  place(a.p, 240, 308); a.p.hp = b.p.hp = 1e7; game.fx.length = 0; game.hadesCast(m, 'temblor'); run(9000);
+  assert.ok(game.fx.some((f) => f.k === 'hd_quake'), 'tiembla'); assert.ok(game.fx.filter((f) => f.k === 'hd_erupt').length > 20, 'erupciones'); assert.ok(a.p.hp < 1e7 || b.p.hp < 1e7, 'las erupciones dañan');
+  // 3) ráfagas a todos los jugadores
+  a.p.hp = b.p.hp = 1e7; game.fx.length = 0; game.hadesCast(m, 'rafagas'); run(6000);
+  assert.ok(game.fx.filter((f) => f.k === 'hd_burst').length >= 6, 'ráfagas para todos'); assert.ok(a.p.hp < 1e7 && b.p.hp < 1e7 || a.p.hp < 1e7 || b.p.hp < 1e7);
+  // 4) resistencia a los arcos: mucho menos daño que la magia y el cuerpo a cuerpo
+  m.hp = m.maxHp = 5e6; m.absorbUntil = 0; m.shieldUntil = 0;
+  a.p.inv[0] = I.mk('hd_arco', 1); b.p.inv[0] = I.mk('hd_guadana', 1);
+  const stOf = (p, id) => { p.equip = p.equip || {}; p.equip.weapon = I.mk(id, 1); };
+  const h0 = m.hp; const sa = game.styleOf; game.styleOf = (p) => (p === a.p ? 'ranged' : 'melee');
+  game.hurtMonster(m, 1000, a.p, game.now); const dBow = h0 - m.hp; const h1 = m.hp; game.hurtMonster(m, 1000, b.p, game.now); const dMel = h1 - m.hp; game.styleOf = sa;
+  assert.ok(dBow > 0 && dMel > 0 && dBow < dMel * 0.6, 'arco ' + dBow + ' vs cuerpo a cuerpo ' + dMel);
+  // 5) absorción: no recibe daño y lo devuelve al atacante
+  a.p.hp = 1e7; game.fx.length = 0; game.hadesCast(m, 'absorber'); run(1000);
+  const hpA = m.hp, pa = a.p.hp; game.hurtMonster(m, 50000, a.p, game.now);
+  assert.equal(m.hp, hpA, 'absorbe el daño'); assert.ok(a.p.hp < pa, 'devuelve el daño'); assert.ok(game.fx.some((f) => f.k === 'hd_abs') && game.fx.some((f) => f.k === 'hd_ref'));
+  run(7000); assert.ok(!(m.absorbUntil > game.now), 'termina la absorción'); game.hurtMonster(m, 1000, a.p, game.now); assert.ok(m.hp < hpA, 'vuelve a recibir daño');
+  // 6) desaparece y reaparece junto a un jugador
+  place(a.p, 240, 306); place(b.p, 246, 308); a.p.hp = b.p.hp = 1e7; game.fx.length = 0; const x0 = m.x, y0 = m.y; game.hadesCast(m, 'salto'); run(3000);
+  assert.ok(game.fx.some((f) => f.k === 'hd_vanish') && game.fx.some((f) => f.k === 'hd_appear'), 'desaparece y aparece');
+  const near = [a.p, b.p].some((q) => Math.max(Math.abs(q.x - m.x), Math.abs(q.y - m.y)) <= 3); assert.ok(near, 'reaparece cerca de un jugador'); assert.ok(m.x !== x0 || m.y !== y0, 'cambia de sitio');
+  // 7) botín: participan todos; más daño, más botín
+  { let nA = 0, nB = 0; const A = a.p, B = b.p;
+    for (let i = 0; i < 300; i++) { const z = game.spawnMonster('hades', sp.x, sp.y); z.dmgBy.set(A.id, { dmg: 300000, t: game.now }); z.dmgBy.set(B.id, { dmg: 60000, t: game.now }); game.gtile.clear(); A.inv.fill(null); B.inv.fill(null);
+      game.killMonster(z, game.now); const cnt = (pl) => pl.inv.filter((it) => it && /^hd_/.test(it.id)).length + [...game.gtile.values()].flat().filter((g) => g.owner === pl.id && /^hd_/.test(g.id)).length; nA += cnt(A); nB += cnt(B); }
+    assert.ok(nA > 0 && nB > 0, 'reparte a todos'); assert.ok(nA > nB * 1.4, 'más daño, más botín: ' + nA + ' vs ' + nB); }
+  game.fx.length = 0; game.killMonster(m, game.now); assert.ok(game.fx.some((f) => f.k === 'hd_die'), 'animación de muerte');
+  assert.ok(game.fx.filter((f) => /^hd_/.test(f.k)).every((f) => Number.isFinite(f.x ?? 0) && Number.isFinite(f.y ?? 0)), 'fx con coordenadas');
+});
+
 ok('especiales de armas de jefe: 26 armas x 2 especiales (teclas 4 y 5) con daño, espera, maná y controles reducidos en jefes', () => {
-  const { WSPEC } = require('../game/especiales'); const ids = Object.keys(WSPEC); assert.equal(ids.length, 26);
+  const { WSPEC } = require('../game/especiales'); const ids = Object.keys(WSPEC); assert.equal(ids.length, 28);
   const run = (ms) => { for (let k = 0; k <= ms; k += 100) { game.now += 100; const due = game.sched.filter((e) => e.at <= game.now); game.sched = game.sched.filter((e) => e.at > game.now); due.forEach((e) => e.fn()); } };
   const { p } = login('Espec1'); place(p, 150, 70); p.hp = p.maxHp = 1e7; const SX = require('../game/skills');
   for (const id of ids) {
@@ -672,7 +722,7 @@ ok('pociones nuevas: regeneración, antídoto, furia, arcana, cazador de botín,
 });
 
 ok('Instancias privadas de jefes de cueva: copias, portales de pago, jefe más fuerte, botín y cierre', () => {
-  const IN = world.INSTANCES; assert.equal(IN.length, 8); const gj = require('../game/instancias');
+  const IN = world.INSTANCES; assert.equal(IN.length, 9); const gj = require('../game/instancias');
   for (const I of IN) {
     assert.equal(I.slots.length, 7); assert.ok(I.fee >= 100000, 'cuesta ' + I.cave); const src = world.zoneById(I.cave).rect;
     const ep = world.PORTALS.find((o) => o.inst === I.cave); assert.ok(ep && ep.fee === I.fee && world.zoneAt(ep.x, ep.y).kind !== 'dungeon' && world.isWalkable(ep.x, ep.y - 0), 'portal de entrada ' + I.cave);
@@ -735,8 +785,8 @@ ok('tabletas de teletransporte: Boris las vende a 100k y llevan a la zona', () =
 
 ok('tabletas de las cuevas de jefe: Boris las vende a 250k y te dejan cerca de la entrada', () => {
   const { CAVE_TABLETS } = require('../game/tablets'), SH = require('../game/data').SHOPS;
-  assert.equal(CAVE_TABLETS.length, 8);
-  const caves = ['cueva', 'cueva_jade', 'cueva_nube', 'cueva_arana', 'cueva_mar', 'cueva_magma', 'cueva_anubis', 'cueva_olimpo'];
+  assert.equal(CAVE_TABLETS.length, 9);
+  const caves = ['cueva', 'cueva_jade', 'cueva_nube', 'cueva_arana', 'cueva_mar', 'cueva_magma', 'cueva_anubis', 'cueva_olimpo', 'cueva_hades'];
   CAVE_TABLETS.forEach(([id, , x, y], i) => { assert.equal(ITEMS[id].price, 250000); assert.ok(SH.boris.includes(id)); assert.equal(world.zoneAt(x, y).id, caves[i], id); assert.ok(world.isWalkable(x, y), 'camina ' + id); });
   const { p } = login('TabC1'); place(p, ...TOWN); p.inv[0] = I.mk('tp_cueva_olimpo', 1); p.pvpLock = 0; game.now = T0 + 5; game.handle(p, { t: 'use', s: 0 });
   assert.equal(zoneOf([p.x, p.y]).id, 'cueva_olimpo'); assert.ok(!p.inv[0], 'se gasta');
@@ -744,7 +794,7 @@ ok('tabletas de las cuevas de jefe: Boris las vende a 250k y te dejan cerca de l
 
 ok('botín de jefes: equipo a un tercio, materiales propios y elixires de jefe que se fabrican', () => {
   const B = require('../game/botin'), { RECIPES } = require('../game/extra');
-  assert.equal(Object.keys(B.BOSS_MATS).length, 8);
+  assert.equal(Object.keys(B.BOSS_MATS).length, 9);
   for (const [boss, d] of Object.entries(B.BOSS_MATS)) {
     for (const [id] of d.mats) { assert.ok(ITEMS[id] && ITEMS[id].sell >= 40000 && ITEMS[id].sell <= 100000, id); assert.ok(MONSTERS[boss].loot.some((l) => l[0] === id && l[1] === 0.5), boss + ' suelta ' + id); }
     const r = RECIPES.find((q) => q.id === 'r_' + d.elixir[0]); assert.ok(r && ITEMS[d.elixir[0]].buff, 'receta ' + boss);
@@ -869,7 +919,7 @@ ok('Banco ampliable (1M por 5 espacios) y entrada de 2k a las cuevas de jefe', (
   p.bank[n0 + 14] = { id: 'pocion_vida', qty: 3 }; const d = game.serialize(p); assert.equal(d.bankSlots, n0 + 15);
   const q = game.createPlayer({ key: 'x', name: 'x', data: d }); assert.equal(q.bank.length, n0 + 15); assert.ok(q.bank[n0 + 14]);
   place(p, g.x + 40, g.y); p.gold = 2e6; game.bankBuy(p); assert.equal(p.bank.length, n0 + 15, 'hay que estar junto a la banquera');
-  const fees = world.PORTALS.filter((o) => o.fee && !o.inst); assert.equal(fees.length, 8, 'las 8 cuevas de jefe cobran'); assert.ok(fees.every((o) => o.fee === 2000));
+  const fees = world.PORTALS.filter((o) => o.fee && !o.inst); assert.equal(fees.length, 9, 'las 9 cuevas de jefe cobran'); assert.ok(fees.every((o) => o.fee === 2000));
   const po = fees[5], z0 = [po.tx, po.ty];
   const stepOn = (pl) => { const sx = po.x + 1, sy = po.y; place(pl, sx, sy); pl.pvpLock = 0; pl.nextMove = 0; game.tryStep(pl, -1, 0, game.now + 1e6); };
   const { p: r } = login('Pobre'); r.gold = 1999; stepOn(r); assert.ok(!(r.x === z0[0] && r.y === z0[1]), 'sin 2k no entra'); assert.equal(r.gold, 1999);
@@ -931,6 +981,24 @@ ok('cuatro regiones nuevas: montañas, nubes, desierto con pirámides y paraíso
   }
   assert.ok(world.reach[57 * world.W + 400] && world.reach[40 * world.W + 440] && world.reach[98 * world.W + 340] && world.reach[98 * world.W + 440], 'calles desde Alba Dorada a las cuatro regiones');
   const SJ = require('../public/sprites.json'); assert.ok(Object.values(MONSTERS).filter((m) => m.spr).every((m) => SJ[m.spr]), 'todos los dibujos de monstruos existen');
+});
+
+ok('modo historia: toda cueva de jefe tiene historia; entrada, tablillas, final, logros y guardado', () => {
+  const H = require('../game/historia');
+  for (const c of world.INST_CAVES) { const st = H.BY_CAVE[c.cave]; assert.ok(st, 'falta la historia de ' + c.cave); assert.equal(st.boss, c.boss); assert.ok(MONSTERS[st.boss]); assert.ok(st.intro.length && st.ending.length && st.chapters.length === 3, c.cave); assert.equal(H.stonesOf(st).length, 3, 'tablillas de ' + c.cave); for (const [x, y] of H.stonesOf(st)) assert.ok(world.isWalkable(x, y)); }
+  const { p, ws } = login('Historia1'); const st = H.BY_CAVE.cueva_olimpo, C = world.CAVES_BY_ZONE.cueva_olimpo;
+  place(p, C.inside[0], C.inside[1]); p.hp = p.maxHp = 1e7; advance(700);
+  assert.ok(ws.got.some((m) => m.t === 'story' && m.k === 'intro' && m.boss === 'zeus'), 'escena de entrada'); assert.ok(p.ext.story.zeus.i);
+  const n0 = ws.got.filter((m) => m.t === 'story' && m.k === 'intro').length; advance(700); assert.equal(ws.got.filter((m) => m.t === 'story' && m.k === 'intro').length, n0, 'la entrada sale una vez');
+  H.stonesOf(st).forEach(([x, y]) => { place(p, x, y); advance(700); });
+  assert.equal(p.ext.story.zeus.c.length, 3, 'lee las 3 tablillas'); assert.equal(ws.got.filter((m) => m.t === 'story' && m.k === 'ch').length, 3);
+  assert.ok(!p.ext.ach.hist_zeus, 'aún falta el final');
+  const mon = game.spawnMonster('zeus', C.lair[0], C.lair[1]); mon.dmgBy.set(p.id, { dmg: 1000, t: game.now }); game.killMonster(mon, game.now);
+  assert.ok(ws.got.some((m) => m.t === 'story' && m.k === 'end'), 'final'); assert.ok(p.ext.story.zeus.e && p.ext.ach.hist_zeus, 'logro de la historia');
+  const last = [...ws.got].reverse().find((m) => m.t === 'story' && m.k === 'all'); assert.ok(last.v.find((v) => v.boss === 'zeus').done && last.v.find((v) => v.boss === 'zeus').end);
+  const un = last.v.find((v) => v.boss === 'dragon_sombra'); assert.ok(!un.intro && !un.ch.length, 'lo no descubierto no envía texto');
+  assert.deepEqual(H.sanitize({ zeus: { i: 1, c: [0, 0, 9, 'x', 2], e: 1 }, falso: { i: 1 } }), { zeus: { i: 1, c: [0, 2], e: 1 } });
+  for (const s of H.STORIES) { p.ext.story[s.boss] = { i: 1, c: [0, 1, 2], e: 1 }; } game.checkAch(p); assert.ok(p.ext.ach.hist_todas, 'Cronista de Eldoria');
 });
 
 console.log(`\n${n} pruebas correctas`);
