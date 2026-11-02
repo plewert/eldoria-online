@@ -118,7 +118,7 @@ function install(Game) {
       this.msgC(pl, `🎃 Recompensa del Rey de Halloween: +${gold} de oro, 12000 xp y una Calabaza Maldita.`, '#ffb040');
       const k = 1 + 2 * (dmg / topDmg);                                                // botín para todos; cuanto más daño, más suerte (×3 el que más hizo)
       for (const [id, ch] of LOOT_IDS) {
-        if (Math.random() >= Math.min(0.6, ch * k)) continue;
+        if (Math.random() >= Math.min(0.6, ch * k * require('./botin').GEAR_K)) continue;
         this.giveOrDropInst(pl, I.rollGear(id, true)); if (this.logDrop) this.logDrop(pl, 'halloween_king', id);
         this.msgC(pl, `🎃✨ ¡Botín del Rey: ${ITEMS[id].name}!`, '#c58bff');
         this.broadcastChat(`🎃 ¡${pl.name} ha conseguido ${ITEMS[id].name}!`, 'k');

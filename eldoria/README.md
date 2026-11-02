@@ -444,3 +444,8 @@ Junto a la puerta de cada cueva de jefe hay un segundo portal "Instancia privada
 
 ### Tabletas de teletransporte a las cuevas de jefe
 Boris vende 8 tabletas (una por cueva de jefe) a 250 000 de oro; de un solo uso, te dejan dentro de la cueva cerca de la entrada. Código: `CAVE_TABLETS` en `game/tablets.js`.
+
+### Botín de jefes: menos equipo, más materiales
+- Armas y armaduras de monstruos y jefes salen a **1/3** de la probabilidad anterior (`GEAR_K` en `game/botin.js`; Zeus y el Rey de Halloween usan el mismo factor).
+- Cada jefe de cueva suelta **2 materiales propios** (50 % c/u, 1–3 uds, se venden entre 40 000 y 100 000 según el jefe): Dragón, Hidra, Arcángel, Aracnídeo, Leviatán, Magma, Anubis y Zeus.
+- Con 4+4 materiales se fabrica en la mesa de una ciudad (oficio 5) el **elixir del jefe**: ataque, regeneración, defensa, crítico, resistencia elemental, experiencia o botín (5–15 min).

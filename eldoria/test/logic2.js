@@ -282,13 +282,13 @@ ok('Tierras de Lava: zona PvP con lava intransitable y monstruos de fuego', () =
 });
 ok('gemas 0,08 %, equipo raro a la mitad y mascotas de jefe', () => {
   assert.equal(I.gemChance(MONSTERS.rata), 0.0008); assert.equal(I.gemChance(MONSTERS.dragon_sombra), 0.0008);
-  assert.ok(Math.abs(MONSTERS.dragon_sombra.loot.find((l) => l[0] === 'sombra_arco')[1] - 0.005) < 1e-9, 'arco 0,5 %');
+  assert.ok(Math.abs(MONSTERS.dragon_sombra.loot.find((l) => l[0] === 'sombra_arco')[1] - 0.005 / 3) < 1e-9, 'arco a un tercio de 0,5 %');
   for (const [t, d] of Object.entries(MONSTERS)) if (d.boss) { const l = d.loot.find((q) => q[0] === 'pet_' + t); assert.ok(l, 'mascota de ' + t); assert.equal(ITEMS['pet_' + t].type, 'pet'); assert.equal(ITEMS['pet_' + t].mon, t); }
   const a = login('Pet9'); place(a.p, 50, 64); a.p.inv[0] = I.mk('pet_dragon_sombra'); game.use(a.p, 0); assert.equal(a.p.ext.pet, 'pet_dragon_sombra');
 });
 ok('pantalones de los dragones: ranura de piernas, drop y se equipan', () => {
   for (const [id, boss, spr] of [['sombra_pantalon', 'dragon_sombra', 's_leg'], ['jade_pantalon', 'hidra_jade', 'j_leg']]) {
-    assert.equal(ITEMS[id].type, 'legs'); assert.equal(ITEMS[id].spr, spr); assert.ok(MONSTERS[boss].loot.some((l) => l[0] === id && l[1] > 0.02));
+    assert.equal(ITEMS[id].type, 'legs'); assert.equal(ITEMS[id].spr, spr); assert.ok(MONSTERS[boss].loot.some((l) => l[0] === id && l[1] > 0.005));
     const a = login('Lg' + id.length); a.p.level = 90; a.p.inv[0] = I.mk(id); game.use(a.p, 0); assert.ok(a.p.eq.legs && a.p.eq.legs.id === id, 'equipa en piernas');
   }
   const g = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '../public/gear.json'), 'utf8')); assert.ok(g.i_s_leg && g.i_j_leg, 'iconos');
@@ -439,7 +439,7 @@ ok('Arcángel: cueva de nubes, set celestial raro y sus tres ataques', () => {
   assert.equal(MONSTERS.arcangel.special, 'angel');
   const loot = MONSTERS.arcangel.loot.map((l) => l[0]);
   ['angel_yelmo', 'angel_coraza', 'angel_guantes', 'angel_botas', 'angel_pantalon', 'angel_carcaj', 'angel_anillo', 'angel_cinturon', 'angel_amuleto', 'angel_cetro', 'angel_arco'].forEach((id) => { assert.ok(loot.includes(id), id); assert.ok(ITEMS[id], id); });
-  assert.equal(ITEMS.angel_cetro.style, 'magic'); assert.equal(ITEMS.angel_arco.style, 'ranged'); assert.equal(MONSTERS.arcangel.loot.find((l) => l[0] === 'angel_arco')[1], 0.005);
+  assert.equal(ITEMS.angel_cetro.style, 'magic'); assert.equal(ITEMS.angel_arco.style, 'ranged'); assert.ok(Math.abs(MONSTERS.arcangel.loot.find((l) => l[0] === 'angel_arco')[1] - 0.005 / 3) < 1e-9);
   const sp = world.monsterSpawns.find((q) => q.type === 'arcangel'); assert.equal(zoneOf([sp.x, sp.y]).id, 'cueva_nube');
   assert.equal(typeof Game.prototype.angelAI, 'function');
 });
@@ -740,6 +740,18 @@ ok('tabletas de las cuevas de jefe: Boris las vende a 250k y te dejan cerca de l
   CAVE_TABLETS.forEach(([id, , x, y], i) => { assert.equal(ITEMS[id].price, 250000); assert.ok(SH.boris.includes(id)); assert.equal(world.zoneAt(x, y).id, caves[i], id); assert.ok(world.isWalkable(x, y), 'camina ' + id); });
   const { p } = login('TabC1'); place(p, ...TOWN); p.inv[0] = I.mk('tp_cueva_olimpo', 1); p.pvpLock = 0; game.now = T0 + 5; game.handle(p, { t: 'use', s: 0 });
   assert.equal(zoneOf([p.x, p.y]).id, 'cueva_olimpo'); assert.ok(!p.inv[0], 'se gasta');
+});
+
+ok('botín de jefes: equipo a un tercio, materiales propios y elixires de jefe que se fabrican', () => {
+  const B = require('../game/botin'), { RECIPES } = require('../game/extra');
+  assert.equal(Object.keys(B.BOSS_MATS).length, 8);
+  for (const [boss, d] of Object.entries(B.BOSS_MATS)) {
+    for (const [id] of d.mats) { assert.ok(ITEMS[id] && ITEMS[id].sell >= 40000 && ITEMS[id].sell <= 100000, id); assert.ok(MONSTERS[boss].loot.some((l) => l[0] === id && l[1] === 0.5), boss + ' suelta ' + id); }
+    const r = RECIPES.find((q) => q.id === 'r_' + d.elixir[0]); assert.ok(r && ITEMS[d.elixir[0]].buff, 'receta ' + boss);
+  }
+  assert.ok(MONSTERS.zeus.loot.filter((l) => /^zs_/.test(l[0])).length === 0 || MONSTERS.zeus.loot.filter((l) => /^zs_/.test(l[0])).every((l) => l[1] < 0.02), 'el equipo de Zeus sale poco');
+  const { p } = login('Botin1'); place(p, ...TOWN); p.ext.cxp = 5000; game.giveItem(p, 'fragmento_rayo', 4); game.giveItem(p, 'pluma_aguila', 4); game.craft(p, 'r_elixir_trueno');
+  assert.ok(p.inv.some((it) => it && it.id === 'elixir_trueno'), 'fabrica el elixir'); assert.ok(!p.inv.some((it) => it && it.id === 'fragmento_rayo'), 'gasta los materiales');
 });
 
 ok('Raid: 5 cámaras, jefes, vidas, escalado por grupo, cofre final con botín raro y capa equipada', () => {
