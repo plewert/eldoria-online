@@ -508,11 +508,27 @@
       s.addEventListener('contextmenu', (ev) => { ev.preventDefault(); if (G.inv[i]) invMenu(ev, i); });
       addLongPress(s, (ev) => { if (G.inv[i]) invMenu(ev, i); });
       // arrastrar y soltar para reorganizar la mochila
-      s.addEventListener('dragstart', (ev) => { if (!G.inv[i]) { ev.preventDefault(); return; } hideTip(); ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', String(i)); s.classList.add('dragging'); });
-      s.addEventListener('dragend', () => { s.classList.remove('dragging'); grid.querySelectorAll('.dragover').forEach((q) => q.classList.remove('dragover')); });
+      s.addEventListener('dragstart', (ev) => { if (!G.inv[i]) { ev.preventDefault(); return; } hideTip(); ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', String(i)); G.dragging = true; setTimeout(() => s.classList.add('dragging'), 0); });
+      s.addEventListener('dragend', () => { G.dragging = false; if (G.dragPend) { G.dragPend = false; renderInv(); } s.classList.remove('dragging'); grid.querySelectorAll('.dragover').forEach((q) => q.classList.remove('dragover')); });
       s.addEventListener('dragover', (ev) => { ev.preventDefault(); ev.dataTransfer.dropEffect = 'move'; s.classList.add('dragover'); });
       s.addEventListener('dragleave', () => s.classList.remove('dragover'));
       s.addEventListener('drop', (ev) => { ev.preventDefault(); s.classList.remove('dragover'); const a = parseInt(ev.dataTransfer.getData('text/plain'), 10); if (a >= 0 && a !== i) send({ t: 'swap', a, b: i }); });
+      // móvil/tablet: arrastrar con el dedo (el arrastre HTML5 no funciona al tocar)
+      { let sx = 0, sy = 0, ghost = null, over = null;
+        const slotAt = (t) => { const e = document.elementFromPoint(t.clientX, t.clientY); const q = e && e.closest && e.closest('#inv .slot, #equip .slot'); return q || null; };
+        const endDrag = () => { if (ghost) ghost.remove(); ghost = null; s.classList.remove('dragging'); if (over) over.classList.remove('dragover'); over = null; };
+        s.addEventListener('touchstart', (e) => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; endDrag(); }, { passive: true });
+        s.addEventListener('touchmove', (e) => {
+          const t = e.touches[0]; if (!G.inv[i]) return;
+          if (!ghost) {
+            if (Math.hypot(t.clientX - sx, t.clientY - sy) < 10) return;
+            hideTip(); ghost = s.cloneNode(true); ghost.removeAttribute('draggable'); Object.assign(ghost.style, { position: 'fixed', zIndex: 90, pointerEvents: 'none', opacity: .85, transform: 'scale(1.25)' }); document.body.append(ghost); s.classList.add('dragging');
+          }
+          e.preventDefault(); ghost.style.left = (t.clientX - 22) + 'px'; ghost.style.top = (t.clientY - 22) + 'px';
+          const q = slotAt(t); if (over && over !== q) over.classList.remove('dragover'); over = q && q !== s ? q : null; if (over) over.classList.add('dragover');
+        }, { passive: false });
+        s.addEventListener('touchend', (e) => { if (!ghost) return; const q = over, b = q && q.dataset.i !== undefined ? +q.dataset.i : -1, eq = q && q.dataset.eq; endDrag(); if (b >= 0 && b !== i) send({ t: 'swap', a: i, b }); else if (eq && G.inv[i] && isGear(G.inv[i][0])) send({ t: 'use', s: i }); e.preventDefault(); });
+        s.addEventListener('touchcancel', endDrag); }
       grid.append(s);
     }
     document.querySelectorAll('#equip .slot').forEach((s) => {
@@ -520,10 +536,14 @@
       s.addEventListener('click', () => { if (!G.eq[s.dataset.eq]) return; if (TOUCH) eqMenu(anchorOf(s), s.dataset.eq); else send({ t: 'unequip', slot: s.dataset.eq }); });
       s.addEventListener('contextmenu', (ev) => { ev.preventDefault(); if (G.eq[s.dataset.eq]) eqMenu(ev, s.dataset.eq); });
       addLongPress(s, (ev) => { if (G.eq[s.dataset.eq]) eqMenu(ev, s.dataset.eq); });
+      s.addEventListener('dragover', (ev) => { ev.preventDefault(); ev.dataTransfer.dropEffect = 'move'; s.classList.add('dragover'); });
+      s.addEventListener('dragleave', () => s.classList.remove('dragover'));
+      s.addEventListener('drop', (ev) => { ev.preventDefault(); s.classList.remove('dragover'); const a = parseInt(ev.dataTransfer.getData('text/plain'), 10); if (a >= 0 && G.inv[a] && isGear(G.inv[a][0])) send({ t: 'use', s: a }); });
     });
   }
 
   function renderInv() {
+    if (G.dragging) { G.dragPend = true; return; }
     if (!$('#inv').children.length) buildInvGrid();
     $('#inv').querySelectorAll('.slot').forEach((s) => { fillSlot(s, G.inv[+s.dataset.i]); s.draggable = !!G.inv[+s.dataset.i]; });
     document.querySelectorAll('#equip .slot').forEach((s) => {
@@ -1562,7 +1582,7 @@
     const legCol = LG ? LG[0] : A && !/tela/.test(gr.bid) ? shade(A.m[1], 0.9) : '#2a2f3a', legFar = LG ? LG[1] : A && !/tela/.test(gr.bid) ? shade(A.m[1], 0.7) : shade('#2a2f3a', 0.8);
     c.save();
     if (e.o) c.globalAlpha = 0.55;
-    c.fillStyle = 'rgba(0,0,0,.34)'; c.beginPath(); c.ellipse(cx, base + 0.5, 10 - bob * 0.6, 3.6, 0, 0, 7); c.fill();   // sombra
+    c.fillStyle = 'rgba(0,0,0,.34)'; c.beginPath(); c.ellipse(cx, base + 0.5, Math.max(2, 10 - bob * 0.6), 3.6, 0, 0, 7); c.fill();   // sombra
 
     const leg = (x, len, col) => { c.fillStyle = col; c.fillRect(Math.round(x - 2), hipY + bob * 0.4, 4, len); if (gr.lgid) { c.fillStyle = LG[2]; c.fillRect(Math.round(x - 1.5), hipY + bob * 0.4 + 3, 3, 1); } const bc = gr.bootid && BOOT_COL[(G.items[gr.bootid] || {}).spr] || ['#5d4637', '#ff8a1f']; c.fillStyle = gr.bootid ? bc[0] : '#15181f'; c.fillRect(Math.round(x - 2.5), hipY + bob * 0.4 + len - 2, 5 + (side ? 1 : 0), 2.5); if (gr.bootid) { c.fillStyle = bc[1]; c.fillRect(Math.round(x - 2.5), hipY + bob * 0.4 + len - 1.2, 5 + (side ? 1 : 0), 0.8); } };
     const arm = (x, y, dx, dy, col) => { c.strokeStyle = col; c.lineWidth = 3.4; c.lineCap = 'round'; c.beginPath(); c.moveTo(x, y); c.lineTo(x + dx, y + dy); c.stroke(); c.fillStyle = handCol; c.beginPath(); c.arc(x + dx, y + dy, 2, 0, 7); c.fill(); };
