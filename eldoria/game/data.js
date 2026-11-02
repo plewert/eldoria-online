@@ -497,6 +497,7 @@ require('./mage').build(ITEMS, SHOPS, MONSTERS);
   require('./raid').build(ITEMS, MONSTERS);
   require('./halloween').build(ITEMS, MONSTERS);
   require('./regiones').build(ITEMS, MONSTERS, SPAWN_PLAN);
+  require('./demonios').build(ITEMS, MONSTERS, SPAWN_PLAN);
   require('./bosspets').build(ITEMS, MONSTERS);
   require('./fishing').build(ITEMS, SHOPS);
   require('./mining').build(ITEMS, SHOPS);

@@ -983,12 +983,23 @@ ok('cuatro regiones nuevas: montañas, nubes, desierto con pirámides y paraíso
   const SJ = require('../public/sprites.json'); assert.ok(Object.values(MONSTERS).filter((m) => m.spr).every((m) => SJ[m.spr]), 'todos los dibujos de monstruos existen');
 });
 
+ok('legiones del Inframundo: 46 demonios con dibujo, botín y apariciones en la zona (no dentro de la cueva de Hades)', () => {
+  const D = require('../game/demonios'), sj = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '../public/sprites.json'), 'utf8'));
+  const types = [...D.ROSTER.map((r) => r[0]), ...D.BOSSES.map((b) => b[0])]; assert.equal(types.length, 46);
+  for (const t of types) {
+    const m = MONSTERS[t]; assert.ok(m, t); assert.ok(sj[t] && sj[t].f.length, 'dibujo de ' + t);
+    for (const [id] of m.loot) assert.ok(ITEMS[id], t + ' suelta ' + id);
+    const sp = world.monsterSpawns.filter((q) => q.type === t); assert.ok(sp.length >= 1, 'aparece ' + t);
+    for (const q of sp) { assert.equal(zoneOf([q.x, q.y]).id, 'inframundo', t + ' en el Inframundo'); assert.ok(world.reach[q.y * world.W + q.x], t + ' alcanzable'); }
+  }
+  assert.ok(D.BOSSES.every((b) => MONSTERS[b[0]].boss));
+});
 ok('modo historia: toda cueva de jefe tiene historia; entrada, tablillas, final, logros y guardado', () => {
   const H = require('../game/historia');
   for (const c of world.INST_CAVES) { const st = H.BY_CAVE[c.cave]; assert.ok(st, 'falta la historia de ' + c.cave); assert.equal(st.boss, c.boss); assert.ok(MONSTERS[st.boss]); assert.ok(st.intro.length && st.ending.length && st.chapters.length === 3, c.cave); assert.equal(H.stonesOf(st).length, 3, 'tablillas de ' + c.cave); for (const [x, y] of H.stonesOf(st)) assert.ok(world.isWalkable(x, y)); }
   const { p, ws } = login('Historia1'); const st = H.BY_CAVE.cueva_olimpo, C = world.CAVES_BY_ZONE.cueva_olimpo;
   place(p, C.inside[0], C.inside[1]); p.hp = p.maxHp = 1e7; advance(700);
-  assert.ok(ws.got.some((m) => m.t === 'story' && m.k === 'intro' && m.boss === 'zeus'), 'escena de entrada'); assert.ok(p.ext.story.zeus.i);
+  assert.ok(ws.got.some((m) => m.t === 'story' && m.k === 'intro' && m.boss === 'zeus'), 'escena de entrada'); assert.ok(p.ext.story.zeus.i); { const hp0 = p.hp; game.hurtPlayer(p, 50, null, game.now, 'x'); assert.equal(p.hp, hp0, 'protegido mientras lees la escena'); game.storyAck(p); p.storyUntil = 0; }
   const n0 = ws.got.filter((m) => m.t === 'story' && m.k === 'intro').length; advance(700); assert.equal(ws.got.filter((m) => m.t === 'story' && m.k === 'intro').length, n0, 'la entrada sale una vez');
   H.stonesOf(st).forEach(([x, y]) => { place(p, x, y); advance(700); });
   assert.equal(p.ext.story.zeus.c.length, 3, 'lee las 3 tablillas'); assert.equal(ws.got.filter((m) => m.t === 'story' && m.k === 'ch').length, 3);

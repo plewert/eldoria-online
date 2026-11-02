@@ -463,3 +463,9 @@ Boris vende 8 tabletas (una por cueva de jefe) a 250 000 de oro; de un solo uso,
 - **Arcos hacen solo 45 % de daño** (`ARCO_K`); magia y cuerpo a cuerpo, completos.
 - **Botín**: set Tenebris (casco, armadura, piernas, botas, 2 anillos, amuleto, guadaña, arco), materiales y elixir del Inframundo; tableta de teletransporte (Boris). Reparto por daño como el resto de jefes.
 - Instancia privada: 9.ª cueva, entrada 1.200.000. Modo historia: capítulo de Hades (3 tablillas, final y logro). Precios de materiales reequilibrados (Hades = 100k).
+
+## Legiones del Inframundo (46 demonios)
+- La gran zona del Inframundo ya no está vacía: 43 demonios normales de 7 familias (diablillos, querubines, siervos —sombras, espectros, gárgolas, babas—, diablos, hechiceras/princesas infernales, demonios serafín y archidemonios) y 3 jefes de campo (**Serafín Caído**, **Serafina de la Noche**, **Serafín Infernal**, reaparecen cada 15 min).
+- Dónde: los más débiles en el centro (donde apareces) y los más fuertes en los extremos oeste y este. La cueva de Hades sigue sin monstruos normales.
+- Botín: cada familia suelta su material (Cuerno de Diablillo, Ala Demoníaca, Esencia Sombría, Garra Infernal, Lágrima Infernal, Colmillo Demoníaco, Sello Demoníaco), pociones y gemas; los jefes sueltan trofeo.
+- Datos en `game/demonios.js` (tabla `ROSTER` / `BOSSES`); dibujos en `public/sprites.json`.

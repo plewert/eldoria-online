@@ -20,7 +20,7 @@
     const b = el('button', 'hist-go', 'Continuar  [Espacio]'); b.type = 'button'; box.append(b, el('small', 'hist-esc', 'Esc: saltar'));
     root.append(box); st.append(root); scene = root;
     requestAnimationFrame(() => root.classList.add('on'));
-    const end = () => { if (scene !== root) return; scene = null; root.classList.remove('on'); setTimeout(() => root.remove(), 300); window.removeEventListener('keydown', kd, true); setTimeout(showNext, 350); };
+    const end = () => { if (scene !== root) return; scene = null; if (!queue.length) send({ t: 'story', k: 'ack' }); root.classList.remove('on'); setTimeout(() => root.remove(), 300); window.removeEventListener('keydown', kd, true); setTimeout(showNext, 350); };
     const kd = (ev) => { if (ev.key === ' ' || ev.key === 'Enter' || ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); end(); } else ev.stopPropagation(); };
     window.addEventListener('keydown', kd, true); b.addEventListener('click', end);
   }

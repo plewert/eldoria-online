@@ -154,12 +154,12 @@ function install(Game) {
       if (p.dead || !p.ext) continue;
       const zid = world.zoneAt(p.x, p.y).id, s = caveOf(zid); if (!s) continue;
       const e = st(p, s.boss);
-      if (!e.i) { e.i = 1; this.send(p, { t: 'story', k: 'intro', boss: s.boss, icon: s.icon, name: s.name, lines: s.intro }); this.sendStory(p); continue; }
+      if (!e.i) { e.i = 1; p.storyUntil = this.now + 30000; this.send(p, { t: 'story', k: 'intro', boss: s.boss, icon: s.icon, name: s.name, lines: s.intro }); this.sendStory(p); continue; }
       if (zid !== s.cave) continue;            // las tablillas solo existen en la cueva original
       const sts = stonesOf(s);
       for (let k = 0; k < sts.length; k++) {
         if (e.c.includes(k) || cheb(p.x, p.y, sts[k][0], sts[k][1]) > 1) continue;
-        e.c.push(k); this.send(p, { t: 'story', k: 'ch', boss: s.boss, icon: s.icon, name: s.name, i: k, n: s.chapters.length, title: s.chapters[k].title, text: s.chapters[k].text });
+        e.c.push(k); p.storyUntil = this.now + 20000; this.send(p, { t: 'story', k: 'ch', boss: s.boss, icon: s.icon, name: s.name, i: k, n: s.chapters.length, title: s.chapters[k].title, text: s.chapters[k].text });
         this.sendStory(p); this.storyDone(p, s); break;
       }
     }
@@ -173,10 +173,18 @@ function install(Game) {
     const r = K0.call(this, m, now);
     for (const [pl] of parts) {
       if (!pl.ext) continue; const e = st(pl, s.boss);
-      if (!e.e) { e.e = 1; this.send(pl, { t: 'story', k: 'end', boss: s.boss, icon: s.icon, name: s.name, lines: s.ending }); this.sendStory(pl); this.storyDone(pl, s); }
+      if (!e.e) { e.e = 1; pl.storyUntil = this.now + 20000; this.send(pl, { t: 'story', k: 'end', boss: s.boss, icon: s.icon, name: s.name, lines: s.ending }); this.sendStory(pl); this.storyDone(pl, s); }
     }
     return r;
   };
+
+  // mientras lees una escena o tablilla nadie te puede dañar (hasta pulsar «Continuar», máx. 30 s)
+  const HS0 = P.hurtPlayer;
+  P.hurtPlayer = function (p, raw, src, now, srcName) {
+    if (p.storyUntil && p.storyUntil > (now || this.now)) return 0;
+    return HS0.call(this, p, raw, src, now, srcName);
+  };
+  P.storyAck = function (p) { if (p.storyUntil && p.storyUntil > this.now) p.storyUntil = this.now + 1500; };
 
   const L0 = P.onLogin;
   P.onLogin = function (p) { L0.call(this, p); this.sendStory(p); };
