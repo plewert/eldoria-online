@@ -43,6 +43,11 @@ const CFG = {
   GEAR_DROP_MULT: 0.5,          // los equipos raros que sueltan monstruos y jefes caen la mitad de seguido
   BOSS_RARE_MULT: 4,
   MAX_SOCKETS: 3,
+  MAX_CORRUPT: 5,              // ranuras extra que se pueden abrir en un objeto con Gemas Corruptas
+  CORRUPT_COST: 200000,        // oro por usar una Gema Corrupta
+  CORRUPT_FAIL: 0.10,          // probabilidad de que falle (la gema se consume y no se abre nada)
+  CORRUPT_PRICE: 200000000,    // Boris la compra y la vende a este precio
+  CORRUPT_CHANCE: 0.0002,      // 0,02 % por participante en los jefes del Inframundo: lo más raro del juego
   GEM_REMOVE_COST: 50000,      // oro por sacar una gema de una ranura
   GEM_BREAK: 0.10,             // probabilidad de que una gema común (rubí, zafiro, esmeralda, topacio) se rompa del todo al sacarla
   GEM_BREAK_RARE: 0.03,        // ídem para las raras (amatista, ópalo, diamante)
@@ -537,6 +542,12 @@ require('./mage').build(ITEMS, SHOPS, MONSTERS);
 // Nivel de cada monstruo (se muestra sobre su cabeza): sale de la experiencia que da, salvo los que fijan el suyo.
 for (const d of Object.values(MONSTERS)) if (!d.lv) d.lv = Math.max(1, Math.round(0.6 * Math.sqrt(d.exp)));
 
+// Gema Corrupta: no es una gema normal (no se engarza); se usa sobre un arma o armadura y abre una ranura nueva
+ITEMS.gema_corrupta = { name: 'Gema Corrupta', icon: '🟣', spr: 'gem_corrupta', type: 'misc', stack: true, corrupt: 1, col: '#b46cff', sell: CFG.CORRUPT_PRICE, price: CFG.CORRUPT_PRICE,
+  desc: `Úsala sobre un arma o equipo (menú de la mochila, ${CFG.CORRUPT_COST.toLocaleString('es')} de oro, en zona segura): abre 1 ranura que acepta cualquier gema. Máx. ${CFG.MAX_CORRUPT} por objeto. ${Math.round(CFG.CORRUPT_FAIL * 100)} % de fallo: se consume sin abrir nada.` };
+SHOPS.boris.push('gema_corrupta');
+// solo los jefes del Inframundo la sueltan, y es el botín más raro del juego
+for (const t of ['hades', 'serafin_caido', 'serafina_noche', 'serafin_infernal']) if (MONSTERS[t]) MONSTERS[t].loot.push(['gema_corrupta', CFG.CORRUPT_CHANCE, 1, 1]);
 // las gemas solo salen de las rocas (minería): se quitan de toda tabla de botín de monstruos y jefes
 for (const m of Object.values(MONSTERS)) if (m.loot) m.loot = m.loot.filter((q) => !GEMS[q[0]]);
 module.exports = { CFG, ITEMS, GEMS, RAR, SHOP, SHOPS, START_KIT, MONSTERS, SPAWN_PLAN, NPC_TIPS };

@@ -40,8 +40,11 @@ function normalize(raw) {
   if (raw.id && ALIAS[raw.id]) raw = Object.assign({}, raw, { id: ALIAS[raw.id] });
   if (!raw.id || !ITEMS[raw.id]) return null;
   if (!isGear(raw.id)) return { id: raw.id, qty: Math.max(1, raw.qty | 0) };
-  const gm = Array.isArray(raw.gm) ? raw.gm.slice(0, CFG.MAX_SOCKETS).map((g) => (g && isGem(g) ? g : null)) : [];
-  return { id: raw.id, qty: 1, up: clamp(raw.up | 0, 0, 6), an: raw.an ? 1 : 0, gm };
+  const gm = Array.isArray(raw.gm) ? raw.gm.slice(0, CFG.MAX_SOCKETS + CFG.MAX_CORRUPT).map((g) => (g && isGem(g) ? g : null)) : [];
+  const out = { id: raw.id, qty: 1, up: clamp(raw.up | 0, 0, 6), an: raw.an ? 1 : 0, gm };
+  const nc = clamp(raw.nc | 0, 0, CFG.MAX_CORRUPT);
+  if (nc) out.nc = nc;
+  return out;
 }
 
 /* ---------------------------- estadísticas ---------------------------- */
@@ -130,7 +133,8 @@ function pack(it) {
   if (!isGear(it.id)) return [it.id, it.qty];
   const out = [it.id, 1, it.up || 0, it.an ? 1 : 0, it.gm.length, it.gm.slice(), baseStat(it)];
   const b = bonusOf(it);
-  if (b) out.push(b);
+  if (b) out.push(b); else if (it.nc) out.push(null);
+  if (it.nc) out.push(it.nc);                       // ranuras abiertas con Gemas Corruptas (índice 8)
   return out;
 }
 
@@ -138,7 +142,7 @@ function pack(it) {
 function same(a, b) {
   if (!a || !b || a.id !== b.id) return false;
   if (!isGear(a.id)) return true;
-  return (a.up || 0) === (b.up || 0) && !!a.an === !!b.an && JSON.stringify(a.gm) === JSON.stringify(b.gm);
+  return (a.up || 0) === (b.up || 0) && !!a.an === !!b.an && (a.nc || 0) === (b.nc || 0) && JSON.stringify(a.gm) === JSON.stringify(b.gm);
 }
 
 /* ---------------- colocar objetos en una mochila (o banco) ---------------- */

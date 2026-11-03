@@ -288,6 +288,32 @@ ok('al sacar una gema puede romperse del todo: 10 % las comunes y 3 % las raras,
     assert.ok(has('diamante'), 'el diamante se salva');
   } finally { Math.random = r0; }
 });
+ok('Gema Corrupta: abre ranuras (máx. 5) por 200k, 10 % de fallo la consume, acepta cualquier gema; solo jefes del Inframundo; Boris 200M', () => {
+  resetPair(); D.p.eq.weapon = I.mk('espada_hierro', 1, { ns: 0 }); D.p.vis = null; game.recalc(D.p);
+  D.p.inv.fill(null); D.p.inv[0] = { id: 'gema_corrupta', qty: 8 }; D.p.inv[1] = { id: 'rubi', qty: 1 }; D.p.gold = 10 * CFG.CORRUPT_COST;
+  const D0 = require('../game/data'), r0 = Math.random, n0 = D.p.eq.weapon.gm.length;
+  assert.equal(CFG.CORRUPT_COST, 200000); assert.equal(CFG.CORRUPT_FAIL, 0.1); assert.equal(CFG.MAX_CORRUPT, 5);
+  assert.ok(!D0.GEMS.gema_corrupta && D0.ITEMS.gema_corrupta.type !== 'gem', 'no es una gema normal');
+  try {
+    Math.random = () => 0.05; game.handle(D.p, { t: 'corrupt', gem: 0, from: 'eq', at: 'weapon' });          // falla (10 %)
+    assert.equal(D.p.eq.weapon.gm.length, n0); assert.equal(D.p.inv[0].qty, 7, 'se consume'); assert.equal(D.p.gold, 9 * CFG.CORRUPT_COST);
+    Math.random = () => 0.5;
+    for (let k = 0; k < 6; k++) game.handle(D.p, { t: 'corrupt', gem: 0, from: 'eq', at: 'weapon' });
+  } finally { Math.random = r0; }
+  assert.equal(D.p.eq.weapon.nc, 5, 'máximo 5'); assert.equal(D.p.eq.weapon.gm.length, n0 + 5);
+  assert.equal(D.p.inv[0].qty, 2, 'la 6.ª no se gasta'); assert.equal(I.pack(D.p.eq.weapon)[8], 5);
+  game.handle(D.p, { t: 'socket', gem: 1, from: 'eq', at: 'weapon' });
+  assert.ok(D.p.eq.weapon.gm.includes('rubi'), 'la ranura corrupta acepta cualquier gema');
+  assert.deepEqual(I.normalize(JSON.parse(JSON.stringify(D.p.eq.weapon))).nc, 5, 'se guarda');
+  for (const t of ['hades', 'serafin_caido', 'serafina_noche', 'serafin_infernal']) {
+    const l = D0.MONSTERS[t].loot.find((q) => q[0] === 'gema_corrupta'); assert.ok(l, t);
+    for (const [id, m] of Object.entries(D0.MONSTERS)) for (const q of m.loot || []) if (q[0] !== 'gema_corrupta' && q[1] < 1) assert.ok(l[1] < q[1] || q[1] >= l[1], 'rareza');
+  }
+  const min = Math.min(...Object.values(D0.MONSTERS).flatMap((m) => (m.loot || []).filter((q) => q[0] !== 'gema_corrupta').map((q) => q[1])));
+  assert.ok(CFG.CORRUPT_CHANCE < min, 'la más rara del juego');
+  assert.ok(!Object.entries(D0.MONSTERS).some(([t, m]) => !['hades', 'serafin_caido', 'serafina_noche', 'serafin_infernal'].includes(t) && (m.loot || []).some((q) => q[0] === 'gema_corrupta')), 'solo Inframundo');
+  assert.ok(D0.SHOPS.boris.includes('gema_corrupta')); assert.equal(D0.ITEMS.gema_corrupta.price, 200000000); assert.equal(D0.ITEMS.gema_corrupta.sell, 200000000);
+});
 ok('no se puede engarzar en zona PvP', () => {
   const g0 = JSON.stringify(D.p.eq.weapon.gm);
   place(D.p, wx, wy); D.p.inv[2] = { id: 'rubi', qty: 1 };

@@ -477,3 +477,9 @@ Boris vende 9 tabletas (una por cueva de jefe) a 100 000 de oro; de un solo uso,
 
 ### Gemas en la tienda de Boris
 Boris vende y compra las 7 gemas **al mismo precio**: topacio 1 000 000 (la más barata), rubí/zafiro/esmeralda 1 100 000, amatista 3 000 000, diamante 5 500 000, ópalo 7 000 000 (`GEM_PRICE` en `game/data.js`).
+
+## Gema Corrupta
+- Botín del Inframundo: solo Hades y los 3 serafines (0,02 % por participante, lo más raro del juego). No es una gema normal: no se engarza.
+- Se usa desde el menú de la mochila (clic) sobre un arma o equipo (en zona segura): cuesta 200.000 de oro, abre **1 ranura** que acepta cualquier gema. Máximo 5 ranuras corruptas por objeto.
+- 10 % de fallo: la gema se consume (y el oro) y no se abre nada. Siempre se consume.
+- Boris la compra y la vende a 200.000.000. Constantes en `CFG` (`CORRUPT_*`, `MAX_CORRUPT`).
