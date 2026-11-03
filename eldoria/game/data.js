@@ -547,6 +547,18 @@ require('./mage').build(ITEMS, SHOPS, MONSTERS);
 // Nivel de cada monstruo (se muestra sobre su cabeza): sale de la experiencia que da, salvo los que fijan el suyo.
 for (const d of Object.values(MONSTERS)) if (!d.lv) d.lv = Math.max(1, Math.round(0.6 * Math.sqrt(d.exp)));
 
+// Boris vende equipo de fábrica (sin ranuras, sin +N, sin Ancient) de nivel 80+ desde 10M; lo recompra al valor de venta normal de siempre.
+// Quedan fuera las piezas exclusivas de Zeus y de Hades (siguen siendo solo botín de jefe).
+{
+  const lvPrice = (lv) => lv <= 95 ? 10e6 + (lv - 80) / 15 * 5e6 : lv <= 105 ? 20e6 + (lv - 96) / 9 * 10e6 : 35e6 + (lv - 106) / 14 * 15e6;
+  const F = { weapon: 1, body: 1, head: 0.8, legs: 0.8, shield: 0.8, boots: 0.5, gloves: 0.5, belt: 0.5 };
+  CFG.SHOP_GEAR_MIN_LV = 80;
+  for (const [id, d] of Object.entries(ITEMS)) {
+    if (!F[d.type] || (d.minLevel || 1) < CFG.SHOP_GEAR_MIN_LV || d.zeus || id.startsWith('hd_') || SHOPS.boris.includes(id)) continue;
+    d.price = Math.max(10e6, Math.round(lvPrice(d.minLevel) * F[d.type] / 5e5) * 5e5);      // d.sell no se toca: es lo que paga Boris al comprar
+    SHOPS.boris.push(id);
+  }
+}
 // Gema Corrupta: no es una gema normal (no se engarza); se usa sobre un arma o armadura y abre una ranura nueva
 ITEMS.gema_corrupta = { name: 'Gema Corrupta', icon: '🟣', spr: 'gem_corrupta', type: 'misc', stack: true, corrupt: 1, col: '#b46cff', sell: CFG.CORRUPT_PRICE, price: CFG.CORRUPT_PRICE,
   desc: `Úsala sobre un arma o equipo (menú de la mochila, ${CFG.CORRUPT_COST.toLocaleString('es')} de oro, en zona segura): abre 1 ranura que acepta cualquier gema. Máx. ${CFG.MAX_CORRUPT} por objeto. ${Math.round(CFG.CORRUPT_FAIL * 100)} % de fallo: se consume sin abrir nada.` };

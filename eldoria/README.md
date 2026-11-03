@@ -487,3 +487,7 @@ Boris vende y compra las 7 gemas **al mismo precio**: topacio 1 000 000 (la más
 ## Gema de Ascensión
 - Muy rara (0,03 % en los jefes más fuertes): cae de los jefes de la superficie (no del Inframundo) y los jefes débiles tienen menos probabilidad (proporcional a su nivel, mín. 10 % de la tasa). Se usa desde la mochila (clic) sobre un equipo, en zona segura: 300.000 de oro, +1 al +N (máx. +6).
 - 20 % de fallo: se consume la gema y el oro, el equipo no cambia (nunca baja ni se rompe). Boris la compra y vende a 150.000.000. Constantes `ASC_*` en `CFG`.
+
+## Equipo de fábrica en Boris
+- Boris vende armas, armaduras, escudos y cinturones de nivel 80+ (sin ranuras, sin +N, sin Ancient) desde 10M hasta ~50M según nivel y pieza (arma/cuerpo ×1, yelmo/pantalón/escudo ×0,8, botas/guantes/cinturón ×0,5).
+- Los recompra al valor de venta normal (mucho menor). Excluidas las piezas exclusivas de Zeus y Hades.

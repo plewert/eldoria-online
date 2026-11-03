@@ -331,6 +331,13 @@ ok('Gema de Ascensión: sube el +N (máx. +6) por 300k, 20 % de fallo no cambia 
   assert.ok(!Object.entries(D0.MONSTERS).some(([t, m]) => !m.boss && (m.loot || []).some((q) => q[0] === 'gema_ascension')));
   assert.ok(CFG.ASC_CHANCE <= 0.0003 && D0.SHOPS.boris.includes('gema_ascension') && D0.ITEMS.gema_ascension.price === 150000000);
 });
+ok('Boris vende equipo nivel 80+ de fábrica desde 10M y lo recompra al valor de siempre', () => {
+  const D0 = require('../game/data'), ids = D0.SHOPS.boris.filter((i) => D0.ITEMS[i].minLevel >= 80);
+  assert.ok(ids.length > 50, 'hay equipo nivel 80+ a la venta');
+  for (const i of ids) { const d = D0.ITEMS[i]; assert.ok(d.price >= 10000000 && d.sell < d.price, i); assert.ok(!d.zeus && !i.startsWith('hd_'), 'sin exclusivos de Zeus/Hades'); }
+  const it = I.mk(ids[0]); assert.equal(it.gm.length, 0); assert.ok(!it.up && !it.an, 'sin ranuras ni +N');
+  assert.ok(D0.ITEMS.espada_hierro && D0.ITEMS.espada_hierro.price < 1e7, 'las baratas siguen igual');
+});
 ok('no se puede engarzar en zona PvP', () => {
   const g0 = JSON.stringify(D.p.eq.weapon.gm);
   place(D.p, wx, wy); D.p.inv[2] = { id: 'rubi', qty: 1 };
