@@ -11,7 +11,7 @@
 const TN = {
   PERIOD: 20 * 60000, REG_MS: 3 * 60000, MIN: 4, MAX: 16,
   HP: 1000, DMG: [200, 300], PREP_MS: 5000, FIGHT_MS: 90000,
-  GOLD: 2000000, GEM: 'topacio',
+  GOLD: 2000000, GEM: 'topacio', PRACTICE_K: 0.1,        // con menos de MIN jugadores reales (bots rellenando) el oro es el 10 % y no hay gema ni armas
   WEAPON_CHANCE: 0.00001,                       // por arma y por torneo ganado: más rara que la Gema Corrupta (0,002 %)
   SLOTS: [[395, 61, 405, 61], [395, 65, 405, 65], [395, 69, 405, 69], [395, 73, 405, 73]],     // [ax, ay, bx, by] de cada ring
   CD: { melee: 900, ranged: 1000, magic: 1000 }, RANGE: { melee: 1, ranged: 5, magic: 5 },
@@ -80,8 +80,17 @@ function install(Game) {
 
   /** ¿Puede este jugador inscribirse o seguir en el torneo? */
   P.tnOk = function (p, now) {
-    return p && !p.bot && p.ws && p.hp > 0 && this.ents.get(p.id) === p && p.level >= CFG.PVP_MIN_LEVEL && !p.trade
+    return p && (p.bot || p.ws) && p.hp > 0 && this.ents.get(p.id) === p && p.level >= CFG.PVP_MIN_LEVEL && !p.trade
       && now >= (p.pvpLock || 0) && world.zoneAt(p.x, p.y).kind !== 'dungeon';
+  };
+
+  /** Faltan jugadores: los aventureros del servidor (bots) completan el mínimo si hay al menos un jugador real inscrito. */
+  P.tnFillBots = function (now) {
+    const s = state(this), humans = s.ent.filter((p) => !p.bot).length;
+    if (!humans || s.ent.length >= TN.MIN) return;
+    const pool = (this.bots || []).filter((b) => !(b.tn && b.tn.in) && b.ai && ['hunt', 'idle', 'town'].includes(b.ai.mode) && this.tnOk(b, now));
+    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+    for (const b of pool.slice(0, TN.MIN - s.ent.length)) { b.tn = Object.assign(b.tn || {}, { in: true }); b.target = null; s.ent.push(b); }
   };
 
   /* ---------- combates ---------- */
@@ -141,16 +150,24 @@ function install(Game) {
     s.phase = 'idle'; s.next += TN.PERIOD; if (s.next <= now) s.next = Math.ceil((now + 1) / TN.PERIOD) * TN.PERIOD;
     s.ent.forEach((p) => { if (p.tn) p.tn.in = false; }); s.ent = []; s.lastAnn = 0;
     if (!champ) { this.broadcastChat('🏆 Torneo terminado sin ganador.', 'k'); return; }
-    champ.gold += TN.GOLD; this.msgC(champ, `🏆 ¡Ganas el torneo! +${TN.GOLD.toLocaleString('es')} de oro y un ${ITEMS[TN.GEM].name}.`, '#f0c867');
-    if (this.giveItem(champ, TN.GEM, 1)) this.addGround(TN.GEM, 1, champ.x, champ.y);
+    const practice = (s.humans | 0) < TN.MIN;                                   // con bots rellenando: premio reducido, sin gema ni armas
+    if (champ.bot) { this.broadcastChat(`🏆 ${champ.name} (aventurero del servidor) gana el torneo.`, 'k'); return; }
+    const gold = practice ? Math.round(TN.GOLD * TN.PRACTICE_K) : TN.GOLD;
+    champ.gold += gold; this.msgC(champ, `🏆 ¡Ganas el torneo! +${gold.toLocaleString('es')} de oro${practice ? ` (premio reducido: faltaron jugadores reales, mínimo ${TN.MIN})` : ` y un ${ITEMS[TN.GEM].name}`}.`, '#f0c867');
+    if (!practice && this.giveItem(champ, TN.GEM, 1)) this.addGround(TN.GEM, 1, champ.x, champ.y);
     const won = [];
-    for (const w of WEAPONS) if (Math.random() < TN.WEAPON_CHANCE) { const it = I.rollGear(w[0], true); if (this.giveInst(champ, it)) this.addGround(w[0], 1, champ.x, champ.y, { inst: it }); won.push(I.nameOf(it)); }
+    if (!practice) for (const w of WEAPONS) if (Math.random() < TN.WEAPON_CHANCE) { const it = I.rollGear(w[0], true); if (this.giveInst(champ, it)) this.addGround(w[0], 1, champ.x, champ.y, { inst: it }); won.push(I.nameOf(it)); }
     if (won.length) this.msgC(champ, `✨ ¡El arsenal de los Eones te elige: ${won.join(', ')}!`, '#c58bff');
     this.broadcastChat(`🏆 ${champ.name} gana el torneo${won.length ? ' y se lleva ' + won.join(', ') + ' ✨' : ''}.`, 'k');
     champ.dirty.inv = true; champ.dirty.stats = true;
   };
 
   /* ---------- reloj del torneo ---------- */
+  P.tnBotThink = function (p, now) {                          // IA de los bots dentro del torneo: perseguir y pegar al rival
+    const opp = p.tn && p.tn.fight ? this.ents.get(p.tn.opp) : null;
+    p.target = opp ? opp.id : null;
+  };
+
   P.tnTick = function (now) {
     const s = state(this);
     if (now < s.nextTick) return; s.nextTick = now + 250;
@@ -161,14 +178,15 @@ function install(Game) {
     }
     if (s.phase === 'reg') {
       for (const mark of [60000, 10000]) if (s.next - now <= mark && s.lastAnn !== mark && s.next - now > 0) { s.lastAnn = mark; this.broadcastChat(`🏆 El torneo empieza en ${fmtMin(s.next - now)}. Inscritos: ${s.ent.length}. Escribe /torneo.`, 'k'); }
+      if (s.next - now <= 20000) this.tnFillBots(now);                  // en los últimos 20 s los bots completan el mínimo si hay un jugador real
       if (now >= s.next) {
         s.ent = s.ent.filter((p) => p.tn && p.tn.in && this.tnOk(p, now));
         if (s.ent.length < TN.MIN) {
           this.broadcastChat(`🏆 Torneo cancelado: faltan jugadores (${s.ent.length}/${TN.MIN}). Próximo en ${fmtMin(TN.PERIOD)}.`, 'k');
           s.ent.forEach((p) => { p.tn.in = false; }); s.ent = []; s.phase = 'idle'; s.next += TN.PERIOD; s.lastAnn = 0;
         } else {
-          s.phase = 'run'; s.round = 0; s.win = s.ent.slice(); s.bye = []; s.pend = []; s.act = [];
-          this.broadcastChat(`🏆 ¡Empieza el torneo con ${s.ent.length} jugadores!`, 'k');
+          s.humans = s.ent.filter((p) => !p.bot).length; s.phase = 'run'; s.round = 0; s.win = s.ent.slice(); s.bye = []; s.pend = []; s.act = [];
+          this.broadcastChat(`🏆 ¡Empieza el torneo con ${s.ent.length} jugadores${s.humans < TN.MIN ? ' (los aventureros del servidor completan los puestos: premio reducido)' : ''}!`, 'k');
           this.tnRound(now);
         }
       }

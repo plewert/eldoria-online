@@ -1239,7 +1239,7 @@ class Game {
     // combate
     if (p.target) {
       const t = this.ents.get(p.target);
-      if (!t || (t.kind === 'mo' && t.dead) || (t.kind === 'pl' && !t.ws && !t.offlineUntil) || cheb(p.x, p.y, t.x, t.y) > CFG.VIEW_X) { p.target = null; return; }
+      if (!t || (t.kind === 'mo' && t.dead) || (t.kind === 'pl' && !t.ws && !t.offlineUntil && !(t.bot && t.tn && t.tn.fight)) || cheb(p.x, p.y, t.x, t.y) > CFG.VIEW_X) { p.target = null; return; }
       if (!sameRealm(p, t)) { p.target = null; this.msgThrottle(p, 'realm', 'No puedes atacar a través de la entrada: entra a la mazmorra.'); return; }
       if (t.kind === 'pl' && !this.canPvp(p, t)) { p.target = null; this.explainNoPvp(p, t); return; }
       const w = this.weaponOf(p);

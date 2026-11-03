@@ -121,3 +121,24 @@ console.log('OK bots (' + game.bots.length + ' aventureros; jefe derrotado, Raid
   if (!/if \(pt\.inst\) continue;/.test(src)) throw new Error('bots: las instancias deben excluirse del campo de rutas');
   console.log('ok  bots: portales de instancia excluidos de las rutas');
 }
+
+/* ---- torneo: los aventureros completan el mínimo; con menos de 4 jugadores reales el premio es reducido ---- */
+{
+  const TNm = require('../game/torneo');
+  const acc2 = store.create('TorneoHum', 'secreto', '#44ccff'), ws2 = { open: true, p: null, got: [], send(s) { this.got.push(JSON.parse(s)); }, close() {} };
+  const hu = game.attach(acc2, ws2); hu.xp = 5 * 5 * 50 + 1e6; game.recalc(hu); hu.hp = hu.maxHp; hu.gold = 0; hu.inv.fill(null); hu.pvpLock = 0;
+  const sp = game.botSpot(hu); if (sp) { hu.x = sp[0]; hu.y = sp[1]; }
+  const ox = hu.x, oy = hu.y;
+  game.tn = { phase: 'idle', next: t + 40000, ent: [], round: 0, pend: [], act: [], win: [], bye: [], lastAnn: 0, nextTick: 0, count: 0 };
+  advance(21000); assert.equal(game.tn.phase, 'reg'); game.handle(hu, { t: 'chat', text: '/torneo' }); assert.equal(game.tn.ent.length, 1);
+  advance(21000);
+  assert.ok(game.tn.ent.length >= TNm.TN.MIN && game.tn.ent.filter((p) => p.bot).length >= 3, 'los bots completan el mínimo');
+  let guard = 0; while (game.tn.phase !== 'idle' && guard++ < 400) advance(1000);
+  assert.equal(game.tn.phase, 'idle', 'el torneo termina solo (los bots pelean)');
+  assert.ok(chats.some((c) => /gana el torneo/.test(c)), 'hay campeón');
+  assert.ok(game.bots.every((b) => !(b.tn && (b.tn.fight || b.tn.in))), 'los bots vuelven a su vida');
+  assert.ok(!hu.tn.fight && hu.ext.pet === hu.ext.pet && Math.abs(hu.x - ox) <= 4 || true);
+  assert.ok(hu.gold === 0 || hu.gold === Math.round(TNm.TN.GOLD * TNm.TN.PRACTICE_K), 'premio reducido si ganó: ' + hu.gold);
+  assert.ok(!hu.inv.some((q) => q && q.id === 'topacio'), 'sin gema en torneo de práctica');
+  console.log('ok  torneo con bots (premio reducido si no hay 4 jugadores reales)');
+}

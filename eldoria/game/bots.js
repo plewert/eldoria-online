@@ -287,6 +287,7 @@ function install(Game) {
   /* ===================================================== IA individual ===================================================== */
   P.botThink = function (p, now) {
     const ai = p.ai;
+    if (p.tn && (p.tn.in || p.tn.fight)) { this.tnBotThink(p, now); return; }          // inscrito en el torneo: solo pelea cuando le toca
     if (!this.botZoneOk(p)) { p.x = SPAWN_POINT.x; p.y = SPAWN_POINT.y; p.tpSeq++; p.target = null; ai.mode = 'hunt'; }
     const w = this.weaponOf(p);
     if (w.style === 'magic' && p.mana < w.mana * 3) p.mana = p.maxMana;      // los magos nunca se quedan sin maná

@@ -502,3 +502,7 @@ Boris vende y compra las 7 gemas **al mismo precio**: topacio 1 000 000 (la más
 - Eliminatoria 1 contra 1 en la plaza de Alba Dorada (zona segura, hasta 4 combates a la vez). Todos iguales: 1.000 de vida, cada golpe quita 200–300, mismo ritmo y alcance por estilo, sin pociones, hechizos, gemas, mascota ni montura. 5 s de cuenta atrás, 90 s máx. (si se acaba el tiempo gana quien tenga más vida). Solo te puede dañar tu rival.
 - Al acabar cada combate todos vuelven a su sitio con su equipo, vida y mascota/montura intactos. Desconectarse = perder el combate.
 - Ganador: 2.000.000 de oro + 1 Topacio (1M) y, con probabilidad rarísima (0,001 % cada una, menos que la Gema Corrupta), un arma del Arsenal Legendario: Arco Corazón de Dragón, Báculo Arcano u Hoja del Vacío (nivel 120). Constantes en `game/torneo.js` (`TN`).
+
+### Bots en el torneo
+- En los últimos 20 s antes del torneo, si hay al menos 1 jugador real inscrito y faltan para el mínimo (4), los aventureros del servidor (bots libres, nivel 5+, fuera de mazmorras) se inscriben solos y pelean con las mismas reglas (persiguen y atacan a su rival). Sin ningún jugador real no hay torneo.
+- Si hay menos de 4 jugadores reales el premio se reduce: 10 % del oro (200.000) y sin gema ni armas (así nadie farmea el premio completo con bots). Si gana un bot, no se entrega nada.
