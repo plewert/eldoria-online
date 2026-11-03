@@ -513,4 +513,4 @@ Boris vende y compra las 7 gemas **al mismo precio**: topacio 1 000 000 (la más
 
 - Oro por muerte de jefes ×2 (`CFG.BOSS_GOLD_K`): p. ej. Zeus 50.000–72.000, Hades 112.000–160.000, Dragón de las Sombras 20.000–40.000. Se reparte según el daño.
 
-- Pantalla de inicio: el contador de conectados incluye a los aventureros del servidor, diferenciados: «16 aventureros en el mundo ahora: 3 jugadores + 13 NPC del servidor.» (`/status` devuelve `online` y `bots`).
+- Pantalla de inicio: el contador de conectados suma a los aventureros del servidor y a los jugadores: «16 aventureros conectados ahora.» (`/status` devuelve `online` y `bots`; el `/ayuda` sigue avisando de que el mundo incluye aventureros del servidor).
