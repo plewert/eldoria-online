@@ -333,8 +333,8 @@ ok('Gema de Ascensión: sube el +N (máx. +6) por 300k, 20 % de fallo no cambia 
 });
 ok('Boris vende equipo nivel 80+ de fábrica desde 10M y lo recompra al valor de siempre', () => {
   const D0 = require('../game/data'), ids = D0.SHOPS.boris.filter((i) => D0.ITEMS[i].minLevel >= 80);
-  assert.ok(ids.length > 50, 'hay equipo nivel 80+ a la venta');
-  for (const i of ids) { const d = D0.ITEMS[i]; assert.ok(d.price >= 10000000 && d.sell < d.price, i); assert.ok(!d.zeus && !i.startsWith('hd_'), 'sin exclusivos de Zeus/Hades'); }
+  assert.ok(ids.length > 30, 'hay equipo nivel 80+ a la venta');
+  for (const i of ids) { const d = D0.ITEMS[i]; assert.ok(d.price >= 10000000 && d.sell < d.price, i); assert.ok(!d.zeus && !d.raid && !i.startsWith('hd_'), 'sin exclusivos de Zeus/Hades/raids'); }
   const it = I.mk(ids[0]); assert.equal(it.gm.length, 0); assert.ok(!it.up && !it.an, 'sin ranuras ni +N');
   assert.ok(D0.ITEMS.espada_hierro && D0.ITEMS.espada_hierro.price < 1e7, 'las baratas siguen igual');
 });

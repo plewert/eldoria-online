@@ -548,13 +548,13 @@ require('./mage').build(ITEMS, SHOPS, MONSTERS);
 for (const d of Object.values(MONSTERS)) if (!d.lv) d.lv = Math.max(1, Math.round(0.6 * Math.sqrt(d.exp)));
 
 // Boris vende equipo de fábrica (sin ranuras, sin +N, sin Ancient) de nivel 80+ desde 10M; lo recompra al valor de venta normal de siempre.
-// Quedan fuera las piezas exclusivas de Zeus y de Hades (siguen siendo solo botín de jefe).
+// Quedan fuera las piezas exclusivas de Zeus, de Hades y de las raids (siguen siendo solo botín de jefe).
 {
   const lvPrice = (lv) => lv <= 95 ? 10e6 + (lv - 80) / 15 * 5e6 : lv <= 105 ? 20e6 + (lv - 96) / 9 * 10e6 : 35e6 + (lv - 106) / 14 * 15e6;
   const F = { weapon: 1, body: 1, head: 0.8, legs: 0.8, shield: 0.8, boots: 0.5, gloves: 0.5, belt: 0.5 };
   CFG.SHOP_GEAR_MIN_LV = 80;
   for (const [id, d] of Object.entries(ITEMS)) {
-    if (!F[d.type] || (d.minLevel || 1) < CFG.SHOP_GEAR_MIN_LV || d.zeus || id.startsWith('hd_') || SHOPS.boris.includes(id)) continue;
+    if (!F[d.type] || (d.minLevel || 1) < CFG.SHOP_GEAR_MIN_LV || d.zeus || d.raid || id.startsWith('hd_') || SHOPS.boris.includes(id)) continue;
     d.price = Math.max(10e6, Math.round(lvPrice(d.minLevel) * F[d.type] / 5e5) * 5e5);      // d.sell no se toca: es lo que paga Boris al comprar
     SHOPS.boris.push(id);
   }

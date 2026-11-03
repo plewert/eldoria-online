@@ -490,4 +490,4 @@ Boris vende y compra las 7 gemas **al mismo precio**: topacio 1 000 000 (la más
 
 ## Equipo de fábrica en Boris
 - Boris vende armas, armaduras, escudos y cinturones de nivel 80+ (sin ranuras, sin +N, sin Ancient) desde 10M hasta ~50M según nivel y pieza (arma/cuerpo ×1, yelmo/pantalón/escudo ×0,8, botas/guantes/cinturón ×0,5).
-- Los recompra al valor de venta normal (mucho menor). Excluidas las piezas exclusivas de Zeus y Hades.
+- Los recompra al valor de venta normal (mucho menor). Excluidas las piezas exclusivas de Zeus, Hades y las raids.
