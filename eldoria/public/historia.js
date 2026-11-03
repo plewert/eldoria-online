@@ -22,6 +22,7 @@
     requestAnimationFrame(() => root.classList.add('on'));
     const end = () => { if (scene !== root) return; scene = null; if (!queue.length) send({ t: 'story', k: 'ack' }); root.classList.remove('on'); setTimeout(() => root.remove(), 300); window.removeEventListener('keydown', kd, true); setTimeout(showNext, 350); };
     const kd = (ev) => { if (ev.key === ' ' || ev.key === 'Enter' || ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); end(); } else ev.stopPropagation(); };
+    send({ t: 'story', k: 'hold' }); const hold = setInterval(() => { if (scene !== root) clearInterval(hold); else send({ t: 'story', k: 'hold' }); }, 2000);
     window.addEventListener('keydown', kd, true); b.addEventListener('click', end);
   }
 

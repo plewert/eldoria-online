@@ -1206,7 +1206,7 @@ module.exports = function install(Game) {
       case 'xinfo': this.sendXinfo(p, false); break;
       case 'rank': this.send(p, { t: 'rank', v: this.rankings() }); break;
       case 'col': this.sendCol(p); break;
-      case 'story': if (msg.k === 'ack') this.storyAck && this.storyAck(p); else this.sendStory(p); break;
+      case 'story': if (msg.k === 'ack') this.storyAck && this.storyAck(p); else if (msg.k === 'hold') this.storyHold && this.storyHold(p); else this.sendStory(p); break;
       case 'autoret': p.autoRet = !!msg.on; break;
       case 'p_inv': this.partyInvite(p, msg.id); break;
       case 'p_acc': this.partyAccept(p, msg.id); break;

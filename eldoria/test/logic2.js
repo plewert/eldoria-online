@@ -1006,7 +1006,10 @@ ok('modo historia: toda cueva de jefe tiene historia; entrada, tablillas, final,
   for (const c of world.INST_CAVES) { const st = H.BY_CAVE[c.cave]; assert.ok(st, 'falta la historia de ' + c.cave); assert.equal(st.boss, c.boss); assert.ok(MONSTERS[st.boss]); assert.ok(st.intro.length && st.ending.length && st.chapters.length === 3, c.cave); assert.equal(H.stonesOf(st).length, 3, 'tablillas de ' + c.cave); for (const [x, y] of H.stonesOf(st)) assert.ok(world.isWalkable(x, y)); }
   const { p, ws } = login('Historia1'); const st = H.BY_CAVE.cueva_olimpo, C = world.CAVES_BY_ZONE.cueva_olimpo;
   place(p, C.inside[0], C.inside[1]); p.hp = p.maxHp = 1e7; advance(700);
-  assert.ok(ws.got.some((m) => m.t === 'story' && m.k === 'intro' && m.boss === 'zeus'), 'escena de entrada'); assert.ok(p.ext.story.zeus.i); { const hp0 = p.hp; game.hurtPlayer(p, 50, null, game.now, 'x'); assert.equal(p.hp, hp0, 'protegido mientras lees la escena'); game.storyAck(p); p.storyUntil = 0; }
+  assert.ok(ws.got.some((m) => m.t === 'story' && m.k === 'intro' && m.boss === 'zeus'), 'escena de entrada'); assert.ok(p.ext.story.zeus.i); { const hp0 = p.hp; game.hurtPlayer(p, 50, null, game.now, 'x'); assert.equal(p.hp, hp0, 'protegido mientras lees la escena'); }
+  { const hp0 = p.hp; advance(40000); assert.equal(game.hurtPlayer(p, 50, null, game.now, 'x'), 0, 'a los 40 s sigue protegido');
+    game.handle(p, { t: 'story', k: 'hold' }); assert.ok(p.storyUntil > game.now + 7000, 'el aviso del cliente mantiene la protección');
+    game.handle(p, { t: 'story', k: 'ack' }); assert.ok(p.storyUntil > game.now + 5000 && p.storyUntil <= game.now + 6100, '6 s de margen al cerrar'); assert.equal(p.hp, hp0); p.storyUntil = 0; }
   const n0 = ws.got.filter((m) => m.t === 'story' && m.k === 'intro').length; advance(700); assert.equal(ws.got.filter((m) => m.t === 'story' && m.k === 'intro').length, n0, 'la entrada sale una vez');
   H.stonesOf(st).forEach(([x, y]) => { place(p, x, y); advance(700); });
   assert.equal(p.ext.story.zeus.c.length, 3, 'lee las 3 tablillas'); assert.equal(ws.got.filter((m) => m.t === 'story' && m.k === 'ch').length, 3);
