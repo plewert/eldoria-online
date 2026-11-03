@@ -47,7 +47,12 @@ const CFG = {
   CORRUPT_COST: 200000,        // oro por usar una Gema Corrupta
   CORRUPT_FAIL: 0.10,          // probabilidad de que falle (la gema se consume y no se abre nada)
   CORRUPT_PRICE: 200000000,    // Boris la compra y la vende a este precio
-  CORRUPT_CHANCE: 0.0002,      // 0,02 % por participante en los jefes del Inframundo: lo más raro del juego
+  ASC_COST: 300000,            // oro por usar una Gema de Ascensión (+1 al equipo)
+  ASC_FAIL: 0.20,              // fallo: la gema se consume y el equipo no cambia (nunca baja ni se rompe)
+  ASC_MAX: 6,                  // tope del +N
+  ASC_PRICE: 150000000,        // Boris la compra y la vende a este precio
+  ASC_CHANCE: 0.0003,          // muy rara; jefes de la superficie, escala con su nivel (lv 800+ = tasa completa)
+  CORRUPT_CHANCE: 0.00002,     // 0,002 % por participante en los jefes del Inframundo: lo más raro del juego
   GEM_REMOVE_COST: 50000,      // oro por sacar una gema de una ranura
   GEM_BREAK: 0.10,             // probabilidad de que una gema común (rubí, zafiro, esmeralda, topacio) se rompa del todo al sacarla
   GEM_BREAK_RARE: 0.03,        // ídem para las raras (amatista, ópalo, diamante)
@@ -546,8 +551,14 @@ for (const d of Object.values(MONSTERS)) if (!d.lv) d.lv = Math.max(1, Math.roun
 ITEMS.gema_corrupta = { name: 'Gema Corrupta', icon: '🟣', spr: 'gem_corrupta', type: 'misc', stack: true, corrupt: 1, col: '#b46cff', sell: CFG.CORRUPT_PRICE, price: CFG.CORRUPT_PRICE,
   desc: `Úsala sobre un arma o equipo (menú de la mochila, ${CFG.CORRUPT_COST.toLocaleString('es')} de oro, en zona segura): abre 1 ranura que acepta cualquier gema. Máx. ${CFG.MAX_CORRUPT} por objeto. ${Math.round(CFG.CORRUPT_FAIL * 100)} % de fallo: se consume sin abrir nada.` };
 SHOPS.boris.push('gema_corrupta');
+ITEMS.gema_ascension = { name: 'Gema de Ascensión', icon: '🟡', spr: 'gem_ascension', type: 'misc', stack: true, ascend: 1, col: '#ffd84a', sell: CFG.ASC_PRICE, price: CFG.ASC_PRICE,
+  desc: `Úsala sobre un arma o equipo (menú de la mochila, ${CFG.ASC_COST.toLocaleString('es')} de oro, en zona segura): sube 1 el +N (máx. +${CFG.ASC_MAX}). ${Math.round(CFG.ASC_FAIL * 100)} % de fallo: se consume sin cambiar nada; el equipo nunca baja ni se rompe.` };
+SHOPS.boris.push('gema_ascension');
 // solo los jefes del Inframundo la sueltan, y es el botín más raro del juego
 for (const t of ['hades', 'serafin_caido', 'serafina_noche', 'serafin_infernal']) if (MONSTERS[t]) MONSTERS[t].loot.push(['gema_corrupta', CFG.CORRUPT_CHANCE, 1, 1]);
+// Gema de Ascensión: jefes de la superficie (no del Inframundo); cuanto más débil el jefe, menos probable (proporcional a su nivel, mín. 10 %)
+const INFRA_BOSS = ['hades', 'serafin_caido', 'serafina_noche', 'serafin_infernal'];
+for (const [t, m] of Object.entries(MONSTERS)) if (m.boss && !INFRA_BOSS.includes(t)) m.loot.push(['gema_ascension', +(CFG.ASC_CHANCE * Math.max(0.1, Math.min(1, (m.lv || 1) / 800))).toFixed(7), 1, 1]);
 // las gemas solo salen de las rocas (minería): se quitan de toda tabla de botín de monstruos y jefes
 for (const m of Object.values(MONSTERS)) if (m.loot) m.loot = m.loot.filter((q) => !GEMS[q[0]]);
 module.exports = { CFG, ITEMS, GEMS, RAR, SHOP, SHOPS, START_KIT, MONSTERS, SPAWN_PLAN, NPC_TIPS };

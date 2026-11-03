@@ -362,7 +362,7 @@
     else if (gear) { box.append(el('div', 'tl', `Defensa ${it[6] != null ? it[6] : d.def}`)); const bt = it[7] || d.bonus; if (bt) { const b2 = el('div', 'tl', bonusTxt(bt)); b2.style.color = '#8fd0ff'; box.append(b2); } }
     else if (d.type === 'consumable') box.append(el('div', 'tl', d.buff || d.blink ? d.desc : d.heal ? `Cura ${d.heal} de vida` : `Restaura ${d.restore} de maná`));
     else if (d.type === 'pet' || d.type === 'mount') { box.append(el('div', 'tl', d.desc)); box.append(el('div', 'ts', d.type === 'mount' && d.minLevel > 1 ? `Nivel ${d.minLevel} · clic para montar` : 'Clic para invocar o guardar')); }
-    else if (d.type === 'gem' || d.corrupt) box.append(el('div', 'tl', d.desc));
+    else if (d.type === 'gem' || d.corrupt || d.ascend) box.append(el('div', 'tl', d.desc));
     if (gear) {
       box.append(el('div', 'tsep'));
       if (it[4] > 0) {
@@ -494,6 +494,13 @@
     else if ((d.type === 'consumable' || d.type === 'tablet')) rows.push({ label: 'Usar', fn: () => send({ t: 'use', s: i }) });
     else if (d.type === 'pet') { const me = G.ents.get(G.id), on = me && me.pt === it[0]; rows.push({ label: on ? '🐾 Guardar mascota' : '🐾 Sacar mascota (te acompaña)', fn: () => send({ t: 'use', s: i }) }); }
     else if (d.type === 'mount') { const me = G.ents.get(G.id), on = me && me.mt === it[0]; rows.push({ label: on ? '🐎 Desmontar' : '🐎 Montar', fn: () => send({ t: 'use', s: i }) }); }
+    else if (d.ascend) {
+      rows.push({ hdr: `Subir el +N de… (${fmt(G.cfg.ascCost)} 💰 · ${Math.round(100 * G.cfg.ascFail)}% de fallo)` });
+      const tg = []; for (const s of ALL_SLOTS) { const q = G.eq[s]; if (q && (q[2] || 0) < G.cfg.ascMax) tg.push({ from: 'eq', at: s, it: q, where: 'equipado' }); }
+      G.inv.forEach((q, j) => { if (q && isGear(q[0]) && (q[2] || 0) < G.cfg.ascMax) tg.push({ from: 'inv', at: j, it: q, where: 'mochila' }); });
+      if (!tg.length) rows.push({ label: 'Ningún equipo puede subir más', off: 1 });
+      tg.forEach((t) => rows.push({ label: `${itName(t.it)} (${t.where})`, color: itColor(t.it), fn: () => send({ t: 'ascend', gem: i, from: t.from, at: t.at }) }));
+    }
     else if (d.corrupt) {
       rows.push({ hdr: `Abrir ranura en… (${fmt(G.cfg.corruptCost)} 💰 · ${Math.round(100 * G.cfg.corruptFail)}% de fallo)` });
       const tg = []; for (const s of ALL_SLOTS) { const q = G.eq[s]; if (q && (q[8] || 0) < G.cfg.maxCorrupt) tg.push({ from: 'eq', at: s, it: q, where: 'equipado' }); }
@@ -527,7 +534,7 @@
     for (let i = 0; i < G.cfg.invSize; i++) {
       const s = el('div', 'slot empty'); s.dataset.i = i;
       withTip(s, () => s._it);
-      s.addEventListener('click', (ev) => { const it = G.inv[i]; if (!it) return; if (ev.shiftKey) send({ t: 'drop', s: i, q: it[1] }); else if (TOUCH || (G.items[it[0]] && G.items[it[0]].corrupt)) invMenu(anchorOf(s), i); else send({ t: 'use', s: i }); });
+      s.addEventListener('click', (ev) => { const it = G.inv[i]; if (!it) return; if (ev.shiftKey) send({ t: 'drop', s: i, q: it[1] }); else if (TOUCH || (G.items[it[0]] && (G.items[it[0]].corrupt || G.items[it[0]].ascend))) invMenu(anchorOf(s), i); else send({ t: 'use', s: i }); });
       s.addEventListener('contextmenu', (ev) => { ev.preventDefault(); if (G.inv[i]) invMenu(ev, i); });
       addLongPress(s, (ev) => { if (G.inv[i]) invMenu(ev, i); });
       // arrastrar y soltar para reorganizar la mochila

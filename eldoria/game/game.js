@@ -503,7 +503,7 @@ class Game {
       npcs: NPCS, items: ITEMS, mons: monsDefs, gems, rar: RAR,
       cfg: {
         pvpMin: CFG.PVP_MIN_LEVEL, step: CFG.STEP_MS, invSize: CFG.INV_SIZE, bankSize: CFG.BANK_SIZE, caveFee: CFG.CAVE_FEE,
-        tradeMax: CFG.TRADE_MAX_ITEMS, gemCost: CFG.GEM_REMOVE_COST, gemBreak: CFG.GEM_BREAK, corruptCost: CFG.CORRUPT_COST, corruptFail: CFG.CORRUPT_FAIL, maxCorrupt: CFG.MAX_CORRUPT, gemBreakRare: CFG.GEM_BREAK_RARE, plusChance: CFG.PLUS_CHANCE, ancChance: CFG.ANCIENT_CHANCE,
+        tradeMax: CFG.TRADE_MAX_ITEMS, gemCost: CFG.GEM_REMOVE_COST, gemBreak: CFG.GEM_BREAK, ascCost: CFG.ASC_COST, ascFail: CFG.ASC_FAIL, ascMax: CFG.ASC_MAX, corruptCost: CFG.CORRUPT_COST, corruptFail: CFG.CORRUPT_FAIL, maxCorrupt: CFG.MAX_CORRUPT, gemBreakRare: CFG.GEM_BREAK_RARE, plusChance: CFG.PLUS_CHANCE, ancChance: CFG.ANCIENT_CHANCE,
       },
     });
     this.sendInv(p); this.sendStats(p);
@@ -613,6 +613,7 @@ class Game {
       case 'socket': this.socketGem(p, msg); break;
       case 'unsocket': this.unsocketGem(p, msg); break;
       case 'corrupt': this.corruptGem(p, msg); break;
+      case 'ascend': this.ascendGem(p, msg); break;
       case 'trade_req': this.tradeRequest(p, msg.id); break;
       case 'trade_acc': this.tradeAccept(p, msg.id); break;
       case 'trade_add': this.tradeAdd(p, msg.s | 0, msg.q | 0); break;
@@ -805,6 +806,21 @@ class Game {
     p.gold -= CFG.CORRUPT_COST; gem.qty--; if (gem.qty <= 0) p.inv[gs] = null;
     if (Math.random() < CFG.CORRUPT_FAIL) this.msgC(p, `💥 La Gema Corrupta se desmorona y no abre nada en ${I.nameOf(item)}.`, '#ff6b5a');
     else { item.gm.push(null); item.nc = (item.nc || 0) + 1; this.msgC(p, `🟣 ¡Se abre una ranura nueva en ${I.nameOf(item)}! (${item.nc}/${CFG.MAX_CORRUPT} corruptas)`, '#b46cff'); }
+    p.vis = null; this.recalc(p); p.dirty.inv = true; p.dirty.stats = true;
+  }
+
+  /** Gema de Ascensión (desde la mochila): +1 al +N del equipo (máx. +6), 20 % de fallo, 300 000 de oro. */
+  ascendGem(p, m) {
+    if (!this.canSocket(p)) return;
+    const gs = m.gem | 0, gem = p.inv[gs];
+    if (!gem || !ITEMS[gem.id] || !ITEMS[gem.id].ascend) return;
+    const item = this.gearRef(p, m.from, m.at);
+    if (!item) return;
+    if ((item.up || 0) >= CFG.ASC_MAX) { this.msg(p, `Ese objeto ya está en +${CFG.ASC_MAX} (el máximo).`, 's'); return; }
+    if (p.gold < CFG.ASC_COST) { this.msg(p, `Usar una Gema de Ascensión cuesta ${CFG.ASC_COST.toLocaleString('es')} de oro.`, 's'); return; }
+    p.gold -= CFG.ASC_COST; gem.qty--; if (gem.qty <= 0) p.inv[gs] = null;
+    if (Math.random() < CFG.ASC_FAIL) this.msgC(p, `💥 La Gema de Ascensión se apaga y ${I.nameOf(item)} no cambia.`, '#ff6b5a');
+    else { item.up = (item.up || 0) + 1; this.msgC(p, `🟡 ¡${I.nameOf(item)} asciende!`, '#ffd84a'); }
     p.vis = null; this.recalc(p); p.dirty.inv = true; p.dirty.stats = true;
   }
 

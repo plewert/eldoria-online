@@ -307,12 +307,29 @@ ok('Gema Corrupta: abre ranuras (máx. 5) por 200k, 10 % de fallo la consume, ac
   assert.deepEqual(I.normalize(JSON.parse(JSON.stringify(D.p.eq.weapon))).nc, 5, 'se guarda');
   for (const t of ['hades', 'serafin_caido', 'serafina_noche', 'serafin_infernal']) {
     const l = D0.MONSTERS[t].loot.find((q) => q[0] === 'gema_corrupta'); assert.ok(l, t);
-    for (const [id, m] of Object.entries(D0.MONSTERS)) for (const q of m.loot || []) if (q[0] !== 'gema_corrupta' && q[1] < 1) assert.ok(l[1] < q[1] || q[1] >= l[1], 'rareza');
   }
   const min = Math.min(...Object.values(D0.MONSTERS).flatMap((m) => (m.loot || []).filter((q) => q[0] !== 'gema_corrupta').map((q) => q[1])));
   assert.ok(CFG.CORRUPT_CHANCE < min, 'la más rara del juego');
   assert.ok(!Object.entries(D0.MONSTERS).some(([t, m]) => !['hades', 'serafin_caido', 'serafina_noche', 'serafin_infernal'].includes(t) && (m.loot || []).some((q) => q[0] === 'gema_corrupta')), 'solo Inframundo');
   assert.ok(D0.SHOPS.boris.includes('gema_corrupta')); assert.equal(D0.ITEMS.gema_corrupta.price, 200000000); assert.equal(D0.ITEMS.gema_corrupta.sell, 200000000);
+});
+ok('Gema de Ascensión: sube el +N (máx. +6) por 300k, 20 % de fallo no cambia nada, muy rara y Boris 150M', () => {
+  resetPair(); D.p.eq.weapon = I.mk('espada_hierro', 1, { ns: 0 }); D.p.vis = null; game.recalc(D.p);
+  D.p.inv.fill(null); D.p.inv[0] = { id: 'gema_ascension', qty: 9 }; D.p.gold = 10 * CFG.ASC_COST;
+  const D0 = require('../game/data'), r0 = Math.random, up0 = D.p.eq.weapon.up || 0;
+  assert.ok(!D0.GEMS.gema_ascension);
+  try {
+    Math.random = () => 0.05; game.handle(D.p, { t: 'ascend', gem: 0, from: 'eq', at: 'weapon' });
+    assert.equal(D.p.eq.weapon.up || 0, up0); assert.equal(D.p.inv[0].qty, 8); assert.equal(D.p.gold, 9 * CFG.ASC_COST);
+    Math.random = () => 0.5; for (let k = 0; k < 8; k++) game.handle(D.p, { t: 'ascend', gem: 0, from: 'eq', at: 'weapon' });
+  } finally { Math.random = r0; }
+  assert.equal(D.p.eq.weapon.up, 6, 'tope +6'); assert.ok(D.p.inv[0].qty >= 1, 'no gasta de más');
+  const infra = ['hades', 'serafin_caido', 'serafina_noche', 'serafin_infernal'], ch = (t) => (D0.MONSTERS[t].loot.find((q) => q[0] === 'gema_ascension') || [])[1];
+  for (const [t, m] of Object.entries(D0.MONSTERS)) if (m.boss) assert.ok(infra.includes(t) ? ch(t) === undefined : ch(t) > 0, t);
+  assert.ok(ch('rey_esqueleto') < ch('dragon_sombra') && ch('dragon_sombra') < ch('zeus'), 'jefes débiles, menos probabilidad');
+  assert.ok(ch('zeus') === CFG.ASC_CHANCE && ch('rey_esqueleto') >= CFG.ASC_CHANCE * 0.1 - 1e-9);
+  assert.ok(!Object.entries(D0.MONSTERS).some(([t, m]) => !m.boss && (m.loot || []).some((q) => q[0] === 'gema_ascension')));
+  assert.ok(CFG.ASC_CHANCE <= 0.0003 && D0.SHOPS.boris.includes('gema_ascension') && D0.ITEMS.gema_ascension.price === 150000000);
 });
 ok('no se puede engarzar en zona PvP', () => {
   const g0 = JSON.stringify(D.p.eq.weapon.gm);
