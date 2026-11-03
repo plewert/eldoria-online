@@ -198,12 +198,80 @@
     const pal = ELEM[el] || ['255,255,255', '220,220,220', '160,160,160'];
     for (let i = 0; i < n; i++) {
       const a = Math.random() * 6.283, sp = (o.sp || 3) * (0.3 + Math.random() * 0.9);
-      G.parts.push({ x, y, vx: Math.cos(a) * sp * (o.fx || 1), vy: Math.sin(a) * sp - (o.up || 0), g: o.g || 0, life: 0, max: (o.life || 0.5) * (0.6 + Math.random() * 0.8), s: (o.size || 2.2) * (0.6 + Math.random() * 0.9), c: pal[(Math.random() * 3) | 0], add: o.add !== false, sq: !!o.sq });
+      G.parts.push({ x, y, vx: Math.cos(a) * sp * (o.fx || 1), vy: Math.sin(a) * sp - (o.up || 0), g: o.g || 0, life: 0, max: (o.life || 0.5) * (0.6 + Math.random() * 0.8), s: (o.size || 2.2) * (0.6 + Math.random() * 0.9), c: pal[(Math.random() * 3) | 0], add: o.add !== false, sq: !!o.sq, b: o.b, wv: o.wv, ci: o.ci });
     }
   }
   const ring = (x, y, el, max = 460, r = 26, w = 3) => G.rings.push({ x, y, t: performance.now(), col: (ELEM[el] || ELEM.magic)[1], max, r, w });
 
+  /* ---------- PODERES REALISTAS (interruptor: F4 · se puede quitar entero borrando los bloques "RF") ---------- */
+  let RF = true; try { RF = localStorage.getItem('eldoria.realfx') !== '0'; } catch (e) { /* sin storage */ }
+  G.rf = [];                                                   // luces, cristales, ramas de rayo, ondas de calor
+  G.charges = []; G.flash2 = null;
+  const rfNear = (x, y, d = 14) => G.me && Math.hypot(x - G.me.x, y - G.me.y) <= d;
+  const rfSfx = (n, x, y) => { try { if (EXT.sfx && rfNear(x, y)) EXT.sfx(n); } catch (e) { /* audio no listo */ } };
+  function rfKick(x, y, dx, dy) {                              // retroceso visual del que recibe el golpe
+    let best = null, bd = 0.9;
+    for (const e of G.ents.values()) { if (e.id === G.id || e.rx === undefined) continue; const d = Math.hypot(e.rx - x, e.ry - y); if (d < bd) { bd = d; best = e; } }
+    if (best) { const l = Math.hypot(dx, dy) || 1; best.rx += (dx / l) * 0.28; best.ry += (dy / l) * 0.2; }
+  }
+  function rfBranch(x, y, n, len, depth) {                     // ramas de rayo en el impacto
+    for (let i = 0; i < n; i++) {
+      let a = Math.random() * 6.283, cx = x, cy = y; const pts = [[cx, cy]];
+      for (let j = 0; j < 4; j++) { a += (Math.random() - 0.5) * 1.2; cx += Math.cos(a) * len / 4; cy += Math.sin(a) * len / 4 * 0.8; pts.push([cx, cy]); }
+      G.rf.push({ k: 'br', pts, t: performance.now(), dur: 280 });
+      if (depth > 0 && Math.random() < 0.6) rfBranch(cx, cy, 1, len * 0.5, depth - 1);
+    }
+  }
+  function rfImpact(p, now) {
+    const el = p.el, x = p.x2, y = p.y2, dx = p.x2 - p.x1, dy = p.y2 - p.y1, col = (ELEM[el] || ELEM.magic);
+    G.rf.push({ k: 'light', x, y, col: col[1], t: now, dur: 520, r: 70 });
+    ring(x, y, el || 'magic', 620, 12, 3);                                             // onda expansiva
+    burst(x, y, el || null, 12, { sp: 4.5, up: 3.2, g: 9, life: 0.9, size: 2.4, sq: true, add: !!el, b: y + 0.35 });   // escombros que rebotan
+    G.shake = { t: now, m: p.cr ? 7 : 3.2 }; G.rf.push({ k: 'shock', x, y, t: now, dur: 450 });
+    rfKick(x, y, dx, dy);
+    if (el === 'fire') { burst(x, y, 'fire', 14, { sp: 1.4, up: 3.4, life: 1.2, size: 2.2, wv: 1 }); G.rf.push({ k: 'heat', x, y, t: now, dur: 700 }); }
+    if (el === 'ice') { G.rf.push({ k: 'crystal', x, y, t: now, dur: 900, a: Math.random() * 3 }); burst(x, y, 'ice', 12, { sp: 3.6, up: 2.5, g: 9, life: 0.9, size: 3, sq: true, b: y + 0.3 }); }
+    if (el === 'poison') { burst(x, y, 'poison', 12, { sp: 0.9, up: 2.2, life: 1.3, size: 4, ci: true }); }
+    if (el === 'storm') { rfBranch(x, y, 5, 1.3, 1); G.flash2 = { t: now, col: '255,255,220', a: 0.38, dur: 160 }; G.rf.push({ k: 'light', x, y, col: '255,255,200', t: now, dur: 300, r: 140 }); G.shake = { t: now, m: 4.5 }; }
+    rfSfx(el === 'storm' ? 'thunder' : el === 'fire' ? 'explosion' : el === 'ice' ? 'ice' : 'impact', x, y);
+  }
+  function drawRF(c, now) {
+    G.rf = G.rf.filter((o) => now - o.t < o.dur);
+    {                                                                                  // datos para el post-proceso WebGL (webgl.js)
+      const pts = []; let lights = 0;
+      for (const o of G.rf) { const a = 1 - (now - o.t) / o.dur; if (o.k === 'heat' || o.k === 'shock') pts.push([px(o.x) / cw, py(o.y) / ch, (o.k === 'heat' ? 1 : 0.8) * a]); else if (o.k === 'light') lights += a; }
+      const sh = Math.max(0, 1 - (now - G.shake.t) / 240) * Math.min(1, G.shake.m / 7), fl = G.flash2 ? Math.max(0, 1 - (now - G.flash2.t) / G.flash2.dur) : 0;
+      G.rfGL = { cw, ch, pts: pts.slice(-6), ab: Math.min(1, sh * 0.8 + fl), bloom: Math.min(1, lights * 0.22) };
+    }
+    c.save(); c.globalCompositeOperation = 'lighter';
+    for (const o of G.rf) {
+      const a = 1 - (now - o.t) / o.dur;
+      if (o.k === 'light') { const X = px(o.x), Y = py(o.y); glow(c, X, Y, o.r * (0.7 + (1 - a) * 0.5), o.col, 0.45 * a); }
+      else if (o.k === 'br') { c.strokeStyle = `rgba(255,255,200,${a})`; c.lineWidth = 1.6; c.beginPath(); o.pts.forEach(([tx, ty], i) => { const X = px(tx), Y = py(ty); if (i) c.lineTo(X, Y); else c.moveTo(X, Y); }); c.stroke(); }
+      else if (o.k === 'crystal') { const X = px(o.x), Y = py(o.y), g = Math.min(1, (1 - a) * 4); c.strokeStyle = `rgba(200,240,255,${a})`; c.fillStyle = `rgba(127,208,245,${a * 0.5})`; c.lineWidth = 1.2; for (let i = 0; i < 7; i++) { const t = o.a + i * 0.9, L = (14 + (i % 3) * 7) * g; c.beginPath(); c.moveTo(X + Math.cos(t) * 3, Y + Math.sin(t) * 2); c.lineTo(X + Math.cos(t - 0.16) * L * 0.5, Y + Math.sin(t - 0.16) * L * 0.4); c.lineTo(X + Math.cos(t) * L, Y + Math.sin(t) * L * 0.8); c.lineTo(X + Math.cos(t + 0.16) * L * 0.5, Y + Math.sin(t + 0.16) * L * 0.4); c.closePath(); c.fill(); c.stroke(); } }
+      else if (o.k === 'heat') { const X = px(o.x), Y = py(o.y); c.strokeStyle = `rgba(255,190,110,${a * 0.35})`; c.lineWidth = 2; for (let i = 0; i < 3; i++) { c.beginPath(); for (let s = -20; s <= 20; s += 4) { const yy = Y - (1 - a) * 30 - i * 8 + Math.sin(s * 0.35 + now / 70 + i) * 3; if (s === -20) c.moveTo(X + s, yy); else c.lineTo(X + s, yy); } c.stroke(); } }
+    }
+    c.restore();
+    if (G.flash2) {                                                                    // destello de pantalla (rayo)
+      const a = 1 - (now - G.flash2.t) / G.flash2.dur;
+      if (a > 0) { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = `rgba(${G.flash2.col},${G.flash2.a * a})`; c.fillRect(0, 0, c.canvas.width, c.canvas.height); c.restore(); } else G.flash2 = null;
+    }
+  }
+  function rfCharges(now, dt) {                                                        // energía que converge al lanzador
+    G.charges = G.charges.filter((h) => now - h.t < h.D);
+    for (const h of G.charges) {
+      const pal = ELEM[h.el] || ELEM.magic, n = Math.max(1, Math.round(dt * 70));
+      for (let i = 0; i < n; i++) {
+        const a = Math.random() * 6.283, R = 0.9, life = 0.28;
+        G.parts.push({ x: h.x + Math.cos(a) * R, y: h.y - 0.2 + Math.sin(a) * R * 0.7, vx: -Math.cos(a) * R / life, vy: -Math.sin(a) * R * 0.7 / life, g: 0, life: 0, max: life, s: 1.6 + Math.random() * 1.6, c: pal[(Math.random() * 3) | 0], add: true });
+      }
+      if (!h.l) { h.l = 1; G.rf.push({ k: 'light', x: h.x, y: h.y, col: pal[1], t: now, dur: h.D + 200, r: 46 }); }
+    }
+  }
+  window.addEventListener('keydown', (e) => { if (e.key === 'F4') { e.preventDefault(); RF = !RF; try { localStorage.setItem('eldoria.realfx', RF ? '1' : '0'); } catch (x) { /* nada */ } if (!RF) G.rfGL = null; toast(RF ? 'Poderes realistas: activados (F4)' : 'Poderes realistas: desactivados (F4)'); } });
+
   function impact(p, now) {
+    if (RF) rfImpact(p, now);
     const el = p.el, x = p.x2, y = p.y2;
     if (el) {
       burst(x, y, el, 16, { sp: 4, life: 0.55, size: 2.6 });
@@ -224,10 +292,20 @@
       case 'd': G.texts.push({ x: f.x, y: f.y, v: String(f.v), c: f.c, t: now, dx: (Math.random() - 0.5) * 14, big: f.v === '¡CRÍTICO!' }); break;
       case 'p': {
         const el = elemOf(f), dist = Math.hypot(f.x2 - f.x1, f.y2 - f.y1), T = Math.min(430, 140 + dist * 42);
-        const mine = f.i != null && f.w && G.items[f.w] && (f.s === 'ranged' || f.s === 'magic'), D = mine ? (f.s === 'ranged' ? SHOT_DRAW.ranged : SHOT_DRAW.magic) : 0;   // el proyectil sale cuando acaba de tensar/cargar
+        const mine = f.i != null && f.w && G.items[f.w] && (f.s === 'ranged' || f.s === 'magic');
+        let D = mine ? (f.s === 'ranged' ? SHOT_DRAW.ranged : SHOT_DRAW.magic) : 0;   // el proyectil sale cuando acaba de tensar/cargar
         if (mine) G.shots.set(f.i, { t: now, s: f.s, el: el || WEAPON_ELEM[f.w] || null, D, w: f.w });
-        G.proj.push({ x1: f.x1, y1: f.y1, x2: f.x2, y2: f.y2, s: f.s, el, T, t: now + D, cr: f.cr, hit: false, acc: 0 });
         const casty = f.s === 'magic' || f.s === 'fire' || f.s === 'ice';
+        let D2 = D, T2 = T, bow = 0;
+        if (RF) {                                                                // fases: carga → disparo → impacto
+          if (casty) { D2 = Math.max(D, 380); G.charges.push({ x: f.x1, y: f.y1, el: el || 'magic', t: now, D: D2 }); rfSfx('charge', f.x1, f.y1); }
+          else if (f.s === 'ranged') D2 = Math.max(D, 220);
+          if (el !== 'storm') { T2 = T + 80; bow = (f.s === 'ranged' ? -1 : Math.random() < 0.5 ? -1 : 1) * Math.min(1.2, dist * 0.14); }
+          if (mine) G.shots.set(f.i, { t: now, s: f.s, el: el || WEAPON_ELEM[f.w] || null, D: D2, w: f.w });
+          setTimeout(() => rfSfx(el === 'fire' ? 'fireball' : 'whoosh', f.x1, f.y1), D2);
+        }
+        G.proj.push({ x1: f.x1, y1: f.y1, x2: f.x2, y2: f.y2, s: f.s, el, T: T2, t: now + D2, cr: f.cr, hit: false, acc: 0, bow, tr: [] });
+        D = D2;
         if (casty) { G.casts.push({ x: f.x1, y: f.y1, el: el || 'magic', t: now + D }); setTimeout(() => burst(f.x1, f.y1 - 0.2, el || 'magic', 6, { sp: 1.8, up: 1.2, life: 0.4 }), D); }
         if (el === 'storm') {                                                    // rayo instantáneo
           const pts = [], n = 9;
@@ -2281,14 +2359,23 @@
 
   function drawProj(c, p, now, dt) {
     const age = now - p.t, k = Math.min(1, age / p.T), el = p.el, pal = ELEM[el] || null; if (age < 0) return;
-    const wx = p.x1 + (p.x2 - p.x1) * k, wy = p.y1 + (p.y2 - p.y1) * k;
-    const x = px(wx), y = py(wy) - 6, ang = Math.atan2(p.y2 - p.y1, p.x2 - p.x1);
+    let wx = p.x1 + (p.x2 - p.x1) * k, wy = p.y1 + (p.y2 - p.y1) * k, ang = Math.atan2(p.y2 - p.y1, p.x2 - p.x1);
+    if (RF && p.bow) {                                       // trayectoria curva y aceleración
+      const pos = (kk) => { const e = p.s === 'ranged' || p.s === 'arrow' ? kk : Math.pow(kk, 1.6), L = Math.hypot(p.x2 - p.x1, p.y2 - p.y1) || 1, off = Math.sin(Math.PI * e) * p.bow; return [p.x1 + (p.x2 - p.x1) * e - (p.y2 - p.y1) / L * off, p.y1 + (p.y2 - p.y1) * e + (p.x2 - p.x1) / L * off]; };
+      [wx, wy] = pos(k); const n = pos(Math.min(1, k + 0.03)); if (n[0] !== wx || n[1] !== wy) ang = Math.atan2(n[1] - wy, n[0] - wx);
+      p.tr.push([wx, wy]); if (p.tr.length > 14) p.tr.shift();
+      const pc0 = pal || ELEM.magic; c.save(); c.globalCompositeOperation = 'lighter'; c.lineCap = 'round';
+      for (let i = 1; i < p.tr.length; i++) { const a = i / p.tr.length; c.strokeStyle = `rgba(${pc0[1]},${a * 0.55})`; c.lineWidth = 1 + a * 4; c.beginPath(); c.moveTo(px(p.tr[i - 1][0]), py(p.tr[i - 1][1]) - 6); c.lineTo(px(p.tr[i][0]), py(p.tr[i][1]) - 6); c.stroke(); }
+      c.restore();
+      if (p.el) { p.lt = (p.lt || 0) + dt; if (p.lt > 0.05) { p.lt = 0; G.rf.push({ k: 'light', x: wx, y: wy, col: pc0[1], t: now, dur: 220, r: 48 }); } }
+    }
+    const x = px(wx), y = py(wy) - 6;
     // estela de partículas
     p.acc += dt * (pal ? 60 : 0);
     while (p.acc >= 1) {
       p.acc -= 1;
       const col = pal[(Math.random() * 3) | 0];
-      G.parts.push({ x: wx + (Math.random() - 0.5) * 0.15, y: wy - 0.18 + (Math.random() - 0.5) * 0.15, vx: (Math.random() - 0.5) * 0.8, vy: (el === 'fire' ? -1.2 : el === 'ice' ? 1.4 : -0.2) + (Math.random() - 0.5) * 0.8, g: 0, life: 0, max: 0.3 + Math.random() * 0.3, s: 1.5 + Math.random() * 2, c: col, add: true });
+      G.parts.push({ x: wx + (Math.random() - 0.5) * 0.15, y: wy - 0.18 + (Math.random() - 0.5) * 0.15, vx: (Math.random() - 0.5) * 0.8, vy: (el === 'fire' ? -1.2 : el === 'ice' ? 1.4 : -0.2) + (Math.random() - 0.5) * 0.8, g: RF && el === 'ice' ? 4 : 0, life: 0, max: 0.3 + Math.random() * 0.3, s: 1.5 + Math.random() * 2, c: col, add: true, wv: RF && el === 'fire' ? 1 : 0, ci: RF && el === 'poison', sq: RF && el === 'ice' });
     }
     if (p.s === 'ranged' || p.s === 'arrow') {
       c.save(); c.translate(x, y); c.rotate(ang);
@@ -2336,10 +2423,13 @@
     for (let i = G.parts.length - 1; i >= 0; i--) {
       const p = G.parts[i]; p.life += dt; if (p.life >= p.max) { G.parts.splice(i, 1); continue; }
       p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+      if (p.b !== undefined && p.y > p.b && p.vy > 0) { p.y = p.b; p.vy *= -0.45; p.vx *= 0.7; }      // rebote en el suelo
+      if (p.wv) p.x += Math.sin(p.life * 14 + p.max * 9) * 0.6 * dt;                                    // brasas que ondean
       const a = 1 - p.life / p.max;
       c.globalCompositeOperation = p.add ? 'lighter' : 'source-over';
       c.fillStyle = `rgba(${p.c},${a})`;
       const X = px(p.x), Y = py(p.y), s = p.s * (0.5 + a * 0.5);
+      if (p.ci) { c.strokeStyle = `rgba(${p.c},${a})`; c.lineWidth = 1; c.beginPath(); c.arc(X, Y, s * 0.8, 0, 7); c.stroke(); } else
       if (p.sq) { c.save(); c.translate(X, Y); c.rotate(p.life * 6); c.fillRect(-s, -s * 0.5, s * 2, s); c.restore(); } else c.fillRect(X - s / 2, Y - s / 2, s, s);
     }
     c.restore();
@@ -2498,6 +2588,7 @@
     G.bolts = G.bolts.filter((b) => now - b.t < 260); for (const b of G.bolts) drawBolt(c, b, now);
     for (const p of G.proj) drawProj(c, p, now, dt);
     G.flashes = G.flashes.filter((f) => now - f.t < 1100); for (const f of G.flashes) drawFlash(c, f, now);
+    if (RF) { rfCharges(now, dt); drawRF(c, now); }
     drawRings(c, now); stepParts(c, dt);
   }
 
@@ -2583,7 +2674,7 @@
       fxFlat(gx, now, dt); EXT.draw(gx, now, Wg, Hg, dt, tx, ty);
     } finally { cw = cw0; ch = ch0; }
     const { hor, Zp, yc } = geo3();
-    shk = now - G.shake.t < 150 ? [(Math.random() - 0.5) * G.shake.m, (Math.random() - 0.5) * G.shake.m] : [0, 0];
+    shk = now - G.shake.t < (RF ? 240 : 150) ? [(Math.random() - 0.5) * G.shake.m, (Math.random() - 0.5) * G.shake.m] : [0, 0];
     c.fillStyle = '#05070a'; c.fillRect(0, 0, cw, ch);
     c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'low';
     const stp = tch ? 4 : 2;
@@ -2666,7 +2757,7 @@
 
     if (mode3d) { frame3d(c, now, dt, tx, ty); walkTick(now); followTick(now); return; }
     c.fillStyle = '#05070a'; c.fillRect(0, 0, cw, ch);
-    if (now - G.shake.t < 150) c.translate((Math.random() - 0.5) * G.shake.m, (Math.random() - 0.5) * G.shake.m);
+    if (now - G.shake.t < (RF ? 240 : 150)) c.translate((Math.random() - 0.5) * G.shake.m, (Math.random() - 0.5) * G.shake.m);
     paintTerrain(c, now);
     { const x0 = Math.floor(G.cam.x - cw / 2 / TS) - 1, x1 = Math.ceil(G.cam.x + cw / 2 / TS) + 1, y0 = Math.floor(G.cam.y - ch / 2 / TS) - 1, y1 = Math.ceil(G.cam.y + ch / 2 / TS) + 1;
       for (const g of G.ground) itemOne(c, g, now);

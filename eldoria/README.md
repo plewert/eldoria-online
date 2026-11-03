@@ -521,3 +521,9 @@ Boris vende y compra las 7 gemas **al mismo precio**: topacio 1 000 000 (la más
 - `public/guia.js`: visita guiada de 15 pasos (mochila, equipo, habilidades, auto golpe, chat y cada botón de la barra: colección, misiones, logros, grupo y gremio, ranking, mercado, fabricar, pesca, minería, mapa, historia). Resalta cada elemento y explica para qué sirve. ← → / Enter para moverte, Esc para cerrar; se omiten los paneles que no estén visibles (p. ej. en móvil).
 - Sale sola una vez para jugadores nuevos (nivel < 10) cuando terminan o saltan el tutorial inicial y no hay ventanas abiertas. Se abre cuando quieras con el botón ❓ de la barra o con F2.
 - A veces (1 de cada 4 inicios de sesión, hasta nivel 30) sale un aviso recordando que existe la ayuda.
+
+## Poderes realistas (experimental)
+Efectos opcionales en el cliente: fase de carga (energía que converge + luz), proyectiles con trayectoria curva, aceleración y estela, luz dinámica, impacto con peso (temblor, retroceso, escombros que rebotan, onda), efectos por elemento (brasas, cristales de hielo, burbujas de veneno, ramas de rayo y destello de pantalla) y sonidos de carga/disparo/impacto. Se activa/desactiva con **F4** (guardado en `localStorage eldoria.realfx`). Para quitarlo del todo, borrar los bloques `RF`/`rf*` de `public/game.js`. La distorsión por calor real y la aberración cromática requieren WebGL (aquí solo hay ondas aproximadas).
+
+### Post-proceso WebGL (`public/webgl.js`)
+Capa opcional sin dependencias: bloom, aberración cromática (en temblores y rayos) y distorsión de calor/onda expansiva en los impactos. Solo se dibuja mientras hay efectos activos y se apaga con F4; si el navegador no tiene WebGL no hace nada. Para quitarlo: borrar `webgl.js` y su `<script>` en `index.html`.
