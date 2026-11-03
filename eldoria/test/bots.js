@@ -142,3 +142,23 @@ console.log('OK bots (' + game.bots.length + ' aventureros; jefe derrotado, Raid
   assert.ok(!hu.inv.some((q) => q && q.id === 'topacio'), 'sin gema en torneo de práctica');
   console.log('ok  torneo con bots (premio reducido si no hay 4 jugadores reales)');
 }
+
+/* ---- entradas y salidas: los aventureros se desconectan y vuelven con aviso en el chat ---- */
+{
+  const n0 = game.bots.length; const before = chats.length;
+  game.botCfg = Object.assign(game.botCfg, { sessFirstMs: 1000, sessMinMs: 2000, sessMaxMs: 4000, awayMinMs: 8000, awayMaxMs: 12000 });
+  game.botSess = null;
+  let seenOut = false, seenIn = false, guard = 0;
+  while ((!seenOut || !seenIn) && guard++ < 400) {
+    advance(1000);
+    const novos = chats.slice(before), names = game.bots.map((q) => q.name).concat(game.botSess ? game.botSess.away.map((x) => x.p.name) : []);
+    seenOut = novos.some((c) => /se ha desconectado\.$/.test(c) && names.some((nm) => c.startsWith(nm + ' ')));
+    seenIn = novos.some((c) => /se ha conectado\.$/.test(c) && names.some((nm) => c.startsWith(nm + ' ')));
+  }
+  assert.ok(seenOut && seenIn, 'hay salidas y entradas con aviso');
+  const S = game.botSess;
+  assert.ok(game.bots.length + S.away.length === n0, 'ningún bot se pierde');
+  assert.ok(S.away.every((a) => !game.players.has(a.p.key) && !game.ents.has(a.p.id)), 'los desconectados no están en el mundo');
+  assert.ok(game.bots.length >= Math.ceil(n0 * 0.6), 'siempre quedan la mayoría conectados');
+  console.log('ok  bots: entradas y salidas con aviso en el chat');
+}

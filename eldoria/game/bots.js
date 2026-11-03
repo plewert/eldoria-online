@@ -667,6 +667,33 @@ function install(Game) {
     return HP0.call(this, p, raw, src, now, srcName);
   };
 
+  /* ===================================================== Entradas y salidas ===================================================== */
+  // De vez en cuando un aventurero «se desconecta» (sale del mundo) y más tarde «se conecta» de nuevo, con el aviso en el chat.
+  // Mientras está fuera no está en this.bots (así ningún otro sistema —cazar, torneos, el contador de /status— lo ve).
+  P.botSessions = function (now) {
+    const S = this.botSess || (this.botSess = { next: now + (this.botCfg.sessFirstMs || 20 * 60000), away: [] });
+    if (now < S.next) return;
+    S.next = now + rnd(this.botCfg.sessMinMs || 90000, this.botCfg.sessMaxMs || 5 * 60000);
+    const total = this.bots.length + S.away.length, maxAway = Math.floor(total * 0.4);
+    const back = S.away.filter((a) => now >= a.until);
+    if (back.length && (S.away.length >= maxAway || Math.random() < 0.5)) {
+      const a = back[rnd(0, back.length - 1)], p = a.p; S.away = S.away.filter((x) => x !== a);
+      const spot = this.botSpot(p); if (spot) { p.x = spot[0]; p.y = spot[1]; }
+      this.recalc(p); p.hp = p.maxHp; p.mana = p.maxMana; p.target = null; p.pend = null; p.tn = null; p.tpSeq++;
+      p.ai.mode = 'hunt'; p.ai.until = 0; p.ai.zoneUntil = now + rnd(6, 14) * 60000;
+      this.players.set(p.key, p); this.ents.set(p.id, p); this.pgrid.set(kxy(p.x, p.y), p); this.bots.push(p);
+      this.broadcastChat(`${p.name} se ha conectado.`, 's');
+      return;
+    }
+    if (S.away.length >= maxAway) return;
+    const ok = this.bots.filter((p) => p.hp > 0 && ['hunt', 'idle'].includes(p.ai.mode) && !(p.tn && (p.tn.in || p.tn.fight)) && now >= (p.pvpLock || 0) && !p.target);
+    if (!ok.length) return;
+    const p = ok[rnd(0, ok.length - 1)];
+    this.bots = this.bots.filter((q) => q !== p); this.players.delete(p.key); this.ents.delete(p.id); this.pgrid.delete(kxy(p.x, p.y));
+    S.away.push({ p, until: now + rnd(this.botCfg.awayMinMs || 3 * 60000, this.botCfg.awayMaxMs || 15 * 60000) });
+    this.broadcastChat(`${p.name} se ha desconectado.`, 's');
+  };
+
   const T0 = P.tickExt;
   P.tickExt = function (now) {
     T0.call(this, now);
@@ -675,7 +702,7 @@ function install(Game) {
     this.botNoteHazards(t);
     for (const p of this.bots) if (p.hp > 0 && p.ai.mode === 'raid' && raidZoneIdx(p) > 0) this.botDodge(p, t);
     if (this.tickN % 4 === 0) for (const p of this.bots) if (p.hp > 0) this.botThink(p, t);
-    if (this.tickN % 20 === 0) { this.botBossDirector(t); this.botRaidDirector(t); }
+    if (this.tickN % 20 === 0) { this.botBossDirector(t); this.botRaidDirector(t); this.botSessions(t); }
   };
 }
 

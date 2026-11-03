@@ -514,3 +514,5 @@ Boris vende y compra las 7 gemas **al mismo precio**: topacio 1 000 000 (la más
 - Oro por muerte de jefes ×2 (`CFG.BOSS_GOLD_K`): p. ej. Zeus 50.000–72.000, Hades 112.000–160.000, Dragón de las Sombras 20.000–40.000. Se reparte según el daño.
 
 - Pantalla de inicio: el contador de conectados suma a los aventureros del servidor y a los jugadores: «16 aventureros conectados ahora.» (`/status` devuelve `online` y `bots`; el `/ayuda` sigue avisando de que el mundo incluye aventureros del servidor).
+
+- Entradas y salidas: cada 1,5–5 min un aventurero del servidor «se desconecta» (desaparece del mundo y del contador, con el aviso «X se ha desconectado.» en el chat) y vuelve entre 3 y 15 min después con «X se ha conectado.». Nunca salen más del 40 % a la vez, ni los que están en un jefe, raid o torneo. Ajustable en `botCfg` (`sess*`, `away*`).
