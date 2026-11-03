@@ -353,6 +353,37 @@ ok('Compañeros: cada mascota y montura tiene pasiva pequeña (solo la activa cu
   game.handle(D.p, { t: 'use', s: 0 }); assert.equal(D.p.maxHp, hpL, 'desmontar quita la pasiva');
   const g = C.apply({ atk: 0, crit: 0.099, steal: 0.149 }, D0.ITEMS, { pet: 'pet_hades', mount: 'montura_brasas' }); assert.ok(g.crit <= 0.1 && g.steal <= 0.15, 'topes');
 });
+ok('Torneo: inscripción, 1 contra 1 con stats iguales (200–300), eliminatoria, premio y todo vuelve a su sitio', () => {
+  const TNm = require('../game/torneo'), D0 = require('../game/data'), r0 = Math.random;
+  const ps = ['tnA', 'tnB', 'tnC', 'tnD'].map((nm) => login(nm).p);
+  ps.forEach((p, i) => { p.xp = 1e8; game.recalc(p); p.inv.fill(null); p.gold = 0; place(p, home.x + i, home.y + 5); p.hp = p.maxHp; p.ext.mount = ''; });
+  const origin = ps.map((p) => [p.x, p.y, p.hp, p.maxHp]);
+  game.tn = { phase: 'idle', next: T0 + 3000, ent: [], round: 0, pend: [], act: [], win: [], bye: [], lastAnn: 0, nextTick: 0, count: 0 };
+  advance(600); assert.equal(game.tn.phase, 'reg', 'abre la inscripción 3 min antes');
+  ps.forEach((p) => game.handle(p, { t: 'chat', text: '/torneo' })); assert.equal(game.tn.ent.length, 4);
+  advanceUntil(() => game.tn.phase === 'run', 8000); assert.equal(game.tn.phase, 'run');
+  advance(300);
+  const m = game.tn.act[0]; assert.ok(m && m.live, 'hay combate'); const [ax, ay] = TNm.TN.SLOTS[m.slot];
+  assert.ok(Math.abs(m.a.x - ax) <= 3 && Math.abs(m.a.y - ay) <= 3, 'llevados a la arena');
+  assert.equal(m.a.maxHp, 1000); assert.equal(game.weaponOf(m.a).atk, 1, 'arma igualada');
+  game.handle(m.a, { t: 'use', s: 0 }); // bloqueado dentro del torneo
+  const other = ps.find((p) => p !== m.a && p !== m.b), hpO = other.hp;
+  assert.equal(game.hurtPlayer(m.a, 5000, other, T0, 'x'), 0, 'un tercero no hace daño'); assert.equal(game.hurtPlayer(m.a, 5000, m.b, T0, 'x'), 0, 'cuenta atrás: sin daño');
+  advance(TNm.TN.PREP_MS + 300);
+  const d = game.hurtPlayer(m.a, 5000, m.b, T0, m.b.name); assert.ok(d >= 200 && d <= 300, 'daño 200–300: ' + d);
+  let guard = 0;
+  while (game.tn.phase === 'run' && guard++ < 60) {
+    for (const mm of game.tn.act.slice()) if (mm.live && T0 >= mm.fightAt) game.hurtPlayer(mm.a, 5000, mm.b, T0, mm.b.name);
+    advance(300);
+  }
+  assert.equal(game.tn.phase, 'idle', 'termina'); assert.equal(game.tn.next % TNm.TN.PERIOD, 0 === 0 ? game.tn.next % TNm.TN.PERIOD : 0);
+  const champ = ps.find((p) => p.gold === TNm.TN.GOLD); assert.ok(champ, 'el ganador cobra 2M');
+  assert.ok(champ.inv.some((q) => q && q.id === 'topacio'), 'y un topacio');
+  ps.forEach((p, i) => { assert.ok(!p.tn.fight); assert.equal(p.maxHp, origin[i][3], 'stats restaurados'); assert.ok(Math.abs(p.x - origin[i][0]) <= 3 && Math.abs(p.y - origin[i][1]) <= 3, 'vuelve a su sitio'); });
+  for (const w of TNm.WEAPONS) { assert.ok(D0.ITEMS[w[0]] && D0.ITEMS[w[0]].type === 'weapon'); assert.ok(TNm.TN.WEAPON_CHANCE < CFG.CORRUPT_CHANCE, 'más raras que la Gema Corrupta'); }
+  Math.random = () => 0; try { game.tnFinish(ps[0], T0); } finally { Math.random = r0; }
+  assert.equal(ps[0].inv.filter((q) => q && ['tn_arco', 'tn_baculo', 'tn_espada'].includes(q.id)).length, 3, 'con suerte llegan las 3 armas');
+});
 ok('no se puede engarzar en zona PvP', () => {
   const g0 = JSON.stringify(D.p.eq.weapon.gm);
   place(D.p, wx, wy); D.p.inv[2] = { id: 'rubi', qty: 1 };

@@ -1286,5 +1286,5 @@ require('./mining').install(Game);
 require('./raid').install(Game);
 require('./halloween').install(Game);
 require('./magma').install(Game); require('./anubis').install(Game); require('./zeus').install(Game); require('./hades').install(Game); require('./historia').install(Game); require('./especiales').install(Game); require('./bots').install(Game);
-require('./petloot').install(Game); require('./pociones').install(Game); require('./instancias').install(Game);
+require('./petloot').install(Game); require('./torneo').install(Game); require('./pociones').install(Game); require('./instancias').install(Game);
 module.exports = { Game, NAME_RE, levelFromXp, xpForLevel, skillFromXp };

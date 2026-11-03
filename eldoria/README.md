@@ -496,3 +496,9 @@ Boris vende y compra las 7 gemas **al mismo precio**: topacio 1 000 000 (la más
 - Cada mascota y montura tiene una pasiva pequeña (ataque, defensa, vida, maná, crítico o robo de vida) que se ve en su ficha. Solo cuenta la mascota activa y la montura activa; al soltarla o desmontar se quita. El tope de crítico (10 %) y robo de vida (15 %) del equipo sigue valiendo.
 - Las crías de jefe tienen una pasiva fija según su tipo, que crece con el nivel del jefe (crítico máx. 2,5 %, robo de vida máx. 1,5 %).
 - Monturas nuevas: Jabalí de Guerra (nivel 30, 60k) y Mamut de Guerra (nivel 60, 400k) en la tienda de Brisa; Bestia de Brasas (nivel 100, el doble de rápida) como drop de Hades (0,08 %). Código en `game/companeros.js`.
+
+## Torneo PvP (cada 20 minutos)
+- Cada 20 min en punto (:00, :20, :40). 3 minutos antes se avisa a todos y se abre la inscripción con `/torneo` (otra vez `/torneo` para salirte). Mínimo 4 jugadores, máximo 16; si faltan se cancela.
+- Eliminatoria 1 contra 1 en la plaza de Alba Dorada (zona segura, hasta 4 combates a la vez). Todos iguales: 1.000 de vida, cada golpe quita 200–300, mismo ritmo y alcance por estilo, sin pociones, hechizos, gemas, mascota ni montura. 5 s de cuenta atrás, 90 s máx. (si se acaba el tiempo gana quien tenga más vida). Solo te puede dañar tu rival.
+- Al acabar cada combate todos vuelven a su sitio con su equipo, vida y mascota/montura intactos. Desconectarse = perder el combate.
+- Ganador: 2.000.000 de oro + 1 Topacio (1M) y, con probabilidad rarísima (0,001 % cada una, menos que la Gema Corrupta), un arma del Arsenal Legendario: Arco Corazón de Dragón, Báculo Arcano u Hoja del Vacío (nivel 120). Constantes en `game/torneo.js` (`TN`).
