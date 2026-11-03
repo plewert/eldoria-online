@@ -506,3 +506,7 @@ Boris vende y compra las 7 gemas **al mismo precio**: topacio 1 000 000 (la más
 ### Bots en el torneo
 - En los últimos 20 s antes del torneo, si hay al menos 1 jugador real inscrito y faltan para el mínimo (4), los aventureros del servidor (bots libres, nivel 5+, fuera de mazmorras) se inscriben solos y pelean con las mismas reglas (persiguen y atacan a su rival). Sin ningún jugador real no hay torneo.
 - Si hay menos de 4 jugadores reales el premio se reduce: 10 % del oro (200.000) y sin gema ni armas (así nadie farmea el premio completo con bots). Si gana un bot, no se entrega nada.
+
+## Reparto de botín de jefes
+- Todos los que hacen daño al jefe tiran su propio botín: multiplicador de suerte ×0,9 (poco daño) hasta ×1,5 (el que más daño hizo), y el que más daño hizo recibe ×1,25 extra. Antes iba de ×0,45 a ×1,6.
+- Cada participante recibe su botín (y su oro) en su propia casilla junto al jefe (el que más daño hizo, en la casilla del jefe); solo él puede recogerlo al inicio.

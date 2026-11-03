@@ -194,7 +194,7 @@ function install(Game) {
     m.def = Object.assign({}, real, { loot: real.loot.filter((l) => !GEAR.has(l[0])) });                 // oro, trofeo y pociones: reparto normal
     let r; try { r = K0.call(this, m, now); } finally { m.def = real; }
     // equipo del Olimpo: botín para todos los que participan; cuanto más daño haces, más suerte (hasta ×3 el que más daño hizo)
-    const I = require('./items'), need = total * 0.01, topDmg = Math.max(1, ...parts.map((q) => q[1])), ranked = parts.slice().sort((a, b) => b[1] - a[1]);
+    const I = require('./items'), need = 1, topDmg = Math.max(1, ...parts.map((q) => q[1])), ranked = parts.slice().sort((a, b) => b[1] - a[1]);
     if (ranked.length) this.broadcastChat(`⚡ ¡Zeus ha caído! Mayor daño: ${ranked.slice(0, 3).map((q) => `${q[0].name} (${q[1]})`).join(', ')}.`, 'k');
     for (const [pl, dmg] of ranked) {
       if (dmg < need) continue;

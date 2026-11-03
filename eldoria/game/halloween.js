@@ -108,7 +108,7 @@ function install(Game) {
 
   /* ---------- botín ---------- */
   P.hwRewards = function (m, parts, total) {
-    const need = total * 0.01, topDmg = Math.max(1, ...parts.map((q) => q[1])), ranked = parts.slice().sort((a, b) => b[1] - a[1]), names = ranked.slice(0, 3).map((q) => `${q[0].name} (${q[1]})`).join(', ');
+    const need = 1, topDmg = Math.max(1, ...parts.map((q) => q[1])), ranked = parts.slice().sort((a, b) => b[1] - a[1]), names = ranked.slice(0, 3).map((q) => `${q[0].name} (${q[1]})`).join(', ');
     this.broadcastChat(`🏆 ¡El Rey de Halloween ha caído! Mayor daño: ${names}.`, 'k');
     ranked.forEach(([pl, dmg], rank) => {
       if (dmg < need) return;

@@ -1033,7 +1033,7 @@ class Game {
     let total = 0, top = null, topDmg = -1;
     const parts = [];
     for (const [pid, e] of m.dmgBy) {
-      if (now - e.t > 120000) continue;
+      if (now - e.t > 180000) continue;
       const pl = this.ents.get(pid);
       if (!pl || pl.kind !== 'pl') continue;
       parts.push([pl, e.dmg]); total += e.dmg;
@@ -1049,21 +1049,27 @@ class Game {
     if ((def.shared || def.boss) && parts.length) {
       // botín compartido: cada participante tira por su cuenta; quien más daño hizo tiene mejor suerte
       const gold = rnd(def.gold[0], def.gold[1]);
-      for (const [pl, dmg] of parts) {
-        if (dmg < total * 0.01) continue;
-        const share = dmg / total, f = (0.3 + 0.7 * dmg / topDmg) * (pl === top ? 1.6 : 1);
+      // cada participante deja su botín en su propia casilla junto al jefe (el que más daño hizo, en la del jefe), así se ve claro qué es de cada uno
+      const spots = [[m.x, m.y]];
+      for (let r = 1; r <= 3 && spots.length < parts.length; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if (Math.max(Math.abs(dx), Math.abs(dy)) === r && world.isWalkable(m.x + dx, m.y + dy)) spots.push([m.x + dx, m.y + dy]);
+      let si = 0;
+      for (const [pl, dmg] of parts.slice().sort((a, b) => b[1] - a[1])) {
+        if (dmg <= 0) continue;                                            // todos los que hicieron daño participan en el botín
+        // más suerte para todos los participantes, y más cuanto más daño: ×0,9 con poco daño … ×1,5 con el máximo (el que más daño hizo ×1,25 extra)
+        const share = dmg / total, f = (0.9 + 0.6 * dmg / topDmg) * (pl === top ? 1.25 : 1);
         const o = { prot: now + CFG.LOOT_PROTECT_MS, owner: pl.id };
+        const [lx, ly] = spots[si++ % spots.length];
         const g = Math.round(gold * Math.max(0.1, share) * (pl === top ? 1.3 : 1));
-        if (g > 0) this.addGround('gold', g, m.x, m.y, o);
+        if (g > 0) this.addGround('gold', g, lx, ly, o);
         for (const [id, chance, qa, qb] of def.loot) {
-          if (Math.random() >= Math.min(1, (chance >= 1 ? chance : chance * CFG.BOSS_DROP_K) * f * (this.lootMult ? this.lootMult(pl, id) : 1))) continue;
-          if (I.isGear(id)) this.addGround(id, 1, m.x, m.y, Object.assign({ inst: I.rollGear(id, true) }, o));
-          else this.addGround(id, rnd(qa, qb), m.x, m.y, o);
+          if (Math.random() >= Math.min(1, (chance >= 1 ? 1 : chance * CFG.BOSS_DROP_K * f) * (this.lootMult ? this.lootMult(pl, id) : 1))) continue;
+          if (I.isGear(id)) this.addGround(id, 1, lx, ly, Object.assign({ inst: I.rollGear(id, true) }, o));
+          else this.addGround(id, rnd(qa, qb), lx, ly, o);
           if (this.logDrop) this.logDrop(pl, m.type, id);      // colección de jefes
         }
         if (this.sendCol) this.sendCol(pl);
-        if (Math.random() < I.gemChance(def) * f) this.addGround(I.pickGem(def), 1, m.x, m.y, o);
-        if (pl !== top) this.msg(pl, `Participaste contra ${def.name}: tienes tu propio botín en el suelo.`, 's');
+        if (Math.random() < I.gemChance(def) * f) this.addGround(I.pickGem(def), 1, lx, ly, o);
+        if (pl !== top) this.msg(pl, `Participaste contra ${def.name}: tu botín está en el suelo, en la casilla ${lx === m.x && ly === m.y ? 'del jefe' : `(${lx}, ${ly})`}.`, 's');
       }
     } else {
     const gold = rnd(def.gold[0], def.gold[1]);

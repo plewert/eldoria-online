@@ -384,6 +384,16 @@ ok('Torneo: inscripción, 1 contra 1 con stats iguales (200–300), eliminatoria
   Math.random = () => 0; try { game.tnFinish(ps[0], T0); } finally { Math.random = r0; }
   assert.equal(ps[0].inv.filter((q) => q && ['tn_arco', 'tn_baculo', 'tn_espada'].includes(q.id)).length, 3, 'con suerte llegan las 3 armas');
 });
+ok('botín de jefe: todos los que hacen daño tiran, con más suerte quien más daño hace, y cada uno ve su botín', () => {
+  const ps = ['bsA', 'bsB', 'bsC'].map((nm) => login(nm).p); const [x, y] = [home.x + 12, home.y + 12];
+  const m = game.spawnMonster('rey_esqueleto', x, y); m.def = Object.assign({}, m.def, { loot: [['pocion_vida', 0.5, 1, 1]], gold: [100, 100] });
+  m.dmgBy.set(ps[0].id, { dmg: 1000, t: game.now }); m.dmgBy.set(ps[1].id, { dmg: 300, t: game.now }); m.dmgBy.set(ps[2].id, { dmg: 10, t: game.now });
+  const r0 = Math.random; Math.random = () => 0.33;         // chance 0,5 × 0,8 (BOSS_DROP_K): el que menos daño hizo (f≈0,96) llega a 0,38 → también cae
+  try { game.killMonster(m, game.now); } finally { Math.random = r0; }
+  for (const p of ps) assert.ok([...game.ground.values()].some((g) => g.owner === p.id && g.item === 'pocion_vida'), p.name + ' recibe su botín');
+  assert.ok([...game.ground.values()].filter((g) => g.item === 'gold' && ps.some((p) => p.id === g.owner)).length === 3, 'oro para cada participante');
+  const spots = new Set([...game.ground.values()].filter((g) => ps.some((p) => p.id === g.owner)).map((g) => g.x + ',' + g.y)); assert.ok(spots.size >= 2, 'cada uno en su casilla');
+});
 ok('no se puede engarzar en zona PvP', () => {
   const g0 = JSON.stringify(D.p.eq.weapon.gm);
   place(D.p, wx, wy); D.p.inv[2] = { id: 'rubi', qty: 1 };
