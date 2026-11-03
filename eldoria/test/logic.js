@@ -338,6 +338,21 @@ ok('Boris vende equipo nivel 80+ de fábrica desde 10M y lo recompra al valor de
   const it = I.mk(ids[0]); assert.equal(it.gm.length, 0); assert.ok(!it.up && !it.an, 'sin ranuras ni +N');
   assert.ok(D0.ITEMS.espada_hierro && D0.ITEMS.espada_hierro.price < 1e7, 'las baratas siguen igual');
 });
+ok('Compañeros: cada mascota y montura tiene pasiva pequeña (solo la activa cuenta); monturas nuevas', () => {
+  resetPair(); const D0 = require('../game/data'), C = require('../game/companeros');
+  const pets = Object.entries(D0.ITEMS).filter(([, d]) => d.type === 'pet'), mounts = Object.entries(D0.ITEMS).filter(([, d]) => d.type === 'mount');
+  assert.ok(pets.length > 40 && mounts.length >= 6);
+  for (const [id, d] of [...pets, ...mounts]) { assert.ok(d.pas && Object.keys(d.pas).length >= 1 && /Pasiva:/.test(d.desc), id); for (const [k, v] of Object.entries(d.pas)) assert.ok(v > 0 && (k !== 'crit' || v <= 0.03) && (k !== 'steal' || v <= 0.02), id + k); }
+  ['montura_jabali', 'montura_mamut'].forEach((m) => assert.ok(D0.SHOPS.brisa.includes(m)));
+  const bd = D0.MONSTERS.hades.loot.find((q) => q[0] === 'montura_brasas'); assert.ok(bd && bd[1] <= 0.001 && D0.ITEMS.montura_brasas.speed < D0.ITEMS.montura_dragon.speed);
+  D.p.level = 120; D.p.inv.fill(null); const base = game.defOf(D.p), hp0 = D.p.maxHp;
+  D.p.inv[0] = { id: 'montura_oso', qty: 1 }; D.p.inv[1] = { id: 'montura_lobo', qty: 1 }; D.p.xp = 1e9; game.recalc(D.p);
+  const hpL = D.p.maxHp; game.handle(D.p, { t: 'use', s: 1 });                       // monta el lobo: +30 vida
+  assert.equal(D.p.maxHp, hpL + 30); game.handle(D.p, { t: 'use', s: 0 });          // cambia al oso (solo una a la vez): +3 defensa, sin la vida del lobo
+  assert.equal(D.p.maxHp, hpL); assert.equal(game.defOf(D.p), game.defOf(Object.assign({}, D.p, { ext: Object.assign({}, D.p.ext, { mount: '' }) })) + 3);
+  game.handle(D.p, { t: 'use', s: 0 }); assert.equal(D.p.maxHp, hpL, 'desmontar quita la pasiva');
+  const g = C.apply({ atk: 0, crit: 0.099, steal: 0.149 }, D0.ITEMS, { pet: 'pet_hades', mount: 'montura_brasas' }); assert.ok(g.crit <= 0.1 && g.steal <= 0.15, 'topes');
+});
 ok('no se puede engarzar en zona PvP', () => {
   const g0 = JSON.stringify(D.p.eq.weapon.gm);
   place(D.p, wx, wy); D.p.inv[2] = { id: 'rubi', qty: 1 };

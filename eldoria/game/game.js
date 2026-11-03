@@ -344,9 +344,12 @@ class Game {
   }
 
   /* ============================ JUGADORES ============================ */
+  /** Bonus de equipo + pasivas de la mascota y la montura activas. */
+  gbOf(p) { return require('./companeros').apply(I.gearBonus(p.eq), ITEMS, p.ext); }
+
   recalc(p) {
     p.level = levelFromXp(p.xp);
-    const gb = I.gearBonus(p.eq);
+    const gb = this.gbOf(p);
     p.maxHp = 100 + 20 * (p.level - 1) + gb.hp;
     p.maxMana = 40 + 12 * (p.level - 1) + gb.mana;
     if (p.hp > p.maxHp) p.hp = p.maxHp;
@@ -354,7 +357,7 @@ class Game {
   }
 
   defOf(p) {
-    let d = I.gearBonus(p.eq).def;
+    let d = this.gbOf(p).def;
     for (const s of ['head', 'body', 'shield']) { const it = p.eq[s]; if (it) d += I.baseStat(it); }
     return d;
   }
@@ -363,7 +366,7 @@ class Game {
     const it = p.eq.weapon;
     if (!it) return FISTS;
     const d = ITEMS[it.id];
-    return { name: I.nameOf(it), style: d.style, atk: I.baseStat(it) + I.gearBonus(p.eq).atk, cd: d.cd, range: d.range, mana: d.mana };
+    return { name: I.nameOf(it), style: d.style, atk: I.baseStat(it) + this.gbOf(p).atk, cd: d.cd, range: d.range, mana: d.mana };
   }
 
   styleOf(p) { return this.weaponOf(p).style; }
@@ -526,7 +529,7 @@ class Game {
     this.send(p, {
       t: 'stats', lv: p.level, xp: p.xp, xpLo: xpForLevel(Math.min(p.level, LEVEL_MAX - 1)), xpHi: xpForLevel(Math.min(p.level + 1, LEVEL_MAX)),
       maxHp: p.maxHp, maxMana: p.maxMana, gold: p.gold, sk, style: w.style, def: this.defOf(p), weapon: w.name, wid: p.eq.weapon ? p.eq.weapon.id : '',
-      gb: I.gearBonus(p.eq), glow: this.visOf(p).g,
+      gb: this.gbOf(p), glow: this.visOf(p).g,
     });
   }
 
@@ -1125,7 +1128,7 @@ class Game {
       p.mana -= w.mana;
     }
     const skill = skillFromXp(p.sxp[w.style]);
-    const gb = I.gearBonus(p.eq);
+    const gb = this.gbOf(p);
     let dmg = Math.round(w.atk * (0.55 + Math.random() * 0.45) * skillMult(skill) * (1 + 0.010 * (p.level - 1)));
     dmg = Math.max(1, dmg);
     let crit = 0;

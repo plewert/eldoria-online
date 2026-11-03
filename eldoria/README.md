@@ -491,3 +491,8 @@ Boris vende y compra las 7 gemas **al mismo precio**: topacio 1 000 000 (la más
 ## Equipo de fábrica en Boris
 - Boris vende armas, armaduras, escudos y cinturones de nivel 80+ (sin ranuras, sin +N, sin Ancient) desde 10M hasta ~50M según nivel y pieza (arma/cuerpo ×1, yelmo/pantalón/escudo ×0,8, botas/guantes/cinturón ×0,5).
 - Los recompra al valor de venta normal (mucho menor). Excluidas las piezas exclusivas de Zeus, Hades y las raids.
+
+## Compañeros: pasivas de mascotas y monturas
+- Cada mascota y montura tiene una pasiva pequeña (ataque, defensa, vida, maná, crítico o robo de vida) que se ve en su ficha. Solo cuenta la mascota activa y la montura activa; al soltarla o desmontar se quita. El tope de crítico (10 %) y robo de vida (15 %) del equipo sigue valiendo.
+- Las crías de jefe tienen una pasiva fija según su tipo, que crece con el nivel del jefe (crítico máx. 2,5 %, robo de vida máx. 1,5 %).
+- Monturas nuevas: Jabalí de Guerra (nivel 30, 60k) y Mamut de Guerra (nivel 60, 400k) en la tienda de Brisa; Bestia de Brasas (nivel 100, el doble de rápida) como drop de Hades (0,08 %). Código en `game/companeros.js`.

@@ -93,6 +93,7 @@ module.exports = function install(Game) {
 
   P.onLogin = function (p) {
     const e = p.ext;
+    this.recalc(p);                                                  // pasivas de la mascota y la montura activas
     // correo: oro y objetos que llegaron mientras estabas desconectado
     const keep = [];
     for (const m of e.mail) {
@@ -642,12 +643,12 @@ module.exports = function install(Game) {
     const it = p.inv[slot | 0]; const d = it && ITEMS[it.id];
     if (d && d.type === 'pet') {
       p.ext.pet = p.ext.pet === it.id ? '' : it.id; if (p.ext.pet) p.ext.hadPet = 1;
-      this.msg(p, p.ext.pet ? `${d.name} te acompañará.` : `${d.name} descansa.`, 's'); this.checkAch(p); return;
+      this.msg(p, p.ext.pet ? `${d.name} te acompañará.` : `${d.name} descansa.`, 's'); this.recalc(p); p.dirty.stats = true; this.checkAch(p); return;
     }
     if (d && d.type === 'mount') {
       if ((d.minLevel || 1) > p.level) { this.msg(p, `Necesitas nivel ${d.minLevel} para montar ${d.name}.`, 's'); return; }
       p.ext.mount = p.ext.mount === it.id ? '' : it.id; if (p.ext.mount) p.ext.hadMount = 1;
-      this.msg(p, p.ext.mount ? `Montas ${d.name}.` : 'Desmontas.', 's'); this.checkAch(p); return;
+      this.msg(p, p.ext.mount ? `Montas ${d.name}.` : 'Desmontas.', 's'); this.recalc(p); p.dirty.stats = true; this.checkAch(p); return;
     }
     if (d && d.type === 'tablet') {                                 // teletransporte de un solo uso
       if (this.now < p.pvpLock) { this.msg(p, '¡Estás en combate! No puedes usar la tableta todavía.', 's'); return; }
@@ -675,8 +676,10 @@ module.exports = function install(Game) {
   // si el objeto ya no está en la mochila, la mascota/montura deja de ser válida solo al soltarlo/venderlo: se comprueba aquí
   P.petCheck = function (p) {
     const has = (id) => p.inv.some((i) => i && i.id === id) || (p.bank || []).some((i) => i && i.id === id);
+    const had = p.ext.pet + '|' + p.ext.mount;
     if (p.ext.pet && !has(p.ext.pet)) p.ext.pet = '';
     if (p.ext.mount && !has(p.ext.mount)) p.ext.mount = '';
+    if (had !== p.ext.pet + '|' + p.ext.mount) { this.recalc(p); p.dirty.stats = true; }
   };
 
   /* ============================ RECOLECCIÓN Y FABRICACIÓN ============================ */
