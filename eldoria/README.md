@@ -516,3 +516,8 @@ Boris vende y compra las 7 gemas **al mismo precio**: topacio 1 000 000 (la más
 - Pantalla de inicio: el contador de conectados suma a los aventureros del servidor y a los jugadores: «16 aventureros conectados ahora.» (`/status` devuelve `online` y `bots`; el `/ayuda` sigue avisando de que el mundo incluye aventureros del servidor).
 
 - Entradas y salidas: cada 1,5–5 min un aventurero del servidor «se desconecta» (desaparece del mundo y del contador, con el aviso «X se ha desconectado.» en el chat) y vuelve entre 3 y 15 min después con «X se ha conectado.». Nunca salen más del 40 % a la vez, ni los que están en un jefe, raid o torneo. Ajustable en `botCfg` (`sess*`, `away*`).
+
+## Guía de paneles (ayuda para nuevos jugadores)
+- `public/guia.js`: visita guiada de 15 pasos (mochila, equipo, habilidades, auto golpe, chat y cada botón de la barra: colección, misiones, logros, grupo y gremio, ranking, mercado, fabricar, pesca, minería, mapa, historia). Resalta cada elemento y explica para qué sirve. ← → / Enter para moverte, Esc para cerrar; se omiten los paneles que no estén visibles (p. ej. en móvil).
+- Sale sola una vez para jugadores nuevos (nivel < 10) cuando terminan o saltan el tutorial inicial y no hay ventanas abiertas. Se abre cuando quieras con el botón ❓ de la barra o con F2.
+- A veces (1 de cada 4 inicios de sesión, hasta nivel 30) sale un aviso recordando que existe la ayuda.
