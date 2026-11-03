@@ -1033,6 +1033,17 @@ ok('gemas Aguamarina y Rodocrosita: efectos, topes, botín y sin tienda', () => 
   const { ws, p } = login('Veloz'); p.eq.weapon = I.mk('espada_hierro', 1); p.eq.weapon.gm = []; const base = game.weaponOf(p).cd; p.eq.weapon.gm = ['aguamarina']; assert.ok(game.weaponOf(p).cd < base, 'ataca más rápido');
 });
 
+ok('álbum de colecciones, emotes y muebles sólidos de las casas', () => {
+  const { ws, p } = login('Coleccion'); p.inv[0] = I.mk('espada_hierro', 1); p.inv[1] = { id: 'aguamarina', qty: 1 };
+  game.handle(p, { t: 'album' }); const al = lastMsg(ws, 'album'); assert.ok(al.seen.includes('espada_hierro') && al.seen.includes('aguamarina'), 'apunta armas y gemas');
+  assert.ok(p.ext.seen.aguamarina, 'persistente en ext'); assert.ok(JSON.parse(JSON.stringify(game.extSave(p))).seen.espada_hierro, 'se guarda');
+  place(p, 86, 70); const before = game.fx.length; game.handle(p, { t: 'emote', e: 'bailar' }); assert.ok(game.fx.slice(before).some((f) => f.k === 'em' && f.e === 'bailar' && f.i === p.id), 'emote visible para los demás');
+  const b2 = game.fx.length; game.handle(p, { t: 'emote', e: 'bailar' }); assert.strictEqual(game.fx.length, b2, 'enfriamiento entre emotes'); game.handle(p, { t: 'emote', e: 'volar' });
+  assert.ok(world.DECOR.length > 40 && world.HOUSES.some((h) => h.kind === 'herreria') && world.HOUSES.some((h) => h.kind === 'taberna') && world.HOUSES.some((h) => h.kind === 'biblioteca'), 'casas nuevas con mobiliario');
+  const [dx, dy] = world.DECOR[0]; assert.ok(!world.isWalkable(dx, dy), 'los muebles son sólidos'); assert.ok(world.NPCS.every((n) => world.isWalkable(n.x, n.y)), 'ningún PNJ queda sobre un mueble');
+  const door = world.HOUSES.map((h) => [h.doorX, h.by - 1]); assert.ok(door.every(([x, y]) => world.isWalkable(x, y)), 'la puerta siempre se puede cruzar');
+});
+
 console.log(`\n${n} pruebas correctas`);
 try { require('fs').unlinkSync(store.file); } catch (e) { /* nada */ }
 

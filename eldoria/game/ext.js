@@ -27,7 +27,7 @@ const PARTY_MAX = 5;
 const MARKET_MAX = 8, MARKET_FEE = 0.05, MARKET_HOURS = 72;
 const EVENT_EVERY = (parseFloat(process.env.EVENT_MIN) || 35) * 60000;
 
-const defExt = () => ({ q: {}, ach: {}, title: '', kt: 0, kills: {}, bosses: 0, pvp: 0, deaths: 0, quests: 0, crafts: 0, gather: 0, cxp: 0, events: 0, sold: 0, pet: '', mount: '', hadPet: 0, hadMount: 0, partyKills: 0, guild: '', grole: '', mail: [], grave: null, col: {}, story: {}, fish: { xp: 0, c: {} }, mine: { xp: 0, c: {} } });
+const defExt = () => ({ seen: {}, q: {}, ach: {}, title: '', kt: 0, kills: {}, bosses: 0, pvp: 0, deaths: 0, quests: 0, crafts: 0, gather: 0, cxp: 0, events: 0, sold: 0, pet: '', mount: '', hadPet: 0, hadMount: 0, partyKills: 0, guild: '', grole: '', mail: [], grave: null, col: {}, story: {}, fish: { xp: 0, c: {} }, mine: { xp: 0, c: {} } });
 
 function sanitizeExt(raw) {
   const e = defExt();
@@ -40,6 +40,7 @@ function sanitizeExt(raw) {
   if (raw.col && typeof raw.col === 'object') for (const [b, items] of Object.entries(raw.col)) if ((MONSTERS[b] || b === 'pesca' || b === 'mineria') && items && typeof items === 'object') { e.col[b] = {}; for (const [id, n] of Object.entries(items)) if (ITEMS[id]) e.col[b][id] = num(n, 1e9) || 1; }
   if (raw.fish && typeof raw.fish === 'object') { e.fish.xp = num(raw.fish.xp, 1e9); if (raw.fish.c && typeof raw.fish.c === 'object') for (const [id, n] of Object.entries(raw.fish.c)) if (ITEMS[id]) e.fish.c[id] = num(n, 1e9); }
   if (raw.mine && typeof raw.mine === 'object') { e.mine.xp = num(raw.mine.xp, 1e9); if (raw.mine.c && typeof raw.mine.c === 'object') for (const [id, n] of Object.entries(raw.mine.c)) if (ITEMS[id]) e.mine.c[id] = num(n, 1e9); }
+  if (raw.seen && typeof raw.seen === 'object') for (const id of Object.keys(raw.seen)) if (ITEMS[id]) e.seen[id] = 1;     // álbum de colecciones
   e.story = require('./historia').sanitize(raw.story);
   e.title = typeof raw.title === 'string' ? raw.title.slice(0, 30) : '';
   e.pet = ITEMS[raw.pet] && ITEMS[raw.pet].type === 'pet' ? raw.pet : '';

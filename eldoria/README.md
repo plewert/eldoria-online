@@ -535,3 +535,12 @@ Las casas de las ciudades (muros + suelo de tienda) reciben un techo: teja (Alde
 - 🩵 **Aguamarina**: +3 % de velocidad de ataque por gema (tope 15 % en total, equipo + mascota/montura). Reduce el `cd` del arma.
 - 🩷 **Rodocrosita**: −4 % de espera de los poderes especiales por gema (tope 20 %). Sin efecto durante el torneo PvP.
 - Solo se consiguen minando (`SPD_GEM_MINE`, muy raro, mejora con el pico y el nivel) y en jefes (`SPD_GEM_BOSS` 0,05 %, algo más que la Gema de Ascensión; escala con el nivel del jefe). No están en la tienda de Boris; él las compra a 8 M.
+
+## Mundo vivo (todo apagable)
+Casi todo es solo visual y vive en el cliente; cada módulo se apaga con una tecla y se quita borrando su archivo y su `<script>`.
+- **Casas** (`casas.js`, F5): techos de teja/paja/piedra, nieve en invierno, tipos **herrería** (fragua, yunque, herrero martillando), **taberna** (barra, barriles, cartel y notas de música) y **biblioteca** (estantes). El mobiliario es **sólido** y viene del servidor (`world.DECOR`, `welcome.decor/houses`; no tapa puertas ni PNJ).
+- **Ambiente** (`ambiente.js`, F6): clima por región (nieve en zonas frías, tormenta de arena, niebla en el pantano, ceniza en el Inframundo), charcos con reflejos bajo la lluvia (que además apaga las antorchas del exterior, `env.js`), estaciones por calendario real (hojas en otoño, flores en primavera, nieve en invierno), pájaros que huyen, mariposas, peces que saltan, faroles, puentes, barandas y arcos de piedra en los portales.
+- **Gente del pueblo** (`gente.js`, F7): vecinos que caminan, barren, cargan cajas y entran/salen de las casas; se recogen de noche.
+- **Combate** (`combate.js`, F8): anillo de enfriamiento de poderes, números de daño por elemento y muerte con partículas según el tipo de monstruo.
+- **Jugador** (`jugador.js`): 📖 Álbum de colecciones (F3; el servidor apunta en `ext.seen` gemas, mascotas, monturas y armas que has tenido), 🙂 emotes (F9; mensaje `emote`, fx `em` para todos los cercanos, 1,5 s de enfriamiento), animaciones de pesca (fx `fc/fb/fe`) y minería (fx `mn` con `cd`) con F10.
+- **Minimapa**: etiqueta 🔍 abajo a la izquierda (x1/x2/x4/x8, o rueda del ratón); con zoom muestra casas, tiendas y jefes.

@@ -256,7 +256,10 @@ for (let y = 0; y < H0; y++) {
 }
 
 /* 2) Ciudades */
-function house(ax, ay, bx, by, doorX) {
+const HOUSES = [];                                        // casas de las ciudades (para el mobiliario)
+const DECOR = [], DECOR_SET = new Set();                   // mobiliario sólido: [x, y, tipo]
+function house(ax, ay, bx, by, doorX, kind) {
+  HOUSES.push({ ax, ay, bx, by, doorX, kind: kind || 'general' });
   for (let y = ay; y <= by; y++) for (let x = ax; x <= bx; x++) tiles[idx(x, y)] = T.WALL;
   for (let y = ay + 1; y < by; y++) for (let x = ax + 1; x < bx; x++) tiles[idx(x, y)] = T.SHOP;
   tiles[idx(doorX, by)] = T.SHOP;
@@ -273,7 +276,7 @@ function buildTown(zoneId, gatesX, gatesY, flowers, houses) {
 }
 buildTown('ciudad', [89, 90, 91], [65, 66, 67],
   [[81, 70], [82, 70], [81, 71], [100, 71], [101, 71], [101, 72], [80, 60], [101, 60]],
-  [[81, 60, 89, 64, 85], [92, 60, 99, 64, 95], [92, 66, 99, 70, 95]]);
+  [[81, 60, 89, 64, 85], [92, 60, 99, 64, 95, 'biblioteca'], [92, 66, 99, 70, 95], [81, 67, 88, 72, 85, 'herreria']]);
 buildTown('aldea', [210, 211, 212], [77, 78, 79],
   [[202, 82], [203, 82], [219, 82], [220, 82], [201, 71], [221, 71]],
   [[202, 72, 208, 77, 205], [213, 72, 219, 77, 216]]);
@@ -283,7 +286,7 @@ buildTown('puerto', [99, 100, 101], [125, 126, 127],
 
 buildTown('ciudad_alba', [399, 400, 401], [69, 70, 71],
   [[398, 68], [402, 68], [398, 72], [402, 72], [400, 66], [400, 74], [383, 70], [417, 70], [383, 59], [417, 59], [383, 81], [417, 81]],
-  [[384, 60, 394, 66, 389], [384, 74, 394, 80, 389], [406, 60, 416, 66, 411], [406, 74, 416, 80, 411]]);
+  [[384, 60, 394, 66, 389], [384, 74, 394, 80, 389, 'taberna'], [406, 60, 416, 66, 411], [406, 74, 416, 80, 411, 'biblioteca']]);
 carvePath(331, 70, 379, 70);
 // calles de las regiones nuevas (Alba Dorada en el centro)
 { // despeja crestas y columnas de nube que cortarían las calles del norte
@@ -639,7 +642,7 @@ addPortal(GUILD.door[0], GUILD.door[1], GUILD.inside[0], GUILD.inside[1], 'Cueva
 addPortal(GUILD.exit[0], GUILD.exit[1], GUILD.outside[0], GUILD.outside[1], 'Salir al Prado');
 addPortal(GUILD2.door[0], GUILD2.door[1], GUILD2.inside[0], GUILD2.inside[1], 'Gremio de Mineros Profundo: pómez, mármol y basalto (zona segura)');
 addPortal(GUILD2.exit[0], GUILD2.exit[1], GUILD2.outside[0], GUILD2.outside[1], 'Salir al Prado');
-const isWalkableRaw = (x, y) => inb(x, y) && !BLOCKED[tiles[idx(x, y)]];
+const isWalkableRaw = (x, y) => inb(x, y) && !BLOCKED[tiles[idx(x, y)]] && !DECOR_SET.has(y * W + x);
 // Instancias de jefes de cueva: se copia el terreno de cada cueva en sus plazas y se crean los portales
 const CAVES_BY_ZONE = { cueva: CAVE, cueva_jade: CAVE2, cueva_nube: CAVE3, cueva_arana: CAVE4, cueva_mar: CAVE5, cueva_magma: CAVE6, cueva_anubis: CAVE7, cueva_olimpo: CAVE8, cueva_hades: CAVE9 };
 for (const I of INSTANCES) {
@@ -692,9 +695,27 @@ const NPCS = [
   { id: 'brisa', name: 'Capitán Brisa',      icon: '🧑‍✈️', x: 94,  y: 124, type: 'shop', shop: 'brisa' },
   { id: 'marta', name: 'Marta la Banquera',  icon: '💁‍♀️', x: 104, y: 124, type: 'bank' },
 ];
+/* Mobiliario sólido de las casas (cofres, estantes, barras, yunques…): pegado a la pared del fondo, sin tapar la puerta ni a los PNJ. */
+{
+  const PAT = {
+    general: ['cofre', null, null, 'estante', null, 'cofre', null],
+    taberna: ['barril', 'barra', 'barra', 'barra', 'barra', 'barra', 'barril'],
+    herreria: ['fragua', 'yunque', null, 'estante', 'barril', null, 'yunque'],
+    biblioteca: ['estante', 'estante', 'estante', 'estante', 'estante', 'estante', 'estante'],
+  };
+  const npcAt = new Set(NPCS.map((n) => n.y * W + n.x));
+  const put = (x, y, k) => { if (npcAt.has(y * W + x) || tiles[idx(x, y)] !== T.SHOP) return; DECOR.push([x, y, k]); DECOR_SET.add(y * W + x); };
+  for (const h of HOUSES) {
+    const rows = h.by - 1 - h.ay; if (rows < 2) continue;
+    const pat = PAT[h.kind] || PAT.general, by0 = h.ay + 1;
+    for (let x = h.ax + 1, k = 0; x < h.bx; x++, k++) { const kind = pat[k % pat.length]; if (kind) put(x, by0, kind); }
+    if ((h.kind === 'taberna' || h.kind === 'biblioteca') && rows >= 4) for (const x of [h.ax + 2, h.bx - 2]) if (Math.abs(x - h.doorX) > 1) put(x, h.ay + 3, 'mesa');
+  }
+}
+
 
 /* ---------- accesibilidad ---------- */
-function isWalkable(x, y) { return inb(x, y) && !BLOCKED[tiles[idx(x, y)]]; }
+function isWalkable(x, y) { return inb(x, y) && !BLOCKED[tiles[idx(x, y)]] && !DECOR_SET.has(y * W + x); }
 const portalAtMap = new Map();
 for (const p of PORTALS) portalAtMap.set(idx(p.x, p.y), p);
 function portalAt(x, y) { return portalAtMap.get(idx(x, y)) || null; }
@@ -797,6 +818,6 @@ for (let y = 0; y < H; y++) {
 }
 
 module.exports = {
-  W, H, T, BLOCKED, tiles, ZONES, zoneAt, zoneById, PORTALS, CAVES_BY_ZONE, INST_CAVES, portalAt, NPCS, SPAWN_POINT,
+  W, H, T, BLOCKED, tiles, DECOR, HOUSES, ZONES, zoneAt, zoneById, PORTALS, CAVES_BY_ZONE, INST_CAVES, portalAt, NPCS, SPAWN_POINT,
   RAID, INSTANCES, INFRA, isWalkable, reach, monsterSpawns, rows, catRooms, abyRooms, minRooms, pirRooms, forRooms,
 };

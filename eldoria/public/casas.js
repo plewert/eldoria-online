@@ -19,23 +19,13 @@
   };
 
   let houses = null, forTiles = null;
-  function scan() {                                          // casas = zonas conexas de suelo de tienda rodeadas de muro
+  const KPAL = { taberna: [['#7a4a2e', '#4e2c18', '#9a6240']], herreria: [['#4b4f58', '#2c2f36', '#666b76']], biblioteca: [['#4f7d86', '#33565e', '#6aa0aa']] };
+  function scan() {                                          // casas: las que manda el servidor (con su tipo)
     if (houses && forTiles === G.tiles) return houses;
     houses = []; forTiles = G.tiles; if (!G.tiles) return houses;
-    const W = G.W, H = G.H, seen = new Uint8Array(W * H);
-    for (let i = 0; i < W * H; i++) {
-      if (G.tiles[i] !== 9 || seen[i]) continue;
-      const st = [i]; seen[i] = 1; let x0 = W, x1 = 0, y0 = H, y1 = 0, n = 0;
-      while (st.length) {
-        const j = st.pop(), x = j % W, y = (j / W) | 0; n++;
-        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
-        for (const k of [j + 1, j - 1, j + W, j - W]) if (k >= 0 && k < W * H && G.tiles[k] === 9 && !seen[k]) { seen[k] = 1; st.push(k); }
-      }
-      const ax = x0 - 1, bx = x1 + 1, ay = y0 - 1, by = y1;
-      if (n > 400 || x1 - x0 < 1 || y1 - y0 < 1 || ay < 0 || G.tiles[ay * W + ax] !== 4 || G.tiles[ay * W + bx] !== 4) continue;
-      let door = x0; for (let x = x0; x <= x1; x++) if (G.tiles[y1 * W + x] === 9) door = x;
-      const zid = (X.zoneAt ? X.zoneAt(x0, y0) : { id: 'ciudad' }).id, style = STYLE[zid] || 'teja', v = (hs(ax, ay) * 3) | 0;
-      houses.push({ ax, bx, ay, by, x0, x1, y0, y1, door, style, pal: PAL[style][v], chim: style !== 'paja' && hs(ax, ay, 2) > 0.35, fade: 1 });
+    for (const [ax, ay, bx, by, door, kind] of (G.houses || [])) {
+      const zid = (X.zoneAt ? X.zoneAt(ax + 1, ay + 1) : { id: 'ciudad' }).id, base = STYLE[zid] || 'teja', style = kind === 'herreria' ? 'piedra' : base, v = (hs(ax, ay) * 3) | 0;
+      houses.push({ ax, bx, ay, by, x0: ax + 1, x1: bx - 1, y0: ay + 1, y1: by, door, kind: kind || 'general', style, pal: KPAL[kind] ? KPAL[kind][0] : PAL[style][v], chim: kind === 'herreria' || kind === 'taberna' || (style !== 'paja' && hs(ax, ay, 2) > 0.35), fade: 1 });
     }
     return houses;
   }
@@ -63,6 +53,28 @@
           c.fillStyle = v < 0.5 ? '#7a2e3a' : '#2f5a63'; c.fillRect(X0, Y0 + 2, TS, TS - 4);
           c.strokeStyle = v < 0.5 ? '#d8b86a' : '#e0d4a0'; c.lineWidth = 1; c.strokeRect(X0 + 3.5, Y0 + 5.5, TS - 7, TS - 11);
           c.fillStyle = 'rgba(255,255,255,.08)'; for (let k = 0; k < 3; k++) c.fillRect(X0 + 8 + k * 6, Y0 + 11, 3, 3);
+        }
+      }
+      for (const [fx, fy, fk] of (G.decor || [])) {                  // muebles sólidos de esta casa
+        if (fx < h.x0 || fx > h.x1 || fy < h.y0 || fy >= h.y1) continue;
+        const X0 = sx(fx, cw), Y0 = sy(fy, ch);
+        c.fillStyle = 'rgba(0,0,0,.28)'; c.fillRect(X0 + 2, Y0 + TS - 5, TS - 4, 5);
+        if (fk === 'cofre') { c.fillStyle = '#7a4a22'; c.fillRect(X0 + 4, Y0 + 12, 24, 16); c.fillStyle = '#9a6430'; c.fillRect(X0 + 4, Y0 + 8, 24, 7); c.fillStyle = '#d8b24a'; c.fillRect(X0 + 14, Y0 + 14, 4, 6); c.strokeStyle = '#3a220f'; c.strokeRect(X0 + 4.5, Y0 + 8.5, 23, 19); }
+        else if (fk === 'estante') { c.fillStyle = '#5b3d20'; c.fillRect(X0 + 2, Y0 + 3, 28, 26); c.fillStyle = '#2d1d0e'; for (const yy of [11, 20]) c.fillRect(X0 + 3, Y0 + yy, 26, 2); for (let i = 0; i < 5; i++) { c.fillStyle = ['#b33', '#37a', '#3a5', '#c93', '#82b'][(i + fx) % 5]; c.fillRect(X0 + 4 + i * 5, Y0 + 5, 4, 6); c.fillStyle = ['#c93', '#3a5', '#b33', '#37a', '#82b'][(i + fy) % 5]; c.fillRect(X0 + 4 + i * 5, Y0 + 14, 4, 6); } c.fillStyle = '#9bd'; c.fillRect(X0 + 6, Y0 + 22, 4, 6); c.fillStyle = '#d96'; c.fillRect(X0 + 18, Y0 + 23, 6, 5); }
+        else if (fk === 'mesa') { c.fillStyle = '#6a4424'; c.fillRect(X0 + 3, Y0 + 9, 26, 15); c.fillStyle = '#8a5c30'; c.fillRect(X0 + 3, Y0 + 7, 26, 5); c.fillStyle = '#e8e0c8'; c.fillRect(X0 + 8, Y0 + 11, 6, 5); c.fillStyle = '#c8e0f0'; c.fillRect(X0 + 19, Y0 + 12, 4, 6); }
+        else if (fk === 'barril') { c.fillStyle = '#6e4521'; c.beginPath(); c.ellipse(X0 + 16, Y0 + 18, 11, 11, 0, 0, 7); c.fill(); c.fillStyle = '#4a2c12'; c.fillRect(X0 + 5, Y0 + 14, 22, 2); c.fillRect(X0 + 5, Y0 + 21, 22, 2); c.fillStyle = '#9a6a38'; c.beginPath(); c.ellipse(X0 + 16, Y0 + 9, 8, 3, 0, 0, 7); c.fill(); }
+        else if (fk === 'barra') { c.fillStyle = '#5a3a1e'; c.fillRect(X0, Y0 + 12, TS, 17); c.fillStyle = '#9a6a38'; c.fillRect(X0, Y0 + 8, TS, 6); c.fillStyle = '#d8d0b8'; if ((fx + fy) % 2) { c.fillRect(X0 + 8, Y0 + 2, 5, 7); c.fillRect(X0 + 20, Y0 + 3, 4, 6); } else c.fillRect(X0 + 12, Y0 + 3, 6, 6); }
+        else if (fk === 'yunque') { c.fillStyle = '#3c4048'; c.fillRect(X0 + 6, Y0 + 20, 20, 8); c.fillStyle = '#5a606a'; c.fillRect(X0 + 3, Y0 + 12, 26, 8); c.fillRect(X0 + 22, Y0 + 14, 8, 4); c.fillStyle = '#e8a050'; const hot = 0.5 + 0.5 * Math.sin(now / 400 + fx); c.globalAlpha = hot; c.fillRect(X0 + 12, Y0 + 11, 8, 2); c.globalAlpha = 1; }
+        else if (fk === 'fragua') { c.fillStyle = '#5c5650'; c.fillRect(X0 + 1, Y0 + 6, 30, 24); c.fillStyle = '#2a2622'; c.fillRect(X0 + 6, Y0 + 14, 20, 14); const fl = 0.75 + Math.sin(now / 90 + fx) * 0.25; c.fillStyle = `rgba(255,${140 + 60 * fl | 0},40,${fl})`; c.fillRect(X0 + 9, Y0 + 19, 14, 9);
+          c.save(); c.globalCompositeOperation = 'lighter'; glow(c, X0 + 16, Y0 + 20, 44 + night * 12, '255,150,60', 0.4 * fl); c.restore(); }
+      }
+      if (h.kind === 'taberna' || h.kind === 'herreria') {            // el tabernero y el herrero (figuras de ambiente)
+        const wx = h.kind === 'taberna' ? (h.x0 + h.x1) >> 1 : ((G.decor || []).find((d) => d[2] === 'yunque' && d[0] >= h.x0 && d[0] <= h.x1) || [h.x0 + 1])[0], wy = h.y0 + 1;
+        if (!(G.npcTiles && G.npcTiles.has(wy * G.W + wx)) && !(G.decorSet && G.decorSet.has(wy * G.W + wx))) {
+          const X0 = sx(wx, cw), Y0 = sy(wy, ch), sw = h.kind === 'herreria' ? Math.sin(now / 160) * 0.5 + 0.5 : 0;
+          c.fillStyle = h.kind === 'taberna' ? '#a64' : '#555'; c.fillRect(X0 + 10, Y0 + 12, 12, 16); c.fillStyle = '#f0c8a0'; c.beginPath(); c.arc(X0 + 16, Y0 + 9, 5, 0, 7); c.fill();
+          c.fillStyle = h.kind === 'taberna' ? '#eee' : '#3a2a1a'; c.fillRect(X0 + 10, Y0 + 3, 12, 3);
+          if (h.kind === 'herreria') { c.save(); c.translate(X0 + 22, Y0 + 14); c.rotate(-0.8 + sw * 1.2); c.fillStyle = '#6b4a2a'; c.fillRect(0, -1, 10, 2); c.fillStyle = '#9aa0aa'; c.fillRect(8, -3, 4, 6); c.restore(); }
         }
       }
       for (let x = h.x0; x <= h.x1; x++) {                          // pared del fondo (fila de muro superior)
@@ -122,6 +134,15 @@
           const k = ((now / 1800 + i / 4 + hs(h.ax, h.ay)) % 1), a = (1 - k) * 0.5 * h.fade;
           c.fillStyle = `rgba(225,225,228,${a})`; c.beginPath(); c.arc(cxp + 8 + Math.sin(k * 6 + i) * 4 + k * 8, cyp - 6 - k * 34, 3 + k * 7, 0, 7); c.fill();
         }
+      }
+      if (X.season && X.season() === 'invierno') {                                // manto de nieve
+        c.fillStyle = 'rgba(245,250,255,.92)'; c.fillRect(L, T, R - L, (mid - T) * 0.8 + 2); c.fillStyle = 'rgba(225,236,248,.9)'; c.fillRect(L, mid + 2, R - L, 5);
+        for (let x = L; x < R; x += 9) c.fillRect(x, T + (mid - T) * 0.8, 6, 3 + hs(x, T) * 4);
+      }
+      if (h.kind === 'taberna') {                                                   // cartel con jarra y notas de música
+        const px0 = sx(h.door, cw) + TS + 6, py0 = sy(h.by, ch) + 2;
+        c.fillStyle = '#4e2c18'; c.fillRect(px0, py0 - 4, 2, 22); c.fillRect(px0, py0 - 4, 18, 2); c.fillStyle = '#c9a15a'; c.fillRect(px0 + 3, py0, 15, 12); c.fillStyle = '#fff'; c.fillRect(px0 + 7, py0 + 3, 6, 7);
+        for (let i = 0; i < 3; i++) { const k = (now / 2200 + i / 3) % 1; c.fillStyle = `rgba(255,235,170,${(1 - k) * 0.9 * h.fade})`; c.font = '12px sans-serif'; c.fillText('♪', px0 + 4 + Math.sin(k * 7 + i) * 8, py0 - 8 - k * 28); }
       }
       c.restore();
     }

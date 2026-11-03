@@ -122,6 +122,7 @@
       G.zoneGrid[y * G.W + x] = zi;
     }
     G.npcTiles = new Set(G.npcs.map((n) => n.y * G.W + n.x));
+    G.decor = m.decor || []; G.houses = m.houses || []; G.decorSet = new Set(G.decor.map((d) => d[1] * G.W + d[0]));      // mobiliario sólido
     buildMiniBase();
     $('#login').hidden = true; $('#game').hidden = false;
     $('#lpass').value = '';
@@ -1356,8 +1357,15 @@
     const cv = $('#mini'); if (!miniBase || !G.me) return;
     const g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
     g.clearRect(0, 0, cv.width, cv.height);
-    g.drawImage(miniBase, 0, 0, cv.width, cv.height);
-    const sx = cv.width / G.W, sy = cv.height / G.H;
+    const Z = G.miniZoom || 1, sx = cv.width / G.W * Z, sy = cv.height / G.H * Z;
+    const offx = Math.max(0, Math.min(cv.width * Z - cv.width, G.me.x * sx - cv.width / 2)), offy = Math.max(0, Math.min(cv.height * Z - cv.height, G.me.y * sy - cv.height / 2));
+    g.drawImage(miniBase, 0, 0, miniBase.width, miniBase.height, -offx, -offy, cv.width * Z, cv.height * Z);
+    g.save(); g.translate(-offx, -offy);
+    if (Z >= 2) {                                                              // casas, tiendas y jefes (solo con zoom)
+      for (const h of (G.houses || [])) { g.fillStyle = h[5] === 'taberna' ? '#d8a050' : h[5] === 'herreria' ? '#9aa0aa' : h[5] === 'biblioteca' ? '#6aa0aa' : '#c0654a'; g.strokeStyle = '#000'; g.lineWidth = 1; g.fillRect(h[0] * sx, h[1] * sy, (h[2] - h[0] + 1) * sx, (h[3] - h[1]) * sy); g.strokeRect(h[0] * sx, h[1] * sy, (h[2] - h[0] + 1) * sx, (h[3] - h[1]) * sy); }
+      for (const n of G.npcs) { g.fillStyle = n.type === 'bank' ? '#7fe08a' : '#ffd24a'; g.strokeStyle = '#000'; g.lineWidth = 1; g.beginPath(); g.arc(n.x * sx + sx / 2, n.y * sy + sy / 2, 3.2, 0, 7); g.fill(); g.stroke(); }
+      for (const e of G.ents.values()) if (e.kind === 'mo' && G.mons[e.t] && G.mons[e.t].boss) { const bx = e.x * sx, by = e.y * sy; g.fillStyle = '#ff3a3a'; g.strokeStyle = '#000'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(bx, by - 6); g.lineTo(bx + 5, by + 4); g.lineTo(bx - 5, by + 4); g.closePath(); g.stroke(); g.fill(); }
+    }
     for (const e of G.ents.values()) {
       if (e.id === G.id) continue;
       g.fillStyle = e.kind === 'pl' ? '#ffffff' : '#ff7a5c';
@@ -1381,7 +1389,13 @@
     }
     g.fillStyle = '#c9a24b'; g.strokeStyle = '#000'; g.lineWidth = 1;
     g.beginPath(); g.arc(G.me.x * sx, G.me.y * sy, 3.5, 0, 7); g.fill(); g.stroke();
+    g.restore();
+    g.font = 'bold 11px sans-serif'; g.fillStyle = 'rgba(0,0,0,.6)'; g.fillRect(4, cv.height - 18, 56, 14); g.fillStyle = '#ffe9a8'; g.textAlign = 'left'; g.fillText(`🔍 x${Z}  ${G.me.x},${G.me.y}`, 7, cv.height - 7);
   }
+  { const mc = $('#mini'); try { G.miniZoom = +localStorage.getItem('eldoria.minizoom') || 1; } catch (e) { G.miniZoom = 1; }
+    const setZ = (z) => { G.miniZoom = z; try { localStorage.setItem('eldoria.minizoom', String(z)); } catch (e) { /* nada */ } };
+    mc.addEventListener('click', (ev) => { const r = mc.getBoundingClientRect(), x = (ev.clientX - r.left) * mc.width / r.width, y = (ev.clientY - r.top) * mc.height / r.height; if (x < 64 && y > mc.height - 20) { ev.stopImmediatePropagation(); setZ(G.miniZoom >= 8 ? 1 : G.miniZoom * 2); } }, true);       // la etiqueta 🔍 cambia el zoom; el resto del clic abre el mapa del mundo
+    mc.addEventListener('wheel', (ev) => { ev.preventDefault(); setZ(Math.max(1, Math.min(8, ev.deltaY < 0 ? G.miniZoom * 2 : G.miniZoom / 2))); }, { passive: false }); }
 
   /* ======================================================================
    *  DIBUJO
@@ -2316,7 +2330,7 @@
     const lift = 34 * (1 - Math.pow(1 - Math.min(1, p * 1.5), 3)) + (p < 0.35 ? 0 : Math.sin((p - 0.35) * 9) * 1.5 * a);
     const pop = 1 + (t.big ? 0.7 : 0.25) * Math.max(0, 1 - p * 6), px = Math.round((t.big ? 20 : 14) * pop);
     c.globalAlpha = Math.min(1, a * 1.6);
-    outlined(c, t.v, sxOf(t.x) + TS / 2 + t.dx * p, syOf(t.y) - 4 - lift, TXT_COL[t.c] || '#fff', `bold ${px}px "Segoe UI", sans-serif`);
+    outlined(c, t.v, sxOf(t.x) + TS / 2 + t.dx * p, syOf(t.y) - 4 - lift, t.col || TXT_COL[t.c] || '#fff', `bold ${Math.round(px * (t.sz || 1))}px "Segoe UI", sans-serif`);
     c.globalAlpha = 1;
   }
 
@@ -2912,7 +2926,7 @@
   });
 
   const BLOCK = new Set([TILE.WATER, TILE.TREE, TILE.WALL, TILE.ROCK, TILE.PALM, TILE.PINE, TILE.DEADTREE, TILE.CACTUS, TILE.ICEBLOCK, TILE.BOG, TILE.CWALL, TILE.LAVA, TILE.CLOUDW, TILE.WEBW, TILE.AQW, TILE.MAGW, TILE.TOMBW, TILE.BRAZ, TILE.OLYW, TILE.OLYS, TILE.HDW]);
-  function walkable(x, y) { return x >= 0 && y >= 0 && x < G.W && y < G.H && !BLOCK.has(G.tiles[y * G.W + x]) && !G.npcTiles.has(y * G.W + x); }
+  function walkable(x, y) { return x >= 0 && y >= 0 && x < G.W && y < G.H && !BLOCK.has(G.tiles[y * G.W + x]) && !G.npcTiles.has(y * G.W + x) && !(G.decorSet && G.decorSet.has(y * G.W + x)); }
   function walkTo(gx, gy) {
     if (!walkable(gx, gy)) return;
     const sx = G.me.x, sy = G.me.y;

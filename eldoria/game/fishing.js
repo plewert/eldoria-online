@@ -113,11 +113,12 @@ module.exports = { build, install(Game) {
     p.fishing = { x, y, px: p.x, py: p.y, state: 'wait', biteAt: this.now + wait, rod, bait, zone: zoneAt(x, y).id };
     (this.anglers || (this.anglers = new Set())).add(p);
     this.send(p, { t: 'fcast', x, y, wait: Math.round(wait), bait: bait ? 1 : 0 });
+    this.fx.push({ k: 'fc', i: p.id, x: p.x, y: p.y, tx: x, ty: y });
   };
   P.fishStop = function (p, silent) {
     if (!p.fishing) return;
     p.fishing = null; if (this.anglers) this.anglers.delete(p);
-    this.send(p, { t: 'fend', ok: 0, silent: silent ? 1 : 0 });
+    this.send(p, { t: 'fend', ok: 0, silent: silent ? 1 : 0 }); this.fx.push({ k: 'fe', i: p.id, x: p.x, y: p.y });
   };
   const pickFish = (p, f, fm = 1) => {
     const z = ZONE_FISH[f.zone], lv = lvOf(p), b = f.bait ? BAITS[f.bait] : null;
@@ -137,14 +138,14 @@ module.exports = { build, install(Game) {
         const w = Math.min(0.5, Math.max(0.12, 0.34 - d + lv * 0.0004 + r.bar)), c = 0.18 + w / 2 + Math.random() * (0.64 - w);
         f.state = 'bite'; f.fish = fish; f.lo = c - w / 2; f.hi = c + w / 2; f.speed = 0.75 + d * 1.6 + Math.random() * 0.2; f.t0 = now; f.end = now + BITE_MS;
         this.send(p, { t: 'fbite', fish, lo: +f.lo.toFixed(3), hi: +f.hi.toFixed(3), speed: +f.speed.toFixed(3), dur: BITE_MS });
-        this.fx.push({ k: 'd', x: f.x, y: f.y, v: '!', c: 'x' });
+        this.fx.push({ k: 'd', x: f.x, y: f.y, v: '!', c: 'x' }); this.fx.push({ k: 'fb', i: p.id, x: f.x, y: f.y });
       } else if (f.state === 'bite' && now > f.end + 250) this.fishFail(p, 'El pez se soltó: reaccionaste tarde.');
     }
   };
   P.fishFail = function (p, txt) {
     const f = p.fishing; if (!f) return;
     const shark = f.fish === 'tiburon';
-    p.fishing = null; this.anglers.delete(p);
+    p.fishing = null; this.anglers.delete(p); this.fx.push({ k: 'fe', i: p.id, x: p.x, y: p.y });
     this.msg(p, txt, 's');
     if (shark) {
       if (have(p, 'cebo') || have(p, 'cebo_dorado')) { take(p, have(p, 'cebo') ? 'cebo' : 'cebo_dorado', 1); this.msg(p, '¡El tiburón se llevó tu cebo!', 's'); }
@@ -179,7 +180,7 @@ module.exports = { build, install(Game) {
       this.msgC(p, `🌟 ¡RARO! Has pescado: ${ITEMS[sid].name}`, '#ffd96a'); this.fx.push({ k: 'd', x: f.x, y: f.y, v: '★ ' + ITEMS[sid].name, c: 'g' });
       if (big) this.broadcastChat(`🎣 ¡${p.name} ha pescado un objeto raro: ${ITEMS[sid].name}!`, 'k');
     }
-    p.fishing = null; this.anglers.delete(p); p.dirty.inv = true;
+    p.fishing = null; this.anglers.delete(p); p.dirty.inv = true; this.fx.push({ k: 'fe', i: p.id, x: p.x, y: p.y, ok: 1 });
     const after = lvOf(p); if (after > before) this.msgC(p, `🎣 ¡Tu nivel de pesca sube a ${after}!`, '#7fd0ff');
     this.send(p, { t: 'fend', ok: 1, fish: id, qty });
     this.sendFish(p); this.sendCol(p);

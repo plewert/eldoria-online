@@ -83,7 +83,7 @@ module.exports = { build, ROCKS, PICKS, ORDER, MINE_MAX, PET, petChance, install
     this.giveOrDrop(p, nd.rock, q); this.logDrop(p, 'mineria', nd.rock);
     e.c[nd.rock] = (e.c[nd.rock] || 0) + q; e.xp += nd.xp;
     this.fx.push({ k: 'd', x: p.x, y: p.y, v: `+${q} ${ITEMS[nd.rock].name}`, c: 'g' });
-    this.fx.push({ k: 'mn', x: n.x, y: n.y, r: nd.rock });
+    this.fx.push({ k: 'mn', x: n.x, y: n.y, r: nd.rock, i: p.id, cd: Math.round(1100 * k.speed) });
     // gema: más probable con mejor pico y más nivel
     const ch = r.gem * 0.3 * (1 + k.gem) * (1 + lv / 400) * this.buffMult(p, 'gem');
     if (Math.random() < ch) {

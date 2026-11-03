@@ -76,8 +76,9 @@
       if (a0 > 0.1) {
         c.save(); c.globalCompositeOperation = 'lighter';
         const warm = (x, y, rad, k) => { const gr = c.createRadialGradient(x, y, 2, x, y, rad); gr.addColorStop(0, `rgba(255,170,80,${k})`); gr.addColorStop(1, 'rgba(255,170,80,0)'); c.fillStyle = gr; c.fillRect(x - rad, y - rad, rad * 2, rad * 2); };
-        for (const n of G.npcs) warm((n.x - G.cam.x) * TS + cw / 2 + TS / 2 - 16, (n.y - G.cam.y) * TS + ch / 2, 46, 0.18 * a0 / 0.6);
-        for (const p of G.portals) warm((p.x - G.cam.x) * TS + cw / 2, (p.y - G.cam.y) * TS + ch / 2, 40, 0.22 * a0 / 0.6);
+        const dry = 1 - 0.85 * wet;                                  // la lluvia apaga las antorchas del exterior
+        for (const n of G.npcs) warm((n.x - G.cam.x) * TS + cw / 2 + TS / 2 - 16, (n.y - G.cam.y) * TS + ch / 2, 46, 0.18 * a0 / 0.6 * dry);
+        for (const p of G.portals) warm((p.x - G.cam.x) * TS + cw / 2, (p.y - G.cam.y) * TS + ch / 2, 40, 0.22 * a0 / 0.6 * dry);
         c.restore();
       }
     }
