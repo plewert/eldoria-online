@@ -544,3 +544,5 @@ Casi todo es solo visual y vive en el cliente; cada módulo se apaga con una tec
 - **Combate** (`combate.js`, F8): anillo de enfriamiento de poderes, números de daño por elemento y muerte con partículas según el tipo de monstruo.
 - **Jugador** (`jugador.js`): 📖 Álbum de colecciones (F3; el servidor apunta en `ext.seen` gemas, mascotas, monturas y armas que has tenido), 🙂 emotes (F9; mensaje `emote`, fx `em` para todos los cercanos, 1,5 s de enfriamiento), animaciones de pesca (fx `fc/fb/fe`) y minería (fx `mn` con `cd`) con F10.
 - **Minimapa**: etiqueta 🔍 abajo a la izquierda (x1/x2/x4/x8, o rueda del ratón); con zoom muestra casas, tiendas y jefes.
+
+Nota: la herrería de Aldea Real está en [80,67,84,71] para no tapar el portal de la Raid (85,72) ni su salida (85,71); no debe haber casas encima de portales.
