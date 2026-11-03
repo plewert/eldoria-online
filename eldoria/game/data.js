@@ -53,6 +53,10 @@ const CFG = {
   ASC_MAX: 6,                  // tope del +N
   ASC_PRICE: 150000000,        // Boris la compra y la vende a este precio
   ASC_CHANCE: 0.0003,          // muy rara; jefes de la superficie, escala con su nivel (lv 800+ = tasa completa)
+  SPD_GEM_CAP: 0.15,           // tope de velocidad de ataque por gemas (Aguamarina)
+  CDR_GEM_CAP: 0.20,           // tope de reducción de espera de especiales (Rodocrosita)
+  SPD_GEM_BOSS: 0.0005,        // Aguamarina y Rodocrosita en jefes: algo más que la Gema de Ascensión (0,0003), escala con el nivel del jefe
+  SPD_GEM_MINE: 0.0006,        // por cada roca minada (más con mejor pico)
   CORRUPT_CHANCE: 0.00002,     // 0,002 % por participante en los jefes del Inframundo: lo más raro del juego
   GEM_REMOVE_COST: 50000,      // oro por sacar una gema de una ranura
   GEM_BREAK: 0.10,             // probabilidad de que una gema común (rubí, zafiro, esmeralda, topacio) se rompa del todo al sacarla
@@ -205,10 +209,12 @@ const GEMS = {
   topacio:   { name: 'Topacio',   icon: '🟡', col: '#e8c04a', sell: 280,  desc: '+3 de defensa',                    fx: { def: 3 } },
   amatista:  { name: 'Amatista',  icon: '🟣', col: '#b07cff', sell: 800,  desc: '+4% de golpe crítico (x1.8)',      fx: { crit: 0.04 } },
   opalo:     { name: 'Ópalo',     icon: '🟠', col: '#f09a5a', sell: 2000, desc: 'Roba el 3% del daño como vida',    fx: { steal: 0.03 } },
+  aguamarina:{ name: 'Aguamarina', icon: '🩵', col: '#3fd6d0', sell: 5500000, desc: '+3% de velocidad de ataque (tope 15% en total)', fx: { aspd: 0.03 } },
+  rodocrosita:{ name: 'Rodocrosita', icon: '🩷', col: '#ff6fb5', sell: 5500000, desc: '-4% de espera de los poderes especiales (tope 20% en total)', fx: { cdr: 0.04 } },
   diamante:  { name: 'Diamante',  icon: '💎', col: '#bfe9ff', sell: 1500, desc: 'Brillo +1: tu set resplandece (+1 ataque)', fx: { glow: 1, atk: 1 } },
 };
 // Boris compra y vende las gemas al MISMO precio (la más barata, 1 M)
-const GEM_PRICE = { topacio: 1000000, rubi: 1100000, zafiro: 1100000, esmeralda: 1100000, amatista: 3000000, diamante: 5500000, opalo: 7000000 };
+const GEM_PRICE = { topacio: 1000000, rubi: 1100000, zafiro: 1100000, esmeralda: 1100000, amatista: 3000000, diamante: 5500000, opalo: 7000000, aguamarina: 8000000, rodocrosita: 8000000 };
 for (const [id, g] of Object.entries(GEMS)) { g.sell = GEM_PRICE[id]; ITEMS[id] = { name: g.name, icon: g.icon, type: 'gem', stack: true, sell: g.sell, price: g.sell, col: g.col, desc: g.desc }; }
 
 // Colores de rareza de los nombres de equipo
@@ -578,4 +584,6 @@ const INFRA_BOSS = ['hades', 'serafin_caido', 'serafina_noche', 'serafin_inferna
 for (const [t, m] of Object.entries(MONSTERS)) if (m.boss && !INFRA_BOSS.includes(t)) m.loot.push(['gema_ascension', +(CFG.ASC_CHANCE * Math.max(0.1, Math.min(1, (m.lv || 1) / 800))).toFixed(7), 1, 1]);
 // las gemas solo salen de las rocas (minería): se quitan de toda tabla de botín de monstruos y jefes
 for (const m of Object.values(MONSTERS)) if (m.loot) m.loot = m.loot.filter((q) => !GEMS[q[0]]);
+// Aguamarina y Rodocrosita: solo en jefes (todos, proporcional a su nivel, mín. 10 %) y minando, muy raras; no están en la tienda
+for (const m of Object.values(MONSTERS)) if (m.boss && m.loot) for (const g of ['aguamarina', 'rodocrosita']) m.loot.push([g, +(CFG.SPD_GEM_BOSS * Math.max(0.1, Math.min(1, (m.lv || 1) / 800))).toFixed(7), 1, 1]);
 module.exports = { CFG, ITEMS, GEMS, RAR, SHOP, SHOPS, START_KIT, MONSTERS, SPAWN_PLAN, NPC_TIPS };

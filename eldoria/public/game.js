@@ -669,6 +669,8 @@
     if (gb.mana) parts.push(`+${gb.mana} maná`);
     if (gb.crit) parts.push(`${Math.round(gb.crit * 100)}% crítico`);
     if (gb.steal) parts.push(`${Math.round(gb.steal * 100)}% robo de vida`);
+    if (gb.aspd) parts.push(`${Math.round(gb.aspd * 100)}% vel. de ataque`);
+    if (gb.cdr) parts.push(`${Math.round(gb.cdr * 100)}% menos espera`);
     $('#gemSum').textContent = (parts.length ? 'Gemas: ' + parts.join(' · ') : 'Sin bonus de gemas.') + (s.glow ? ` Brillo del set: ${s.glow}.` : '');
   }
 

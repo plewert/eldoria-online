@@ -347,8 +347,9 @@ module.exports = function install(Game) {
         if (d > (range === 1 ? 1.5 : range + 0.2)) { this.msgThrottle(p, 'far', 'El objetivo está demasiado lejos.'); return; }
       }
     }
-    p.mana -= sk.mana; p.skcd[sk.id] = now + sk.cd; p.nextSkill = now + 700;
-    this.send(p, { t: 'skcd', id: sk.id, ms: sk.cd });
+    const scd = Math.round(sk.cd * (1 - ((p.tn && p.tn.fight) ? 0 : (this.gbOf(p).cdr || 0))));      // Rodocrosita (sin efecto en el torneo)
+    p.mana -= sk.mana; p.skcd[sk.id] = now + scd; p.nextSkill = now + 700;
+    this.send(p, { t: 'skcd', id: sk.id, ms: scd });
     p.dirty.stats = true;
     this.addSkillXp(p, style, 4);
     if (sk.kind) { this.wspecial(p, sk, t, w, sl, now); return; }

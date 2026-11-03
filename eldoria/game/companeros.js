@@ -57,6 +57,8 @@ function apply(gb, ITEMS, ext) {
   }
   if (gb.crit > 0.10) gb.crit = 0.10;
   if (gb.steal > 0.15) gb.steal = 0.15;
+  if (gb.aspd > 0.15) gb.aspd = 0.15;
+  if (gb.cdr > 0.20) gb.cdr = 0.20;
   return gb;
 }
 module.exports = { build, apply, value, text, MOUNTS, BRASAS_DROP };

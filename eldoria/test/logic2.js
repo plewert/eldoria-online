@@ -282,7 +282,7 @@ ok('Tierras de Lava: zona PvP con lava intransitable y monstruos de fuego', () =
 });
 ok('las gemas salen de las rocas; los jefes solo las sueltan muy muy raro (0,1 %), los monstruos normales nunca; equipo raro a un tercio y mascotas de jefe', () => {
   assert.equal(I.gemChance(MONSTERS.rata), 0); assert.equal(I.gemChance(MONSTERS.dragon_sombra), 0.001);
-  for (const [t, d] of Object.entries(MONSTERS)) for (const q of d.loot) assert.ok(!require('../game/data').GEMS[q[0]], t + ' no tiene gemas en su tabla de botín');
+  for (const [t, d] of Object.entries(MONSTERS)) for (const q of d.loot) assert.ok(!require('../game/data').GEMS[q[0]] || ['aguamarina', 'rodocrosita'].includes(q[0]), t + ' no tiene gemas en su tabla de botín');
   assert.ok(!require('../game/extra').RECIPES.some((r) => /^@gem/.test(r.out[0])), 'no se fabrican gemas');
   assert.ok(Math.abs(MONSTERS.dragon_sombra.loot.find((l) => l[0] === 'sombra_arco')[1] - 0.005 / 3) < 1e-9, 'arco a un tercio de 0,5 %');
   for (const [t, d] of Object.entries(MONSTERS)) if (d.boss) { const l = d.loot.find((q) => q[0] === 'pet_' + t); assert.ok(l, 'mascota de ' + t); assert.equal(ITEMS['pet_' + t].type, 'pet'); assert.equal(ITEMS['pet_' + t].mon, t); }
@@ -698,7 +698,7 @@ ok('pociones nuevas: regeneración, antídoto, furia, arcana, cazador de botín,
   assert.ok(!game.dots.some((d) => d.tid === p.id), 'sin veneno'); p.hp = p.maxHp = 5000; const dn = game.hurtPlayer(p, 400, null, game.now, 'Fuego negro'); const dm = game.hurtPlayer(p, 400, null, game.now, 'Golpe');
   assert.ok(dn < dm / 3, 'resiste la quemadura (' + dn + ' vs ' + dm + ')');
   // furia / arcana: solo para su estilo; no se acumulan con el elixir de ataque general
-  p.buffs = {}; p.nextPotion = 0; p.eq.weapon = I.mk('espada_hierro', 1); const base = game.weaponOf(p).atk; p.inv[0] = I.mk('elixir_furia', 1); game.use(p, 0);
+  p.buffs = {}; p.nextPotion = 0; p.eq.weapon = I.mk('espada_hierro', 1); p.eq.weapon.gm = []; const base = game.weaponOf(p).atk; p.inv[0] = I.mk('elixir_furia', 1); game.use(p, 0);
   assert.ok(game.weaponOf(p).atk >= base * 1.14, 'furia sube el ataque cuerpo a cuerpo'); p.eq.weapon = I.mk('baston_fuego', 1); p.buffs.atkm = p.buffs.atkm; const mb = game.weaponOf(p).atk; game.addBuff(p, 'atkg', 1.15, 60); assert.ok(game.weaponOf(p).atk >= mb * 1.14, 'arcana sube la magia');
   p.buffs = {}; p.eq.weapon = I.mk('arco_largo', 1); const rb = game.weaponOf(p).atk; game.addBuff(p, 'atkr', 1.15, 60); assert.ok(game.weaponOf(p).atk >= rb * 1.14, 'rango sube el ataque a distancia'); assert.ok(ITEMS.elixir_rango.buff.atkr);
   // salto corto, crítico (excluyente con las de ataque) y resistencia elemental
@@ -998,7 +998,7 @@ ok('legiones del Inframundo: 46 demonios con dibujo, botín y apariciones en la 
 });
 ok('Boris compra y vende gemas al mismo precio; la más barata cuesta 1 M', () => {
   const SH = require('../game/data').SHOPS, G = require('../game/data').GEMS, ids = Object.keys(G);
-  for (const id of ids) { assert.ok(SH.boris.includes(id), id + ' en la tienda de Boris'); assert.equal(ITEMS[id].price, ITEMS[id].sell, id + ': compra = venta'); }
+  for (const id of ids) { if (id === 'aguamarina' || id === 'rodocrosita') { assert.ok(!SH.boris.includes(id)); assert.equal(ITEMS[id].price, ITEMS[id].sell); continue; } assert.ok(SH.boris.includes(id), id + ' en la tienda de Boris'); assert.equal(ITEMS[id].price, ITEMS[id].sell, id + ': compra = venta'); }
   assert.equal(Math.min(...ids.map((id) => ITEMS[id].price)), 1000000);
 });
 ok('modo historia: toda cueva de jefe tiene historia; entrada, tablillas, final, logros y guardado', () => {
@@ -1020,6 +1020,17 @@ ok('modo historia: toda cueva de jefe tiene historia; entrada, tablillas, final,
   const un = last.v.find((v) => v.boss === 'dragon_sombra'); assert.ok(!un.intro && !un.ch.length, 'lo no descubierto no envía texto');
   assert.deepEqual(H.sanitize({ zeus: { i: 1, c: [0, 0, 9, 'x', 2], e: 1 }, falso: { i: 1 } }), { zeus: { i: 1, c: [0, 2], e: 1 } });
   for (const s of H.STORIES) { p.ext.story[s.boss] = { i: 1, c: [0, 1, 2], e: 1 }; } game.checkAch(p); assert.ok(p.ext.ach.hist_todas, 'Cronista de Eldoria');
+});
+
+ok('gemas Aguamarina y Rodocrosita: efectos, topes, botín y sin tienda', () => {
+  const GB = I.gearBonus({ weapon: { id: 'espada_hierro', qty: 1, up: 0, gm: Array(8).fill('aguamarina').concat(Array(8).fill('rodocrosita')) } });
+  assert.ok(Math.abs(GB.aspd - CFG.SPD_GEM_CAP) < 1e-9 && Math.abs(GB.cdr - CFG.CDR_GEM_CAP) < 1e-9, 'topes 15 % y 20 %');
+  const one = I.gearBonus({ weapon: { id: 'espada_hierro', qty: 1, up: 0, gm: ['aguamarina', 'rodocrosita'] } }); assert.strictEqual(one.aspd, 0.03); assert.strictEqual(one.cdr, 0.04);
+  assert.ok(!require('../game/data').SHOPS.boris.includes('aguamarina') && !require('../game/data').SHOPS.boris.includes('rodocrosita'), 'no se venden en Boris');
+  const L = (t) => MONSTERS[t].loot.filter((q) => q[0] === 'aguamarina' || q[0] === 'rodocrosita'); const z = MONSTERS.zeus || Object.values(MONSTERS).find((m) => m.boss);
+  assert.ok(z.loot.some((q) => q[0] === 'aguamarina' && q[1] > 0 && q[1] <= CFG.SPD_GEM_BOSS) && z.loot.some((q) => q[0] === 'rodocrosita'), 'los jefes las sueltan');
+  assert.ok(CFG.SPD_GEM_BOSS > CFG.ASC_CHANCE, 'algo más probables que la Gema de Ascensión');
+  const { ws, p } = login('Veloz'); p.eq.weapon = I.mk('espada_hierro', 1); p.eq.weapon.gm = []; const base = game.weaponOf(p).cd; p.eq.weapon.gm = ['aguamarina']; assert.ok(game.weaponOf(p).cd < base, 'ataca más rápido');
 });
 
 console.log(`\n${n} pruebas correctas`);

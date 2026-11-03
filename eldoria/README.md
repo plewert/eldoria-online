@@ -530,3 +530,8 @@ Capa opcional sin dependencias: bloom, aberración cromática (en temblores y ra
 
 ## Casas con techo (`public/casas.js`, solo cliente)
 Las casas de las ciudades (muros + suelo de tienda) reciben un techo: teja (Aldea Real), paja (aldea y puerto) o piedra (Alba Dorada), con sombra proyectada y chimenea con humo en algunas. Al entrar el techo se funde a transparente y se ve el interior (alfombra, estantes, cuadros, estandartes, antorchas). De noche las ventanas se encienden y sale luz por la puerta. No cambia nada en el servidor. Se apaga con **F5** (`localStorage eldoria.casas`); para quitarlo, borrar `casas.js` y su `<script>`.
+
+## Gemas Aguamarina y Rodocrosita
+- 🩵 **Aguamarina**: +3 % de velocidad de ataque por gema (tope 15 % en total, equipo + mascota/montura). Reduce el `cd` del arma.
+- 🩷 **Rodocrosita**: −4 % de espera de los poderes especiales por gema (tope 20 %). Sin efecto durante el torneo PvP.
+- Solo se consiguen minando (`SPD_GEM_MINE`, muy raro, mejora con el pico y el nivel) y en jefes (`SPD_GEM_BOSS` 0,05 %, algo más que la Gema de Ascensión; escala con el nivel del jefe). No están en la tienda de Boris; él las compra a 8 M.

@@ -35,8 +35,8 @@ const PICKS = {
 // mascota de la minería: muy rara (más probable con rocas de más nivel)
 const PET = { id: 'pet_golem', name: 'Gólem de Brasas', gold: 0.3, base: 0.0004, perLvl: 0.000008 };
 const petChance = (lvl) => PET.base + PET.perLvl * lvl;
-const RARE_GEMS = new Set(['amatista', 'opalo', 'diamante']);
-const GEM_ICON = { rubi: '🔴', zafiro: '🔵', esmeralda: '🟢', topacio: '🟡', amatista: '🟣', opalo: '🟠', diamante: '💎' };
+const RARE_GEMS = new Set(['amatista', 'opalo', 'diamante', 'aguamarina', 'rodocrosita']);
+const GEM_ICON = { rubi: '🔴', zafiro: '🔵', esmeralda: '🟢', topacio: '🟡', amatista: '🟣', opalo: '🟠', diamante: '💎', aguamarina: '🩵', rodocrosita: '🩷' };
 
 function build(ITEMS_, SHOPS) {
   const NODES = require('./extra').NODES;
@@ -55,7 +55,7 @@ function build(ITEMS_, SHOPS) {
 }
 
 module.exports = { build, ROCKS, PICKS, ORDER, MINE_MAX, PET, petChance, install(Game) {
-  const { ITEMS, GEMS } = require('./data');
+  const { ITEMS, GEMS, CFG } = require('./data');
   const world = require('./world');
   const P = Game.prototype;
   const have = (p, id) => p.inv.reduce((n, it) => n + (it && it.id === id ? it.qty : 0), 0);
@@ -94,6 +94,11 @@ module.exports = { build, ROCKS, PICKS, ORDER, MINE_MAX, PET, petChance, install
       this.msgC(p, `${RARE_GEMS.has(g) ? '🌟 ¡RARO! ' : '💎 '}¡Encuentras ${ITEMS[g].name} en la roca!`, GEMS[g].col);
       this.fx.push({ k: 'd', x: n.x, y: n.y, v: `${GEM_ICON[g]} ${ITEMS[g].name}`, c: 'g' });
       if (RARE_GEMS.has(g)) this.broadcastChat(`⛏️ ¡${p.name} ha encontrado ${ITEMS[g].name} minando ${nd.name}!`, 'k');
+    }
+    if (Math.random() < CFG.SPD_GEM_MINE * (1 + k.gem) * (1 + lv / 800)) {            // Aguamarina / Rodocrosita: muy raras
+      const g = Math.random() < 0.5 ? 'aguamarina' : 'rodocrosita';
+      this.giveOrDrop(p, g, 1); this.logDrop(p, 'mineria', g); e.c[g] = (e.c[g] || 0) + 1;
+      this.msgC(p, `🌟 ¡RARO! ¡Encuentras ${ITEMS[g].name} en la roca!`, GEMS[g].col); this.broadcastChat(`⛏️ ¡${p.name} ha encontrado ${ITEMS[g].name} minando ${nd.name}!`, 'k');
     }
     if (Math.random() < petChance(nd.lvl)) {                                        // ¡mascota!
       this.giveOrDrop(p, PET.id, 1); this.logDrop(p, 'mineria', PET.id);

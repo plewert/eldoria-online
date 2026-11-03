@@ -67,7 +67,7 @@ function bonusOf(it) {
   return out;
 }
 
-function emptyFx() { return { atk: 0, hp: 0, mana: 0, def: 0, crit: 0, steal: 0, glow: 0 }; }
+function emptyFx() { return { atk: 0, hp: 0, mana: 0, def: 0, crit: 0, steal: 0, glow: 0, aspd: 0, cdr: 0 }; }
 
 function addGemFx(out, it) {
   if (!it || !it.gm) return out;
@@ -88,6 +88,8 @@ function gearBonus(eq) {
   }
   if (out.crit > 0.10) out.crit = 0.10;                    // tope de crítico del equipo
   if (out.steal > 0.15) out.steal = 0.15;                  // tope de robo de vida (gemas + equipo)
+  if (out.aspd > CFG.SPD_GEM_CAP) out.aspd = CFG.SPD_GEM_CAP;   // tope de velocidad de ataque
+  if (out.cdr > CFG.CDR_GEM_CAP) out.cdr = CFG.CDR_GEM_CAP;     // tope de reducción de espera
   return out;
 }
 

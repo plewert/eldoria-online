@@ -366,7 +366,7 @@ class Game {
     const it = p.eq.weapon;
     if (!it) return FISTS;
     const d = ITEMS[it.id];
-    return { name: I.nameOf(it), style: d.style, atk: I.baseStat(it) + this.gbOf(p).atk, cd: d.cd, range: d.range, mana: d.mana };
+    return { name: I.nameOf(it), style: d.style, atk: I.baseStat(it) + this.gbOf(p).atk, cd: Math.round(d.cd * (1 - (this.gbOf(p).aspd || 0))), range: d.range, mana: d.mana };
   }
 
   styleOf(p) { return this.weaponOf(p).style; }
