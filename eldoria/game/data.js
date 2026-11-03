@@ -39,6 +39,7 @@ const CFG = {
   ANCIENT_CHANCE: 0.015,        // prob. de que un equipo soltado sea Ancient (x4 en jefes)
   GEM_CHANCE: 0,                // monstruos normales: no sueltan gemas (solo se consiguen minando rocas)
   GEM_CHANCE_BOSS: 0.001,       // jefes: 0,1 % por participante (muy muy raro; el que más daño hace tiene algo más de suerte)
+  BOSS_GOLD_K: 2,               // oro por muerte de cualquier jefe ×2 (se aplica al final de data.js)
   BOSS_DROP_K: 0.8,             // el botín de jefes (lo que no es seguro) cae un 20 % menos
   GEAR_DROP_MULT: 0.5,          // los equipos raros que sueltan monstruos y jefes caen la mitad de seguido
   BOSS_RARE_MULT: 4,
@@ -561,6 +562,8 @@ for (const d of Object.values(MONSTERS)) if (!d.lv) d.lv = Math.max(1, Math.roun
     SHOPS.boris.push(id);
   }
 }
+// más oro por matar jefes (el oro se reparte entre los participantes según su daño)
+for (const m of Object.values(MONSTERS)) if (m.boss && m.gold && !m._goldK) { m.gold = [Math.round(m.gold[0] * CFG.BOSS_GOLD_K), Math.round(m.gold[1] * CFG.BOSS_GOLD_K)]; m._goldK = 1; }
 // Gema Corrupta: no es una gema normal (no se engarza); se usa sobre un arma o armadura y abre una ranura nueva
 ITEMS.gema_corrupta = { name: 'Gema Corrupta', icon: '🟣', spr: 'gem_corrupta', type: 'misc', stack: true, corrupt: 1, col: '#b46cff', sell: CFG.CORRUPT_PRICE, price: CFG.CORRUPT_PRICE,
   desc: `Úsala sobre un arma o equipo (menú de la mochila, ${CFG.CORRUPT_COST.toLocaleString('es')} de oro, en zona segura): abre 1 ranura que acepta cualquier gema. Máx. ${CFG.MAX_CORRUPT} por objeto. ${Math.round(CFG.CORRUPT_FAIL * 100)} % de fallo: se consume sin abrir nada.` };

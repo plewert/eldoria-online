@@ -39,7 +39,7 @@ function build(ITEMS, MONSTERS) {
   ITEMS.trofeo_hades = { name: 'Corona de Hades', icon: '👑', type: 'misc', stack: true, sell: 46000 };
   MONSTERS.hades = {
     name: 'Hades, Rey del Inframundo', icon: '🔥', lv: 900, hp: 620000, dmg: [420, 650], dmgK: 3.2, exp: 160000, move: 400, atkCd: 1200, aggro: 20, respawn: 60000, armor: 0.5, shared: true, boss: true, special: 'hades',
-    gold: [28000, 40000], loot: [['trofeo_hades', 1, 1, 2], ['pocion_vida_g', 1, 5, 10], ['pocion_mana_g', 1, 5, 10], ['pluma_fenix', 0.5, 1, 2]],
+    gold: [56000, 80000], loot: [['trofeo_hades', 1, 1, 2], ['pocion_vida_g', 1, 5, 10], ['pocion_mana_g', 1, 5, 10], ['pluma_fenix', 0.5, 1, 2]],
   };
   const boss = MONSTERS.hades;
   for (const p of PIECES) boss.loot.push([p[0], p[7], 1, 1]);

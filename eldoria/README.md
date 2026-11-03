@@ -510,3 +510,5 @@ Boris vende y compra las 7 gemas **al mismo precio**: topacio 1 000 000 (la más
 ## Reparto de botín de jefes
 - Todos los que hacen daño al jefe tiran su propio botín: multiplicador de suerte ×0,9 (poco daño) hasta ×1,5 (el que más daño hizo), y el que más daño hizo recibe ×1,25 extra. Antes iba de ×0,45 a ×1,6.
 - Cada participante recibe su botín (y su oro) en su propia casilla junto al jefe (el que más daño hizo, en la casilla del jefe); solo él puede recogerlo al inicio.
+
+- Oro por muerte de jefes ×2 (`CFG.BOSS_GOLD_K`): p. ej. Zeus 50.000–72.000, Hades 112.000–160.000, Dragón de las Sombras 20.000–40.000. Se reparte según el daño.
