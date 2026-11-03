@@ -75,7 +75,8 @@
       send({ t: 'auth', mode: wantMode, name, pass, color });
     });
     const refresh = () => fetch('/status').then((r) => r.json()).then((s) => {
-      $('#online').textContent = s.online === 1 ? '1 aventurero conectado ahora.' : `${s.online} aventureros conectados ahora.`;
+      const nb = s.bots | 0, tot = (s.online | 0) + nb;      // los aventureros del servidor (NPC) cuentan, pero se distinguen
+      $('#online').textContent = nb ? `${tot} aventureros en el mundo ahora: ${s.online} ${s.online === 1 ? 'jugador' : 'jugadores'} + ${nb} NPC del servidor.` : (s.online === 1 ? '1 aventurero conectado ahora.' : `${s.online} aventureros conectados ahora.`);
     }).catch(() => { $('#online').textContent = ''; });
     refresh(); setInterval(() => { if (!joined) refresh(); }, 15000);
   })();

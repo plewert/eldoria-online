@@ -35,7 +35,7 @@ const server = http.createServer((req, res) => {
   if (u === '/health') { res.writeHead(200, { 'Content-Type': 'text/plain' }); return res.end('ok'); }
   if (u === '/status') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    return res.end(JSON.stringify({ online: [...game.players.values()].filter((p) => p.ws).length, monsters: game.monsters.filter((m) => !m.dead).length, v: BUILD }));
+    return res.end(JSON.stringify({ online: [...game.players.values()].filter((p) => p.ws).length, bots: (game.bots || []).length, monsters: game.monsters.filter((m) => !m.dead).length, v: BUILD }));
   }
   if (u === '/') u = '/index.html';
   const fp = path.normalize(path.join(PUB, u));
