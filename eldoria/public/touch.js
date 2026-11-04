@@ -27,6 +27,19 @@
   base.addEventListener('pointerdown', (ev) => { ev.preventDefault(); id = ev.pointerId; base.setPointerCapture(id); const r = base.getBoundingClientRect(); cx = r.left + r.width / 2; cy = r.top + r.height / 2; base.classList.add('on'); set(ev); });
   base.addEventListener('pointermove', (ev) => { if (ev.pointerId === id) set(ev); });
   base.addEventListener('pointerup', end); base.addEventListener('pointercancel', end);
+  /* Con el pulsador (joystick) sujeto, algunos teléfonos no generan el "click" del segundo dedo y no se podían usar los botones
+     (especiales, pociones, estilos…). Se detecta el toque con pointerdown/pointerup y se dispara el click a mano (una sola vez). */
+  const taps = new Map(); let suppUntil = 0, suppEl = null;
+  document.addEventListener('pointerdown', (ev) => {
+    if (ev.pointerType !== 'touch' || id === null || ev.pointerId === id) return;
+    const b = ev.target && ev.target.closest && ev.target.closest('button'); if (b && !b.disabled) taps.set(ev.pointerId, { b, x: ev.clientX, y: ev.clientY, t: performance.now() });
+  }, true);
+  document.addEventListener('pointerup', (ev) => {
+    const t = taps.get(ev.pointerId); if (!t) return; taps.delete(ev.pointerId);
+    if (Math.hypot(ev.clientX - t.x, ev.clientY - t.y) < 16 && performance.now() - t.t < 800) { suppUntil = performance.now() + 500; suppEl = t.b; t.b.click(); }
+  }, true);
+  document.addEventListener('pointercancel', (ev) => taps.delete(ev.pointerId), true);
+  document.addEventListener('click', (ev) => { if (ev.isTrusted && performance.now() < suppUntil && suppEl && ev.target.closest && ev.target.closest('button') === suppEl) { ev.stopImmediatePropagation(); ev.preventDefault(); } }, true);
   /* ---- pantalla completa, zoom del mapa y gesto de pellizco ---- */
   const small = Math.min(innerWidth, innerHeight) < 520;
   if (store.get('eldoria.zoom') === null && small && X.setZoom) X.setZoom(0.8);           // en teléfono se ve más mapa de entrada
