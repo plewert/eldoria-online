@@ -546,3 +546,6 @@ Nota: la herrería de Aldea Real está en [80,67,84,71] para no tapar el portal 
 
 ## Botones 📖 y 🙂
 Los botones 📖 álbum y 🙂 emotes están en la esquina superior derecha del juego (en teléfono, bajo los botones de zoom); también con F3/F9.
+
+## Cueva de Medusa (Inframundo)
+Jefe nuevo en una cueva privada del Inframundo (puerta en 280,315; entrada 1.400.000 de oro). Habilidades: **Mirada** (zonas seguras 8 s de piedra si te quedas fuera), **Piel de piedra** (inmune 6 s), **Aparición** (desaparece, reaparece cerca y petrifica 2 s), **Atracción** (te jala hacia ella), **Bola tóxica** (explota y salpica a todos). Petrificado: no te mueves y recibes más daño. **Botín** (reparto por daño, hasta ×3 el que más daño hace): Yelmo de la Gorgona, Coraza de Escamas, Manto de Víboras, Garras Petrificantes, Grebas, Botas de la Reptante, Égida de la Hidra de Piedra, Carcaj de las Víboras, Orbe de las Cuatro Serpientes, 3 anillos (Serpiente Dorada, Ojo de la Gorgona, Sombra del Basilisco), Collar de la Reina Serpiente, Hacha Colmillo, Arco Víbora Espectral y Báculo de las Cuatro Cabezas (veneno), más Ojo de Medusa, materiales y Elixir de la Gorgona. No se venden en tiendas.

@@ -305,12 +305,12 @@ ok('Gema Corrupta: abre ranuras (máx. 5) por 200k, 10 % de fallo la consume, ac
   game.handle(D.p, { t: 'socket', gem: 1, from: 'eq', at: 'weapon' });
   assert.ok(D.p.eq.weapon.gm.includes('rubi'), 'la ranura corrupta acepta cualquier gema');
   assert.deepEqual(I.normalize(JSON.parse(JSON.stringify(D.p.eq.weapon))).nc, 5, 'se guarda');
-  for (const t of ['hades', 'serafin_caido', 'serafina_noche', 'serafin_infernal']) {
+  for (const t of ['hades', 'medusa', 'serafin_caido', 'serafina_noche', 'serafin_infernal']) {
     const l = D0.MONSTERS[t].loot.find((q) => q[0] === 'gema_corrupta'); assert.ok(l, t);
   }
   const min = Math.min(...Object.values(D0.MONSTERS).flatMap((m) => (m.loot || []).filter((q) => q[0] !== 'gema_corrupta').map((q) => q[1])));
   assert.ok(CFG.CORRUPT_CHANCE < min, 'la más rara del juego');
-  assert.ok(!Object.entries(D0.MONSTERS).some(([t, m]) => !['hades', 'serafin_caido', 'serafina_noche', 'serafin_infernal'].includes(t) && (m.loot || []).some((q) => q[0] === 'gema_corrupta')), 'solo Inframundo');
+  assert.ok(!Object.entries(D0.MONSTERS).some(([t, m]) => !['hades', 'medusa', 'serafin_caido', 'serafina_noche', 'serafin_infernal'].includes(t) && (m.loot || []).some((q) => q[0] === 'gema_corrupta')), 'solo Inframundo');
   assert.ok(D0.SHOPS.boris.includes('gema_corrupta')); assert.equal(D0.ITEMS.gema_corrupta.price, 200000000); assert.equal(D0.ITEMS.gema_corrupta.sell, 200000000);
 });
 ok('Gema de Ascensión: sube el +N (máx. +6) por 300k, 20 % de fallo no cambia nada, muy rara y Boris 150M', () => {
@@ -324,7 +324,7 @@ ok('Gema de Ascensión: sube el +N (máx. +6) por 300k, 20 % de fallo no cambia 
     Math.random = () => 0.5; for (let k = 0; k < 8; k++) game.handle(D.p, { t: 'ascend', gem: 0, from: 'eq', at: 'weapon' });
   } finally { Math.random = r0; }
   assert.equal(D.p.eq.weapon.up, 6, 'tope +6'); assert.ok(D.p.inv[0].qty >= 1, 'no gasta de más');
-  const infra = ['hades', 'serafin_caido', 'serafina_noche', 'serafin_infernal'], ch = (t) => (D0.MONSTERS[t].loot.find((q) => q[0] === 'gema_ascension') || [])[1];
+  const infra = ['hades', 'medusa', 'serafin_caido', 'serafina_noche', 'serafin_infernal'], ch = (t) => (D0.MONSTERS[t].loot.find((q) => q[0] === 'gema_ascension') || [])[1];
   for (const [t, m] of Object.entries(D0.MONSTERS)) if (m.boss) assert.ok(infra.includes(t) ? ch(t) === undefined : ch(t) > 0, t);
   assert.ok(ch('rey_esqueleto') < ch('dragon_sombra') && ch('dragon_sombra') < ch('zeus'), 'jefes débiles, menos probabilidad');
   assert.ok(ch('zeus') === CFG.ASC_CHANCE && ch('rey_esqueleto') >= CFG.ASC_CHANCE * 0.1 - 1e-9);
@@ -334,7 +334,7 @@ ok('Gema de Ascensión: sube el +N (máx. +6) por 300k, 20 % de fallo no cambia 
 ok('Boris vende equipo nivel 80+ de fábrica desde 10M y lo recompra al valor de siempre', () => {
   const D0 = require('../game/data'), ids = D0.SHOPS.boris.filter((i) => D0.ITEMS[i].minLevel >= 80);
   assert.ok(ids.length > 30, 'hay equipo nivel 80+ a la venta');
-  for (const i of ids) { const d = D0.ITEMS[i]; assert.ok(d.price >= 10000000 && d.sell < d.price, i); assert.ok(!d.zeus && !d.raid && !i.startsWith('hd_'), 'sin exclusivos de Zeus/Hades/raids'); }
+  for (const i of ids) { const d = D0.ITEMS[i]; assert.ok(d.price >= 10000000 && d.sell < d.price, i); assert.ok(!d.zeus && !d.medusa && !d.raid && !i.startsWith('hd_'), 'sin exclusivos de Zeus/Hades/raids'); }
   const it = I.mk(ids[0]); assert.equal(it.gm.length, 0); assert.ok(!it.up && !it.an, 'sin ranuras ni +N');
   assert.ok(D0.ITEMS.espada_hierro && D0.ITEMS.espada_hierro.price < 1e7, 'las baratas siguen igual');
 });

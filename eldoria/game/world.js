@@ -18,10 +18,10 @@ const H = 396;                  // + 124 filas al sur: salas de la Raid y copias
 const T = {
   GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10,
   SAND: 11, SNOW: 12, SWAMP: 13, DUNE: 14, PALM: 15, PINE: 16, DEADTREE: 17, CACTUS: 18, ICEBLOCK: 19,
-  MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24, CFLOOR: 25, CWALL: 26, LAVA: 27, ASH: 28, CLOUDF: 29, CLOUDW: 30, WEBF: 31, WEBW: 32, AQF: 33, AQW: 34, MAGF: 35, MAGW: 36, TOMBF: 37, TOMBW: 38, BRAZ: 39, OLYF: 40, OLYW: 41, OLYS: 42, HDF: 43, HDW: 44,
+  MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24, CFLOOR: 25, CWALL: 26, LAVA: 27, ASH: 28, CLOUDF: 29, CLOUDW: 30, WEBF: 31, WEBW: 32, AQF: 33, AQW: 34, MAGF: 35, MAGW: 36, TOMBF: 37, TOMBW: 38, BRAZ: 39, OLYF: 40, OLYW: 41, OLYS: 42, HDF: 43, HDW: 44, MDF: 45, MDW: 46, MDP: 47, MDB: 48,
 };
 const BLOCKED = new Uint8Array(64);   // (con 32 casillas, WEBW=32 quedaba fuera y no bloqueaba)
-[T.WATER, T.TREE, T.WALL, T.ROCK, T.PALM, T.PINE, T.DEADTREE, T.CACTUS, T.ICEBLOCK, T.BOG, T.CWALL, T.LAVA, T.CLOUDW, T.WEBW, T.AQW, T.MAGW, T.TOMBW, T.BRAZ, T.OLYW, T.OLYS, T.HDW].forEach((t) => { BLOCKED[t] = 1; });
+[T.WATER, T.TREE, T.WALL, T.ROCK, T.PALM, T.PINE, T.DEADTREE, T.CACTUS, T.ICEBLOCK, T.BOG, T.CWALL, T.LAVA, T.CLOUDW, T.WEBW, T.AQW, T.MAGW, T.TOMBW, T.BRAZ, T.OLYW, T.OLYS, T.HDW, T.MDW, T.MDP, T.MDB].forEach((t) => { BLOCKED[t] = 1; });
 
 // El orden importa: gana la primera zona cuyo rectángulo contiene la casilla.
 const RAID_Y0 = 146, RAID_Y1 = 170, RAID_W = 36;
@@ -65,6 +65,7 @@ const ZONES = [
   { id: 'ciudad_alba', name: 'Ciudad de Alba Dorada', pvp: false, kind: 'town', rect: [380, 57, 420, 83] },        // gran ciudad segura en el centro de las Tierras Inexploradas
   { id: 'cueva_olimpo', name: 'El Olimpo, Hogar de Zeus', pvp: false, kind: 'dungeon', tint: 'rgba(205,228,255,.10)', rect: [326, 20, 359, 38] },
   { id: 'cueva_hades', name: 'Trono de Hades, Rey del Inframundo', pvp: false, kind: 'dungeon', dark: true, tint: 'rgba(255,50,10,.20)', rect: [223, 296, 256, 314] },
+  { id: 'cueva_medusa', name: 'Cueva de Medusa, Reina de las Serpientes', pvp: false, kind: 'dungeon', tint: 'rgba(60,210,110,.13)', rect: [262, 296, 295, 314] },
   { id: 'inframundo', name: 'El Inframundo', pvp: false, kind: 'wild', tint: 'rgba(200,30,10,.14)', rect: [0, 290, 479, 395] },
   { id: 'montana_alta', name: 'Montañas del Trueno', pvp: false, kind: 'wild', rect: [320, 0, 399, 56], tint: 'rgba(150,170,210,.10)' },
   { id: 'nubes_reino', name: 'Reino de las Nubes', pvp: false, kind: 'wild', rect: [400, 0, 479, 56], tint: 'rgba(200,225,255,.12)' },
@@ -85,6 +86,7 @@ const INST_CAVES = [                       // cueva (zona), jefe, precio por ent
   { cave: 'cueva_anubis', boss: 'anubis',         fee: 800000 },
   { cave: 'cueva_olimpo', boss: 'zeus',           fee: 1000000 },
   { cave: 'cueva_hades',  boss: 'hades',          fee: 1200000 },
+  { cave: 'cueva_medusa', boss: 'medusa',         fee: 1400000 },
 ];
 const INST_POS = [];                        // esquinas (x0, y0) de las 18 plazas libres del sur
 for (let r = 0; r < 2; r++) for (let c = 0; c < 5; c++) INST_POS.push([282 + 36 * c, 142 + 22 * r]);
@@ -540,6 +542,7 @@ const RAID = { rooms: RAID_ROOMS, enter: { x: 85, y: 72 } };
 
 /* ---------- EL INFRAMUNDO: gran zona de ceniza, ríos de lava y ruinas al sur del mapa; dentro está el Trono de Hades ---------- */
 const CAVE9 = { rect: zoneById('cueva_hades').rect, door: [240, 315], inside: [240, 311], exit: [240, 313], lair: [240, 300] };
+const CAVE10 = { rect: zoneById('cueva_medusa').rect, door: [280, 315], inside: [280, 311], exit: [280, 313], lair: [280, 300] };
 const INFRA = { rect: zoneById('inframundo').rect, gate: [431, 70], spawn: [240, 386], back: [240, 391] };
 (function carveInframundo() {
   const [x0, y0, x1, y1] = INFRA.rect, rr = mulberry32(666013), nz = makeNoise(31337);
@@ -576,6 +579,24 @@ const INFRA = { rect: zoneById('inframundo').rect, gate: [431, 70], spawn: [240,
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (tiles[idx(x, y)] === T.HDF && !seen.has(idx(x, y))) tiles[idx(x, y)] = T.HDW;
   tiles[idx(C.door[0], C.door[1])] = T.ASH;
 })(CAVE9);
+/* Cueva de Medusa: gran sala de templo con columnas rotas, braseros y runas; pasillo de entrada al sur (puerta en [280,315]). */
+(function carveMedusa(C) {
+  const [x0, y0, x1, y1] = C.rect;
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) tiles[idx(x, y)] = T.MDW;
+  const floor = (x, y) => { if (x > x0 && x < x1 && y > y0 && y < y1) tiles[idx(x, y)] = T.MDF; };
+  for (let y = 298; y <= 309; y++) for (let x = 264; x <= 293; x++) {
+    const cx = Math.min(x - 264, 293 - x), cy = Math.min(y - 298, 309 - y);
+    if (cx + cy < 2) continue;                                                                   // esquinas recortadas
+    floor(x, y);
+  }
+  for (let y = 310; y <= 313; y++) for (let x = 277; x <= 282; x++) floor(x, y);                // pasillo de entrada
+  for (const [px, py] of [[270, 299], [289, 299], [270, 303], [289, 303], [270, 307], [289, 307], [274, 301], [285, 301], [274, 305], [285, 305]]) if (tiles[idx(px, py)] === T.MDF) tiles[idx(px, py)] = T.MDP;   // columnas rotas
+  for (const [bx, by] of [[265, 299], [294, 299], [265, 308], [294, 308], [276, 309], [283, 309]]) if (tiles[idx(bx, by)] === T.MDF) tiles[idx(bx, by)] = T.MDB;   // braseros
+  const seen = new Set([idx(C.inside[0], C.inside[1])]), q = [...seen];
+  for (let i = 0; i < q.length; i++) { const k = q[i], x = k % W, y = (k / W) | 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) { const nk = idx(x + dx, y + dy); if (inb(x + dx, y + dy) && tiles[nk] === T.MDF && !seen.has(nk)) { seen.add(nk); q.push(nk); } } }
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (tiles[idx(x, y)] === T.MDF && !seen.has(idx(x, y))) tiles[idx(x, y)] = T.MDW;
+  tiles[idx(C.door[0], C.door[1])] = T.ASH;
+})(CAVE10);
 
 
 /* 4) Caminos (despejan árboles, agua y rocas del trazado) */
@@ -636,6 +657,8 @@ addPortal(CAVE8.door[0], CAVE8.door[1], CAVE8.inside[0], CAVE8.inside[1], 'El Ol
 addPortal(CAVE8.exit[0], CAVE8.exit[1], CAVE8.door[0], CAVE8.door[1] + 1, 'Salir a las Montañas del Trueno');
 addPortal(CAVE9.door[0], CAVE9.door[1], CAVE9.inside[0], CAVE9.inside[1], 'Trono de Hades (peligro extremo)', CAVE_FEE);
 addPortal(CAVE9.exit[0], CAVE9.exit[1], CAVE9.door[0], CAVE9.door[1] + 1, 'Salir al Inframundo');
+addPortal(CAVE10.door[0], CAVE10.door[1], CAVE10.inside[0], CAVE10.inside[1], 'Cueva de Medusa (peligro extremo)', CAVE_FEE);
+addPortal(CAVE10.exit[0], CAVE10.exit[1], CAVE10.door[0], CAVE10.door[1] + 1, 'Salir al Inframundo');
 addPortal(INFRA.gate[0], INFRA.gate[1], INFRA.spawn[0], INFRA.spawn[1], 'El Inframundo (portal maldito)');
 addPortal(INFRA.back[0], INFRA.back[1], INFRA.gate[0], INFRA.gate[1] + 1, 'Volver al mundo de los vivos');
 addPortal(GUILD.door[0], GUILD.door[1], GUILD.inside[0], GUILD.inside[1], 'Cueva del Gremio de Mineros (zona segura)');
@@ -644,7 +667,7 @@ addPortal(GUILD2.door[0], GUILD2.door[1], GUILD2.inside[0], GUILD2.inside[1], 'G
 addPortal(GUILD2.exit[0], GUILD2.exit[1], GUILD2.outside[0], GUILD2.outside[1], 'Salir al Prado');
 const isWalkableRaw = (x, y) => inb(x, y) && !BLOCKED[tiles[idx(x, y)]] && !DECOR_SET.has(y * W + x);
 // Instancias de jefes de cueva: se copia el terreno de cada cueva en sus plazas y se crean los portales
-const CAVES_BY_ZONE = { cueva: CAVE, cueva_jade: CAVE2, cueva_nube: CAVE3, cueva_arana: CAVE4, cueva_mar: CAVE5, cueva_magma: CAVE6, cueva_anubis: CAVE7, cueva_olimpo: CAVE8, cueva_hades: CAVE9 };
+const CAVES_BY_ZONE = { cueva: CAVE, cueva_jade: CAVE2, cueva_nube: CAVE3, cueva_arana: CAVE4, cueva_mar: CAVE5, cueva_magma: CAVE6, cueva_anubis: CAVE7, cueva_olimpo: CAVE8, cueva_hades: CAVE9, cueva_medusa: CAVE10 };
 for (const I of INSTANCES) {
   const C = CAVES_BY_ZONE[I.cave], [x0, y0, x1, y1] = C.rect, ex = PORTALS.find((q) => q.x === C.exit[0] && q.y === C.exit[1]);
   I.door = C.door; I.out = [ex.tx, ex.ty];
@@ -671,7 +694,7 @@ function clearAround(cx, cy, r) {
     for (let x = cx - r; x <= cx + r; x++) {
       if (!inb(x, y)) continue;
       const t = tiles[idx(x, y)];
-      if (BLOCKED[t] && t !== T.WALL && t !== T.CWALL && t !== T.CLOUDW && t !== T.WEBW && t !== T.AQW && t !== T.MAGW && t !== T.HDW) tiles[idx(x, y)] = zoneAt(x, y).id === 'inframundo' ? T.ASH : zoneAt(x, y).id === 'dunas' ? T.DUNE : zoneAt(x, y).id === 'cumbres' ? T.SNOW : T.GRASS;
+      if (BLOCKED[t] && t !== T.WALL && t !== T.CWALL && t !== T.CLOUDW && t !== T.WEBW && t !== T.AQW && t !== T.MAGW && t !== T.HDW && t !== T.MDW && t !== T.MDP && t !== T.MDB) tiles[idx(x, y)] = zoneAt(x, y).id === 'inframundo' ? T.ASH : zoneAt(x, y).id === 'dunas' ? T.DUNE : zoneAt(x, y).id === 'cumbres' ? T.SNOW : T.GRASS;
     }
   }
 }
@@ -792,6 +815,7 @@ monsterSpawns.push({ type: 'aracnido_fuego', x: CAVE4.lair[0], y: CAVE4.lair[1] 
   monsterSpawns.push({ type: 'anubis', x: CAVE7.lair[0], y: CAVE7.lair[1] });
   monsterSpawns.push({ type: 'zeus', x: CAVE8.lair[0], y: CAVE8.lair[1] });
   monsterSpawns.push({ type: 'hades', x: CAVE9.lair[0], y: CAVE9.lair[1] });
+  monsterSpawns.push({ type: 'medusa', x: CAVE10.lair[0], y: CAVE10.lair[1] });
   const nearest = (zoneId, px, py) => {
     let best = null, bd = 1e9;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -809,7 +833,7 @@ monsterSpawns.push({ type: 'aracnido_fuego', x: CAVE4.lair[0], y: CAVE4.lair[1] 
 })();
 
 // Versión compacta del mapa para el cliente (un carácter por casilla)
-const CH = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHI';
+const CH = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLM';
 const rows = [];
 for (let y = 0; y < H; y++) {
   let s = '';

@@ -77,6 +77,13 @@ const STORIES = [
       { title: 'La corona de brasas', text: 'El fuego del Sin Nombre ardió siglos contra la puerta. Hades lo contuvo con su propio cuerpo: su armadura se agrietó y la luz de su pecho se volvió un eclipse.' },
       { title: 'El juicio de los vivos', text: '«Quien llegue hasta aquí viene a liberar o a liberarse. Mi guadaña devuelve todo golpe: solo vence quien sabe cuándo dejar de pegar… y cuándo apartarse.»' } ],
     ending: ['Hades cae de rodillas y la guadaña se apaga: «Por fin… alguien que sabe esperar.»', 'La puerta interior se cierra con un eco. El Sin Nombre sigue dormido… por ahora.'] },
+  { boss: 'medusa', cave: 'cueva_medusa', icon: '🐍', name: 'Medusa, Reina de las Serpientes', gold: 75000,
+    intro: ['En un templo olvidado del Inframundo, entre columnas rotas y braseros verdes, anida una reina de mirada mortal.', 'Dicen que quien la mira a los ojos se queda de piedra para siempre.'],
+    chapters: [
+      { title: 'La guardiana del templo', text: 'Medusa custodiaba un templo donde la Orden guardaba los espejos de los Sellos. Nadie debía entrar sin su permiso: su mirada era la cerradura.' },
+      { title: 'Cada serpiente, un vigilante', text: 'Cuando el fuego del Sin Nombre llegó al Inframundo, sus serpientes se volvieron ojos que no dormían. Las runas del suelo son lo único que su luz no alcanza.' },
+      { title: 'La estatua y el espejo', text: '«Quien se esconde a tiempo, vive. Quien se queda quieto, es estatua. Y las estatuas, héroes, no ganan batallas.»' } ],
+    ending: ['Las serpientes de su cabello se apagan una a una y el templo vuelve a quedar en silencio.', 'Medusa sonríe por última vez: «Por fin alguien que sabe cuándo esconderse… y cuándo dar la cara.»'] },
 ];
 
 const BY_BOSS = Object.fromEntries(STORIES.map((s) => [s.boss, s]));
