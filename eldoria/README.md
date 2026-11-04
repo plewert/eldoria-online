@@ -570,3 +570,5 @@ Todos los jefes (menos Raids e invocaciones) ajustan su vida al empezar el comba
 ## Instalar en el teléfono (PWA)
 
 El juego es instalable: con el servidor publicado en HTTPS, en Android (Chrome) menú ⋮ → «Instalar app» y en iPhone (Safari) Compartir → «Añadir a pantalla de inicio». Incluye `manifest.webmanifest` (pantalla completa, horizontal, iconos 192/512/maskable), `sw.js` (red primero; copia local solo sin conexión) y los iconos en `public/`.
+
+En la pantalla de inicio hay un botón «📲 Instalar app» (`public/instalar.js`): usa el aviso nativo de instalación de Chrome/Edge/Android y, en iPhone u otros navegadores, muestra los pasos. Se oculta si el juego ya está instalado.

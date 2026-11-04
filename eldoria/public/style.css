@@ -507,3 +507,8 @@ body.touch .sheet { max-height: calc(100dvh - 12px); }
 
 /* teléfono: los botones y la barra no inician gestos del navegador (así el 2.º dedo no cancela el joystick) */
 body.touch #hotbar, body.touch #hotbar button, body.touch #stage button { touch-action: none; }
+#installBtn { display: block; margin: 12px auto 0; padding: 9px 16px; background: rgba(201, 162, 75, .14); border: 1px solid var(--brass, #c9a24b); color: var(--bone, #eee); border-radius: 6px; font: inherit; cursor: pointer; }
+#installBtn:hover { background: rgba(201, 162, 75, .28); }
+#installTip { max-width: 320px; margin: 10px auto 0; padding: 10px 14px; background: rgba(14, 18, 24, .92); border: 1px solid var(--edge, #444); border-radius: 6px; color: var(--bone, #eee); font-size: 13px; line-height: 1.4; text-align: left; }
+#installTip ol { margin: 6px 0 6px 18px; padding: 0; }
+#installTip small { color: var(--muted, #999); }
