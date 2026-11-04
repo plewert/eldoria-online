@@ -8,7 +8,7 @@
   const st = { get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* nada */ } } };
   const touch = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && matchMedia('(pointer:coarse)').matches);
   const LV = ['bajo', 'medio', 'alto'];
-  const MODS = [['rf', 'Poderes realistas'], ['casas', 'Techos de casas'], ['ambiente', 'Clima, estaciones y animales'], ['gente', 'Gente del pueblo'], ['combate', 'Efectos de combate'], ['anim', 'Pesca y minería animadas']];
+  const MODS = [['rf', 'Poderes realistas'], ['casas', 'Techos de casas'], ['ambiente', 'Clima, estaciones y animales'], ['gente', 'Gente del pueblo'], ['combate', 'Efectos de combate'], ['anim', 'Pesca y minería animadas'], ['gfx', 'Luces, partículas, hojas y lluvia (✨)']];
   const PRE = {
     alto: { rf: 2, casas: 2, ambiente: 2, gente: 2, combate: 2, anim: 1 },
     medio: { rf: 1, casas: 2, ambiente: 1, gente: 1, combate: 1, anim: 1 },
@@ -32,7 +32,16 @@
     const d = detect(); return cap != null && LV.indexOf(cap) < LV.indexOf(d) ? cap : d;
   };
   const q = (name) => { if (safe()) return PRE.bajo[name] || 0; const o = ov[name]; if (o === 0 || o === 1 || o === 2) return o; const v = PRE[level()][name]; return v == null ? 2 : v; };
-  const changed = () => { if (X.perfApply) X.perfApply(); subs.forEach((f) => { try { f(); } catch (e) { /* nada */ } }); render(); updBtn(); };
+  const gfxStored = () => { const v = st.get('eldoria.gfx'); return v === '0' || v === '1' || v === '2' || v === '3' ? +v : null; };
+  const applyGfx = () => {                                      // controla también el sistema ✨ (luces, partículas, hojas, lluvia)
+    if (!X.gfx || safe()) return;
+    const o = ov.gfx, l = level(), s0 = gfxStored();
+    if (o === 0 || o === 1 || o === 2) X.gfx.set(o);
+    else if (l === 'bajo') X.gfx.set(0);
+    else if (l === 'medio') X.gfx.set(Math.min(1, s0 == null ? 1 : s0));
+    else X.gfx.set(s0);
+  };
+  const changed = () => { applyGfx(); if (X.perfApply) X.perfApply(); subs.forEach((f) => { try { f(); } catch (e) { /* nada */ } }); render(); updBtn(); };
   const save = () => { st.set('eldoria.perf', mode); st.set('eldoria.perf.hud', hud); st.set('eldoria.perf.o', JSON.stringify(ov)); };
   X.perf = { level, mode: () => mode, hud: () => hud, q, onChange: (f) => subs.push(f), open: () => open() };
   if (window.EldSafe && window.EldSafe.onChange) window.EldSafe.onChange(changed);
@@ -64,11 +73,11 @@
     const h3 = document.createElement('h3'); h3.append('⚡ Rendimiento'); const x = document.createElement('button'); x.textContent = '✕'; x.addEventListener('click', close); h3.append(x); panel.append(h3);
     const n = document.createElement('p'); n.className = 'pf-note'; n.textContent = mode === 'auto' ? `Auto: el juego detecta tu equipo y usa el perfil ${level()}; si va lento baja solo.` : `Perfil fijo: ${level()}.`; panel.append(n);
     panel.append(seg([['auto', 'Auto'], ['alto', 'Alto'], ['medio', 'Medio'], ['bajo', 'Bajo']], mode, (v) => { mode = v; cap = null; ov = {}; save(); changed(); }));
-    const h = document.createElement('h4'); h.textContent = 'Por efecto'; panel.append(h);
+    const h = document.createElement('h4'); h.textContent = 'Activar o desactivar cada efecto'; panel.append(h);
     for (const [k, nm] of MODS) {
       const r = document.createElement('div'); r.className = 'pf-row'; const l = document.createElement('span'); l.textContent = nm; r.append(l);
-      const cur = ov[k] === 0 || ov[k] === 1 || ov[k] === 2 ? ov[k] : 'p';
-      r.append(seg([['p', 'Perfil'], [0, 'No'], [1, 'Básico'], [2, 'Total']], cur, (v) => { if (v === 'p') delete ov[k]; else ov[k] = v; save(); changed(); })); panel.append(r);
+      const on = k === 'gfx' ? (X.gfx ? X.gfx.level() > 0 : true) : q(k) > 0;
+      r.append(seg([[2, 'Sí'], [0, 'No']], on ? 2 : 0, (v) => { ov[k] = v; save(); changed(); })); panel.append(r);
     }
     const h2 = document.createElement('h4'); h2.textContent = 'Botones 📖 álbum y 🙂 emotes'; panel.append(h2);
     panel.append(seg([['visible', 'Visibles'], ['compact', 'Compactos ⋯'], ['hidden', 'Ocultos']], hud, (v) => { hud = v; save(); changed(); }));
