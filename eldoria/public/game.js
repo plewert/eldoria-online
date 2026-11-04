@@ -233,7 +233,7 @@
     if (full) G.rf.push({ k: 'light', x, y, col: col[1], t: now, dur: 520, r: 70 });
     ring(x, y, el || 'magic', 620, 12, 3);                                             // onda expansiva
     burst(x, y, el || null, full ? 12 : 6, { sp: 4.5, up: 3.2, g: 9, life: 0.9, size: 2.4, sq: true, add: !!el, b: y + 0.35 });   // escombros que rebotan
-    G.shake = { t: now, m: p.cr ? 7 : 3.2 }; if (EXT.perf && EXT.perf.q('webgl')) G.rf.push({ k: 'shock', x, y, t: now, dur: 450 });
+    G.shake = { t: now, m: p.cr ? 7 : 3.2 };
     rfKick(x, y, dx, dy);
     if (el === 'fire') { burst(x, y, 'fire', full ? 14 : 7, { sp: 1.4, up: 3.4, life: 1.2, size: 2.2, wv: 1 }); if (full) G.rf.push({ k: 'heat', x, y, t: now, dur: 700 }); }
     if (el === 'ice') { G.rf.push({ k: 'crystal', x, y, t: now, dur: 900, a: Math.random() * 3 }); burst(x, y, 'ice', 12, { sp: 3.6, up: 2.5, g: 9, life: 0.9, size: 3, sq: true, b: y + 0.3 }); }
@@ -243,12 +243,6 @@
   }
   function drawRF(c, now) {
     G.rf = G.rf.filter((o) => now - o.t < o.dur);
-    {                                                                                  // datos para el post-proceso WebGL (webgl.js)
-      const pts = []; let lights = 0;
-      for (const o of G.rf) { const a = 1 - (now - o.t) / o.dur; if (o.k === 'heat' || o.k === 'shock') pts.push([px(o.x) / cw, py(o.y) / ch, (o.k === 'heat' ? 1 : 0.8) * a]); else if (o.k === 'light') lights += a; }
-      const sh = Math.max(0, 1 - (now - G.shake.t) / 240) * Math.min(1, G.shake.m / 7), fl = G.flash2 ? Math.max(0, 1 - (now - G.flash2.t) / G.flash2.dur) : 0;
-      G.rfGL = { cw, ch, pts: pts.slice(-6), ab: Math.min(1, sh * 0.8 + fl), bloom: Math.min(1, lights * 0.22) };
-    }
     c.save(); c.globalCompositeOperation = 'lighter';
     for (const o of G.rf) {
       const a = 1 - (now - o.t) / o.dur;

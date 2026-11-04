@@ -525,9 +525,6 @@ Boris vende y compra las 7 gemas **al mismo precio**: topacio 1 000 000 (la más
 ## Poderes realistas (experimental)
 Efectos opcionales en el cliente: fase de carga (energía que converge + luz), proyectiles con trayectoria curva, aceleración y estela, luz dinámica, impacto con peso (temblor, retroceso, escombros que rebotan, onda), efectos por elemento (brasas, cristales de hielo, burbujas de veneno, ramas de rayo y destello de pantalla) y sonidos de carga/disparo/impacto. Se activa/desactiva con **F4** (guardado en `localStorage eldoria.realfx`). Para quitarlo del todo, borrar los bloques `RF`/`rf*` de `public/game.js`. La distorsión por calor real y la aberración cromática requieren WebGL (aquí solo hay ondas aproximadas).
 
-### Post-proceso WebGL (`public/webgl.js`)
-Capa opcional sin dependencias: bloom, aberración cromática (en temblores y rayos) y distorsión de calor/onda expansiva en los impactos. Solo se dibuja mientras hay efectos activos y se apaga con F4; si el navegador no tiene WebGL no hace nada. Para quitarlo: borrar `webgl.js` y su `<script>` en `index.html`.
-
 ## Casas con techo (`public/casas.js`, solo cliente)
 Las casas de las ciudades (muros + suelo de tienda) reciben un techo: teja (Aldea Real), paja (aldea y puerto) o piedra (Alba Dorada), con sombra proyectada y chimenea con humo en algunas. Al entrar el techo se funde a transparente y se ve el interior (alfombra, estantes, cuadros, estandartes, antorchas). De noche las ventanas se encienden y sale luz por la puerta. No cambia nada en el servidor. Se apaga con **F5** (`localStorage eldoria.casas`); para quitarlo, borrar `casas.js` y su `<script>`.
 
