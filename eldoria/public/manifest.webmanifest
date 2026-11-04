@@ -1,1 +1,19 @@
-{ "name": "Eldoria Online", "short_name": "Eldoria", "start_url": "./", "display": "fullscreen", "orientation": "landscape", "background_color": "#0e1218", "theme_color": "#0e1218" }
+{
+  "id": "./",
+  "name": "Eldoria Online",
+  "short_name": "Eldoria",
+  "description": "MMORPG de aventura en el navegador",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#0e1218",
+  "theme_color": "#0e1218",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -566,3 +566,7 @@ Jefe nuevo en una cueva privada del Inframundo (puerta en 280,315; entrada 1.400
 
 ## Vida de los jefes según el nivel
 Todos los jefes (menos Raids e invocaciones) ajustan su vida al empezar el combate según el jugador de más nivel cercano: ×(1 + (nivel − 100) × 2 %), entre ×1 y ×2,5 (nunca baja de su vida normal). El chat avisa del valor. Al morir se restaura la vida base y vuelve a ajustarse al renacer.
+
+## Instalar en el teléfono (PWA)
+
+El juego es instalable: con el servidor publicado en HTTPS, en Android (Chrome) menú ⋮ → «Instalar app» y en iPhone (Safari) Compartir → «Añadir a pantalla de inicio». Incluye `manifest.webmanifest` (pantalla completa, horizontal, iconos 192/512/maskable), `sw.js` (red primero; copia local solo sin conexión) y los iconos en `public/`.
