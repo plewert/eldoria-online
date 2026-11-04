@@ -39,6 +39,19 @@
     if (Math.hypot(ev.clientX - t.x, ev.clientY - t.y) < 16 && performance.now() - t.t < 800) { suppUntil = performance.now() + 500; suppEl = t.b; t.b.click(); }
   }, true);
   document.addEventListener('pointercancel', (ev) => taps.delete(ev.pointerId), true);
+  /* Respaldo por eventos "touch": si el teléfono no entrega pointerup del segundo dedo, el toque se detecta con touchstart/touchend. */
+  const tt = new Map();
+  document.addEventListener('touchstart', (ev) => {
+    if (id === null) return;
+    for (const t of ev.changedTouches) { const b = t.target && t.target.closest && t.target.closest('button'); if (b && !b.disabled && !b.closest('.joy')) tt.set(t.identifier, { b, x: t.clientX, y: t.clientY, t: performance.now() }); }
+  }, { capture: true, passive: true });
+  document.addEventListener('touchend', (ev) => {
+    for (const t of ev.changedTouches) {
+      const r = tt.get(t.identifier); if (!r) continue; tt.delete(t.identifier);
+      if (Math.hypot(t.clientX - r.x, t.clientY - r.y) < 16 && performance.now() - r.t < 800 && !(performance.now() < suppUntil && suppEl === r.b)) { suppUntil = performance.now() + 500; suppEl = r.b; r.b.click(); }
+    }
+  }, { capture: true, passive: true });
+  document.addEventListener('touchcancel', (ev) => { for (const t of ev.changedTouches) tt.delete(t.identifier); }, { capture: true, passive: true });
   document.addEventListener('click', (ev) => { if (ev.isTrusted && performance.now() < suppUntil && suppEl && ev.target.closest && ev.target.closest('button') === suppEl) { ev.stopImmediatePropagation(); ev.preventDefault(); } }, true);
   /* ---- pantalla completa, zoom del mapa y gesto de pellizco ---- */
   const small = Math.min(innerWidth, innerHeight) < 520;

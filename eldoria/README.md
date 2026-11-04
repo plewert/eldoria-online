@@ -304,6 +304,8 @@ Cueva nueva en las Tierras de Lava (puerta al norte, justo al sur de la Guarida 
 Los personajes arden al ser golpeados (llamas sobre el cuerpo) y se hunden en la lava. Botín raro: Yelmo, Coraza, Capa, Anillo, Arco Ígneo y Bastón del Orbe Ardiente, además del Corazón de Magma y la cría de mascota. Código: `game/magma.js` (servidor) y bloque «Ignaros» de `public/ui2.js` (animaciones).
 
 ## Anubis, Juez de las Sombras (Tumba de Anubis, Desierto de las Pirámides)
+
+Sprites animados del jefe (`anubis_b` en sprites.json: reposo 4, paso 8, ataque 5, lanzamiento 5, herido/muerte reutilizan reposo); se dibujan con `drawZeus` y aura verde. Las sombras siguen con el sprite estático.
 Cueva nueva al sur del desierto (entrada por la pirámide grande, 2.000 de oro). Sala oval de losas violetas con pilares, altar y **braseros de llama verde**. Jefe de nivel 800 (480.000 de vida, armadura 50 %). Ataques:
 - **Miasma de las tumbas**: golpea el suelo con el báculo; grietas y nubes oscuras durante 9 s que dañan sin parar y **reducen la curación (pociones 40 %, regeneración 30 %) unos segundos**.
 - **Portales verdes**: se abren portales por toda la cueva y lanzan flechas de fuego verde; al caer explotan (hay marca roja/verde en el suelo para esquivar).

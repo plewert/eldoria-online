@@ -467,6 +467,7 @@ ok('Aracnídeo Fuego Negro: guarida de telarañas en la zona de lava, set raro y
   assert.ok(world.isWalkable(288, 100) && world.isWalkable(sp.x, sp.y), 'se puede llegar a la guarida');
   assert.equal(typeof Game.prototype.spiderAI, 'function');
   const sj = require('../public/sprites.json'); assert.ok(sj.aracnido_fuego.f.length >= 6 && sj.arana_fuego.f.length >= 4);
+  { const a = require('../public/sprites.json').anubis_b; assert.ok(a && a.anim.idle.length === 4 && a.anim.walk.length === 8 && a.anim.atk.length === 5 && a.anim.cast.length === 5 && a.anim.hurt.length === 3 && a.anim.death.length >= 1, 'Anubis animado'); for (const k of Object.keys(a.anim)) for (const n of a.anim[k]) assert.ok(a.f[n], 'fotograma ' + k); }
 });
 
 ok('Leviatán Abisal: gruta inundada, set raro y sus 4 ataques (tornados, olas, rayo y burbuja)', () => {

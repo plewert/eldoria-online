@@ -504,3 +504,6 @@ body.touch .sheet { max-height: calc(100dvh - 12px); }
 .hist-sec{border:1px solid #2c2840;border-radius:6px;padding:8px 10px;margin-bottom:8px;background:#1b1728}
 .hist-sec.done{border-color:#7a6a3a}.hist-sec h3{margin:0 0 6px;font-size:14px}.hist-sec h3 small{color:#9fb4e8;margin-left:6px}
 .hist-sec details{margin:3px 0;font-size:13px}.hist-sec summary{cursor:pointer}.hist-sec details p{margin:4px 0 6px 14px;line-height:1.5;color:#d9d0b8}.lockd{opacity:.5}
+
+/* teléfono: los botones y la barra no inician gestos del navegador (así el 2.º dedo no cancela el joystick) */
+body.touch #hotbar, body.touch #hotbar button, body.touch #stage button { touch-action: none; }

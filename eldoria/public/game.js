@@ -2114,10 +2114,10 @@
   function drawZeus(c, e, spr, cx, ground, now, key, col) {
     key = key || 'zeus'; col = col || '130,200,255';
     const A = spr.anim, st = (EXT.zs && EXT.zs.get(e.id)) || {}, t = now / 1000, moving = (e.amp || 0) > 0.3, cast = (EXT.casts.get(e.id) || 0) > now;
-    let fi; const HD = key === 'hades' || key === 'medusa', MD = key === 'medusa';
+    let fi; const HD = key === 'hades' || key === 'medusa', MD = key === 'medusa', CA = MD || key === 'anubis_b';
     if (HD && st.hide > now) return;                                                               // Hades se esfuma (el efecto lo dibuja public/hades.js)
     if (st.hurt > now) fi = A.hurt[Math.min(2, Math.floor((1 - (st.hurt - now) / 320) * 3))];
-    else if (MD && cast) { const left = EXT.casts.get(e.id) - now, p = Math.max(0, Math.min(0.99, 1 - left / 1200)); fi = A.cast[Math.floor(p * A.cast.length)]; }
+    else if (CA && cast) { const left = EXT.casts.get(e.id) - now, p = Math.max(0, Math.min(0.99, 1 - left / 1200)); fi = A.cast[Math.floor(p * A.cast.length)]; }
     else if (cast || st.atk > now) { const T = cast ? 1200 : 460, left = cast ? EXT.casts.get(e.id) - now : st.atk - now, p = Math.max(0, Math.min(0.99, 1 - left / T)); const n = A.atk.length; fi = HD ? A.atk[cast ? Math.min(n - 1, Math.floor(p * n)) : Math.min(n - 1, 1 + Math.floor(p * (n - 1)))] : A.atk[cast ? (p < 0.3 ? 0 : p < 0.55 ? 1 : p < 0.8 ? 2 : 3) : (p < 0.35 ? 1 : p < 0.7 ? 2 : 3)]; }
     else if (moving) fi = A.walk[Math.floor(now / (MD ? 95 : 110)) % A.walk.length];
     else fi = A.idle[Math.floor(now / 520) % A.idle.length];
@@ -2253,6 +2253,7 @@
       if (e.t === 'zeus' && spr.anim) { drawZeus(c, e, spr, cx, ground, now); return; }
       if (e.t === 'hades' && spr.anim) { drawZeus(c, e, spr, cx, ground, now, 'hades', '255,80,20'); return; }
       if ((e.t === 'medusa' || e.t === 'medusa_clon') && spr.anim) { drawZeus(c, e, spr, cx, ground, now, 'medusa', '110,255,140'); return; }
+      if (e.t === 'anubis' && SPR.anubis_b) { drawZeus(c, e, SPR.anubis_b, cx, ground, now, 'anubis_b', '90,255,150'); return; }
       if (e.t === 'anubis' || d.shade) { drawAnubisLike(c, e, d, skey, spr, cx, ground, now, sq); return; }
       if (RB[e.t]) { drawRaidBoss(c, e, d, skey, spr, cx, ground, now); return; }
       drawSprite(c, skey, sprFrame(e, spr), cx, ground + 2 - Math.round(hop) - Math.round(float), (e.face || 1) < 0, sq);

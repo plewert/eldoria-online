@@ -15,6 +15,9 @@
   X.on('fx', (f) => {
     const now = performance.now();
     for (let i = AN.length - 1; i >= 0; i--) if (now - AN[i].t > AN[i].T) AN.splice(i, 1);
+    if (f.k === 'd' || f.k === 's') {                                                                  // golpe recibido / ataque cuerpo a cuerpo: fotogramas de herido y ataque
+      for (const e of G.ents.values()) if (e.t === 'anubis' && Math.hypot(e.x - f.x, e.y - f.y) <= 2.2) { const z = X.zs.get(e.id) || {}; X.zs.set(e.id, z); if (f.k === 's') z.atk = now + 460; else if (!(z.hurt > now)) z.hurt = now + 320; }
+    }
     switch (f.k) {
       case 'an_cast': X.casts.set(f.id, now + f.T + 400); ADD('an_cast', f, f.T + 400); break;
       case 'an_hw': ADD('an_hw', f); break;
