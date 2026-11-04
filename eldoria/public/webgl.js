@@ -10,11 +10,11 @@
   void main(){
     vec2 uv=v, off=vec2(0.);
     for(int i=0;i<6;i++){ if(pts[i].z>0.){ vec2 d=(uv-pts[i].xy)*vec2(asp,1.); float r=length(d); float w=exp(-r*5.)*pts[i].z;
-      off+=normalize(d+1e-4)*sin(r*70.-tm*14.)*w*0.0045/vec2(asp,1.); off.y+=sin(uv.x*90.+tm*9.)*w*0.0025; } }
+      off+=normalize(d+1e-4)*sin(r*70.-tm*14.)*w*0.0022/vec2(asp,1.); off.y+=sin(uv.x*90.+tm*9.)*w*0.0012; } }
     uv+=off;
-    vec2 c=(uv-.5); float k=ab*0.006;
+    vec2 c=(uv-.5); float k=ab*0.003;
     vec3 col=vec3(texture2D(t,uv+c*k).r,texture2D(t,uv).g,texture2D(t,uv-c*k).b);
-    if(bl>0.){ vec3 s=vec3(0.); for(int i=0;i<8;i++){ float a=float(i)*0.785; vec2 o=vec2(cos(a),sin(a)); s+=max(texture2D(t,uv+o*0.006).rgb-.55,0.)+max(texture2D(t,uv+o*0.016).rgb-.55,0.); } col+=s*bl*0.28; }
+    if(bl>0.){ vec3 s=vec3(0.); for(int i=0;i<8;i++){ float a=float(i)*0.785; vec2 o=vec2(cos(a),sin(a)); s+=max(texture2D(t,uv+o*0.006).rgb-.55,0.)+max(texture2D(t,uv+o*0.016).rgb-.55,0.); } col+=s*bl*0.14; }
     gl_FragColor=vec4(col,1.);
   }`;
   const sh = (ty, src) => { const s = gl.createShader(ty); gl.shaderSource(s, src); gl.compileShader(s); return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null; };
