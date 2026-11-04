@@ -5,11 +5,13 @@
 (() => {
   const X = window.EldExt; if (!X) return;
   const { G, el, $ } = X, TS = 32;
-  let ANIM = true; try { ANIM = localStorage.getItem('eldoria.anim') !== '0'; } catch (e) { /* sin storage */ }
+  let ANIMu = true; try { ANIMu = localStorage.getItem('eldoria.anim') !== '0'; } catch (e) { /* sin storage */ }
+  const animQ = () => (ANIMu && (!X.perf || X.perf.q('anim')) ? 1 : 0);
 
   const css = document.createElement('style');
   css.textContent = `
-.pj-bar{position:absolute;right:10px;bottom:74px;z-index:6;display:flex;gap:4px}
+.pj-bar{position:absolute;right:10px;top:10px;z-index:6;display:flex;flex-direction:column;gap:4px}
+.pj-bar .pj-more{display:none}body.touch .pj-bar{top:calc(158px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px))}body.touch .pj-bar button{width:30px;height:30px;font-size:14px;opacity:.6}
 .pj-bar button{width:34px;height:34px;border-radius:6px;background:rgba(14,18,24,.78);border:1px solid var(--edge,#555);color:var(--bone,#eee);font-size:16px;cursor:pointer}
 .pj-bar button:hover{border-color:var(--brass,#c9a24b)}
 .pj-ov{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center}
@@ -46,6 +48,7 @@
   };
   function closeAll() { if (ov) { ov.remove(); ov = null; } }
   function openAlbum() { closeAll(); ov = el('div', 'pj-ov'); ov.append(el('div', 'pj-box')); ov.addEventListener('click', (e) => { if (e.target === ov) closeAll(); }); document.body.append(ov); render(); X.send({ t: 'album' }); }
+  X.openAlbum = openAlbum;
   X.handlers.album = (m) => { seen = new Set(m.seen || []); render(); };
 
   /* ---------- Emotes ---------- */
@@ -57,17 +60,22 @@
     EM.forEach(([k, ic, nm], i) => { const b = el('button'); b.type = 'button'; b.append(el('span', '', ic), document.createTextNode(`${i + 1}. ${nm}`)); b.addEventListener('click', () => { X.send({ t: 'emote', e: k }); closeAll(); }); g.append(b); });
     box.append(g); ov.addEventListener('click', (e) => { if (e.target === ov) closeAll(); }); document.body.append(ov);
   }
+  X.openEmotes = openEmotes;
   const mkBar = () => {
     const st = $('#stage'); if (!st || st.querySelector('.pj-bar')) return;
-    const bar = el('div', 'pj-bar'); const a = el('button', '', '📖'), e = el('button', '', '🙂');
-    a.type = e.type = 'button'; a.title = 'Álbum de colecciones (F3)'; e.title = 'Emotes (F9)'; a.addEventListener('click', openAlbum); e.addEventListener('click', openEmotes); bar.append(a, e); st.append(bar);
+    const bar = el('div', 'pj-bar'); const a = el('button', 'pj-act', '📖'), e = el('button', 'pj-act', '🙂'), m = el('button', 'pj-more', '⋯');
+    a.type = e.type = m.type = 'button'; a.title = 'Álbum de colecciones (F3)'; e.title = 'Emotes (F9)'; m.title = 'Álbum y emotes';
+    let t0 = 0; m.addEventListener('click', () => { bar.classList.toggle('open'); clearTimeout(t0); if (bar.classList.contains('open')) t0 = setTimeout(() => bar.classList.remove('open'), 5000); });
+    a.addEventListener('click', () => { bar.classList.remove('open'); openAlbum(); }); e.addEventListener('click', () => { bar.classList.remove('open'); openEmotes(); }); bar.append(m, a, e); st.append(bar);
+    const apply = () => { const h = X.perf ? X.perf.hud() : 'visible'; bar.classList.toggle('compact', h === 'compact'); bar.classList.toggle('hidden', h === 'hidden'); if (h !== 'compact') bar.classList.remove('open'); };
+    apply(); if (X.perf) X.perf.onChange(apply);
   };
   document.addEventListener('DOMContentLoaded', () => setTimeout(mkBar, 120)); if (document.readyState !== 'loading') setTimeout(mkBar, 120);
   X.on('key', (k, ev) => {
     if (!ev) return false;
     if (ev.key === 'F3') { ev.preventDefault(); ov ? closeAll() : openAlbum(); return true; }
     if (ev.key === 'F9') { ev.preventDefault(); ov ? closeAll() : openEmotes(); return true; }
-    if (ev.key === 'F10') { ev.preventDefault(); ANIM = !ANIM; try { localStorage.setItem('eldoria.anim', ANIM ? '1' : '0'); } catch (e) { /* nada */ } X.toast(ANIM ? 'Animaciones de pesca y minería: activadas (F10)' : 'Animaciones de pesca y minería: desactivadas (F10)'); return true; }
+    if (ev.key === 'F10') { ev.preventDefault(); ANIMu = !ANIMu; try { localStorage.setItem('eldoria.anim', ANIMu ? '1' : '0'); } catch (e) { /* nada */ } X.toast(ANIMu ? 'Animaciones de pesca y minería: activadas (F10)' : 'Animaciones de pesca y minería: desactivadas (F10)'); return true; }
     if (ev.key === 'Escape' && ov) { closeAll(); return true; }
     if (ov && /^[1-8]$/.test(ev.key) && ov.querySelector('.pj-em')) { X.send({ t: 'emote', e: EM[+ev.key - 1][0] }); closeAll(); return true; }
     return false;
@@ -96,7 +104,7 @@
       if (em.e === 'sentarse') { c.font = '12px sans-serif'; c.fillStyle = '#cfe'; c.fillText('z', X0 + 20, Y0 - 12 - (now / 200) % 6); c.fillText('Z', X0 + 26, Y0 - 20 - (now / 200) % 6); }
       c.restore();
     }
-    if (!ANIM) return;
+    if (!animQ()) return;
     for (const [id, l] of lines) {                                                           // sedal, corcho y ondas
       if (now - l.t > 30000) { lines.delete(id); continue; }
       const p = pos(id), x1 = (p ? sx(p[0]) : sx(l.x1)) + 10, y1 = (p ? sy(p[1]) : sy(l.y1)) - 22, k = Math.min(1, (now - l.t) / 380), arc = Math.sin(k * Math.PI) * 38;

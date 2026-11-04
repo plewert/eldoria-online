@@ -33,7 +33,7 @@
     requestAnimationFrame(loop);
     const G = window.EldExt && window.EldExt.G, S = G && G.rfGL;
     const act = S && (S.pts.length || S.ab > 0.02 || S.bloom > 0.02);
-    if (!act || !view.width) { if (gl0.style.display !== 'none') gl0.style.display = 'none'; return; }
+    if (!act || !view.width || (window.EldExt.perf && !window.EldExt.perf.q('webgl'))) { if (gl0.style.display !== 'none') gl0.style.display = 'none'; return; }
     if (gl0.width !== view.width || gl0.height !== view.height) { gl0.width = view.width; gl0.height = view.height; }
     gl.viewport(0, 0, gl0.width, gl0.height);
     gl.bindTexture(gl.TEXTURE_2D, tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, view);

@@ -4,7 +4,8 @@
 (() => {
   const X = window.EldExt; if (!X) return;
   const { G } = X, TS = 32;
-  let ON = true; try { ON = localStorage.getItem('eldoria.combate') !== '0'; } catch (e) { /* sin storage */ }
+  let ONu = true; try { ONu = localStorage.getItem('eldoria.combate') !== '0'; } catch (e) { /* sin storage */ }
+  const Q = () => (ONu ? (X.perf ? X.perf.q('combate') : 2) : 0);
 
   /* ---------- anillo de enfriamiento ---------- */
   const cds = new Map();                                     // id del poder -> { t0, t1 }
@@ -71,6 +72,6 @@
       else X.burst(x, y, null, 8 * n, { sp: 2.4, up: 1.4, g: 4, life: 0.6, size: 2.4, add: false });
     }
   }
-  X.on('draw', (c, now, cw, ch) => { if (!ON || !G.me) return; ring(c, now, cw, ch); numbers(now); deaths(); });
-  window.addEventListener('keydown', (e) => { if (e.key === 'F8') { e.preventDefault(); ON = !ON; try { localStorage.setItem('eldoria.combate', ON ? '1' : '0'); } catch (x) { /* nada */ } if (X.toast) X.toast(ON ? 'Efectos de combate: activados (F8)' : 'Efectos de combate: desactivados (F8)'); } });
+  X.on('draw', (c, now, cw, ch) => { const q = Q(); if (!q || !G.me) return; ring(c, now, cw, ch); if (q >= 2) { numbers(now); deaths(); } });
+  window.addEventListener('keydown', (e) => { if (e.key === 'F8') { e.preventDefault(); ONu = !ONu; try { localStorage.setItem('eldoria.combate', ONu ? '1' : '0'); } catch (x) { /* nada */ } if (X.toast) X.toast(ONu ? 'Efectos de combate: activados (F8)' : 'Efectos de combate: desactivados (F8)'); } });
 })();

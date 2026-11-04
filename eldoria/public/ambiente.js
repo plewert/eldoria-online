@@ -6,12 +6,13 @@
 (() => {
   const X = window.EldExt; if (!X) return;
   const { G } = X, TS = 32;
-  let ON = true; try { ON = localStorage.getItem('eldoria.ambiente') !== '0'; } catch (e) { /* sin storage */ }
+  let ONu = true; try { ONu = localStorage.getItem('eldoria.ambiente') !== '0'; } catch (e) { /* sin storage */ }
+  const Q = () => (ONu ? (X.perf ? X.perf.q('ambiente') : 2) : 0);
   const hs = (x, y, k = 0) => { const h = Math.sin(x * 127.1 + y * 311.7 + k * 74.7) * 43758.5453; return h - Math.floor(h); };
   const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
   const hour = () => (X.env ? X.env.hour() : 12);
   const nightK = () => { const h = hour(); return h >= 12 ? smooth(17.5, 20.5, h) : 1 - smooth(5, 7.5, h); };
-  const lowPower = () => /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) || (window.EldSafe && window.EldSafe.on && window.EldSafe.on());
+  const lowPower = () => Q() < 2 || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) || (window.EldSafe && window.EldSafe.on && window.EldSafe.on());
   const tileAt = (x, y) => (x < 0 || y < 0 || x >= G.W || y >= G.H ? -1 : G.tiles[y * G.W + x]);
   const sxOf = (x, cw) => (x - G.cam.x) * TS + cw / 2 - TS / 2, syOf = (y, ch) => (y - G.cam.y) * TS + ch / 2 - TS / 2;
 
@@ -102,6 +103,14 @@
     }
   }
 
+  function drawGroundLite(c, now, cw, ch, zk, zid) {            // perfil medio: solo charcos (sin hojas, flores ni nieve en el suelo)
+    if (zk === 'dungeon') return;
+    const W = X.env ? X.env.weather() : { kind: null, k: 0 }, wet = W.kind === 'rain' && !DESERT.has(zid) && !COLD.has(zid) ? W.k : 0; if (wet < 0.2) return;
+    const x0 = Math.floor(G.cam.x - cw / 2 / TS) - 1, x1 = Math.ceil(G.cam.x + cw / 2 / TS) + 1, y0 = Math.floor(G.cam.y - ch / 2 / TS) - 1, y1 = Math.ceil(G.cam.y + ch / 2 / TS) + 1;
+    c.fillStyle = `rgba(70,100,140,${0.4 * wet})`;
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const t = tileAt(x, y); if ((t === 3 || t === 0) && hs(x, y, 11) < 0.1 + 0.1 * wet) { c.beginPath(); c.ellipse(sxOf(x, cw) + 16, syOf(y, ch) + 20, 11, 5.5, 0, 0, 7); c.fill(); } }
+  }
+
   /* ---------- animales ambientales ---------- */
   const fled = new Map();
   const BIRD = ['#8a6a48', '#6a88b0', '#b05a4a', '#777'];
@@ -178,15 +187,16 @@
   }
 
   X.on('under', (c, now, cw, ch) => {
-    if (!ON || !G.me || !G.tiles) return;
+    const q = Q(); if (!q || !G.me || !G.tiles) return;
     const z = X.zoneAt(G.me.x, G.me.y); if (!z) return;
-    drawGround(c, now, cw, ch, z.kind, z.id); drawDeco(c, now, cw, ch, z.kind, z.id);
+    if (q >= 2) drawGround(c, now, cw, ch, z.kind, z.id); else drawGroundLite(c, now, cw, ch, z.kind, z.id);
+    drawDeco(c, now, cw, ch, z.kind, z.id);
   });
   X.on('draw', (c, now, cw, ch, dt) => {
-    if (!ON || !G.me || !G.tiles) return;
+    const q = Q(); if (!q || !G.me || !G.tiles) return;
     const z = X.zoneAt(G.me.x, G.me.y); if (!z) return;
-    drawAnimals(c, now, cw, ch, dt || 0.016, z.kind, z.id);
+    if (q >= 2) drawAnimals(c, now, cw, ch, dt || 0.016, z.kind, z.id);
     if (z.kind !== 'dungeon' || z.id === 'inframundo') drawWeather(c, now, cw, ch, dt || 0.016, z.id, z.kind);
   });
-  window.addEventListener('keydown', (e) => { if (e.key === 'F6') { e.preventDefault(); ON = !ON; try { localStorage.setItem('eldoria.ambiente', ON ? '1' : '0'); } catch (x) { /* nada */ } if (X.toast) X.toast(ON ? 'Ambiente: activado (F6)' : 'Ambiente: desactivado (F6)'); } });
+  window.addEventListener('keydown', (e) => { if (e.key === 'F6') { e.preventDefault(); ONu = !ONu; try { localStorage.setItem('eldoria.ambiente', ONu ? '1' : '0'); } catch (x) { /* nada */ } if (X.toast) X.toast(ONu ? 'Ambiente: activado (F6)' : 'Ambiente: desactivado (F6)'); } });
 })();

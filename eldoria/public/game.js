@@ -205,7 +205,11 @@
   const ring = (x, y, el, max = 460, r = 26, w = 3) => G.rings.push({ x, y, t: performance.now(), col: (ELEM[el] || ELEM.magic)[1], max, r, w });
 
   /* ---------- PODERES REALISTAS (interruptor: F4 · se puede quitar entero borrando los bloques "RF") ---------- */
-  let RF = true; try { RF = localStorage.getItem('eldoria.realfx') !== '0'; } catch (e) { /* sin storage */ }
+  let RFu = true; try { RFu = localStorage.getItem('eldoria.realfx') !== '0'; } catch (e) { /* sin storage */ }
+  let RF = RFu;                                                // RF = interruptor del jugador (F4) y perfil de rendimiento (⚡)
+  const rfQ = () => (EXT.perf ? EXT.perf.q('rf') : 2);
+  const rfSync = () => { RF = RFu && rfQ() > 0; if (!RF) G.rfGL = null; };
+  EXT.perfApply = rfSync;
   G.rf = [];                                                   // luces, cristales, ramas de rayo, ondas de calor
   G.charges = []; G.flash2 = null;
   const rfNear = (x, y, d = 14) => G.me && Math.hypot(x - G.me.x, y - G.me.y) <= d;
@@ -225,15 +229,16 @@
   }
   function rfImpact(p, now) {
     const el = p.el, x = p.x2, y = p.y2, dx = p.x2 - p.x1, dy = p.y2 - p.y1, col = (ELEM[el] || ELEM.magic);
-    G.rf.push({ k: 'light', x, y, col: col[1], t: now, dur: 520, r: 70 });
+    const full = rfQ() >= 2;
+    if (full) G.rf.push({ k: 'light', x, y, col: col[1], t: now, dur: 520, r: 70 });
     ring(x, y, el || 'magic', 620, 12, 3);                                             // onda expansiva
-    burst(x, y, el || null, 12, { sp: 4.5, up: 3.2, g: 9, life: 0.9, size: 2.4, sq: true, add: !!el, b: y + 0.35 });   // escombros que rebotan
-    G.shake = { t: now, m: p.cr ? 7 : 3.2 }; G.rf.push({ k: 'shock', x, y, t: now, dur: 450 });
+    burst(x, y, el || null, full ? 12 : 6, { sp: 4.5, up: 3.2, g: 9, life: 0.9, size: 2.4, sq: true, add: !!el, b: y + 0.35 });   // escombros que rebotan
+    G.shake = { t: now, m: p.cr ? 7 : 3.2 }; if (EXT.perf && EXT.perf.q('webgl')) G.rf.push({ k: 'shock', x, y, t: now, dur: 450 });
     rfKick(x, y, dx, dy);
-    if (el === 'fire') { burst(x, y, 'fire', 14, { sp: 1.4, up: 3.4, life: 1.2, size: 2.2, wv: 1 }); G.rf.push({ k: 'heat', x, y, t: now, dur: 700 }); }
+    if (el === 'fire') { burst(x, y, 'fire', full ? 14 : 7, { sp: 1.4, up: 3.4, life: 1.2, size: 2.2, wv: 1 }); if (full) G.rf.push({ k: 'heat', x, y, t: now, dur: 700 }); }
     if (el === 'ice') { G.rf.push({ k: 'crystal', x, y, t: now, dur: 900, a: Math.random() * 3 }); burst(x, y, 'ice', 12, { sp: 3.6, up: 2.5, g: 9, life: 0.9, size: 3, sq: true, b: y + 0.3 }); }
     if (el === 'poison') { burst(x, y, 'poison', 12, { sp: 0.9, up: 2.2, life: 1.3, size: 4, ci: true }); }
-    if (el === 'storm') { rfBranch(x, y, 5, 1.3, 1); G.flash2 = { t: now, col: '255,255,220', a: 0.38, dur: 160 }; G.rf.push({ k: 'light', x, y, col: '255,255,200', t: now, dur: 300, r: 140 }); G.shake = { t: now, m: 4.5 }; }
+    if (el === 'storm') { rfBranch(x, y, 5, 1.3, 1); G.flash2 = { t: now, col: '255,255,220', a: 0.38, dur: 160 }; if (full) G.rf.push({ k: 'light', x, y, col: '255,255,200', t: now, dur: 300, r: 140 }); G.shake = { t: now, m: 4.5 }; }
     rfSfx(el === 'storm' ? 'thunder' : el === 'fire' ? 'explosion' : el === 'ice' ? 'ice' : 'impact', x, y);
   }
   function drawRF(c, now) {
@@ -261,15 +266,15 @@
   function rfCharges(now, dt) {                                                        // energía que converge al lanzador
     G.charges = G.charges.filter((h) => now - h.t < h.D);
     for (const h of G.charges) {
-      const pal = ELEM[h.el] || ELEM.magic, n = Math.max(1, Math.round(dt * 70));
+      const pal = ELEM[h.el] || ELEM.magic, n = Math.max(1, Math.round(dt * (rfQ() >= 2 ? 70 : 30)));
       for (let i = 0; i < n; i++) {
         const a = Math.random() * 6.283, R = 0.9, life = 0.28;
         G.parts.push({ x: h.x + Math.cos(a) * R, y: h.y - 0.2 + Math.sin(a) * R * 0.7, vx: -Math.cos(a) * R / life, vy: -Math.sin(a) * R * 0.7 / life, g: 0, life: 0, max: life, s: 1.6 + Math.random() * 1.6, c: pal[(Math.random() * 3) | 0], add: true });
       }
-      if (!h.l) { h.l = 1; G.rf.push({ k: 'light', x: h.x, y: h.y, col: pal[1], t: now, dur: h.D + 200, r: 46 }); }
+      if (!h.l && rfQ() >= 2) { h.l = 1; G.rf.push({ k: 'light', x: h.x, y: h.y, col: pal[1], t: now, dur: h.D + 200, r: 46 }); }
     }
   }
-  window.addEventListener('keydown', (e) => { if (e.key === 'F4') { e.preventDefault(); RF = !RF; try { localStorage.setItem('eldoria.realfx', RF ? '1' : '0'); } catch (x) { /* nada */ } if (!RF) G.rfGL = null; toast(RF ? 'Poderes realistas: activados (F4)' : 'Poderes realistas: desactivados (F4)'); } });
+  window.addEventListener('keydown', (e) => { if (e.key === 'F4') { e.preventDefault(); RFu = !RFu; rfSync(); try { localStorage.setItem('eldoria.realfx', RFu ? '1' : '0'); } catch (x) { /* nada */ } toast(RFu ? 'Poderes realistas: activados (F4)' : 'Poderes realistas: desactivados (F4)'); } });
 
   function impact(p, now) {
     if (RF) rfImpact(p, now);
@@ -2383,7 +2388,7 @@
       const pc0 = pal || ELEM.magic; c.save(); c.globalCompositeOperation = 'lighter'; c.lineCap = 'round';
       for (let i = 1; i < p.tr.length; i++) { const a = i / p.tr.length; c.strokeStyle = `rgba(${pc0[1]},${a * 0.55})`; c.lineWidth = 1 + a * 4; c.beginPath(); c.moveTo(px(p.tr[i - 1][0]), py(p.tr[i - 1][1]) - 6); c.lineTo(px(p.tr[i][0]), py(p.tr[i][1]) - 6); c.stroke(); }
       c.restore();
-      if (p.el) { p.lt = (p.lt || 0) + dt; if (p.lt > 0.05) { p.lt = 0; G.rf.push({ k: 'light', x: wx, y: wy, col: pc0[1], t: now, dur: 220, r: 48 }); } }
+      if (p.el && rfQ() >= 2) { p.lt = (p.lt || 0) + dt; if (p.lt > 0.05) { p.lt = 0; G.rf.push({ k: 'light', x: wx, y: wy, col: pc0[1], t: now, dur: 220, r: 48 }); } }
     }
     const x = px(wx), y = py(wy) - 6;
     // estela de partículas

@@ -546,3 +546,6 @@ Casi todo es solo visual y vive en el cliente; cada módulo se apaga con una tec
 - **Minimapa**: etiqueta 🔍 abajo a la izquierda (x1/x2/x4/x8, o rueda del ratón); con zoom muestra casas, tiendas y jefes.
 
 Nota: la herrería de Aldea Real está en [80,67,84,71] para no tapar el portal de la Raid (85,72) ni su salida (85,71); no debe haber casas encima de portales.
+
+## Botones 📖 y 🙂
+Los botones 📖 álbum y 🙂 emotes están en la esquina superior derecha del juego (en teléfono, bajo los botones de zoom); también con F3/F9.

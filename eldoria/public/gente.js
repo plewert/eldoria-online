@@ -4,7 +4,8 @@
 (() => {
   const X = window.EldExt; if (!X) return;
   const { G } = X, TS = 32;
-  let ON = true; try { ON = localStorage.getItem('eldoria.gente') !== '0'; } catch (e) { /* sin storage */ }
+  let ONu = true; try { ONu = localStorage.getItem('eldoria.gente') !== '0'; } catch (e) { /* sin storage */ }
+  const Q = () => (ONu ? (X.perf ? X.perf.q('gente') : 2) : 0);
   const hs = (x, y, k = 0) => { const h = Math.sin(x * 127.1 + y * 311.7 + k * 74.7) * 43758.5453; return h - Math.floor(h); };
   const hour = () => (X.env ? X.env.hour() : 12);
   const tileAt = (x, y) => (x < 0 || y < 0 || x >= G.W || y >= G.H ? -1 : G.tiles[y * G.W + x]);
@@ -15,7 +16,7 @@
 
   const isRoad = (x, y) => tileAt(x, y) === 3 && !(G.npcTiles && G.npcTiles.has(y * G.W + x)) && !(G.decorSet && G.decorSet.has(y * G.W + x));
   function spawnIn(z) {
-    const [x0, y0, x1, y1] = z.rect, n = z.id === 'ciudad' || z.id === 'ciudad_alba' ? 7 : 4, out = [];
+    const [x0, y0, x1, y1] = z.rect, n = Math.min(Q() < 2 ? 3 : 7, z.id === 'ciudad' || z.id === 'ciudad_alba' ? 7 : 4), out = [];
     for (let tries = 0; out.length < n && tries < 200; tries++) {
       const x = x0 + 1 + ((Math.random() * (x1 - x0 - 1)) | 0), y = y0 + 1 + ((Math.random() * (y1 - y0 - 1)) | 0);
       if (!isRoad(x, y)) continue;
@@ -71,12 +72,12 @@
     c.restore();
   }
   X.on('under', (c, now, cw, ch) => {
-    if (!ON || !G.me || !G.tiles) return;
+    if (!Q() || !G.me || !G.tiles) { if (walkers.length) { walkers = []; town = null; } return; }
     const z = X.zoneAt(G.me.x, G.me.y), dt = Math.min(0.1, (now - (update.last || now)) / 1000); update.last = now;
     if (!z || z.kind !== 'town' || !z.rect || G.me.x < z.rect[0] || G.me.x > z.rect[2]) { town = null; walkers = []; return; }
-    if (town !== z.id) { town = z.id; walkers = spawnIn(z); }
+    if (town !== z.id || (Q() < 2 && walkers.length > 3)) { town = z.id; walkers = spawnIn(z); }
     update(now, dt, z);
     for (const w of walkers.slice().sort((a, b) => a.y - b.y)) figure(c, w, now, cw, ch);
   });
-  window.addEventListener('keydown', (e) => { if (e.key === 'F7') { e.preventDefault(); ON = !ON; try { localStorage.setItem('eldoria.gente', ON ? '1' : '0'); } catch (x) { /* nada */ } if (X.toast) X.toast(ON ? 'Gente del pueblo: activada (F7)' : 'Gente del pueblo: desactivada (F7)'); } });
+  window.addEventListener('keydown', (e) => { if (e.key === 'F7') { e.preventDefault(); ONu = !ONu; try { localStorage.setItem('eldoria.gente', ONu ? '1' : '0'); } catch (x) { /* nada */ } if (X.toast) X.toast(ONu ? 'Gente del pueblo: activada (F7)' : 'Gente del pueblo: desactivada (F7)'); } });
 })();

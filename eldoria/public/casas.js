@@ -6,7 +6,8 @@
 (() => {
   const X = window.EldExt; if (!X) return;
   const { G } = X, TS = 32;
-  let ON = true; try { ON = localStorage.getItem('eldoria.casas') !== '0'; } catch (e) { /* sin storage */ }
+  let ONu = true; try { ONu = localStorage.getItem('eldoria.casas') !== '0'; } catch (e) { /* sin storage */ }
+  const Q = () => (ONu ? (X.perf ? X.perf.q('casas') : 2) : 0);
   const hs = (x, y, k = 0) => { const h = Math.sin(x * 127.1 + y * 311.7 + k * 74.7) * 43758.5453; return h - Math.floor(h); };
   const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
   const nightK = () => { const h = X.env ? X.env.hour() : 12; return h >= 12 ? smooth(17.5, 20.5, h) : 1 - smooth(5, 7.5, h); };
@@ -31,19 +32,20 @@
   }
   const inside = (h) => { const m = G.me; return !!m && ((m.x >= h.x0 && m.x <= h.x1 && m.y >= h.y0 && m.y < h.y1) || (m.x === h.door && m.y === h.by)); };
   const vis = (h, cw, ch) => { const a = sx(h.ax, cw), b = sy(h.ay, ch); return a < cw + 40 && b < ch + 40 && a + (h.bx - h.ax + 1) * TS > -40 && b + (h.by - h.ay + 1) * TS > -80; };
-  const glow = (c, x, y, r, col, a) => { const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(1, `rgba(${col},0)`); c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2); };
+  let liteNow = false;
+  const glow = (c, x, y, r, col, a) => { if (liteNow) return; const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(1, `rgba(${col},0)`); c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2); };
 
   /* ---------- debajo de los personajes: sombra, ventanas, luz de la puerta, decoración interior ---------- */
   X.on('under', (c, now, cw, ch) => {
-    if (!ON) return;
+    const q = Q(); if (!q) return; const lite = q < 2; liteNow = lite;
     const night = nightK();
     for (const h of scan()) {
       if (!vis(h, cw, ch)) continue;
       const L = sx(h.ax, cw), T = sy(h.ay, ch), R = sx(h.bx + 1, cw), B = sy(h.by, ch), F = sy(h.by + 1, ch);
       // sombra proyectada hacia el sur y el este
-      c.save(); c.globalAlpha = 0.28 * (0.45 + h.fade * 0.55); c.fillStyle = '#0b1018';
+      if (!lite) { c.save(); c.globalAlpha = 0.28 * (0.45 + h.fade * 0.55); c.fillStyle = '#0b1018';
       c.beginPath(); c.moveTo(L + 6, F - 2); c.lineTo(R + 2, F - 2); c.lineTo(R + 16, F + 12); c.lineTo(L + 18, F + 12); c.closePath(); c.fill();
-      c.beginPath(); c.moveTo(R, T + 12); c.lineTo(R + 16, T + 24); c.lineTo(R + 16, F + 12); c.lineTo(R, F - 2); c.closePath(); c.fill(); c.restore();
+      c.beginPath(); c.moveTo(R, T + 12); c.lineTo(R + 16, T + 24); c.lineTo(R + 16, F + 12); c.lineTo(R, F - 2); c.closePath(); c.fill(); c.restore(); }
       // decoración interior: alfombra en el centro y objetos en la pared del fondo
       const cx = (h.x0 + h.x1) / 2, cy = (h.y0 + h.y1 - 1) / 2, v = hs(h.ax, h.ay, 5);
       for (let y = h.y0; y < h.y1; y++) for (let x = h.x0; x <= h.x1; x++) {
@@ -68,7 +70,7 @@
         else if (fk === 'fragua') { c.fillStyle = '#5c5650'; c.fillRect(X0 + 1, Y0 + 6, 30, 24); c.fillStyle = '#2a2622'; c.fillRect(X0 + 6, Y0 + 14, 20, 14); const fl = 0.75 + Math.sin(now / 90 + fx) * 0.25; c.fillStyle = `rgba(255,${140 + 60 * fl | 0},40,${fl})`; c.fillRect(X0 + 9, Y0 + 19, 14, 9);
           c.save(); c.globalCompositeOperation = 'lighter'; glow(c, X0 + 16, Y0 + 20, 44 + night * 12, '255,150,60', 0.4 * fl); c.restore(); }
       }
-      if (h.kind === 'taberna' || h.kind === 'herreria') {            // el tabernero y el herrero (figuras de ambiente)
+      if (!lite && (h.kind === 'taberna' || h.kind === 'herreria')) {            // el tabernero y el herrero (figuras de ambiente)
         const wx = h.kind === 'taberna' ? (h.x0 + h.x1) >> 1 : ((G.decor || []).find((d) => d[2] === 'yunque' && d[0] >= h.x0 && d[0] <= h.x1) || [h.x0 + 1])[0], wy = h.y0 + 1;
         if (!(G.npcTiles && G.npcTiles.has(wy * G.W + wx)) && !(G.decorSet && G.decorSet.has(wy * G.W + wx))) {
           const X0 = sx(wx, cw), Y0 = sy(wy, ch), sw = h.kind === 'herreria' ? Math.sin(now / 160) * 0.5 + 0.5 : 0;
@@ -105,7 +107,7 @@
 
   /* ---------- encima de todo: techo con chimenea y humo (fundido al entrar) ---------- */
   X.on('draw', (c, now, cw, ch, dt) => {
-    if (!ON) return;
+    const q = Q(); if (!q) return; const lite = q < 2;
     for (const h of scan()) {
       const tgt = inside(h) ? 0 : 1; h.fade += (tgt - h.fade) * Math.min(1, (dt || 0.016) * 6); if (Math.abs(tgt - h.fade) < 0.01) h.fade = tgt;
       if (!vis(h, cw, ch) || h.fade <= 0.02) continue;
@@ -127,7 +129,7 @@
       c.fillStyle = dark; c.fillRect(L, mid - 2, R - L, 4);                       // cumbrera
       c.fillStyle = 'rgba(0,0,0,.22)'; c.fillRect(L, B - 5, R - L, 5);             // alero (sombra hacia el muro)
       c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1; c.strokeRect(L + 0.5, T + 0.5, R - L - 1, B - T - 1);
-      if (h.chim) {
+      if (h.chim && !lite) {
         const cxp = R - 38, cyp = T + 6;
         c.fillStyle = '#6f6a66'; c.fillRect(cxp, cyp, 16, 26); c.fillStyle = '#4c4845'; c.fillRect(cxp - 2, cyp - 3, 20, 5);
         for (let i = 0; i < 4; i++) {                                              // humo
@@ -139,7 +141,7 @@
         c.fillStyle = 'rgba(245,250,255,.92)'; c.fillRect(L, T, R - L, (mid - T) * 0.8 + 2); c.fillStyle = 'rgba(225,236,248,.9)'; c.fillRect(L, mid + 2, R - L, 5);
         for (let x = L; x < R; x += 9) c.fillRect(x, T + (mid - T) * 0.8, 6, 3 + hs(x, T) * 4);
       }
-      if (h.kind === 'taberna') {                                                   // cartel con jarra y notas de música
+      if (h.kind === 'taberna' && !lite) {                                          // cartel con jarra y notas de música
         const px0 = sx(h.door, cw) + TS + 6, py0 = sy(h.by, ch) + 2;
         c.fillStyle = '#4e2c18'; c.fillRect(px0, py0 - 4, 2, 22); c.fillRect(px0, py0 - 4, 18, 2); c.fillStyle = '#c9a15a'; c.fillRect(px0 + 3, py0, 15, 12); c.fillStyle = '#fff'; c.fillRect(px0 + 7, py0 + 3, 6, 7);
         for (let i = 0; i < 3; i++) { const k = (now / 2200 + i / 3) % 1; c.fillStyle = `rgba(255,235,170,${(1 - k) * 0.9 * h.fade})`; c.font = '12px sans-serif'; c.fillText('♪', px0 + 4 + Math.sin(k * 7 + i) * 8, py0 - 8 - k * 28); }
@@ -147,5 +149,5 @@
       c.restore();
     }
   });
-  window.addEventListener('keydown', (e) => { if (e.key === 'F5' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); ON = !ON; try { localStorage.setItem('eldoria.casas', ON ? '1' : '0'); } catch (x) { /* nada */ } if (X.toast) X.toast(ON ? 'Techos de casas: activados (F5)' : 'Techos de casas: desactivados (F5)'); } });
+  window.addEventListener('keydown', (e) => { if (e.key === 'F5' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); ONu = !ONu; try { localStorage.setItem('eldoria.casas', ONu ? '1' : '0'); } catch (x) { /* nada */ } if (X.toast) X.toast(ONu ? 'Techos de casas: activados (F5)' : 'Techos de casas: desactivados (F5)'); } });
 })();
