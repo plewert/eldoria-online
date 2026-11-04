@@ -301,7 +301,7 @@ ok('mazmorras y cuevas: nadie ataca a través de la entrada', () => {
   game.hurtMonster(m, 500, a.p, T0); assert.equal(m.hp, hp0, 'desde fuera no daña');
   m.target = a.p.id; m.nextAtk = 0; for (let i = 0; i < 40; i++) { T0 += CFG.TICK_MS; game.tick(T0); }
   assert.equal(a.p.hp, 5000, 'el dragón no daña hacia fuera'); assert.notEqual(m.target, a.p.id);
-  place(a.p, 122, 86); game.hurtMonster(m, 500, a.p, T0); assert.equal(m.hp, hp0 - 275, 'dentro sí, con 45% de defensa');
+  place(a.p, 122, 86); const hp1 = m.hp; game.hurtMonster(m, 500, a.p, T0); assert.equal(m.hp, hp1 - 275, 'dentro sí, con 45% de defensa');
   assert.equal(MONSTERS.dragon_sombra.respawn, 60000);
   game.mgrid.delete(m.y * world.W + m.x); game.monsters = game.monsters.filter((q) => q !== m); game.ents.delete(m.id);
 });
@@ -657,7 +657,7 @@ ok('Medusa, Reina de las Serpientes: cueva, sprites, mirada de piedra con zonas 
   const zn = gz.zones[0]; place(b.p, zn.x, zn.y); place(a.p, zn.x === 276 ? 266 : 276, zn.y === 300 ? 308 : 300);
   if (gz.zones.some((z) => Math.hypot(z.x - a.p.x, z.y - a.p.y) <= z.r + 0.5)) { place(a.p, 266, 299); }
   const outside = !gz.zones.some((z) => Math.hypot(z.x - a.p.x, z.y - a.p.y) <= z.r + 0.2);
-  run(gz.T + 400); if (outside) { assert.ok(a.p.stoneUntil > game.now, 'fuera de la zona segura: piedra'); assert.ok(a.p.stoneUntil - game.now > 6000 && a.p.stoneUntil - game.now <= 8000); } assert.ok(!(b.p.stoneUntil > game.now), 'dentro de la zona segura: libre'); assert.ok(game.fx.some((f) => f.k === 'md_flash'));
+  run(gz.T + 400); if (outside) { assert.ok(a.p.stoneUntil > game.now, 'fuera de la zona segura: piedra'); assert.ok(a.p.stoneUntil - game.now > 9000 && a.p.stoneUntil - game.now <= 12000); } assert.ok(!(b.p.stoneUntil > game.now), 'dentro de la zona segura: libre'); assert.ok(game.fx.some((f) => f.k === 'md_flash'));
   // la piedra bloquea moverse, atacar y especiales; los golpes de Medusa a una estatua pegan más
   a.p.stoneUntil = game.now + 8000; a.p.target = null; place(a.p, 280, 304); const ax = a.p.x, ay = a.p.y; a.p.nextMove = 0; game.handle(a.p, { t: 'move', dx: 1, dy: 0 }); game.tickExt && game.updatePlayer(a.p, game.now); assert.equal(a.p.x, ax, 'no se mueve de piedra'); game.handle(a.p, { t: 'target', id: m.id }); assert.ok(!a.p.target, 'no puede fijar objetivo');
   { const d1 = game.hurtPlayer(a.p, 1000, m, game.now, m.def.name), d2 = game.hurtPlayer(b.p, 1000, m, game.now, m.def.name); assert.ok(d1 > d2 * 1.5, 'golpe devastador a la estatua: ' + d1 + ' vs ' + d2); }
@@ -677,6 +677,15 @@ ok('Medusa, Reina de las Serpientes: cueva, sprites, mirada de piedra con zonas 
   assert.ok(game.fx.filter((f) => /^md_/.test(f.k)).every((f) => Number.isFinite(f.x ?? 0) && Number.isFinite(f.y ?? 0)), 'fx con coordenadas');
   // muerte: libera a todos
   a.p.stoneUntil = game.now + 5000; game.fx.length = 0; game.killMonster(m, game.now); assert.ok(game.fx.some((f) => f.k === 'md_die') && !(a.p.stoneUntil > game.now), 'muere y libera');
+  // salto: 5 s de piedra; dividirse en 3 con imágenes que caducan y estallan; vida según el nivel del jugador
+  { place(a.p, 272, 304); place(b.p, 288, 304); a.p.hp = b.p.hp = 1e7; a.p.stoneUntil = b.p.stoneUntil = 0; m.hp = m.maxHp; game.fx.length = 0; game.medusaCast(m, 'salto'); run(3000);
+    const st = [a.p, b.p].map((q) => q.stoneUntil - game.now).filter((v) => v > 0); assert.ok(!st.length || (Math.max(...st) > 1500 && Math.max(...st) <= 5000), 'piedra 5 s al aparecer'); }
+  { a.p.stoneUntil = b.p.stoneUntil = 0; place(a.p, 276, 304); m.dead = false; m.hp = m.maxHp; m.target = a.p.id; game.fx.length = 0; game.medusaCast(m, 'dividir'); run(2500);
+    const kids = game.monsters.filter((z) => z.parent === m); assert.ok(kids.length >= 1 && kids.every((z) => z.type === 'medusa_clon' && z.maxHp <= m.maxHp * 0.1), 'dos imágenes'); assert.ok(game.fx.some((f) => f.k === 'md_split'));
+    const k0 = kids[0], hpA = a.p.hp; place(a.p, k0.x, k0.y + 1); game.fx.length = 0; a.p.storyUntil = 0; game.killMonster(k0, game.now); assert.ok(game.fx.some((f) => f.k === 'md_splash'), 'estalla fx'); assert.ok(a.p.hp < hpA, 'la imagen estalla');
+    game.now += 31000; game.medusaKids(m); assert.ok(!game.monsters.some((z) => z.parent === m && !z.dead), 'caducan a los 30 s'); }
+  { const lv = (n) => { m.hp = m.maxHp = MONSTERS.medusa.hp; m.scaled = false; place(a.p, 280, 304); a.p.level = n; m.nextSp = Infinity; game.medusaAI(m, game.now); return m.maxHp; };
+    const lo = lv(60), mid = lv(100), hi = lv(130); assert.ok(lo === mid && mid < hi, 'nunca baja de su vida normal y sube con el nivel'); assert.equal(mid, MONSTERS.medusa.hp); assert.ok(hi <= MONSTERS.medusa.hp * 2.5 + 1); m.baseMax = 0; m.maxHp = m.hp = MONSTERS.medusa.hp; m.scaled = false; }
   // botín: equipo de la Gorgona con sprites, en el loot, fuera de la tienda y repartido al morir
   const MD = require('../game/medusa'), ids = [...MD.PIECES, ...MD.RINGS, MD.AMULET, ...MD.WEAPONS].map((q) => q[0]), gj = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '../public/gear.json'), 'utf8'));
   assert.equal(ids.length, 16); const lootIds = MONSTERS.medusa.loot.map((l) => l[0]);
@@ -687,6 +696,15 @@ ok('Medusa, Reina de las Serpientes: cueva, sprites, mirada de piedra con zonas 
   { const k = game.spawnMonster('medusa', sp.x, sp.y); const inv0 = a.p.inv.length; const R0 = Math.random; Math.random = () => 0.0001;
     try { k.dmgBy.set(a.p.id, { dmg: 5000, t: game.now }); game.killMonster(k, game.now); } finally { Math.random = R0; }
     const got = (a.p.inv || []).filter((i) => i && ids.includes(i.id)).length + [...game.ents.values()].filter((e) => e.kind === 'drop' || e.kind === 'it').length; assert.ok(got >= 1 || a.p.inv.length > inv0, 'cae equipo'); }
+});
+
+ok('vida de los jefes según el nivel del jugador (todos los jefes menos Raids e invocaciones) y se restaura al morir', () => {
+  const BN = require('../game/bossnivel'); assert.equal(BN.factor(100), 1); assert.ok(BN.factor(1) === 1 && BN.factor(999) === 2.5 && BN.factor(130) > 1.5);
+  const { p } = login('BossLv'); const sp = world.monsterSpawns.find((q) => q.type === 'hades'); place(p, sp.x, sp.y + 3); p.hp = 1e9;
+  const b = game.monsters.find((q) => q.type === 'hades'); b.dead = false; game.mgrid.set(b.y * world.W + b.x, b); b.maxHp = b.hp = b.def.hp; b.baseMax = 0; const base = b.maxHp; b.scaled = false; b.target = p.id; p.level = 140;
+  const lvNear = Math.max(...[...game.players.values()].filter((q) => !q.bot && q.hp > 0 && Math.max(Math.abs(q.x - b.x), Math.abs(q.y - b.y)) <= 24).map((q) => q.level || 1)); game.updateMonster(b, game.now); assert.ok(lvNear >= 140); assert.equal(b.maxHp, Math.round(base * BN.factor(lvNear))); assert.equal(b.hp, b.maxHp); assert.ok(b.scaled);
+  const hpS = b.maxHp; game.updateMonster(b, game.now + 50); assert.equal(b.maxHp, hpS, 'solo se ajusta una vez');
+  game.killMonster(b, game.now); assert.equal(b.maxHp, base, 'se restaura al morir'); assert.ok(!b.scaled);
 });
 
 ok('especiales de armas de jefe: 26 armas x 2 especiales (teclas 4 y 5) con daño, espera, maná y controles reducidos en jefes', () => {
@@ -790,7 +808,7 @@ ok('Instancias privadas de jefes de cueva: copias, portales de pago, jefe más f
   const boss = game.monsters.find((m) => m.instSlot === 'inst_cueva_1'); assert.ok(boss && boss.type === 'dragon_sombra' && boss.maxHp === Math.round(boss.def.hp * gj.HP_K) && boss.noRespawn);
   game.instEnter(b.p, portal); assert.equal(world.zoneAt(b.p.x, b.p.y).id, 'inst_cueva_2'); for (let k = 3; k <= 7; k++) game.instSt.set('inst_cueva_' + k, { key: 'otro' + k, boss: null, endAt: game.now + 1e9, cleared: false }); game.instEnter(c.p, portal); assert.ok(!world.zoneAt(c.p.x, c.p.y).id.startsWith('inst_'), 'sin plaza libre'); assert.equal(c.p.gold, 5e6, 'no cobra');
   // el jefe pega más fuerte
-  a.p.hp = a.p.maxHp = 9e6; const hm = game.hurtPlayer(a.p, 1000, { kind: 'mo', x: boss.x, y: boss.y, def: boss.def, instMul: gj.DMG_K }, game.now, 'x'), hn = game.hurtPlayer(a.p, 1000, { kind: 'mo', x: boss.x, y: boss.y, def: boss.def }, game.now, 'x'); assert.ok(hm > hn * 1.1, 'más daño ' + hm + ' ' + hn);
+  a.p.hp = a.p.maxHp = 9e6; const hm = game.hurtPlayer(a.p, 1000, { kind: 'mo', x: boss.x, y: boss.y, def: boss.def, instMul: gj.DMG_K }, game.now, 'x'), hn = game.hurtPlayer(a.p, 1000, { kind: 'mo', x: boss.x, y: boss.y, def: boss.def }, game.now, 'x'); assert.equal(gj.DMG_K, 1, 'las instancias no hacen más daño'); assert.ok(hm >= hn * 0.8 && hm <= hn * 1.25, 'mismo daño ' + hm + ' ' + hn);
   // el jefe cae: botín y cierre a los 90 s
   boss.dmgBy.set(a.p.id, { dmg: 1000, t: game.now }); const r0 = Math.random; let g0 = a.p.gold;
   try { Math.random = () => 0.5; game.killMonster(boss, game.now); } finally { Math.random = r0; }

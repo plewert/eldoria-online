@@ -48,7 +48,7 @@
 
   const css = document.createElement('style');
   css.textContent = `.perfbtn{left:94px}body.touch .perfbtn{top:62px;left:94px}
-@media (orientation:landscape) and (max-height:520px){body.touch .perfbtn{top:calc(8px + env(safe-area-inset-top));left:calc(90px + env(safe-area-inset-left));width:36px;height:36px}}
+@media (orientation:landscape) and (max-height:520px){body.touch .perfbtn{top:calc(50px + env(safe-area-inset-top));left:calc(164px + env(safe-area-inset-left));width:36px;height:36px}}
 .pf-ov{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center}
 .pf-box{width:min(460px,calc(100vw - 20px));max-height:calc(100vh - 30px);overflow:auto;background:rgba(26,20,13,.98);border:1px solid #c9a24b;border-radius:12px;padding:14px 16px;color:#f1e6c8;font-size:14px}
 .pf-box h3{margin:0 0 6px;color:#ffd77a;font-size:19px;display:flex;justify-content:space-between;align-items:center}
@@ -67,10 +67,14 @@
   document.addEventListener('DOMContentLoaded', mount); if (document.readyState !== 'loading') mount(); updBtn();
 
   let box = null, panel = null;
-  const seg = (opts, cur, fn) => { const d = document.createElement('div'); d.className = 'pf-seg'; for (const [v, t] of opts) { const b = document.createElement('button'); b.type = 'button'; b.textContent = t; if (v === cur) b.className = 'on'; b.addEventListener('click', () => fn(v)); d.append(b); } return d; };
+  const unsafe = () => { if (window.EldSafe && window.EldSafe.on && window.EldSafe.on()) window.EldSafe.set(false); };   // el Modo seguro 🛡️ ignora estos ajustes: si se toca uno, se quita
+  const seg = (opts, cur, fn, keep) => { const d = document.createElement('div'); d.className = 'pf-seg'; for (const [v, t] of opts) { const b = document.createElement('button'); b.type = 'button'; b.textContent = t; if (v === cur) b.className = 'on'; b.addEventListener('click', () => { if (!keep) unsafe(); fn(v); }); d.append(b); } return d; };
   function render() {
     if (!panel) return; panel.textContent = '';
     const h3 = document.createElement('h3'); h3.append('⚡ Rendimiento'); const x = document.createElement('button'); x.textContent = '✕'; x.addEventListener('click', close); h3.append(x); panel.append(h3);
+    if (safe()) { const w = document.createElement('div'); w.style.cssText = 'background:#4a3512;border:1px solid #ffd77a;border-radius:8px;padding:8px 10px;margin:0 0 8px;font-size:13px';
+      w.append('🛡️ El Modo seguro está activado y ignora estos ajustes (sin 3D ni efectos). Toca cualquier opción de abajo para quitarlo, o '); const q2 = document.createElement('button'); q2.type = 'button'; q2.textContent = 'desactívalo aquí';
+      q2.style.cssText = 'background:#ffd77a;color:#1d1608;border:0;border-radius:6px;padding:3px 8px;font-weight:700;cursor:pointer'; q2.addEventListener('click', () => { unsafe(); changed(); }); w.append(q2); panel.append(w); }
     const n = document.createElement('p'); n.className = 'pf-note'; n.textContent = mode === 'auto' ? `Auto: el juego detecta tu equipo y usa el perfil ${level()}; si va lento baja solo.` : `Perfil fijo: ${level()}.`; panel.append(n);
     panel.append(seg([['auto', 'Auto'], ['alto', 'Alto'], ['medio', 'Medio'], ['bajo', 'Bajo']], mode, (v) => { mode = v; cap = null; ov = {}; save(); changed(); }));
     const h = document.createElement('h4'); h.textContent = 'Activar o desactivar cada efecto'; panel.append(h);
@@ -80,7 +84,7 @@
       r.append(seg([[2, 'Sí'], [0, 'No']], on ? 2 : 0, (v) => { ov[k] = v; save(); changed(); })); panel.append(r);
     }
     const h2 = document.createElement('h4'); h2.textContent = 'Botones 📖 álbum y 🙂 emotes'; panel.append(h2);
-    panel.append(seg([['visible', 'Visibles'], ['compact', 'Compactos ⋯'], ['hidden', 'Ocultos']], hud, (v) => { hud = v; save(); changed(); }));
+    panel.append(seg([['visible', 'Visibles'], ['compact', 'Compactos ⋯'], ['hidden', 'Ocultos']], hud, (v) => { hud = v; save(); changed(); }, true));
     const r2 = document.createElement('div'); r2.className = 'pf-row'; r2.style.marginTop = '8px';
     const a = document.createElement('button'), e = document.createElement('button'); a.textContent = '📖 Abrir álbum'; e.textContent = '🙂 Abrir emotes';
     for (const b of [a, e]) { b.type = 'button'; b.style.cssText = 'flex:1;padding:6px;border-radius:8px;border:1px solid #6d5a34;background:#3b3220;color:#f1e6c8;cursor:pointer'; }

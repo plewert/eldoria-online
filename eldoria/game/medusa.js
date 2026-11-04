@@ -3,17 +3,19 @@
  * Medusa, Reina de las Serpientes — jefe de la Cueva de Medusa (zona «El Inframundo»).
  * Es más rápida que los demás jefes. Habilidades (además de golpear con el hacha):
  *   1) Mirada de piedra: las serpientes de su pelo lanzan una luz. Los jugadores deben correr a una ZONA SEGURA (círculo de runas)
- *      antes de que estalle; quien quede fuera se convierte en piedra 8 s (no puede moverse ni atacar) y Medusa le golpea mucho más fuerte.
+ *      antes de que estalle; quien quede fuera se convierte en piedra 12 s (no puede moverse ni atacar) y Medusa le golpea mucho más fuerte.
  *   2) Piel de piedra (modo combate): 6 s de inmunidad total.
- *   3) Aparición: desaparece y reaparece junto a un jugador; lo convierte en piedra 2 s y le golpea.
+ *   3) Aparición: desaparece y reaparece junto a un jugador; lo convierte en piedra 5 s y le golpea.
  *   4) Atracción: un hechizo que ralentiza a todos y los arrastra hacia ella.
- *   5) Bola tóxica: la lanza al aire; al explotar salpica a TODOS los jugadores.
+ *   5) División: se divide en 3; las dos imágenes caducan o estallan al morir.
+ *   6) Bola tóxica: la lanza al aire; al explotar salpica a TODOS los jugadores.
  * Botín raro: equipo de la Gorgona (yelmo, coraza, manto de víboras, guantes, grebas, botas, égida, carcaj, orbe, 3 anillos, collar),
  *   el Hacha Colmillo, el Arco Víbora Espectral y el Báculo de las Cuatro Cabezas. Más el Ojo de Medusa (trofeo) y materiales de elixir.
  */
 let _w = null; const world = new Proxy({}, { get: (_, k) => (_w || (_w = require('./world')))[k] });
 const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 
+const STONE_GAZE_MS = 12000, STONE_JUMP_MS = 5000;       // piedra por la mirada / al aparecer junto a ti
 const STONE_HIT_K = 1.8;                  // los golpes de Medusa a un jugador de piedra
 const BLOCKED_MSGS = new Set(['move', 'target', 'skill', 'style', 'spell', 'equip', 'unequip', 'drop', 'pickup', 'pick', 'npc', 'trade_req']);
 
@@ -52,6 +54,8 @@ function build(ITEMS, MONSTERS) {
     name: 'Medusa, Reina de las Serpientes', icon: '🐍', lv: 880, hp: 600000, dmg: [400, 620], dmgK: 3.1, exp: 150000, move: 290, atkCd: 1100, aggro: 20, respawn: 60000, armor: 0.5, shared: true, boss: true, special: 'medusa',
     gold: [52000, 76000], loot: [['trofeo_medusa', 1, 1, 2], ['pocion_vida_g', 1, 5, 10], ['pocion_mana_g', 1, 5, 10], ['pluma_fenix', 0.5, 1, 2]],
   };
+  // imágenes de Medusa (habilidad «dividirse en 3»): no sueltan nada
+  MONSTERS.medusa_clon = { name: 'Imagen de Medusa', icon: '🐍', lv: 700, hp: 60000, dmg: [260, 400], dmgK: 3.1, exp: 0, move: 290, atkCd: 1100, aggro: 24, respawn: 999999999, armor: 0.3, gold: [0, 0], loot: [], spr: 'medusa', special: 'medusa_clon' };
   const boss = MONSTERS.medusa;
   for (const p of ALL) boss.loot.push([p[0], p[p.length - 1], 1, 1]);
   for (const w of WEAPONS) boss.loot.push([w[0], w[8], 1, 1]);
@@ -62,11 +66,21 @@ function install(Game) {
   const rect = (m) => world.zoneAt(m.x, m.y).rect;
   const inCave = (q, R) => q.hp > 0 && q.x >= R[0] && q.x <= R[2] && q.y >= R[1] && q.y <= R[3];
   const floorOk = (x, y) => world.isWalkable(x, y) && world.tiles[y * world.W + x] === world.T.MDF;
-  const ORDER = ['mirada', 'bola', 'atraer', 'salto', 'piel', 'mirada', 'salto', 'bola', 'atraer', 'mirada'];
+  const ORDER = ['mirada', 'bola', 'atraer', 'salto', 'piel', 'dividir', 'mirada', 'salto', 'bola', 'atraer', 'dividir', 'mirada'];
+  const K_MIN = 1, K_MAX = 2.5, K_PER_LV = 0.02, LV_BASE = 100;           // vida de Medusa según el nivel del jugador más alto que entra
 
   P.medusaAI = function (m, now) {
     if (m.lpx !== undefined && m.x !== m.lpx) m.lf = m.x < m.lpx ? -1 : 1;
     m.lpx = m.x;
+    this.medusaKids(m);
+    if (!m.scaled && m.hp === m.maxHp) {                                                           // su vida crece con el nivel de quien entra a la cueva
+      const R = rect(m), lv = Math.max(0, ...[...this.players.values()].filter((q) => inCave(q, R)).map((q) => q.level || 1));
+      if (lv > 0) {
+        const k = Math.max(K_MIN, Math.min(K_MAX, 1 + (lv - LV_BASE) * K_PER_LV));
+        m.baseMax = m.maxHp; m.maxHp = m.hp = Math.round(m.maxHp * k); m.scaled = true; m.scaleK = k;
+        for (const q of this.players.values()) if (inCave(q, R)) this.msg(q, `🐍 La vida de Medusa se ajusta a tu nivel (${lv}): ×${k.toFixed(2)} → ${m.maxHp.toLocaleString('es')}.`, 'x');
+      }
+    }
     if (now < (m.nextSp || 0)) return;
     const t = m.target ? this.ents.get(m.target) : null; if (!t || t.kind !== 'pl' || t.hp <= 0) return;
     const kind = ORDER[(m.spN || 0) % ORDER.length]; m.spN = (m.spN || 0) + 1;
@@ -108,7 +122,7 @@ function install(Game) {
       const pl0 = inside(), nz = Math.max(2, Math.min(4, Math.ceil(pl0.length / 2) + 1)), ZR = 2.3, WARN = 3600;
       const zones = spots(nz, 7, R, [{ x: m.x, y: m.y }], 4);
       if (!zones.length) return 600;
-      say('🐍👁️ ¡Las serpientes de Medusa brillan! ¡Corre a una ZONA SEGURA (círculo de runas) o te convertirás en piedra 8 s!'); cast(1200, WARN + 900);
+      say('🐍👁️ ¡Las serpientes de Medusa brillan! ¡Corre a una ZONA SEGURA (círculo de runas) o te convertirás en piedra 12 s!'); cast(1200, WARN + 900);
       this.fx.push({ k: 'md_gaze', x: m.x, y: m.y, id: m.id, T: WARN, zones: zones.map((z) => ({ x: z.x, y: z.y, r: ZR })) });
       this.later(WARN, () => {
         if (!alive()) return;
@@ -116,7 +130,7 @@ function install(Game) {
         const stoned = [];
         for (const q of inside()) {
           if (zones.some((z) => Math.hypot(q.x - z.x, q.y - z.y) <= ZR + 0.2)) { this.fx.push({ k: 'md_safe', x: q.x, y: q.y }); continue; }
-          this.petrify(q, 8000, m); stoned.push(q);
+          this.petrify(q, STONE_GAZE_MS, m); stoned.push(q);
         }
         if (stoned.length) { m.target = stoned[0].id; m.nextAtk = Math.min(m.nextAtk, this.now + 500); }
       });
@@ -168,7 +182,29 @@ function install(Game) {
       });
       return FLY + 1000 + 600;
     }
-    // salto: desaparece y reaparece junto a un jugador; lo convierte en piedra 2 s y le golpea
+    if (kind === 'dividir') {                                                                     // se divide en 3: dos imágenes que atacan
+      const spotsK = [];
+      for (let k = 0; k < 80 && spotsK.length < 2; k++) {
+        const x = Math.round(m.x) + rnd(-4, 4), y = Math.round(m.y) + rnd(-4, 4);
+        if (Math.hypot(x - m.x, y - m.y) < 2 || !floorOk(x, y) || this.mgrid.has(y * world.W + x) || this.pgrid.has(y * world.W + x) || spotsK.some((s2) => s2.x === x && s2.y === y)) continue;
+        spotsK.push({ x, y });
+      }
+      if (!spotsK.length) return 600;
+      say('🐍🐍🐍 ¡Medusa se divide en TRES! Las imágenes caducan en 30 s y estallan al morir.'); cast(1200, 1800);
+      this.fx.push({ k: 'md_split', x: m.x, y: m.y, id: m.id, T: 1100 });
+      for (const z of spotsK) this.fx.push({ k: 'md_mk', x: z.x, y: z.y, r: 1.2, T: 1100, sx: m.x, sy: m.y });
+      this.later(1100, () => {
+        if (!alive()) return;
+        for (const z of spotsK) {
+          if (this.mgrid.has(z.y * world.W + z.x) || this.pgrid.has(z.y * world.W + z.x)) continue;
+          const c = this.spawnMonster('medusa_clon', z.x, z.y);
+          c.maxHp = c.hp = Math.max(20000, Math.round(m.maxHp * 0.08)); c.noRespawn = true; c.respawnAt = Infinity; c.parent = m; c.diesAt = this.now + 30000; c.target = m.target; c.instSlot = m.instSlot; c.instMul = m.instMul;
+          this.fx.push({ k: 'md_appear', x: z.x, y: z.y, id: c.id, r: 1.6 });
+        }
+      });
+      return 1100 + 1800;
+    }
+    // salto: desaparece y reaparece junto a un jugador; lo convierte en piedra 5 s y le golpea
     const pl = inside(); if (!pl.length) return 600;
     const q = pl[rnd(0, pl.length - 1)], cand = [];
     for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const x = Math.round(q.x) + dx, y = Math.round(q.y) + dy; if ((dx || dy) && Math.hypot(dx, dy) <= 2.3 && floorOk(x, y) && !this.mgrid.has(y * world.W + x) && !this.pgrid.has(y * world.W + x)) cand.push({ x, y }); }
@@ -181,9 +217,19 @@ function install(Game) {
       if (!alive()) return;
       if (!this.mgrid.has(d.y * world.W + d.x)) this.relocate(m, d.x, d.y);
       m.hideUntil = 0; this.fx.push({ k: 'md_appear', x: m.x, y: m.y, id: m.id, r: 2.4 });
-      for (const z of inside()) if (Math.hypot(z.x - m.x, z.y - m.y) <= 2.5) { hit(z, 380, 520, 'Mirada de Medusa'); this.petrify(z, 2000, m); }
+      for (const z of inside()) if (Math.hypot(z.x - m.x, z.y - m.y) <= 2.5) { hit(z, 380, 520, 'Mirada de Medusa'); this.petrify(z, STONE_JUMP_MS, m); }
     });
     return WARN + 600;
+  };
+
+  /** retira las imágenes de Medusa muertas, caducadas o de una Medusa que ya cayó */
+  P.medusaKids = function (m) {
+    const kids = this.monsters.filter((z) => z.parent === m); if (!kids.length) return;
+    const now = this.now, up = !m.dead && this.monsters.includes(m);
+    for (const q of kids) if (q.dead || !up || now >= (q.diesAt || Infinity)) {
+      if (!q.dead) this.fx.push({ k: 'md_vanish', x: q.x, y: q.y, id: q.id });
+      this.mgrid.delete(q.y * world.W + q.x); this.monsters = this.monsters.filter((z) => z !== q); this.ents.delete(q.id);
+    }
   };
 
   // inmunidad con la piel de piedra
@@ -220,6 +266,11 @@ function install(Game) {
   const CH = new Map(); for (const q of ALL) CH.set(q[0], q[q.length - 1]); for (const w of WEAPONS) CH.set(w[0], w[8]);
   const K0 = P.killMonster;
   P.killMonster = function (m, now) {
+    if (m.type === 'medusa_clon') {                                                               // la imagen estalla al morir
+      const x = m.x, y = m.y, R = rect(m); this.fx.push({ k: 'md_splash', x, y, r: 2 });
+      for (const q of this.players.values()) if (inCave(q, R) && Math.hypot(q.x - x, q.y - y) <= 2.2) this.hurtPlayer(q, rnd(250, 360), m, now, 'Imagen de Medusa');
+      return K0.call(this, m, now);
+    }
     if (m.type !== 'medusa') return K0.call(this, m, now);
     const x = m.x, y = m.y, face = m.lf || 1, parts = []; m.stoneUntil = 0;
     for (const q of this.players.values()) q.stoneUntil = 0;
@@ -227,6 +278,7 @@ function install(Game) {
     const real = m.def, instK = m.instSlot ? require('./instancias').LOOT_K : 1;
     m.def = Object.assign({}, real, { loot: real.loot.filter((l) => !GEAR.has(l[0])) });
     let r; try { r = K0.call(this, m, now); } finally { m.def = real; }
+    if (m.baseMax) { m.maxHp = m.baseMax; m.baseMax = 0; } m.scaled = false; this.medusaKids(m);       // al renacer vuelve a ajustarse a quien entre
     // equipo de la Gorgona: botín para todos los que participan; cuanto más daño haces, más suerte (hasta ×3 el que más daño hizo)
     const I = require('./items'), D = require('./data'), topDmg = Math.max(1, ...parts.map((q) => q[1])), ranked = parts.slice().sort((a, b) => b[1] - a[1]);
     this.broadcastChat('🐍 ¡Medusa ha caído! Las serpientes de su cabello se apagan.' + (ranked.length ? ` Mayor daño: ${ranked.slice(0, 3).map((q) => `${q[0].name} (${q[1]})`).join(', ')}.` : ''), 'k');

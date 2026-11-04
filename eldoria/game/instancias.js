@@ -3,12 +3,12 @@
  * Instancias privadas de los jefes de cueva (pagas, individuales).
  *  - Cada cueva (8 con El Olimpo, entrada 1M) tiene 7 copias exactas al sur del mapa (zonas inst_<cueva>_<n>); los precios están en `INST_CAVES` (game/world.js).
  *  - Entras por un portal junto a la puerta de la cueva y pagas al cruzarlo. Solo tú estás dentro.
- *  - El jefe sale al instante: +50 % de vida, +25 % de daño y +50 % de oro y de botín (las mascotas no suben). Duración máxima: 20 min.
+ *  - El jefe sale al instante: +50 % de vida, +10 % de daño y +50 % de oro y de botín (las mascotas no suben). Duración máxima: 20 min.
  *  - Termina cuando el jefe cae (90 s para recoger el botín), se acaba el tiempo, sales por el portal, mueres o te desconectas.
  */
 const world = require('./world');
 const { ITEMS, CFG } = require('./data');
-const HP_K = 1.5, DMG_K = 1.25, LOOT_K = 1.5, MAX_MS = 20 * 60 * 1000, CLEAR_MS = 90 * 1000;
+const HP_K = 1.5, DMG_K = 1.0, LOOT_K = 1.5, MAX_MS = 20 * 60 * 1000, CLEAR_MS = 90 * 1000;
 const kxy = (x, y) => y * world.W + x;
 
 function install(Game) {
@@ -32,7 +32,7 @@ function install(Game) {
     const m = this.spawnMonster(I.boss, free.lair[0], free.lair[1]);
     m.maxHp = m.hp = Math.round(m.def.hp * HP_K); m.instSlot = free.id; m.instMul = DMG_K; m.noRespawn = true; m.respawnAt = Infinity;
     st.get(free.id).boss = m;
-    this.msg(p, `Pagas ${I.fee.toLocaleString('es')} de oro: instancia privada de ${m.def.name}. Jefe +50 % de vida y +25 % de daño, +50 % de botín. Tienes 20 min.`, 's');
+    this.msg(p, `Pagas ${I.fee.toLocaleString('es')} de oro: instancia privada de ${m.def.name}. Jefe +50 % de vida (daño normal), +50 % de botín. Tienes 20 min.`, 's');
   };
 
   // saca al dueño (si sigue dentro) y limpia la plaza

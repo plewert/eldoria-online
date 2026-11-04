@@ -2252,7 +2252,7 @@
       const sq = 1 + (moving ? 0 : Math.sin(now / 520 + e.id) * 0.018);
       if (e.t === 'zeus' && spr.anim) { drawZeus(c, e, spr, cx, ground, now); return; }
       if (e.t === 'hades' && spr.anim) { drawZeus(c, e, spr, cx, ground, now, 'hades', '255,80,20'); return; }
-      if (e.t === 'medusa' && spr.anim) { drawZeus(c, e, spr, cx, ground, now, 'medusa', '110,255,140'); return; }
+      if ((e.t === 'medusa' || e.t === 'medusa_clon') && spr.anim) { drawZeus(c, e, spr, cx, ground, now, 'medusa', '110,255,140'); return; }
       if (e.t === 'anubis' || d.shade) { drawAnubisLike(c, e, d, skey, spr, cx, ground, now, sq); return; }
       if (RB[e.t]) { drawRaidBoss(c, e, d, skey, spr, cx, ground, now); return; }
       drawSprite(c, skey, sprFrame(e, spr), cx, ground + 2 - Math.round(hop) - Math.round(float), (e.face || 1) < 0, sq);

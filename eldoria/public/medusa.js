@@ -48,6 +48,7 @@
       case 'md_orb': ADD('md_orb', f, f.T + 200); break;
       case 'md_boom': ADD('md_boom', f, 900); G.shake = { t: now, m: 5 }; X.burst(f.x, f.y - 2.5, 'poison', 40, { sp: 6, up: 2, g: 4, life: 1.2, size: 3.2 }); break;
       case 'md_mk': ADD('md_mk', f); break;
+      case 'md_split': X.casts.set(f.id, now + 1300); ADD('md_smoke', f, 1000); X.burst(f.x, f.y, 'poison', 40, { sp: 6, up: 3, g: 2, life: 1, size: 3.4 }); X.ring(f.x, f.y, 'poison', 520, 60, 4); break;
       case 'md_splash': ADD('md_splash', f, 700); X.burst(f.x, f.y, 'poison', 18, { sp: 4, up: 4, g: 3, life: 0.8, size: 3 }); X.ring(f.x, f.y, 'poison', 420, 52, 3); G.shake = { t: now, m: 3 }; break;
       case 'md_vanish': st(f.id).hide = now + 6000; ADD('md_smoke', f, 900); X.burst(f.x, f.y, 'stone', 20, { sp: 4, up: 3, g: 2, life: 0.9, size: 3 }); break;
       case 'md_appear': st(f.id).hide = 0; ADD('md_smoke', f, 900); X.burst(f.x, f.y, 'poison', 24, { sp: 5, up: 3, g: 2, life: 0.8, size: 3.2 }); X.ring(f.x, f.y, 'poison', 520, f.r * 32, 4); G.shake = { t: now, m: 6 }; break;
