@@ -2114,14 +2114,14 @@
   function drawZeus(c, e, spr, cx, ground, now, key, col) {
     key = key || 'zeus'; col = col || '130,200,255';
     const A = spr.anim, st = (EXT.zs && EXT.zs.get(e.id)) || {}, t = now / 1000, moving = (e.amp || 0) > 0.3, cast = (EXT.casts.get(e.id) || 0) > now;
-    let fi; const HD = key === 'hades' || key === 'medusa', MD = key === 'medusa', CA = MD || key === 'anubis_b';
+    let fi; const HD = key === 'hades' || key === 'medusa' || key === 'aracnido_b', MD = key === 'medusa', CA = MD || key === 'anubis_b' || key === 'arcangel_b' || /^raid_/.test(key);
     if (HD && st.hide > now) return;                                                               // Hades se esfuma (el efecto lo dibuja public/hades.js)
     if (st.hurt > now) fi = A.hurt[Math.min(2, Math.floor((1 - (st.hurt - now) / 320) * 3))];
     else if (CA && cast) { const left = EXT.casts.get(e.id) - now, p = Math.max(0, Math.min(0.99, 1 - left / 1200)); fi = A.cast[Math.floor(p * A.cast.length)]; }
     else if (cast || st.atk > now) { const T = cast ? 1200 : 460, left = cast ? EXT.casts.get(e.id) - now : st.atk - now, p = Math.max(0, Math.min(0.99, 1 - left / T)); const n = A.atk.length; fi = HD ? A.atk[cast ? Math.min(n - 1, Math.floor(p * n)) : Math.min(n - 1, 1 + Math.floor(p * (n - 1)))] : A.atk[cast ? (p < 0.3 ? 0 : p < 0.55 ? 1 : p < 0.8 ? 2 : 3) : (p < 0.35 ? 1 : p < 0.7 ? 2 : 3)]; }
     else if (moving) fi = A.walk[Math.floor(now / (MD ? 95 : 110)) % A.walk.length];
     else fi = A.idle[Math.floor(now / 520) % A.idle.length];
-    const y = ground + 2, pulse = 0.5 + 0.5 * Math.sin(t * 3 + e.id), hot = cast || st.atk > now;
+    const y = ground + 2 - (key === 'dragon_b' ? Math.round(14 + Math.sin(now / 450 + e.id) * 4) : key === 'arcangel_b' ? Math.round(10 + Math.sin(now / 400 + e.id) * 3) : 0), pulse = 0.5 + 0.5 * Math.sin(t * 3 + e.id), hot = cast || st.atk > now;
     const g = c.createRadialGradient(cx, y - spr.h * 0.5, 4, cx, y - spr.h * 0.5, spr.h * 0.85);
     g.addColorStop(0, `rgba(${col},${0.18 + 0.1 * pulse + (hot ? 0.25 : 0)})`); g.addColorStop(1, `rgba(${col},0)`); c.fillStyle = g; c.fillRect(cx - spr.h, y - spr.h * 1.4, spr.h * 2, spr.h * 1.6);
     if (MD && st.skin > now) {                                                                      // piel de piedra: la estatua gris (inmune)
@@ -2253,8 +2253,18 @@
       if (e.t === 'zeus' && spr.anim) { drawZeus(c, e, spr, cx, ground, now); return; }
       if (e.t === 'hades' && spr.anim) { drawZeus(c, e, spr, cx, ground, now, 'hades', '255,80,20'); return; }
       if ((e.t === 'medusa' || e.t === 'medusa_clon') && spr.anim) { drawZeus(c, e, spr, cx, ground, now, 'medusa', '110,255,140'); return; }
+      if (e.t === 'arcangel' && SPR.arcangel_b) { drawZeus(c, e, SPR.arcangel_b, cx, ground, now, 'arcangel_b', '170,210,255'); return; }
+      if (e.t === 'leviatan' && SPR.leviatan_b) { drawZeus(c, e, SPR.leviatan_b, cx, ground, now, 'leviatan_b', '60,200,220'); return; }
+      if (e.t === 'dragon_sombra' && SPR.dragon_b) { drawZeus(c, e, SPR.dragon_b, cx, ground, now, 'dragon_b', '170,90,255'); return; }
+      if (e.t === 'hidra_jade' && SPR.hidra_b) { drawZeus(c, e, SPR.hidra_b, cx, ground, now, 'hidra_b', '70,230,130'); return; }
+      if (e.t === 'aracnido_fuego' && SPR.aracnido_b) { drawZeus(c, e, SPR.aracnido_b, cx, ground, now, 'aracnido_b', '255,90,30'); return; }
       if (e.t === 'anubis' && SPR.anubis_b) { drawZeus(c, e, SPR.anubis_b, cx, ground, now, 'anubis_b', '90,255,150'); return; }
       if (e.t === 'anubis' || d.shade) { drawAnubisLike(c, e, d, skey, spr, cx, ground, now, sq); return; }
+      if (RB[e.t] && SPR[e.t + '_b']) {                                                 // jefes de la Raid con sprites animados (los saltos y el vuelo siguen siendo procedurales)
+        const P = RB[e.t], pose = rdPose(e, now); let lift = P.hover ? P.hover + Math.sin(now / 500 + e.id) * P.hover * 0.4 : 0, ox = 0, oy = 0;
+        if (pose && pose.k === 'j') { const u = Math.min(1, pose.p), ease = u * u * (3 - 2 * u), jx = pose.r.jx || 0, jy = pose.r.jy || 0; ox = jx * TS * ease; oy = jy * TS * ease; lift += Math.sin(Math.PI * u) * (70 + Math.hypot(jx, jy) * 3); }
+        drawZeus(c, e, SPR[e.t + '_b'], cx + ox, ground + oy - Math.round(lift), now, e.t + '_b', P.col); return;
+      }
       if (RB[e.t]) { drawRaidBoss(c, e, d, skey, spr, cx, ground, now); return; }
       drawSprite(c, skey, sprFrame(e, spr), cx, ground + 2 - Math.round(hop) - Math.round(float), (e.face || 1) < 0, sq);
       return;

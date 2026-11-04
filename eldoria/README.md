@@ -105,6 +105,8 @@ Alterna con el Coloso Ancestral en el evento de jefe (Dunas Ardientes, 15 minuto
 Botín raro: **Set de las Sombras** (capucha, coraza, guanteletes, botas, carcaj y Arco de las Sombras), más Escamas de las Sombras, pociones y plumas de fénix. Un día/hora fijos no hacen falta: `EVENT_MIN` marca cada cuánto sale un jefe.
 
 ## Cueva del Dragón de las Sombras
+
+Sprites animados del jefe (`dragon_b` en sprites.json: reposo 1, vuelo 4 (paso), ataque 4 con aliento morado, herido 2, muerte 1), dibujados con `drawZeus` y flotando sobre el suelo.
 Una caverna enorme y oscura (zona `cueva`, sin PvP) al sur del camino del desierto. Se entra por el portal del camino (122,79) y se sale por el portal de la entrada. Dentro solo vive el Dragón de las Sombras (nivel 500, reaparece al minuto y tiene 80% de defensa, 300.000 de vida (reduce todo el daño que recibe)); ya no es jefe de evento. La oscuridad solo se aclara alrededor del jugador, otros jugadores y portales.
 
 Las mazmorras y la cueva son recintos cerrados: ni tú puedes atacar a los monstruos de dentro desde fuera, ni ellos (aliento, pisotón, ataques) te alcanzan desde la entrada. Hay que entrar.
@@ -116,6 +118,8 @@ Botín compartido de todos los jefes: cada jugador que le haga al menos 1 % del 
 - Si mueres en una zona peligrosa (PvP o mazmorra/cueva) queda una cruz enterrada donde caíste, visible en el mundo y en el minimapa (solo para ti). Desaparece al acercarte o tras 2 horas, y se guarda aunque te desconectes.
 
 ## Cueva del Hidra de Jade
+
+Sprites animados del jefe (`hidra_b` en sprites.json: reposo 5 + mirar 4, enroscarse 5 (paso), aliento 4 (ataque), muerte 4; herido reutiliza fotogramas), dibujados con `drawZeus`.
 Segunda cueva oscura (zona `cueva_jade`, sin PvP) en el prado del noroeste: puerta en (52,59). Dentro solo vive la **Hidra de Jade** (nivel 550, 320.000 de vida, 80 % de defensa, reaparece al minuto, botín compartido). Tres ataques con aviso en el suelo: **lluvia ácida** (tres oleadas de gotas que dejan charcos), **fuego amarillo** por las tres bocas (línea larga + quemadura) y **golpe al suelo** con onda y **caída de piedras**. Botín raro: set de arquero de jade (Yelmo, Coraza, Guanteletes, Botas) y el Arco de la Hidra, además de la Escama de Jade.
 
 ## Habilidades (cuerpo a cuerpo, distancia, magia)
@@ -182,6 +186,8 @@ Drops de la Hidra de Jade (4–5% base, ×0.5 por la reducción de equipo): **An
 - Boris el Mercader también vende las cañas (todas) y los cebos, además de Nilo.
 
 ## Arcángel del Santuario (jefe, Santuario de las Nubes)
+
+Sprites animados del jefe (`arcangel_b` en sprites.json: reposo 3, vuelo 5, lanza 5 (ataque), hechizo 3, herido 3, derrota 3), dibujados con `drawZeus` flotando sobre su sombra.
 - Cueva con forma de nube en la Sabana (cerca de la aldea de pesca de Nilo), suelo blanco animado. Entrada por el camino al norte de la cueva.
 - Jefe compartido, reaparece cada 60 s. Tres ataques: **ráfagas de rayos** (círculos de aviso y caída: se esquivan caminando), **tornado** que persigue ~5 s y **nova azul** sobre los jugadores cercanos.
 - Botín raro: Yelmo, Coraza, Guanteletes, Pantalón Divino de Luz, Botas Aladas, Carcaj, Anillo, Cinturón de Plumaje Divino, Amuleto de la Gracia Celestial (4–6 % base) , Báculo Alado (~1 %) y Arco Arcangélico (0,5 %). Datos en `game/angel.js`, IA en `angelAI` (`game/ext.js`).
@@ -203,6 +209,8 @@ Nueva imagen (escarabajo verde metálico con mandíbulas) animada (8 fotogramas:
 Al atacar con un arma cuerpo a cuerpo, el personaje balancea el arma con una estela de corte (color del elemento del arma); lanza y daga hacen una estocada; martillos, mazas y armas pesadas añaden onda de choque y temblor; las hachas y mandobles, chispas. Ver `holdWeapon` y el caso `'s'` en `public/game.js`.
 
 ## Aracnídeo Fuego Negro (jefe de cueva, Tierras de Lava)
+
+Sprites animados del jefe (`aracnido_b` en sprites.json: reposo 4, paso 6, ataque 8, herido 3, muerte 5), dibujados con `drawZeus`. Las crías (Araña de Fuego) mantienen su sprite.
 - **Guarida de telarañas** con forma de tela (anillos y radios) en las Tierras de Lava; entrada por el camino al sur del eje este (portal en 288,95). Suelo con telarañas y brasas animadas, paredes con vetas de lava.
 - Ataques: **zarpazo cuerpo a cuerpo (daño ×2 sobre el base)**, **redes de telaraña de fuego** (círculo de aviso, daño, inmovilizan ~2 s y queman) e **invoca arañas de fuego** (hasta 8, desaparecen a los 45 s o al morir el jefe). Datos en `game/spider.js`, IA en `spiderAI` (`game/ext.js`).
 - Botín raro: Rastreador Ciego, Silbato Silencioso, Brazal de Garra, Pantalón de Fuego Negro, Botas de Garra, Cierre de Garra, Reserva Ígnea (carcaj) (4–6 % base) y Llama del Viento (gran espada), Garras de Fuego Negro y Arco Largo Llama del Viento (0,5 %).
@@ -226,6 +234,8 @@ Boris (y Zaroth en Alba Dorada) venden 17 tabletas (2 000 de oro cada una, de un
 - Cada objeto raro de pesca avisa con mensaje, texto flotante ★, aviso de "Nuevo en tu colección" y anuncio en el chat global.
 
 ## Leviatán Abisal (jefe de la Gruta inundada)
+
+Sprites animados del jefe (`leviatan_b` en sprites.json: reposo 2, nado 4 (paso), mordisco 5 (ataque), herido reutiliza el mordisco), dibujados con `drawZeus`.
 - Gruta del Leviatán Abisal: cueva de agua en la Selva Esmeralda (puerta al norte, entre la aldea y el camino de la selva). Suelo de agua poco profunda, lagos hondos y columnas de roca.
 - Ataques especiales: **tornados marinos** que se multiplican y vagan por la cueva (15 s), **olas** que barren la cueva en franjas avisadas, **rayo de bolas de agua** por la boca (3 pulsos que re-apuntan) y **escudo burbuja** de 5 s en el que es inmune.
 - Botín raro: Yelmo, Coraza, Manoplas, Grebas, Botas y Cinto del Abismo Marino, 3 anillos (perla, alga, coral), Amuleto del Corazón Marino y el Tridente del Leviatán (agua), además de la cría del Leviatán (mascota).
@@ -248,6 +258,8 @@ Botón junto al de sonido (PC y teléfono) que cambia entre **Completo** (luces 
 - La pantalla de acceso se desplaza si el teléfono está en horizontal.
 
 ## Raid: Santuario de las Cinco Sombras (1 a 10 jugadores)
+
+Los 5 jefes de la Raid tienen sprites animados (`raid_<jefe>_b` en sprites.json: reposo, paso, ataque y lanzamiento de 4 cuadros; herido/muerte reutilizan reposo). Se dibujan con `drawZeus`; los saltos y el vuelo de Xaelis/Malgathor siguen siendo procedurales.
 - Entrada: portal del Santuario en la Ciudad de Aldea Real (cerca de la plaza). En la antecámara pulsa **Iniciar la Raid** (o `/raid`): entran juntos quienes estén allí (máx. 10). Durante el primer minuto de la cámara 1 se puede unir más gente.
 - 5 cámaras seguidas: **Slyvra → Koros → Aranak → Xaelis → Malgathor**. La vida de cada jefe escala con el grupo (+75 % por jugador extra). Cada jefe tiene ataques con aviso en el suelo (círculos, líneas, charcos, golpes, invocaciones, escudo, singularidad) y se enfurece por debajo del 35 % de vida.
 - Cada jugador tiene 3 vidas: si cae, vuelve por el portal a la cámara actual. Si todos mueren, la Raid se sella. `/raid salir` te saca.
