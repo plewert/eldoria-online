@@ -709,7 +709,7 @@ ok('Medusa, Reina de las Serpientes: cueva, sprites, mirada de piedra con zonas 
 });
 
 ok('vida de los jefes según el nivel del jugador (todos los jefes menos Raids e invocaciones) y se restaura al morir', () => {
-  const BN = require('../game/bossnivel'); assert.equal(BN.factor(100), 1); assert.ok(BN.factor(1) === 1 && BN.factor(999) === 2 && BN.factor(130) > 1.5);
+  const BN = require('../game/bossnivel'); assert.equal(BN.factor(100), 1); assert.ok(BN.factor(1) === 1 && BN.factor(999) === 1.5 && BN.factor(150) === 1.5 && Math.abs(BN.factor(130) - 1.3) < 1e-9);
   const { p } = login('BossLv'); const sp = world.monsterSpawns.find((q) => q.type === 'hades'); place(p, sp.x, sp.y + 3); p.hp = 1e9;
   const b = game.monsters.find((q) => q.type === 'hades'); b.dead = false; game.mgrid.set(b.y * world.W + b.x, b); b.maxHp = b.hp = b.def.hp; b.baseMax = 0; const base = b.maxHp; b.scaled = false; b.target = p.id; p.level = 140;
   const lvNear = Math.max(...[...game.players.values()].filter((q) => !q.bot && q.hp > 0 && Math.max(Math.abs(q.x - b.x), Math.abs(q.y - b.y)) <= 24).map((q) => q.level || 1)); game.updateMonster(b, game.now); assert.ok(lvNear >= 140); assert.equal(b.maxHp, Math.round(base * BN.factor(lvNear))); assert.equal(b.hp, b.maxHp); assert.ok(b.scaled);
