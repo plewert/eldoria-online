@@ -694,7 +694,7 @@ ok('Medusa, Reina de las Serpientes: cueva, sprites, mirada de piedra con zonas 
     const k0 = kids[0], hpA = a.p.hp; place(a.p, k0.x, k0.y + 1); game.fx.length = 0; a.p.storyUntil = 0; game.killMonster(k0, game.now); assert.ok(game.fx.some((f) => f.k === 'md_splash'), 'estalla fx'); assert.ok(a.p.hp < hpA, 'la imagen estalla');
     game.now += 31000; game.medusaKids(m); assert.ok(!game.monsters.some((z) => z.parent === m && !z.dead), 'caducan a los 30 s'); }
   { const lv = (n) => { m.hp = m.maxHp = MONSTERS.medusa.hp; m.scaled = false; place(a.p, 280, 304); a.p.level = n; m.nextSp = Infinity; game.medusaAI(m, game.now); return m.maxHp; };
-    const lo = lv(60), mid = lv(100), hi = lv(130); assert.ok(lo === mid && mid < hi, 'nunca baja de su vida normal y sube con el nivel'); assert.equal(mid, MONSTERS.medusa.hp); assert.ok(hi <= MONSTERS.medusa.hp * 2.5 + 1); m.baseMax = 0; m.maxHp = m.hp = MONSTERS.medusa.hp; m.scaled = false; }
+    const lo = lv(60), mid = lv(100), hi = lv(130); assert.ok(lo === mid && mid < hi, 'nunca baja de su vida normal y sube con el nivel'); assert.equal(mid, MONSTERS.medusa.hp); assert.ok(hi <= MONSTERS.medusa.hp * 2 + 1); m.baseMax = 0; m.maxHp = m.hp = MONSTERS.medusa.hp; m.scaled = false; }
   // botín: equipo de la Gorgona con sprites, en el loot, fuera de la tienda y repartido al morir
   const MD = require('../game/medusa'), ids = [...MD.PIECES, ...MD.RINGS, MD.AMULET, ...MD.WEAPONS].map((q) => q[0]), gj = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '../public/gear.json'), 'utf8'));
   assert.equal(ids.length, 16); const lootIds = MONSTERS.medusa.loot.map((l) => l[0]);
@@ -708,7 +708,7 @@ ok('Medusa, Reina de las Serpientes: cueva, sprites, mirada de piedra con zonas 
 });
 
 ok('vida de los jefes según el nivel del jugador (todos los jefes menos Raids e invocaciones) y se restaura al morir', () => {
-  const BN = require('../game/bossnivel'); assert.equal(BN.factor(100), 1); assert.ok(BN.factor(1) === 1 && BN.factor(999) === 2.5 && BN.factor(130) > 1.5);
+  const BN = require('../game/bossnivel'); assert.equal(BN.factor(100), 1); assert.ok(BN.factor(1) === 1 && BN.factor(999) === 2 && BN.factor(130) > 1.5);
   const { p } = login('BossLv'); const sp = world.monsterSpawns.find((q) => q.type === 'hades'); place(p, sp.x, sp.y + 3); p.hp = 1e9;
   const b = game.monsters.find((q) => q.type === 'hades'); b.dead = false; game.mgrid.set(b.y * world.W + b.x, b); b.maxHp = b.hp = b.def.hp; b.baseMax = 0; const base = b.maxHp; b.scaled = false; b.target = p.id; p.level = 140;
   const lvNear = Math.max(...[...game.players.values()].filter((q) => !q.bot && q.hp > 0 && Math.max(Math.abs(q.x - b.x), Math.abs(q.y - b.y)) <= 24).map((q) => q.level || 1)); game.updateMonster(b, game.now); assert.ok(lvNear >= 140); assert.equal(b.maxHp, Math.round(base * BN.factor(lvNear))); assert.equal(b.hp, b.maxHp); assert.ok(b.scaled);

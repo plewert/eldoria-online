@@ -67,7 +67,7 @@ function install(Game) {
   const inCave = (q, R) => q.hp > 0 && q.x >= R[0] && q.x <= R[2] && q.y >= R[1] && q.y <= R[3];
   const floorOk = (x, y) => world.isWalkable(x, y) && world.tiles[y * world.W + x] === world.T.MDF;
   const ORDER = ['mirada', 'bola', 'atraer', 'salto', 'piel', 'dividir', 'mirada', 'salto', 'bola', 'atraer', 'dividir', 'mirada'];
-  const K_MIN = 1, K_MAX = 2.5, K_PER_LV = 0.02, LV_BASE = 100;           // vida de Medusa según el nivel del jugador más alto que entra
+  const K_MIN = 1, K_MAX = 2, K_PER_LV = 0.02, LV_BASE = 100;           // vida de Medusa según el nivel del jugador más alto que entra
 
   P.medusaAI = function (m, now) {
     if (m.lpx !== undefined && m.x !== m.lpx) m.lf = m.x < m.lpx ? -1 : 1;

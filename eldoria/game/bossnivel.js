@@ -1,11 +1,11 @@
 'use strict';
 /**
  * Vida de los jefes según el nivel de quien los pelea: al empezar el combate (jefe con la vida completa y alguien cerca)
- * su vida se multiplica por  1 + (nivel − 100) × 2 %  del jugador de más nivel presente, entre ×1 y ×2,5.
+ * su vida se multiplica por  1 + (nivel − 100) × 2 %  del jugador de más nivel presente, entre ×1 y ×2.
  * (Medusa lo hace por su cuenta, con la misma fórmula.) No afecta a las Raids, a las invocaciones ni a las criaturas normales.
  * Al morir el jefe, su vida base se restaura para que renazca y se vuelva a ajustar.
  */
-const K_MIN = 1, K_MAX = 2.5, K_PER_LV = 0.02, LV_BASE = 100, NEAR = 24;
+const K_MIN = 1, K_MAX = 2, K_PER_LV = 0.02, LV_BASE = 100, NEAR = 24;
 const factor = (lv) => Math.max(K_MIN, Math.min(K_MAX, 1 + (lv - LV_BASE) * K_PER_LV));
 
 function install(Game) {
