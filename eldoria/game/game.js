@@ -575,11 +575,18 @@ class Game {
     switch (msg.t) {
       case 'move': {
         const dx = clampDir(msg.dx), dy = clampDir(msg.dy);
+        if (!msg.once) p.route = null;                                  // mover a mano cancela el camino por clic
         if (!dx && !dy) { p.pend = null; break; }
-        p.pend = { dx, dy, exp: now + (msg.once ? 350 : 130) };
+        p.pend = { dx, dy, exp: now + (msg.once ? 350 : 190) };
+        break;
+      }
+      case 'walkpath': {                                                  // camino por clic: el servidor lo recorre paso a paso (sin depender de la latencia del cliente)
+        const a = Array.isArray(msg.p) ? msg.p.slice(0, 300) : [];
+        p.route = a.length && a.every((q) => Array.isArray(q) && Number.isInteger(q[0]) && Number.isInteger(q[1])) ? a.map((q) => [q[0], q[1]]) : null; p.routeFail = 0; p.pend = null;
         break;
       }
       case 'target': {
+        p.route = null;
         if (msg.id == null) { p.target = null; break; }
         const t = this.ents.get(msg.id | 0);
         if (!t || t === p || (t.kind === 'mo' && t.dead)) { p.target = null; break; }
@@ -1199,7 +1206,9 @@ class Game {
     const sdx = nx - p.x, sdy = ny - p.y;
     p.x = nx; p.y = ny;
     p.dir = sdx > 0 ? 1 : sdx < 0 ? 3 : sdy > 0 ? 2 : 0;
-    p.nextMove = now + CFG.STEP_MS * (sdx && sdy ? 1.35 : 1) * this.mountMult(p) * (p.slowUntil > now ? 1.9 : 1);
+    // El ritmo se acumula (no se redondea al siguiente tick de 50 ms): con una montura rápida (p. ej. 133 ms por casilla) redondear daba 150 ms
+    // y el personaje hacía una pausa pequeña en cada paso. Así el promedio es exacto; como mucho se adelanta un tick tras estar parado.
+    p.nextMove = Math.max(p.nextMove || 0, now - CFG.TICK_MS) + CFG.STEP_MS * (sdx && sdy ? 1.35 : 1) * this.mountMult(p) * (p.slowUntil > now ? 1.9 : 1);
     this.pgrid.set(kxy(nx, ny), p);
     const portal = world.portalAt(nx, ny);
     if (portal && portal.inst) {
@@ -1252,6 +1261,14 @@ class Game {
         p.pend = null;   // cada orden es un paso; el cliente reenvía mientras la tecla siga pulsada
       }
     }
+    else if (p.route && now >= p.nextMove) {                          // camino por clic
+      const nx = p.route[0], rdx = nx[0] - p.x, rdy = nx[1] - p.y;
+      if (!rdx && !rdy) p.route.shift();
+      else if (Math.max(Math.abs(rdx), Math.abs(rdy)) > 1) p.route = null;
+      else if (this.tryStep(p, rdx, rdy, now)) { moved = true; p.route.shift(); p.routeFail = 0; }
+      else if (++p.routeFail > 6) p.route = null;
+      if (p.route && !p.route.length) p.route = null;
+    }
     // combate
     if (p.target) {
       const t = this.ents.get(p.target);
@@ -1263,7 +1280,7 @@ class Game {
       const d = range === 1 ? cheb(p.x, p.y, t.x, t.y) : dist(p.x, p.y, t.x, t.y);
       const inRange = d <= (range === 1 ? 1 : range + 0.2);
       if (inRange) { if (now >= p.nextAtk) this.doAttack(p, t, now); }
-      else if (!moved && !p.pend && now >= p.nextMove) this.chaseTarget(p, t, now);
+      else if (!moved && !p.pend && !p.route && now >= p.nextMove) this.chaseTarget(p, t, now);
     }
   }
 

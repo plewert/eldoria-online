@@ -35,7 +35,7 @@ function install(Game) {
   const kxy = (x, y) => y * world.W + x;
   const P = Game.prototype;
   const O = { handle: P.handle, canPvp: P.canPvp, hurtPlayer: P.hurtPlayer, weaponOf: P.weaponOf, recalc: P.recalc, removePlayer: P.removePlayer, tickExt: P.tickExt, chatExt: P.chatExt };
-  const ALLOW = new Set(['move', 'target', 'style', 'chat']);
+  const ALLOW = new Set(['move', 'walkpath', 'target', 'style', 'chat']);
   const inFight = (p) => p && p.tn && p.tn.fight;
   const state = (g) => g.tn || (g.tn = { phase: 'idle', next: 0, ent: [], round: 0, pend: [], act: [], win: [], bye: [], lastAnn: 0, nextTick: 0, count: 0 });
   const fmtMin = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return s >= 60 ? `${Math.ceil(s / 60)} min` : `${s} s`; };

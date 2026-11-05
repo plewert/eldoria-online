@@ -17,7 +17,7 @@ const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 
 const STONE_GAZE_MS = 12000, STONE_JUMP_MS = 5000;       // piedra por la mirada / al aparecer junto a ti
 const STONE_HIT_K = 1.8;                  // los golpes de Medusa a un jugador de piedra
-const BLOCKED_MSGS = new Set(['move', 'target', 'skill', 'style', 'spell', 'equip', 'unequip', 'drop', 'pickup', 'pick', 'npc', 'trade_req']);
+const BLOCKED_MSGS = new Set(['move', 'walkpath', 'target', 'skill', 'style', 'spell', 'equip', 'unequip', 'drop', 'pickup', 'pick', 'npc', 'trade_req']);
 
 /** [id, nombre, sprite, tipo, nivel, def, bonus, probabilidad] */
 const PIECES = [

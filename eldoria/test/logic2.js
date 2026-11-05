@@ -581,7 +581,7 @@ ok('Zeus, Señor del Olimpo: cueva celeste, botín, diez rayos, truenos que pers
   // 1) diez rayos: golpean y ralentizan
   game.zeusCast(m, 'rayos'); run(7000);
   assert.equal(game.fx.filter((f) => f.k === 'zs_bolt').length, 10, 'diez rayos'); assert.ok(a.p.hp < 1e7 || b.p.hp < 1e7, 'los rayos dañan'); assert.ok(game.fx.some((f) => f.k === 'zs_slow') && (a.p.slowUntil > 0 || b.p.slowUntil > 0), 'ralentiza');
-  const t0 = game.now; a.p.slowUntil = t0 + 5000; a.p.nextMove = 0; place(a.p, 342, 30); game.tryStep(a.p, 1, 0, t0); assert.ok(a.p.nextMove - t0 >= require('../game/data').CFG.STEP_MS * 1.8, 'paso más lento');
+  const t0 = game.now; a.p.slowUntil = t0 + 5000; a.p.nextMove = 0; place(a.p, 342, 30); game.tryStep(a.p, 1, 0, t0); assert.ok(a.p.nextMove - t0 >= require('../game/data').CFG.STEP_MS * 1.8 - CFG.TICK_MS, 'paso más lento');
   // 2) truenos perseguidores: se acercan y dañan
   place(a.p, 342, 30); a.p.hp = b.p.hp = 1e7; game.fx.length = 0; game.zeusCast(m, 'truenos'); run(17000);
   assert.ok(game.fx.filter((f) => f.k === 'zs_ch').length > 20, 'los truenos avanzan'); assert.ok(game.fx.some((f) => f.k === 'zs_che'), 'los truenos se apagan'); assert.ok(game.fx.some((f) => f.k === 'zs_hit'), 'alcanzan a alguien'); assert.ok(game.fx.filter((f) => f.k === 'zs_mul').length >= 2, 'los truenos se multiplican');
@@ -1116,6 +1116,16 @@ ok('álbum de colecciones, emotes y muebles sólidos de las casas', () => {
   assert.ok(world.DECOR.length > 40 && world.HOUSES.some((h) => h.kind === 'herreria') && world.HOUSES.some((h) => h.kind === 'taberna') && world.HOUSES.some((h) => h.kind === 'biblioteca'), 'casas nuevas con mobiliario');
   const [dx, dy] = world.DECOR[0]; assert.ok(!world.isWalkable(dx, dy), 'los muebles son sólidos'); assert.ok(world.NPCS.every((n) => world.isWalkable(n.x, n.y)), 'ningún PNJ queda sobre un mueble');
   const door = world.HOUSES.map((h) => [h.doorX, h.by - 1]); assert.ok(door.every(([x, y]) => world.isWalkable(x, y)), 'la puerta siempre se puede cruzar');
+});
+
+ok('camino por clic: el servidor recorre la ruta solo, al ritmo de la montura', () => {
+  const { p, ws } = login('RutaClic'); place(p, 40, 67); clearAround(40, 67, 12); p.hp = p.maxHp = 9999;
+  const route = []; for (let i = 1; i <= 8; i++) route.push([40 + i, 67]);
+  game.handle(p, { t: 'walkpath', p: route });
+  advance(CFG.STEP_MS * 12);
+  assert.ok(p.x >= 46, 'avanza sin más mensajes del cliente (x=' + p.x + ')');
+  game.handle(p, { t: 'walkpath', p: [[p.x + 5, p.y + 5]] }); advance(500); assert.ok(!p.route, 'ruta no contigua se descarta');
+  game.handle(p, { t: 'walkpath', p: 'x' }); assert.equal(p.route, null);
 });
 
 console.log(`\n${n} pruebas correctas`);

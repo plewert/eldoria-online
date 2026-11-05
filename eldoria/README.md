@@ -12,6 +12,7 @@ Las cuentas se guardan en `data/players.json` (contraseñas con scrypt).
 ## Cómo se juega
 - **Un personaje, tres estilos**: el arma equipada define si eres guerrero (Z), tirador (X) o mago (C).
 - **Mover**: WASD o flechas, o clic en el suelo (velocidad constante). **Atacar**: clic en un monstruo (o jugador en zona PvP).
+- **Clic para caminar**: el cliente calcula la ruta (A*) y se la envía al servidor (`walkpath`); el servidor la recorre solo, un paso por turno de la montura, sin depender de la latencia (sin pausas con monturas rápidas).
 - **Clic derecho**: sobre un monstruo → ficha con vida, daño y **tabla de drops con %**; sobre un jugador → Comerciar; sobre un objeto de la mochila → equipar, engarzar gema, guardar en banco, ofrecer, soltar.
 - **Pociones** H/J, **curación** V, **recoger** E, **chat** Enter (`/g` global, `/pos`, `/top`, `/ayuda`).
 

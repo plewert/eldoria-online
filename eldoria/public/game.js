@@ -2990,8 +2990,10 @@
     }
     if (!prev.has(goal)) { addChat({ n: '', m: 'No hay camino hasta ahí.', k: 's' }); return; }
     const path = []; for (let k = goal; k !== start; k = prev.get(k)) path.push({ x: k % G.W, y: (k / G.W) | 0 });
-    G.path = path.reverse(); G.pathStuck = performance.now();
+    G.path = path.reverse(); G.pathStuck = performance.now(); pushPath();
   }
+  // el servidor recorre el camino solo (un paso por turno de la montura, sin esperar al cliente → sin pausas)
+  function pushPath() { send({ t: 'walkpath', p: G.path.slice(0, 300).map((q) => [q.x, q.y]) }); }
 
   /* ---------- seguir a un compañero ---------- */
   G.follow = null; let nextFollow = 0, lostAt = 0;
@@ -3010,6 +3012,7 @@
     const last = G.path.length ? G.path[G.path.length - 1] : null;
     if (last && Math.max(Math.abs(last.x - tx), Math.abs(last.y - ty)) <= 1) return;      // ya voy hacia allí
     walkTo(tx, ty); if (G.path.length > 1) G.path.pop(); else G.path = [];
+    pushPath();
   }
   /* ---------- auto golpe: responder cuando me atacan ---------- */
   G.autoRet = store.get('eldoria.autoret') === '1';
@@ -3021,10 +3024,9 @@
   function walkTick(now) {
     if (!G.path.length || now < nextWalk || !G.me) return;
     nextWalk = now + 70;
-    const nx = G.path[0], m = G.me;
-    if (m.x === nx.x && m.y === nx.y) { G.path.shift(); G.pathStuck = now; return; }
-    if (Math.max(Math.abs(m.x - nx.x), Math.abs(m.y - nx.y)) > 1 || now - G.pathStuck > 1500) { G.path = []; return; }
-    send({ t: 'move', dx: nx.x - m.x, dy: nx.y - m.y, once: true });
+    const m = G.me, i = G.path.findIndex((q) => q.x === m.x && q.y === m.y);
+    if (i >= 0) { G.path.splice(0, i + 1); G.pathStuck = now; return; }      // casillas ya recorridas (el servidor camina solo)
+    if (now - G.pathStuck > 1500) { G.path = []; send({ t: 'walkpath', p: [] }); }
   }
   Object.assign(EXT, {
     itemRow, toast, fmt, itName, iconNode, drawSpriteS, SPR, sprImg, sprReady, sprFrame, burst, ring, openCtx, walkTo, outlined, hpBar,
