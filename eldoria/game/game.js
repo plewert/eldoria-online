@@ -510,7 +510,7 @@ class Game {
       },
     });
     this.sendInv(p); this.sendStats(p);
-    this.sendSnapshot(p);
+    this._sc = null; this.sendSnapshot(p); this._sc = null;
   }
 
   sendInv(p) {
@@ -537,15 +537,24 @@ class Game {
     if (!p.ws || !p.ws.open) return;
     const now = this.now, vx = CFG.VIEW_X, vy = CFG.VIEW_Y;
     const inView = (x, y) => Math.abs(x - p.x) <= vx && Math.abs(y - p.y) <= vy;
+    // Los datos de cada jugador, monstruo y efecto no dependen de quién mira: se serializan una sola vez por tick y se reutilizan
+    // para todos los jugadores (con muchos jugadores juntos, p. ej. peleando contra un jefe, esto evita el coste cuadrático).
+    let sc = this._sc; if (!sc || sc.now !== now) sc = this._sc = { now, pl: new Map(), mo: new Map(), fx: new Map() };
     const pl = [], mo = [], gi = [], fx = [];
     for (const q of this.players.values()) {
       if (!inView(q.x, q.y)) continue;
-      const vis = this.visOf(q);
-      pl.push({ i: q.id, n: q.name, x: q.x, y: q.y, h: q.hp, H: q.maxHp, l: q.level, c: q.color, s: this.styleOf(q), d: q.dir, k: now < q.pvpLock ? 1 : 0, o: q.ws || q.bot ? 0 : 1, v: vis.g, a: vis.an, t: q.trade ? 1 : 0, q: SLOTS.map((s) => (q.eq[s] ? q.eq[s].id : 0)), ...this.extView(q) });
+      let js = sc.pl.get(q);
+      if (js === undefined) {
+        const vis = this.visOf(q);
+        js = JSON.stringify({ i: q.id, n: q.name, x: q.x, y: q.y, h: q.hp, H: q.maxHp, l: q.level, c: q.color, s: this.styleOf(q), d: q.dir, k: now < q.pvpLock ? 1 : 0, o: q.ws || q.bot ? 0 : 1, v: vis.g, a: vis.an, t: q.trade ? 1 : 0, q: SLOTS.map((s) => (q.eq[s] ? q.eq[s].id : 0)), ...this.extView(q) });
+        sc.pl.set(q, js);
+      }
+      pl.push(js);
     }
     for (const m of this.monsters) {
       if (m.dead || !inView(m.x, m.y)) continue;
-      mo.push({ i: m.id, t: m.type, x: m.x, y: m.y, h: m.hp, H: m.maxHp });
+      let js = sc.mo.get(m); if (js === undefined) { js = JSON.stringify({ i: m.id, t: m.type, x: m.x, y: m.y, h: m.hp, H: m.maxHp }); sc.mo.set(m, js); }
+      mo.push(js);
     }
     for (const [k, arr] of this.gtile) {
       const x = k % W, y = (k / W) | 0;
@@ -554,9 +563,10 @@ class Game {
     }
     for (const f of this.fx) {
       const fx0 = f.x !== undefined ? f.x : f.x1, fy0 = f.y !== undefined ? f.y : f.y1;
-      if (Math.abs(fx0 - p.x) <= vx + 3 && Math.abs(fy0 - p.y) <= vy + 3) fx.push(f);
+      if (Math.abs(fx0 - p.x) <= vx + 3 && Math.abs(fy0 - p.y) <= vy + 3) { let js = sc.fx.get(f); if (js === undefined) { js = JSON.stringify(f); sc.fx.set(f, js); } fx.push(js); }
     }
-    this.send(p, { t: 's', me: { x: p.x, y: p.y, h: p.hp, m: p.mana, tg: p.target, tp: p.tpSeq, v: this.visOf(p).g, lk: p.pvpLock > now ? Math.ceil((p.pvpLock - now) / 1000) : 0 }, pl, mo, gi, fx, nd: this.nodeView(p) });
+    const me = { x: p.x, y: p.y, h: p.hp, m: p.mana, tg: p.target, tp: p.tpSeq, v: this.visOf(p).g, lk: p.pvpLock > now ? Math.ceil((p.pvpLock - now) / 1000) : 0 }, nd = this.nodeView(p);
+    p.ws.send('{"t":"s","me":' + JSON.stringify(me) + ',"pl":[' + pl.join(',') + '],"mo":[' + mo.join(',') + '],"gi":' + JSON.stringify(gi) + ',"fx":[' + fx.join(',') + ']' + (nd === undefined ? '' : ',"nd":' + JSON.stringify(nd)) + '}');;
   }
 
   /* ============================ ENTRADAS DEL CLIENTE ============================ */

@@ -572,3 +572,11 @@ Todos los jefes (menos Raids e invocaciones) ajustan su vida al empezar el comba
 El juego es instalable: con el servidor publicado en HTTPS, en Android (Chrome) menú ⋮ → «Instalar app» y en iPhone (Safari) Compartir → «Añadir a pantalla de inicio». Incluye `manifest.webmanifest` (pantalla completa, horizontal, iconos 192/512/maskable), `sw.js` (red primero; copia local solo sin conexión) y los iconos en `public/`.
 
 En la pantalla de inicio hay un botón «📲 Instalar app» (`public/instalar.js`): usa el aviso nativo de instalación de Chrome/Edge/Android y, en iPhone u otros navegadores, muestra los pasos. Se oculta si el juego ya está instalado.
+
+## Atlas de sprites
+
+`public/sprites.png` (1820×7730) tiene los sprites originales y `public/sprites2.png` (2048×2819) los jefes animados (`*_b`, fotogramas recortados con desfase `[x,y,w,h,ox,oy,celdaAncho,celdaAlto]`). Ninguna imagen debe pasar de 8192 px de alto: por encima, los móviles dejan de acelerarla por GPU y el juego va a tirones (hay un test que lo comprueba).
+
+## Rendimiento del servidor con muchos jugadores juntos
+
+`sendSnapshot` serializa una sola vez por tick los datos de cada jugador, monstruo y efecto (caché `this._sc`) y los reutiliza para todos los que los ven. Antes se volvía a serializar por cada jugador que miraba (coste cuadrático al juntarse muchos contra un jefe). Con 30 jugadores peleando contra un jefe, el tick medio bajó de ~3,4 ms a ~1,8 ms (medido en local).

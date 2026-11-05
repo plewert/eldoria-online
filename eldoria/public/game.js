@@ -2042,16 +2042,21 @@
   const SPR = {};
   const sprImg = new Image();
   sprImg.src = 'sprites.png';
-  fetch('sprites.json').then((r) => r.json()).then((j) => { Object.assign(SPR, j); aliasSprites(); }).catch(() => { /* sin sprites: se usan emojis */ });
+  /* Segundo atlas (sprites2.png) con los jefes animados: el atlas principal no puede pasar de ~8000 px de alto o los móviles dejan de acelerarlo por GPU. */
+  const sprImg2 = new Image(), pend2 = {};
+  const add2 = () => { if (sprImg2.complete && sprImg2.naturalWidth > 0) for (const k of Object.keys(pend2)) { SPR[k] = pend2[k]; delete pend2[k]; } };
+  sprImg2.addEventListener('load', add2); sprImg2.src = 'sprites2.png';
+  fetch('sprites.json').then((r) => r.json()).then((j) => { for (const k of Object.keys(j)) { if (j[k].i2) pend2[k] = j[k]; else SPR[k] = j[k]; } add2(); aliasSprites(); }).catch(() => { /* sin sprites: se usan emojis */ });
   function aliasSprites() { for (const [k, d] of Object.entries(G.mons || {})) if (d.spr && SPR[d.spr] && !SPR[k]) SPR[k] = SPR[d.spr]; }      // monstruos nuevos que usan el dibujo de otro
   const sprReady = () => sprImg.complete && sprImg.naturalWidth > 0;
   /** Dibuja el fotograma `fi` del sprite `key` con los pies en (cx, feetY). */
   function drawSprite(c, key, fi, cx, feetY, flip, squash = 1) {
-    const s = SPR[key], f = s.f[fi % s.f.length], w = f[2], h = f[3] * squash;
+    const s = SPR[key], f = s.f[fi % s.f.length], img = s.i2 ? sprImg2 : sprImg;
     c.save(); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
     c.translate(Math.round(cx), Math.round(feetY));
     if (flip) c.scale(-1, 1);
-    c.drawImage(sprImg, f[0], f[1], f[2], f[3], -w / 2, -h, w, h);
+    if (f.length > 4) c.drawImage(img, f[0], f[1], f[2], f[3], -f[6] / 2 + f[4], -f[7] * squash + f[5] * squash, f[2], f[3] * squash);      // fotograma recortado: [x,y,w,h, desfase x,y, celda ancho,alto]
+    else { const w = f[2], h = f[3] * squash; c.drawImage(img, f[0], f[1], f[2], f[3], -w / 2, -h, w, h); }
     c.restore();
   }
   const sprFrame = (e, s) => {
