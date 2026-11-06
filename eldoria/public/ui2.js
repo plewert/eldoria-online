@@ -485,7 +485,7 @@
   const KEYS = { u: 'u', n: 'map', q: 'q', l: 'a', g: 's', r: 'r', p: 'm', f: 'c', b: 'b', o: 'o' };
   X.on('key', (k) => {
     if (KEYS[k]) { toggle(KEYS[k]); return true; }
-    if (k === '1' || k === '2' || k === '3' || k === '4' || k === '5') { if (+k > 3 && !(sk.list[+k - 1])) return false; useSkill(+k - 1); return true; }
+    if (k >= '1' && k <= '7' && k.length === 1) { if (+k > 3 && !(sk.list[+k - 1])) return false; useSkill(+k - 1); return true; }
     return false;
   });
 
@@ -496,13 +496,13 @@
     const hb = $('#hotbar'); if (!hb || !G.stats || !xi.skills.melee) return;
     const style = G.stats.style; if (!style || !xi.skills[style]) return;
     if (!sk.box) { sk.box = el('span', 'skbox'); hb.append(el('span', 'gap'), sk.box); }
-    const wid = G.stats.wid || ''; const full = [...xi.skills[style], ...((xi.wsk && xi.wsk[wid]) || [])];
+    const sid = G.stats.sid || '', wid = (G.stats.wid || '') + '|' + sid; const full = [...xi.skills[style], ...((xi.wsk && xi.wsk[G.stats.wid || '']) || []), ...((xi.wsk && xi.wsk[sid]) || [])];
     if (sk.style === style && sk.wid === wid && sk.btns.length === full.length) return;
     sk.style = style; sk.wid = wid; sk.list = full; sk.btns = []; sk.box.replaceChildren();
     full.forEach((d, i) => {
       const b = el('button', 'skb' + (i > 2 ? ' skw' : '')); b.type = 'button'; b.dataset.i = i;
       b.append(el('b', '', d.icon), el('small', '', String(i + 1)), el('i', 'cdv'));
-      b.title = `${d.name} (${i + 1}) — ${d.desc} Maná ${d.mana}. Enfriamiento ${d.cd / 1000} s. Nivel ${d.lv} con ${STYLE_ICON[style]}.${i > 2 ? ' ⭐ Especial de tu arma.' : ''}`;
+      b.title = `${d.name} (${i + 1}) — ${d.desc} Maná ${d.mana}. Enfriamiento ${d.cd / 1000} s. Nivel ${d.lv} con ${STYLE_ICON[style]}.${i > 2 ? (i >= 3 + ((xi.wsk && xi.wsk[G.stats.wid || '']) || []).length ? ' 🛡️ Especial de tu escudo.' : ' ⭐ Especial de tu arma.') : ''}`;
       b.addEventListener('click', () => useSkill(i)); sk.box.append(b); sk.btns.push(b);
     });
     tickSkills();

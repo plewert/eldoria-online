@@ -328,8 +328,9 @@ module.exports = function install(Game) {
     const now = this.now;
     if (now < p.nextSkill) return;
     const w = this.weaponOf(p), style = w.style, list = X.SKILLS[style];
-    const wsp = (p.eq.weapon && require('./especiales').WSPEC[p.eq.weapon.id]) || null;
-    const sk = (idx | 0) < 3 ? (list && list[idx | 0]) : (wsp && wsp[(idx | 0) - 3]);       // 4 y 5: especiales del arma de jefe
+    const WS = require('./especiales').WSPEC;
+    const wsp = [...((p.eq.weapon && WS[p.eq.weapon.id]) || []), ...((p.eq.shield && WS[p.eq.shield.id]) || [])];
+    const sk = (idx | 0) < 3 ? (list && list[idx | 0]) : wsp[(idx | 0) - 3];       // 4, 5 y 6: especiales del arma de jefe; después, el del escudo
     if (!sk) return;
     const sl = skillFromXp(p.sxp[style]);
     if (sl < sk.lv) { this.msgThrottle(p, 'sklv', `${sk.name}: requiere habilidad ${sk.lv} de ${style === 'melee' ? 'combate cuerpo a cuerpo' : style === 'ranged' ? 'distancia' : 'magia'}.`); return; }
@@ -360,7 +361,7 @@ module.exports = function install(Game) {
       return;
     }
     if (sk.shield) {
-      const hp = Math.round(50 + p.level * 6 + sl * 5);
+      const hp = Math.round((50 + p.level * 6 + sl * 5) * (sk.shm || 1));
       p.buffs.shield = { m: 1, hp, until: now + sk.secs * 1000 }; this.sendBuffs(p);
       this.fx.push({ k: 'sk', id: sk.id, x: p.x, y: p.y, i: p.id });
       return;
@@ -1105,6 +1106,7 @@ module.exports = function install(Game) {
     else if (m.def.special === 'anubis' && !m.dead) this.anubisAI(m, now);
     else if (m.def.special === 'hades' && !m.dead) this.hadesAI(m, now);
     else if (m.def.special === 'medusa' && !m.dead) this.medusaAI(m, now);
+    else if (m.def.special === 'cerbero' && !m.dead) this.cerberoAI(m, now);
     else if (m.def.special === 'zeus' && !m.dead) this.zeusAI(m, now);
     else if (m.def.special === 'raid' && !m.dead) this.raidAI(m, now);
     else if (m.def.special === 'halloween' && !m.dead) this.hwAI(m, now);

@@ -653,6 +653,48 @@ ok('Hades, Rey del Inframundo: zona grande, botín, dragón de fuego, temblor, r
   assert.ok(game.fx.filter((f) => /^hd_/.test(f.k)).every((f) => Number.isFinite(f.x ?? 0) && Number.isFinite(f.y ?? 0)), 'fx con coordenadas');
 });
 
+ok('Cerbero, Guardián del Inframundo: cueva Las Fauces, 6 ataques, botín (armadura, 2 arcos, 2 báculos) y adornos', () => {
+  assert.equal(MONSTERS.cerbero.special, 'cerbero'); assert.equal(typeof Game.prototype.cerberoAI, 'function');
+  const CB = require('../game/cerbero'), loot = MONSTERS.cerbero.loot.map((l) => l[0]);
+  const ids = [...CB.PIECES, CB.RING, CB.AMULET, ...CB.WEAPONS].map((q) => q[0]); assert.equal(ids.length, 11);
+  for (const id of [...ids, 'trofeo_cerbero', 'colmillo_infernal', 'cadena_almas']) { assert.ok(loot.includes(id) && ITEMS[id], id); }
+  for (const id of ids) assert.ok(ITEMS[id].cerbero && !require('../game/data').SHOPS.boris.includes(id), 'no se vende: ' + id);
+  assert.ok(ITEMS.cb_arco_fuego.style === 'ranged' && ITEMS.cb_arco_rastreador.style === 'ranged' && ITEMS.cb_baston_triptico.style === 'magic' && ITEMS.cb_baston_garra.style === 'magic');
+  const sj = require('../public/sprites.json'), gj = require('../public/gear.json'), fsx = require('fs');
+  assert.ok(sj.cerbero_b && sj.cerbero_b.i2 && ['idle', 'walk', 'atk', 'cast', 'hurt', 'death'].every((k) => sj.cerbero_b.anim[k].length >= 3), 'sprite animado');
+  for (const k of ['cb_helm', 'cb_chest', 'cb_glove', 'cb_leg', 'cb_boot', 'cb_ring', 'cb_amulet', 'cb_bow1', 'cb_bow2', 'cb_staff1', 'cb_staff2']) assert.ok(gj['i_' + k], 'icono ' + k);
+  for (const k of ['cb_helm', 'cb_chest', 'cb_bow1', 'cb_bow2', 'cb_staff1', 'cb_staff2']) assert.ok(gj['c_' + k], 'capa ' + k);
+  assert.ok(fsx.existsSync(require('path').join(__dirname, '../public/cerbero.js')), 'efectos del cliente');
+  assert.ok(sj.cerbero && sj.cerbero.f.length >= 6 && !sj.cerbero.i2, 'sprite pequeño para la cría y la montura');
+  assert.ok(ITEMS.pet_cerbero && ITEMS.pet_cerbero.mon === 'cerbero' && loot.includes('pet_cerbero'), 'cría de Cerbero');
+  assert.ok(ITEMS.montura_cerbero && ITEMS.montura_cerbero.type === 'mount' && ITEMS.montura_cerbero.speed < ITEMS.montura_brasas.speed && ITEMS.montura_cerbero.minLevel >= 100 && loot.includes('montura_cerbero'), 'montura de Cerbero');
+  { const mc = MONSTERS.cerbero.loot.find((l) => l[0] === 'montura_cerbero'); assert.ok(mc[1] <= 0.001, 'muy rara'); }
+  { const I2 = world.INSTANCES.find((q) => q.cave === 'cueva_cerbero'); assert.ok(I2 && I2.boss === 'cerbero' && I2.slots.length === 7 && I2.fee >= 1000000, 'instancia privada');
+    for (const sl of I2.slots) { assert.ok(world.isWalkable(sl.lair[0], sl.lair[1]) && (sl !== I2.slots[0] || world.reach[sl.lair[1] * world.W + sl.lair[0]]), 'guarida de ' + sl.id); assert.ok(world.zoneAt(sl.lair[0], sl.lair[1]).id === sl.id); assert.ok(sl.rect[3] < world.H, 'cabe en el mapa'); } }
+  const sp = world.monsterSpawns.find((q) => q.type === 'cerbero'); assert.equal(zoneOf([sp.x, sp.y]).id, 'cueva_cerbero'); assert.ok(world.reach[sp.y * world.W + sp.x], 'guarida alcanzable');
+  const dr = world.portalAt(317, 315); assert.ok(dr && dr.fee === 2000 && zoneOf([dr.tx, dr.ty]).id === 'cueva_cerbero' && world.reach[dr.ty * world.W + dr.tx]);
+  const cnt = {}; for (const [, , k] of world.CB_PROPS) cnt[k] = (cnt[k] || 0) + 1; for (const k of ['soul', 'bones', 'coins', 'chain', 'weapon', 'egg']) assert.ok(cnt[k] >= 1, 'adorno ' + k);
+  const tl = (t) => { let n = 0; for (let y = 296; y <= 314; y++) for (let x = 301; x <= 334; x++) if (world.tiles[y * world.W + x] === t) n++; return n; };
+  assert.equal(tl(world.T.CBP), 3, 'tres pilares'); assert.ok(tl(world.T.CBK) >= 1 && tl(world.T.CBL) >= 1 && tl(world.T.CBA) >= 1 && tl(world.T.CBS) >= 1 && tl(world.T.LAVA) > 10, 'cofres, altares, estatuas y río de lava');
+  const run = (ms) => { for (let k = 0; k <= ms; k += 100) { game.now += 100; const due = game.sched.filter((e) => e.at <= game.now); game.sched = game.sched.filter((e) => e.at > game.now); due.forEach((e) => e.fn()); } };
+  const a = login('Cer1'), b = login('Cer2'); place(a.p, 317, 308); place(b.p, 314, 309); for (const q of [a.p, b.p]) { q.hp = q.maxHp = 1e7; q.stoneUntil = 0; }
+  const m = game.spawnMonster('cerbero', sp.x, sp.y); m.target = a.p.id; game.fx.length = 0;
+  const reset = () => { place(a.p, 317, 308); place(b.p, 314, 309); a.p.hp = b.p.hp = 1e7; a.p.nextMove = b.p.nextMove = 0; game.fx.length = 0; m.target = a.p.id; };
+  game.cerberoCast(m, 'llamarada'); run(5000); assert.equal(game.fx.filter((f) => f.k === 'cb_lane').length, 3, 'tres líneas de aviso'); assert.equal(game.fx.filter((f) => f.k === 'cb_flame').length, 3, 'tres llamaradas');
+  reset(); place(a.p, 317, 303); game.cerberoCast(m, 'zarpazo'); run(5000); assert.equal(game.fx.filter((f) => f.k === 'cb_claw').length, 3, 'tres zarpazos'); assert.ok(a.p.hp < 1e7, 'los zarpazos dañan');
+  reset(); place(a.p, 317, 304); game.cerberoCast(m, 'aullido'); run(4000); assert.ok(game.fx.some((f) => f.k === 'cb_howl') && a.p.hp < 1e7 && a.p.slowUntil > game.now - 1000, 'aullido daña y ralentiza');
+  reset(); game.cerberoCast(m, 'almas'); run(9000); assert.ok(game.fx.filter((f) => f.k === 'cb_soul').length >= 8, 'fuego de almas'); assert.ok(game.fx.some((f) => f.k === 'cb_mk' && f.blue));
+  reset(); place(a.p, 317, 308); m.target = a.p.id; const mx = m.x, my = m.y; game.cerberoCast(m, 'embestida'); run(3000); assert.ok(game.fx.some((f) => f.k === 'cb_dash') && (m.x !== mx || m.y !== my), 'embiste y cambia de sitio'); assert.ok(world.isWalkable(m.x, m.y));
+  m.dead = false; game.relocate(m, sp.x, sp.y);
+  reset(); place(a.p, 317, 309); place(b.p, 322, 305); const d0 = Math.hypot(b.p.x - m.x, b.p.y - m.y); game.cerberoCast(m, 'cadenas'); run(6000); assert.ok(game.fx.some((f) => f.k === 'cb_chain') && game.fx.some((f) => f.k === 'cb_bite'), 'cadenas y mordisco'); assert.ok(Math.hypot(b.p.x - m.x, b.p.y - m.y) < d0, 'arrastra hacia él');
+  { let nA = 0, nB = 0; const A = a.p, B = b.p;
+    for (let i = 0; i < 300; i++) { const z = game.spawnMonster('cerbero', sp.x, sp.y); z.dmgBy.set(A.id, { dmg: 300000, t: game.now }); z.dmgBy.set(B.id, { dmg: 60000, t: game.now }); game.gtile.clear(); A.inv.fill(null); B.inv.fill(null);
+      game.killMonster(z, game.now); const c = (pl) => pl.inv.filter((it) => it && /^cb_/.test(it.id)).length + [...game.gtile.values()].flat().filter((g) => g.owner === pl.id && /^cb_/.test(g.id)).length; nA += c(A); nB += c(B); }
+    assert.ok(nA > 0 && nB > 0, 'reparte a todos'); assert.ok(nA > nB * 1.2, 'más daño, más botín: ' + nA + ' vs ' + nB); }
+  game.fx.length = 0; game.killMonster(m, game.now); assert.ok(game.fx.some((f) => f.k === 'cb_die'), 'animación de muerte');
+  assert.ok(game.fx.filter((f) => /^cb_/.test(f.k)).every((f) => Number.isFinite(f.x ?? 0) && Number.isFinite(f.y ?? 0)), 'fx con coordenadas');
+});
+
 ok('Medusa, Reina de las Serpientes: cueva, sprites, mirada de piedra con zonas seguras, piel inmune, aparición, atracción, bola tóxica y bloqueo de acciones', () => {
   assert.equal(MONSTERS.medusa.special, 'medusa'); assert.equal(typeof Game.prototype.medusaAI, 'function'); assert.ok(MONSTERS.medusa.move < MONSTERS.hades.move && MONSTERS.medusa.move < MONSTERS.zeus.move, 'más rápida que los otros jefes');
   const sj = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '../public/sprites.json'), 'utf8')); assert.ok(sj.medusa && ['idle', 'walk', 'atk', 'cast', 'hurt', 'death'].every((k) => sj.medusa.anim[k].length >= 2), 'sprite animado');
@@ -717,12 +759,12 @@ ok('vida de los jefes según el nivel del jugador (todos los jefes menos Raids e
   game.killMonster(b, game.now); assert.equal(b.maxHp, base, 'se restaura al morir'); assert.ok(!b.scaled);
 });
 
-ok('especiales de armas de jefe: 26 armas x 2 especiales (teclas 4 y 5) con daño, espera, maná y controles reducidos en jefes', () => {
-  const { WSPEC } = require('../game/especiales'); const ids = Object.keys(WSPEC); assert.equal(ids.length, 28);
+ok('especiales de armas de jefe: 32 armas x 3 especiales (teclas 4, 5 y 6) y 6 escudos de jefe con uno (tecla siguiente) con daño, espera, maná y controles reducidos en jefes', () => {
+  const { WSPEC } = require('../game/especiales'); const ids = Object.keys(WSPEC).filter((k) => ITEMS[k] && ITEMS[k].type === 'weapon'); assert.equal(ids.length, 32); assert.equal(Object.keys(WSPEC).length, 38);
   const run = (ms) => { for (let k = 0; k <= ms; k += 100) { game.now += 100; const due = game.sched.filter((e) => e.at <= game.now); game.sched = game.sched.filter((e) => e.at > game.now); due.forEach((e) => e.fn()); } };
   const { p } = login('Espec1'); place(p, 150, 70); p.hp = p.maxHp = 1e7; const SX = require('../game/skills');
   for (const id of ids) {
-    assert.ok(ITEMS[id] && ITEMS[id].type === 'weapon', id); assert.equal(WSPEC[id].length, 2, id);
+    assert.ok(ITEMS[id] && ITEMS[id].type === 'weapon', id); assert.equal(WSPEC[id].length, 3, id);
     for (const [k, sk] of WSPEC[id].entries()) {
       assert.ok(sk.id && sk.name && sk.icon && sk.cd >= 20000 && sk.mana >= 40 && sk.desc, sk.id);
       p.eq.weapon = I.mk(id, 1); p.level = 120; p.sxp = { melee: 1e9, ranged: 1e9, magic: 1e9 }; p.mana = p.maxMana = 1e6; p.skcd = {}; p.nextSkill = 0; p.buffs = {}; game.fx.length = 0;
@@ -735,6 +777,16 @@ ok('especiales de armas de jefe: 26 armas x 2 especiales (teclas 4 y 5) con dañ
       game.mgrid.delete(m.y * world.W + m.x); m.dead = true; m.respawnAt = Infinity;
     }
   }
+  // escudos de jefe: su especial va a continuación de los del arma
+  for (const sid of Object.keys(WSPEC).filter((k) => ITEMS[k] && ITEMS[k].type === 'shield')) {
+    const sk = WSPEC[sid][0]; assert.equal(WSPEC[sid].length, 1, sid);
+    p.eq.weapon = I.mk('espada_hierro', 1); p.eq.shield = I.mk(sid, 1); p.level = 120; p.sxp = { melee: 1e9, ranged: 1e9, magic: 1e9 }; p.mana = p.maxMana = 1e6; p.skcd = {}; p.nextSkill = 0; p.buffs = {}; game.fx.length = 0;
+    clearAround(150, 70, 8); place(p, 150, 70); const m = game.spawnMonster('rata', 151, 70); m.maxHp = m.hp = 1e9; p.target = m.id; m.target = null; const h0 = m.hp; game.now += 1000;
+    game.useSkill(p, 3); run(12000);
+    assert.ok(p.skcd[sk.id] > 0, sid + ' gasta su especial'); assert.ok(sk.shield ? p.buffs.shield && p.buffs.shield.hp > 0 : m.hp < h0 || sk.kind === 'heal', sid + ' hace efecto');
+    game.mgrid.delete(m.y * world.W + m.x); m.dead = true; m.respawnAt = Infinity;
+  }
+  p.eq.shield = null;
   // controles: contra un jefe duran la mitad
   p.eq.weapon = I.mk('rd_rk_hammer', 1); p.skcd = {}; p.nextSkill = 0; game.now += 1000; clearAround(150, 70, 8);
   const b = game.spawnMonster('dragon_sombra', 151, 70), r2 = game.spawnMonster('rata', 149, 70); b.maxHp = b.hp = 1e9; r2.maxHp = r2.hp = 1e9; p.target = r2.id; const n0 = game.now;
@@ -798,7 +850,7 @@ ok('pociones nuevas: regeneración, antídoto, furia, arcana, cazador de botín,
 });
 
 ok('Instancias privadas de jefes de cueva: copias, portales de pago, jefe más fuerte, botín y cierre', () => {
-  const IN = world.INSTANCES; assert.equal(IN.length, 10); const gj = require('../game/instancias');
+  const IN = world.INSTANCES; assert.equal(IN.length, 11); const gj = require('../game/instancias');
   for (const I of IN) {
     assert.equal(I.slots.length, 7); assert.ok(I.fee >= 100000, 'cuesta ' + I.cave); const src = world.zoneById(I.cave).rect;
     const ep = world.PORTALS.find((o) => o.inst === I.cave); assert.ok(ep && ep.fee === I.fee && world.zoneAt(ep.x, ep.y).kind !== 'dungeon' && world.isWalkable(ep.x, ep.y - 0), 'portal de entrada ' + I.cave);
@@ -861,8 +913,8 @@ ok('tabletas de teletransporte: Boris las vende a 100k y llevan a la zona', () =
 
 ok('tabletas de las cuevas de jefe: Boris las vende a 250k y te dejan cerca de la entrada', () => {
   const { CAVE_TABLETS } = require('../game/tablets'), SH = require('../game/data').SHOPS;
-  assert.equal(CAVE_TABLETS.length, 10);
-  const caves = ['cueva', 'cueva_jade', 'cueva_nube', 'cueva_arana', 'cueva_mar', 'cueva_magma', 'cueva_anubis', 'cueva_olimpo', 'cueva_hades', 'cueva_medusa'];
+  assert.equal(CAVE_TABLETS.length, 11);
+  const caves = ['cueva', 'cueva_jade', 'cueva_nube', 'cueva_arana', 'cueva_mar', 'cueva_magma', 'cueva_anubis', 'cueva_olimpo', 'cueva_hades', 'cueva_medusa', 'cueva_cerbero'];
   CAVE_TABLETS.forEach(([id, , x, y], i) => { assert.equal(ITEMS[id].price, 100000); assert.ok(SH.boris.includes(id)); assert.equal(world.zoneAt(x, y).id, caves[i], id); assert.ok(world.isWalkable(x, y), 'camina ' + id); });
   const { p } = login('TabC1'); place(p, ...TOWN); p.inv[0] = I.mk('tp_cueva_olimpo', 1); p.pvpLock = 0; game.now = T0 + 5; game.handle(p, { t: 'use', s: 0 });
   assert.equal(zoneOf([p.x, p.y]).id, 'cueva_olimpo'); assert.ok(!p.inv[0], 'se gasta');
@@ -870,7 +922,7 @@ ok('tabletas de las cuevas de jefe: Boris las vende a 250k y te dejan cerca de l
 
 ok('botín de jefes: equipo a un tercio, materiales propios y elixires de jefe que se fabrican', () => {
   const B = require('../game/botin'), { RECIPES } = require('../game/extra');
-  assert.equal(Object.keys(B.BOSS_MATS).length, 10);
+  assert.equal(Object.keys(B.BOSS_MATS).length, 11);
   for (const [boss, d] of Object.entries(B.BOSS_MATS)) {
     for (const [id] of d.mats) { assert.ok(ITEMS[id] && ITEMS[id].sell >= 40000 && ITEMS[id].sell <= 100000, id); assert.ok(MONSTERS[boss].loot.some((l) => l[0] === id && l[1] === 0.5), boss + ' suelta ' + id); }
     const r = RECIPES.find((q) => q.id === 'r_' + d.elixir[0]); assert.ok(r && ITEMS[d.elixir[0]].buff, 'receta ' + boss);
@@ -995,7 +1047,7 @@ ok('Banco ampliable (1M por 5 espacios) y entrada de 2k a las cuevas de jefe', (
   p.bank[n0 + 14] = { id: 'pocion_vida', qty: 3 }; const d = game.serialize(p); assert.equal(d.bankSlots, n0 + 15);
   const q = game.createPlayer({ key: 'x', name: 'x', data: d }); assert.equal(q.bank.length, n0 + 15); assert.ok(q.bank[n0 + 14]);
   place(p, g.x + 40, g.y); p.gold = 2e6; game.bankBuy(p); assert.equal(p.bank.length, n0 + 15, 'hay que estar junto a la banquera');
-  const fees = world.PORTALS.filter((o) => o.fee && !o.inst); assert.equal(fees.length, 10, 'las 10 cuevas de jefe cobran'); assert.ok(fees.every((o) => o.fee === 2000));
+  const fees = world.PORTALS.filter((o) => o.fee && !o.inst); assert.equal(fees.length, 11, "las 11 cuevas de jefe cobran"); assert.ok(fees.every((o) => o.fee === 2000));
   const po = fees[5], z0 = [po.tx, po.ty];
   const stepOn = (pl) => { const sx = po.x + 1, sy = po.y; place(pl, sx, sy); pl.pvpLock = 0; pl.nextMove = 0; game.tryStep(pl, -1, 0, game.now + 1e6); };
   const { p: r } = login('Pobre'); r.gold = 1999; stepOn(r); assert.ok(!(r.x === z0[0] && r.y === z0[1]), 'sin 2k no entra'); assert.equal(r.gold, 1999);

@@ -112,7 +112,7 @@
     joined = true; if (G.autoRet) send({ t: 'autoret', on: true });
     G.id = m.id; G.W = m.w; G.H = m.h; G.zones = m.zones; G.portals = m.portals; G.npcs = m.npcs; G.items = m.items; G.mons = m.mons; aliasSprites(); G.cfg = m.cfg; G.rar = m.rar; G.gems = m.gems;
     for (const [iid, idf] of Object.entries(m.items)) if (idf.el) WEAPON_ELEM[iid] = idf.el;
-    const CH = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLM';
+    const CH = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTU';
     G.tiles = new Uint8Array(G.W * G.H);
     m.rows.forEach((row, y) => { for (let x = 0; x < G.W; x++) G.tiles[y * G.W + x] = CH.indexOf(row[x]); });
     G.zoneGrid = new Uint8Array(G.W * G.H);
@@ -122,7 +122,7 @@
       G.zoneGrid[y * G.W + x] = zi;
     }
     G.npcTiles = new Set(G.npcs.map((n) => n.y * G.W + n.x));
-    G.decor = m.decor || []; G.houses = m.houses || []; G.decorSet = new Set(G.decor.map((d) => d[1] * G.W + d[0]));      // mobiliario sólido
+    G.cbp = m.cbp || []; G.decor = m.decor || []; G.houses = m.houses || []; G.decorSet = new Set(G.decor.map((d) => d[1] * G.W + d[0]));      // mobiliario sólido
     buildMiniBase();
     $('#login').hidden = true; $('#game').hidden = false;
     $('#lpass').value = '';
@@ -846,7 +846,7 @@
   /* ======================================================================
    *  TEXTURAS DEL MAPA (generadas por código, estilo píxel)
    * ==================================================================== */
-  const TILE = { GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10, SAND: 11, SNOW: 12, SWAMP: 13, DUNE: 14, PALM: 15, PINE: 16, DEADTREE: 17, CACTUS: 18, ICEBLOCK: 19, MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24, CFLOOR: 25, CWALL: 26, LAVA: 27, ASH: 28, CLOUDF: 29, CLOUDW: 30, WEBF: 31, WEBW: 32, AQF: 33, AQW: 34, MAGF: 35, MAGW: 36, TOMBF: 37, TOMBW: 38, BRAZ: 39, OLYF: 40, OLYW: 41, OLYS: 42, HDF: 43, HDW: 44, MDF: 45, MDW: 46, MDP: 47, MDB: 48 };
+  const TILE = { GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10, SAND: 11, SNOW: 12, SWAMP: 13, DUNE: 14, PALM: 15, PINE: 16, DEADTREE: 17, CACTUS: 18, ICEBLOCK: 19, MFLOOR: 20, PFLOOR: 21, IFLOOR: 22, BOG: 23, HILL: 24, CFLOOR: 25, CWALL: 26, LAVA: 27, ASH: 28, CLOUDF: 29, CLOUDW: 30, WEBF: 31, WEBW: 32, AQF: 33, AQW: 34, MAGF: 35, MAGW: 36, TOMBF: 37, TOMBW: 38, BRAZ: 39, OLYF: 40, OLYW: 41, OLYS: 42, HDF: 43, HDW: 44, MDF: 45, MDW: 46, MDP: 47, MDB: 48, CBF: 49, CBW: 50, CBR: 51, CBP: 52, CBK: 53, CBL: 54, CBA: 55, CBS: 56 };
   const seeded = (s) => () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
   const mk = (fn) => { const c = document.createElement('canvas'); c.width = c.height = TS; const g = c.getContext('2d'); fn(g); return c; };
   const dot = (g, c, x, y, w = 2, h = 2) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
@@ -1058,6 +1058,61 @@
     for (let i = 0; i < 8; i++) dot(g, r() < 0.5 ? '#2e3732' : '#1a201d', (r() * 16 | 0) * 2, (r() * 16 | 0) * 2, 4, 2);
     g.strokeStyle = 'rgba(0,0,0,.5)'; g.strokeRect(0.5, 0.5, 31, 31);
   }); };
+  /* ---- Las Fauces del Inframundo (Cerbero): obsidiana, grietas de lava, runas y fuego azul de almas ---- */
+  const cbCrack = (g, r, n, w) => { for (let k = 0; k < n; k++) { let x = r() * 32, y = r() * 10, pts = [[x, y]]; for (let i = 0; i < 4; i++) { x += (r() - 0.5) * 12; y += 6 + r() * 3; pts.push([x, y]); }
+    for (const [col, lw] of [['rgba(255,90,10,.35)', w + 2], ['#ff6a10', w], ['#ffd24a', 0.6]]) { g.strokeStyle = col; g.lineWidth = lw; g.beginPath(); pts.forEach(([a, b], i) => (i ? g.lineTo(a, b) : g.moveTo(a, b))); g.stroke(); } } };
+  const cbfloor = (v) => { const r = seeded(4700 + v); return mk((g) => {
+    g.fillStyle = '#15151b'; g.fillRect(0, 0, TS, TS);
+    for (let i = 0; i < 14; i++) dot(g, r() < 0.5 ? '#1f1f28' : '#0e0e13', (r() * 16 | 0) * 2, (r() * 16 | 0) * 2, 2 + (r() < 0.3 ? 2 : 0), 2);
+    if (r() < 0.55) cbCrack(g, r, 1, 1);
+    g.strokeStyle = 'rgba(0,0,0,.5)'; g.strokeRect(0.5, 0.5, 31, 31);
+  }); };
+  const cbrune = (v) => { const r = seeded(4750 + v); return mk((g) => {                              // losa rúnica: patrón de emblema (tridente de tres puntas) brillando
+    g.fillStyle = '#1a1417'; g.fillRect(0, 0, TS, TS);
+    for (let i = 0; i < 8; i++) dot(g, r() < 0.5 ? '#251b1e' : '#100b0d', (r() * 16 | 0) * 2, (r() * 16 | 0) * 2, 4, 2);
+    g.strokeStyle = 'rgba(0,0,0,.5)'; g.strokeRect(0.5, 0.5, 31, 31);
+    const rune = (col, lw) => { g.strokeStyle = col; g.lineWidth = lw; g.beginPath(); g.moveTo(16, 27); g.lineTo(16, 10); g.moveTo(9, 14); g.lineTo(9, 9); g.lineTo(16, 14); g.lineTo(23, 9); g.lineTo(23, 14); g.moveTo(11, 27); g.lineTo(21, 27); g.stroke(); };
+    g.globalAlpha = 0.6; rune('rgba(255,100,20,.3)', 3); rune('#d9701c', 1.2); g.globalAlpha = 1;
+    g.strokeStyle = 'rgba(80,170,255,.55)'; g.lineWidth = 1; g.beginPath(); g.arc(16, 17, 12 + (v % 2), 0.3, 1.2); g.stroke();
+  }); };
+  const cbwall = (v) => { const r = seeded(4800 + v); return mk((g) => {                              // obsidiana dentada: colmillos que bajan del techo y suben del suelo
+    g.fillStyle = '#08080c'; g.fillRect(0, 0, TS, TS);
+    const fang = (x, base, h, up, col) => { g.fillStyle = col; g.beginPath(); g.moveTo(x - 5, base); g.lineTo(x, base + (up ? -h : h)); g.lineTo(x + 5, base); g.closePath(); g.fill(); };
+    fang(8, 32, 22 + (r() * 8 | 0), true, '#272733'); fang(22, 32, 16 + (r() * 10 | 0), true, '#20202a'); fang(15, 0, 14 + (r() * 10 | 0), false, '#1b1b24'); fang(27, 0, 9 + (r() * 8 | 0), false, '#2a2a36');
+    g.fillStyle = '#3a3a49'; g.fillRect(7, 12, 1, 14); g.fillRect(21, 18, 1, 9);
+    cbCrack(g, r, 1 + (v % 2), 1);
+    g.strokeStyle = 'rgba(255,110,30,.28)'; g.lineWidth = 1; g.beginPath(); g.moveTo(0, 31.5); g.lineTo(32, 31.5); g.stroke();
+  }); };
+  const cbOn = (draw) => (v) => { const f = cbfloor(10 + v), c = f.getContext('2d'); draw(c, seeded(4900 + v)); return f; };
+  const cbpillar = cbOn((g) => {                                                                       // pilar de obsidiana con cabeza de perro y antorcha azul y naranja
+    g.fillStyle = '#0b0b10'; g.fillRect(8, 6, 16, 24); g.fillStyle = '#272732'; g.fillRect(10, 6, 5, 24); g.fillStyle = '#16161d'; g.fillRect(19, 6, 5, 24);
+    g.fillStyle = '#34343f'; g.fillRect(6, 4, 20, 4); g.fillRect(6, 28, 20, 3);
+    g.fillStyle = '#05050a'; g.beginPath(); g.moveTo(11, 14); g.lineTo(13, 10); g.lineTo(16, 12); g.lineTo(19, 10); g.lineTo(21, 14); g.lineTo(20, 20); g.lineTo(12, 20); g.fill();
+    g.fillStyle = '#ff8a2a'; g.fillRect(13, 14, 2, 1); g.fillRect(17, 14, 2, 1);
+    g.fillStyle = 'rgba(255,110,20,.9)'; g.beginPath(); g.moveTo(11, 4); g.lineTo(13, -2); g.lineTo(15, 4); g.fill(); g.fillStyle = 'rgba(90,190,255,.95)'; g.beginPath(); g.moveTo(15, 4); g.lineTo(17, -3); g.lineTo(19, 4); g.fill();
+  });
+  const cbchest = cbOn((g) => {                                                                        // cofre de la Tríada: metal oscuro, tres cerraduras
+    g.fillStyle = '#0a0a0f'; g.fillRect(4, 12, 24, 16); g.fillStyle = '#2c2c38'; g.fillRect(4, 12, 24, 5); g.fillStyle = '#1b1b24'; g.fillRect(4, 17, 24, 11);
+    g.fillStyle = '#4b4b5c'; g.fillRect(4, 12, 24, 1); g.fillRect(4, 27, 24, 1); g.fillRect(4, 12, 1, 16); g.fillRect(27, 12, 1, 16);
+    for (const x of [9, 15, 21]) { g.fillStyle = '#ffb02e'; g.fillRect(x, 18, 3, 4); g.fillStyle = '#000'; g.fillRect(x + 1, 20, 1, 2); }
+    g.fillStyle = '#ff7a1a'; g.fillRect(11, 13, 2, 2); g.fillRect(15, 13, 2, 2); g.fillRect(19, 13, 2, 2);
+  });
+  const cblavachest = cbOn((g) => {                                                                    // cofre de lava solidificada: obsidiana y magma
+    g.fillStyle = '#0a0a0e'; g.fillRect(4, 12, 24, 16); g.fillStyle = '#23232d'; g.fillRect(5, 13, 22, 4);
+    g.strokeStyle = '#ff6a10'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(6, 20); g.lineTo(12, 17); g.lineTo(17, 23); g.lineTo(26, 18); g.moveTo(10, 26); g.lineTo(16, 22); g.stroke();
+    g.fillStyle = '#ffd24a'; g.fillRect(15, 20, 2, 2); g.fillStyle = 'rgba(255,100,20,.35)'; g.fillRect(3, 27, 26, 3);
+  });
+  const cbaltar = cbOn((g) => {                                                                        // altar de ofrendas con colmillos grabados
+    g.fillStyle = '#0a0a0f'; g.fillRect(5, 16, 22, 12); g.fillStyle = '#35353f'; g.fillRect(3, 12, 26, 6); g.fillStyle = '#1c1c25'; g.fillRect(7, 18, 18, 10);
+    g.fillStyle = '#cfc7b2'; for (const x of [9, 14, 19]) { g.beginPath(); g.moveTo(x, 18); g.lineTo(x + 2, 25); g.lineTo(x + 4, 18); g.fill(); }
+    g.fillStyle = 'rgba(90,190,255,.9)'; g.fillRect(14, 8, 3, 5); g.fillStyle = 'rgba(255,120,30,.9)'; g.fillRect(15, 6, 1, 3);
+  });
+  const cbstatue = cbOn((g) => {                                                                       // estatua rúnica de perro de dos cabezas (inacabada)
+    g.fillStyle = '#2a2a34'; g.fillRect(6, 24, 20, 5); g.fillStyle = '#1b1b23'; g.fillRect(8, 15, 16, 10);
+    g.fillStyle = '#3a3a46'; g.beginPath(); g.moveTo(8, 15); g.lineTo(7, 7); g.lineTo(11, 9); g.lineTo(13, 6); g.lineTo(14, 15); g.fill(); g.beginPath(); g.moveTo(17, 15); g.lineTo(18, 6); g.lineTo(21, 9); g.lineTo(25, 7); g.lineTo(24, 15); g.fill();
+    g.fillStyle = '#ff8a2a'; g.fillRect(10, 11, 1, 1); g.fillRect(20, 11, 1, 1);
+    g.strokeStyle = '#ff6a10'; g.lineWidth = 0.8; g.beginPath(); g.moveTo(16, 16); g.lineTo(15, 23); g.stroke();
+  });
   const hdash = (v) => { const r = seeded(4300 + v); return mk((g) => {                                // ceniza roja del Inframundo
     g.fillStyle = '#2c1c1b'; g.fillRect(0, 0, TS, TS);
     for (let i = 0; i < 18; i++) dot(g, r() < 0.5 ? '#3a2523' : '#1c1111', (r() * 16 | 0) * 2, (r() * 16 | 0) * 2, 2, 2);
@@ -1151,7 +1206,7 @@
     dfloor: [0, 1, 2, 3].map(dfloor), afloor: [0, 1, 2, 3].map(afloor), shop: [0, 1].map(shopFloor),
     sand: [0, 1, 2, 3].map(sand), snow: [0, 1, 2, 3].map(snow), dune: [0, 1, 2, 3].map(dune), swamp: [0, 1, 2, 3].map(swamp), bog: [bog(0), bog(1)], hill: [0, 1, 2, 3].map(hill),
     palm: [0, 1].map(palm), pine: [0, 1].map(pine), dead: [0, 1].map(dead), cactus: [0, 1].map(cactus), ice: [0, 1].map(ice),
-    mfloor: [0, 1, 2, 3].map(mfloor), pfloor: [0, 1, 2, 3].map(pfloor), ifloor: [0, 1, 2, 3].map(ifloor), cfloor: [0, 1, 2, 3].map(cfloor), lava: [lava(0), lava(1)], wfloor: [0, 1, 2, 3].map(wfloor), aqfloor: [0, 1, 2, 3].map(aqfloor), aqwall: [0, 1, 2].map(aqwall), magfloor: [0, 1, 2, 3].map(magfloor), magwall: [0, 1, 2].map(magwall), tombfloor: [0, 1, 2, 3].map(tombfloor), tombwall: [0, 1, 2].map(tombwall), braz: [0].map(brazfloor), olyfloor: [0, 1, 2, 3].map(olyfloor), hdfloor: [0, 1, 2, 3].map(hdfloor), hdwall: [0, 1, 2].map(hdwall), mdfloor: [0, 1, 2, 3].map(mdfloor), mdwall: [0, 1, 2, 3, 4, 5, 6, 7].map(mdwall), hdash: [0, 1, 2, 3].map(hdash), olywall: [0, 1, 2].map(olywall), olysky: [0, 1, 2, 3].map(olysky), wwall: [0, 1, 2].map(wwall), nfloor: [0, 1, 2, 3].map(nfloor), nwall: [0, 1, 2].map(nwall), obsid: [0, 1, 2].map(obsid), sandwall: [0, 1, 2].map(sandwall), granwall: [0, 1, 2].map(granwall), ash: [0, 1, 2, 3].map(ash), cwall: [0, 1, 2].map(cwall),
+    mfloor: [0, 1, 2, 3].map(mfloor), pfloor: [0, 1, 2, 3].map(pfloor), ifloor: [0, 1, 2, 3].map(ifloor), cfloor: [0, 1, 2, 3].map(cfloor), lava: [lava(0), lava(1)], wfloor: [0, 1, 2, 3].map(wfloor), aqfloor: [0, 1, 2, 3].map(aqfloor), aqwall: [0, 1, 2].map(aqwall), magfloor: [0, 1, 2, 3].map(magfloor), magwall: [0, 1, 2].map(magwall), tombfloor: [0, 1, 2, 3].map(tombfloor), tombwall: [0, 1, 2].map(tombwall), braz: [0].map(brazfloor), olyfloor: [0, 1, 2, 3].map(olyfloor), hdfloor: [0, 1, 2, 3].map(hdfloor), hdwall: [0, 1, 2].map(hdwall), mdfloor: [0, 1, 2, 3].map(mdfloor), mdwall: [0, 1, 2, 3, 4, 5, 6, 7].map(mdwall), hdash: [0, 1, 2, 3].map(hdash), cbfloor: [0, 1, 2, 3].map(cbfloor), cbwall: [0, 1, 2, 3].map(cbwall), cbrune: [0, 1].map(cbrune), cbpillar: [cbpillar(0)], cbchest: [cbchest(0)], cblchest: [cblavachest(0)], cbaltar: [cbaltar(0)], cbstatue: [cbstatue(0)], olywall: [0, 1, 2].map(olywall), olysky: [0, 1, 2, 3].map(olysky), wwall: [0, 1, 2].map(wwall), nfloor: [0, 1, 2, 3].map(nfloor), nwall: [0, 1, 2].map(nwall), obsid: [0, 1, 2].map(obsid), sandwall: [0, 1, 2].map(sandwall), granwall: [0, 1, 2].map(granwall), ash: [0, 1, 2, 3].map(ash), cwall: [0, 1, 2].map(cwall),
   });
   const buildFG = () => { FG = true; const o = { tree: [0, 1].map(tree), palm: [0, 1].map(palm), pine: [0, 1].map(pine), dead: [0, 1].map(dead) }; FG = false; return o; };
   let TEX = buildTEX(), TEXFG = buildFG();
@@ -1344,6 +1399,14 @@
       case TILE.HDW: return TEX.hdwall[h % 3];
       case TILE.MDF: case TILE.MDP: case TILE.MDB: return TEX.mdfloor[h % 4];
       case TILE.MDW: return TEX.mdwall[h % 8];
+      case TILE.CBF: return TEX.cbfloor[h % 4];
+      case TILE.CBW: return TEX.cbwall[h % 4];
+      case TILE.CBR: return TEX.cbrune[h % 2];
+      case TILE.CBP: return TEX.cbpillar[0];
+      case TILE.CBK: return TEX.cbchest[0];
+      case TILE.CBL: return TEX.cblchest[0];
+      case TILE.CBA: return TEX.cbaltar[0];
+      case TILE.CBS: return TEX.cbstatue[0];
       case TILE.CWALL: return G.zoneGrid && zoneAt(x, y).id === 'volcan' ? TEX.obsid[h % 3] : G.zoneGrid && zoneAt(x, y).id === 'desierto_piramides' ? TEX.sandwall[h % 3] : G.zoneGrid && zoneAt(x, y).id === 'montana_alta' ? TEX.granwall[h % 3] : TEX.cwall[h % 3];
       default: return TEX.grass[0];
     }
@@ -1352,7 +1415,7 @@
   /* ======================================================================
    *  MINIMAPA
    * ==================================================================== */
-  const MINI_COL = ['#3f6b3a', '#2b5d8a', '#234a2a', '#8a8271', '#59606e', '#3a3948', '#b07cff', '#77797f', '#3f6b3a', '#7a5634', '#4a2a2e', '#d6c188', '#e4ecf3', '#3f5a33', '#d2b878', '#2f7d3a', '#2d6a4a', '#5a4a3a', '#3f8a45', '#8fd0f0', '#3a342c', '#b89a5e', '#9fbfd6', '#2e4a2a', '#8d9a45', '#2a2833', '#0c0b10', '#d8480a', '#3b2e2a', '#e9f1fa', '#b4c6e0', '#3a2a30', '#241418', '#2a7a96', '#10303c', '#3a2f52', '#1a1424', '#2a3a2c', '#1d1a26', '#6a9a4a', '#dfe3ee', '#c9cfde', '#79b2ee', '#5a2418', '#1c0d0b', '#5c6a5e', '#232a26', '#7a8a7c', '#6a4a30'];
+  const MINI_COL = ['#3f6b3a', '#2b5d8a', '#234a2a', '#8a8271', '#59606e', '#3a3948', '#b07cff', '#77797f', '#3f6b3a', '#7a5634', '#4a2a2e', '#d6c188', '#e4ecf3', '#3f5a33', '#d2b878', '#2f7d3a', '#2d6a4a', '#5a4a3a', '#3f8a45', '#8fd0f0', '#3a342c', '#b89a5e', '#9fbfd6', '#2e4a2a', '#8d9a45', '#2a2833', '#0c0b10', '#d8480a', '#3b2e2a', '#e9f1fa', '#b4c6e0', '#3a2a30', '#241418', '#2a7a96', '#10303c', '#3a2f52', '#1a1424', '#2a3a2c', '#1d1a26', '#6a9a4a', '#dfe3ee', '#c9cfde', '#79b2ee', '#5a2418', '#1c0d0b', '#5c6a5e', '#232a26', '#7a8a7c', '#6a4a30', '#17171d', '#08080c', '#3a1e12', '#2c2c38', '#3a3a4a', '#5a2a14', '#4a4a58', '#3a3a46'];
   let miniBase = null;
   function buildMiniBase() {
     const c = document.createElement('canvas'); c.width = G.W; c.height = G.H;
@@ -2119,7 +2182,7 @@
   function drawZeus(c, e, spr, cx, ground, now, key, col) {
     key = key || 'zeus'; col = col || '130,200,255';
     const A = spr.anim, st = (EXT.zs && EXT.zs.get(e.id)) || {}, t = now / 1000, moving = (e.amp || 0) > 0.3, cast = (EXT.casts.get(e.id) || 0) > now;
-    let fi; const HD = key === 'hades' || key === 'medusa' || key === 'aracnido_b', MD = key === 'medusa', CA = MD || key === 'anubis_b' || key === 'arcangel_b' || /^raid_/.test(key);
+    let fi; const HD = key === 'hades' || key === 'medusa' || key === 'aracnido_b', MD = key === 'medusa', CA = MD || key === 'anubis_b' || key === 'arcangel_b' || key === 'cerbero_b' || /^raid_/.test(key);
     if (HD && st.hide > now) return;                                                               // Hades se esfuma (el efecto lo dibuja public/hades.js)
     if (st.hurt > now) fi = A.hurt[Math.min(2, Math.floor((1 - (st.hurt - now) / 320) * 3))];
     else if (CA && cast) { const left = EXT.casts.get(e.id) - now, p = Math.max(0, Math.min(0.99, 1 - left / 1200)); fi = A.cast[Math.floor(p * A.cast.length)]; }
@@ -2246,7 +2309,7 @@
     const k = d.boss ? 1.55 : 1, cx = sx + TS / 2, ground = sy + TS - 4;
     const amp = e.amp || 0, ph = e.phase || 0, sw = Math.sin(ph), cs = Math.cos(ph);
     const skey = e.t === 'ignaros' && (EXT.casts.get(e.id) || 0) > now ? 'ignaros_cast' : e.t;      // pose de lanzamiento del jefe de la caldera
-    const spr = sprReady() && SPR[skey];
+    const spr = sprReady() && (SPR[skey] || (e.t === 'cerbero' && SPR.cerbero_b));
     if (spr) {                                                                  // sprite de píxel-art con ciclo de paso
       const wide = spr.f[0][2];
       c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.ellipse(cx, ground + 1, Math.min(spr.sh || 22, 6 + wide * 0.28), 3.6 + (d.boss ? 1.5 : 0), 0, 0, 7); c.fill();
@@ -2258,6 +2321,7 @@
       if (e.t === 'zeus' && spr.anim) { drawZeus(c, e, spr, cx, ground, now); return; }
       if (e.t === 'hades' && spr.anim) { drawZeus(c, e, spr, cx, ground, now, 'hades', '255,80,20'); return; }
       if ((e.t === 'medusa' || e.t === 'medusa_clon') && spr.anim) { drawZeus(c, e, spr, cx, ground, now, 'medusa', '110,255,140'); return; }
+      if (e.t === 'cerbero' && SPR.cerbero_b) { drawZeus(c, e, SPR.cerbero_b, cx, ground, now, 'cerbero_b', '255,110,30'); return; }
       if (e.t === 'arcangel' && SPR.arcangel_b) { drawZeus(c, e, SPR.arcangel_b, cx, ground, now, 'arcangel_b', '170,210,255'); return; }
       if (e.t === 'leviatan' && SPR.leviatan_b) { drawZeus(c, e, SPR.leviatan_b, cx, ground, now, 'leviatan_b', '60,200,220'); return; }
       if (e.t === 'dragon_sombra' && SPR.dragon_b) { drawZeus(c, e, SPR.dragon_b, cx, ground, now, 'dragon_b', '170,90,255'); return; }
@@ -2961,7 +3025,7 @@
     walkTo(t.x, t.y);
   });
 
-  const BLOCK = new Set([TILE.WATER, TILE.TREE, TILE.WALL, TILE.ROCK, TILE.PALM, TILE.PINE, TILE.DEADTREE, TILE.CACTUS, TILE.ICEBLOCK, TILE.BOG, TILE.CWALL, TILE.LAVA, TILE.CLOUDW, TILE.WEBW, TILE.AQW, TILE.MAGW, TILE.TOMBW, TILE.BRAZ, TILE.OLYW, TILE.OLYS, TILE.HDW, TILE.MDW, TILE.MDP, TILE.MDB]);
+  const BLOCK = new Set([TILE.WATER, TILE.TREE, TILE.WALL, TILE.ROCK, TILE.PALM, TILE.PINE, TILE.DEADTREE, TILE.CACTUS, TILE.ICEBLOCK, TILE.BOG, TILE.CWALL, TILE.LAVA, TILE.CLOUDW, TILE.WEBW, TILE.AQW, TILE.MAGW, TILE.TOMBW, TILE.BRAZ, TILE.OLYW, TILE.OLYS, TILE.HDW, TILE.MDW, TILE.MDP, TILE.MDB, TILE.CBW, TILE.CBP, TILE.CBK, TILE.CBL, TILE.CBA, TILE.CBS]);
   function walkable(x, y) { return x >= 0 && y >= 0 && x < G.W && y < G.H && !BLOCK.has(G.tiles[y * G.W + x]) && !G.npcTiles.has(y * G.W + x) && !(G.decorSet && G.decorSet.has(y * G.W + x)); }
   function walkTo(gx, gy) {
     if (!walkable(gx, gy)) return;

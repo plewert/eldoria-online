@@ -29,15 +29,17 @@ function give(d, pas) { d.pas = pas; d.desc = `${(d.desc || '').replace(/ Pasiva
 const MOUNTS = {
   montura_jabali: { name: 'Jabalí de Guerra', icon: '🐗', type: 'mount', mon: 'jabali', scale: 0.95, speed: 0.66, minLevel: 30, price: 60000, sell: 15000, desc: 'Cabalgas un 34% más rápido.' },
   montura_mamut: { name: 'Mamut de Guerra', icon: '🦣', type: 'mount', mon: 'mamut', scale: 0.8, speed: 0.62, minLevel: 60, price: 400000, sell: 100000, desc: 'Cabalgas un 38% más rápido.' },
+  montura_cerbero: { name: 'Sabueso Infernal de Cerbero', icon: '🐕', type: 'mount', mon: 'cerbero', scale: 1.15, speed: 0.46, minLevel: 106, sell: 3000000, desc: 'Cabalgas más del doble de rápido. Solo la suelta Cerbero, muy rara vez.' },
   montura_brasas: { name: 'Bestia de Brasas', icon: '🔥', type: 'mount', mon: 'demonio_cornudo', scale: 0.75, speed: 0.5, minLevel: 100, sell: 2000000, desc: 'Cabalgas el doble de rápido. Solo la suelta Hades, muy rara vez.' },
 };
-const MOUNT_PAS = { montura_lobo: { hp: 30 }, montura_oso: { def: 3 }, montura_dragon: { atk: 3 }, montura_jabali: { def: 4 }, montura_mamut: { hp: 120 }, montura_brasas: { atk: 5, def: 4, hp: 100 } };
+const MOUNT_PAS = { montura_lobo: { hp: 30 }, montura_oso: { def: 3 }, montura_dragon: { atk: 3 }, montura_jabali: { def: 4 }, montura_mamut: { hp: 120 }, montura_brasas: { atk: 5, def: 4, hp: 100 }, montura_cerbero: { atk: 6, def: 5, hp: 120 } };
 const BRASAS_DROP = 0.0008;
 
 function build(ITEMS, MONSTERS, SHOPS) {
   for (const [id, d] of Object.entries(MOUNTS)) ITEMS[id] = d;
   SHOPS.brisa.push('montura_jabali', 'montura_mamut');
   if (MONSTERS.hades) MONSTERS.hades.loot.push(['montura_brasas', BRASAS_DROP, 1, 1]);
+  if (MONSTERS.cerbero) MONSTERS.cerbero.loot.push(['montura_cerbero', BRASAS_DROP, 1, 1]);
   for (const [id, pas] of Object.entries(MOUNT_PAS)) if (ITEMS[id]) give(ITEMS[id], pas);
   for (const [id, d] of Object.entries(ITEMS)) {
     if (d.type !== 'pet') continue;

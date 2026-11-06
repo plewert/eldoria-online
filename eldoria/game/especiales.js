@@ -127,7 +127,75 @@ const SP = {
     mk('sp_amanecer', 'Amanecer', '☀️', 'heal', { col: '255,230,150', r: 6, mult: 3, heal: 0.15, cd: 90000, mana: 150, lv: 60, desc: 'Gran destello (×3) que cura un 15 % a tu grupo.' }),
   ],
 };
-// arma -> [A, B]; los datos que se envían al cliente
+
+// ---- 3.er especial de cada arma de jefe (tecla 6 o la siguiente libre): definitivo, enfriamiento muy largo ----
+const mk3 = (id, name, icon, kind, o) => mk(id, name, icon, kind, Object.assign({ cd: 110000, mana: 170, lv: 75 }, o));
+const THIRD = {
+  rd_rk_mace:     mk3('sp_coloso_lava', 'Coloso de lava', '🌋', 'nova', { col: '255,130,40', r: 5, mult: 4.2, burn: { ticks: 5, mult: 0.35 }, stun: 2000, desc: 'Un coloso de lava brota a tu alrededor (×4,2), quema y aturde.' }),
+  rd_ra_axe:      mk3('sp_guillotina', 'Guillotina de acero', '⚙️', 'line', { col: '255,200,120', len: 9, mult: 4.6, desc: 'Un tajo gigante de acero cruza 9 casillas (×4,6).' }),
+  rd_rv_bow:      mk3('sp_mordida_reina', 'Mordida de la Reina', '🐍', 'volley', { col: '110,255,120', hits: 8, span: 2200, mult: 1.6, desc: 'Ocho colmillos ponzoñosos al objetivo (×1,6 cada uno).' }),
+  rd_rx_bow:      mk3('sp_rayo_amanecer', 'Rayo del amanecer', '🌅', 'bolt', { col: '255,230,120', mult: 5.2, heal: 0.1, desc: 'Un rayo de luz (×5,2) que cura 10 % al grupo.' }),
+  rd_rx_spear:    mk3('sp_sol_lanzas', 'Sol de lanzas', '☀️', 'rain', { col: '255,200,90', n: 9, r: 5, hr: 1.7, mult: 2.2, burn: { ticks: 4, mult: 0.3 }, desc: '9 lanzas solares caen alrededor del objetivo (×2,2) y queman.' }),
+  rd_rm_bow:      mk3('sp_colapso', 'Colapso estelar', '💫', 'nova', { col: '190,90,255', r: 5, mult: 5, pull: 4, atTarget: 1, desc: 'Una estrella colapsa sobre el objetivo, atrae y estalla (×5).' }),
+  fuego_garras:   mk3('sp_tormenta_zarpas', 'Tormenta de zarpas', '🐾', 'fan', { col: '190,80,255', mult: 4.4, burn: { ticks: 6, mult: 0.35 }, desc: 'Un abanico de zarpazos de fuego negro (×4,4) con quemadura.' }),
+  fuego_mandoble: mk3('sp_torbellino', 'Torbellino ígneo', '🔥', 'nova', { col: '255,150,70', r: 4, mult: 4, slow: 4000, burn: { ticks: 5, mult: 0.3 }, desc: 'Un torbellino de fuego (×4) que quema y ralentiza.' }),
+  mar_tridente:   mk3('sp_leviatan', 'Furia del Leviatán', '🐋', 'line', { col: '110,200,255', len: 12, mult: 4.4, slow: 4000, desc: 'Un chorro de mar cruza 12 casillas (×4,4) y ralentiza.' }),
+  rd_rk_hammer:   mk3('sp_montana', 'Montaña caída', '⛰️', 'nova', { col: '255,150,60', r: 6, mult: 4, stun: 3500, desc: 'Una montaña cae en 6 casillas (×4) y aturde 3,5 s.' }),
+  rd_rm_staff:    mk3('sp_eclipse_total', 'Eclipse total', '🌑', 'rain', { col: '190,90,255', n: 10, r: 6, hr: 1.7, mult: 2.2, desc: '10 impactos de vacío alrededor del objetivo (×2,2).' }),
+  jade_arco:      mk3('sp_nido_hidra', 'Nido de la Hidra', '🐲', 'cloud', { col: '90,230,110', r: 5, secs: 10, mult: 0.9, slow: 2500, desc: 'Un nido de veneno 10 s (×0,9 por segundo) que ralentiza.' }),
+  angel_arco:     mk3('sp_cielo_abierto', 'Cielo abierto', '☁️', 'rain', { col: '255,240,170', n: 10, r: 6, hr: 1.7, mult: 1.9, desc: '10 columnas de luz caen alrededor del objetivo (×1,9).' }),
+  fuego_arco:     mk3('sp_estampida', 'Estampida de brasas', '🔥', 'volley', { col: '255,150,70', hits: 9, span: 2400, mult: 1.5, desc: 'Nueve flechas ardientes al objetivo (×1,5 cada una).' }),
+  sombra_arco:    mk3('sp_noche_eterna', 'Noche eterna', '🌌', 'nova', { col: '170,100,255', r: 5, mult: 4, blind: 3500, atTarget: 1, desc: 'Oscuridad total sobre el objetivo (×4) que ciega.' }),
+  hw_guadana:     mk3('sp_noche_brujas', 'Noche de brujas', '🎃', 'nova', { col: '176,100,255', r: 5, mult: 4.5, stun: 2000, desc: 'Un grito espectral a tu alrededor (×4,5) que aturde.' }),
+  ig_arco:        mk3('sp_cometa', 'Cometa ígneo', '☄️', 'nova', { col: '255,120,40', r: 4, mult: 5, atTarget: 1, burn: { ticks: 5, mult: 0.35 }, desc: 'Un cometa cae sobre el objetivo (×5) y quema.' }),
+  an_arco:        mk3('sp_juicio_portal', 'Juicio del portal', '🟢', 'line', { col: '120,255,170', len: 11, mult: 4.4, desc: 'Un haz verde cruza 11 casillas (×4,4).' }),
+  rd_rv_staff:    mk3('sp_plaga', 'Plaga', '☣️', 'cloud', { col: '90,220,110', r: 6, secs: 12, mult: 0.8, slow: 2000, desc: 'Una plaga 12 s (×0,8 por segundo) que ralentiza.' }),
+  rd_ra_staff:    mk3('sp_tormenta_acero', 'Tormenta de acero', '⚙️', 'volley', { col: '255,200,90', hits: 18, span: 5000, mult: 0.7, desc: '18 virotes en 5 s (×0,7 cada uno).' }),
+  angel_cetro:    mk3('sp_resurreccion', 'Luz restauradora', '😇', 'heal', { col: '255,240,190', r: 5, mult: 2.5, heal: 0.35, desc: 'Luz que cura un 35 % a tu grupo y daña a los cercanos (×2,5).' }),
+  ig_baston:      mk3('sp_erupcion_solar', 'Erupción solar', '☀️', 'rain', { col: '255,120,40', n: 8, r: 5, hr: 1.8, mult: 2.2, burn: { ticks: 4, mult: 0.3 }, desc: '8 erupciones solares alrededor del objetivo (×2,2).' }),
+  an_baston:      mk3('sp_maldicion', 'Maldición del faraón', '⚰️', 'cloud', { col: '120,255,170', r: 4, secs: 10, mult: 0.8, slow: 2500, desc: 'Una maldición 10 s (×0,8 por segundo) que ralentiza.' }),
+  hd_guadana:     mk3('sp_eclipse_infra', 'Eclipse del Inframundo', '🌑', 'nova', { col: '255,120,30', r: 5, mult: 4.6, stun: 2000, burn: { ticks: 5, mult: 0.35 }, desc: 'Un eclipse a tu alrededor (×4,6) que aturde y quema.' }),
+  hd_arco:        mk3('sp_cielo_llamas', 'Cielo en llamas', '🔥', 'rain', { col: '255,120,30', n: 10, r: 6, hr: 1.7, mult: 1.9, burn: { ticks: 3, mult: 0.3 }, desc: '10 flechas incendiarias alrededor del objetivo (×1,9).' }),
+  zs_arco:        mk3('sp_cadena_rayos', 'Cadena de rayos', '⚡', 'volley', { col: '170,220,255', hits: 10, span: 3000, mult: 1.5, desc: 'Diez rayos encadenados al objetivo (×1,5 cada uno).' }),
+  zs_cetro:       mk3('sp_ira_zeus', 'Ira de Zeus', '🌩️', 'nova', { col: '170,220,255', r: 4, mult: 4.8, stun: 2000, atTarget: 1, desc: 'Zeus descarga su ira sobre el objetivo (×4,8) y lo aturde.' }),
+  rd_rx_staff:    mk3('sp_eclipse_solar', 'Eclipse solar', '🌞', 'heal', { col: '255,230,150', r: 6, mult: 3.6, heal: 0.25, desc: 'Gran destello (×3,6) que cura un 25 % a tu grupo.' }),
+};
+for (const [w, sk] of Object.entries(THIRD)) SP[w].push(sk);
+
+// ---- armas de Cerbero (3 especiales cada una: A barato, B definitivo, C el más fuerte) ----
+Object.assign(SP, {
+  cb_arco_fuego: [
+    mk('sp_cb_triple', 'Disparo triple', '🏹', 'volley', { col: '255,130,40', hits: 3, span: 900, mult: 2.2, cd: 28000, mana: 55, desc: 'Tres flechas de fuego infernal al objetivo (×2,2 cada una).' }),
+    mk('sp_cb_quemadura', 'Quemadura infernal', '🔥', 'rain', { col: '255,110,30', n: 7, r: 4, hr: 1.7, mult: 1.9, burn: { ticks: 5, mult: 0.35 }, cd: 80000, mana: 125, lv: 60, desc: '7 flechas ardientes caen alrededor del objetivo (×1,9) y queman.' }),
+    mk3('sp_cb_aliento', 'Aliento de Cerbero', '🐕', 'line', { col: '255,120,30', len: 11, mult: 4.8, burn: { ticks: 5, mult: 0.35 }, desc: 'Una llamarada de tres cabezas cruza 11 casillas (×4,8) y quema.' }),
+  ],
+  cb_arco_rastreador: [
+    mk('sp_cb_marca', 'Marca del rastreador', '🎯', 'bolt', { col: '255,170,70', mult: 3.4, cd: 28000, mana: 55, desc: 'Una flecha certera (×3,4) que marca al objetivo.' }),
+    mk('sp_cb_veloz', 'Ráfaga veloz', '💨', 'volley', { col: '255,170,70', hits: 8, span: 1600, mult: 1.3, cd: 80000, mana: 125, lv: 60, desc: 'Ocho flechas muy rápidas al objetivo (×1,3 cada una).' }),
+    mk3('sp_cb_obsidiana', 'Tiro de obsidiana', '🖤', 'line', { col: '170,100,255', len: 12, mult: 5, slow: 3000, desc: 'Una flecha de obsidiana cruza 12 casillas (×5) y ralentiza.' }),
+  ],
+  cb_baston_triptico: [
+    mk('sp_cb_invocacion', 'Invocación de cabezas', '🐺', 'volley', { col: '255,130,40', hits: 3, span: 1200, mult: 2.3, cd: 30000, mana: 65, desc: 'Tres cabezas de fuego atacan al objetivo (×2,3 cada una).' }),
+    mk('sp_cb_triptico', 'Llamas del tríptico', '🔥', 'nova', { col: '255,130,40', r: 4, mult: 3.4, burn: { ticks: 5, mult: 0.35 }, atTarget: 1, cd: 80000, mana: 130, lv: 60, desc: 'Un círculo de fuego sobre el objetivo (×3,4) que quema.' }),
+    mk3('sp_cb_jauria', 'Jauría infernal', '🐕', 'rain', { col: '255,120,30', n: 10, r: 6, hr: 1.7, mult: 2.2, burn: { ticks: 4, mult: 0.3 }, desc: '10 perros de fuego saltan alrededor del objetivo (×2,2).' }),
+  ],
+  cb_baston_garra: [
+    mk('sp_cb_onda', 'Onda ígnea', '🌊', 'line', { col: '255,120,30', len: 9, mult: 3.3, burn: { ticks: 4, mult: 0.3 }, cd: 30000, mana: 65, desc: 'Una onda de fuego cruza 9 casillas (×3,3) y quema.' }),
+    mk('sp_cb_azote', 'Azote del Inframundo', '⛓️', 'nova', { col: '130,200,255', r: 4, mult: 3.6, stun: 1500, atTarget: 1, cd: 85000, mana: 130, lv: 60, desc: 'Cadenas de almas golpean al objetivo (×3,6) y lo aturden.' }),
+    mk3('sp_cb_garra', 'Garra del abismo', '🐾', 'nova', { col: '255,110,30', r: 5, mult: 4.8, pull: 3, atTarget: 1, desc: 'Una garra enorme atrae a los enemigos y los desgarra (×4,8).' }),
+  ],
+});
+// ---- especiales de escudos y objetos de mano de jefe (tecla siguiente a las del arma) ----
+const mkS = (id, name, icon, kind, o) => mk(id, name, icon, kind, Object.assign({ cd: 75000, mana: 100, lv: 50 }, o));
+Object.assign(SP, {
+  angel_carcaj: [mkS('sh_plumas', 'Plumas protectoras', '🪶', 'heal', { col: '255,240,170', r: 4, mult: 1.5, heal: 0.12, desc: 'Lluvia de plumas que cura un 12 % a tu grupo y daña a los cercanos (×1,5).' })],
+  fuego_carcaj: [mkS('sh_reserva', 'Reserva ígnea', '🔥', 'nova', { col: '255,130,40', r: 3, mult: 3, burn: { ticks: 4, mult: 0.3 }, atTarget: 1, desc: 'Una flecha explosiva sobre el objetivo (×3) que quema.' })],
+  zs_escudo:    [mkS('sh_egida_olimpo', 'Égida del Olimpo', '⚡', null, { col: '170,220,255', shield: true, secs: 10, shm: 6, cd: 90000, mana: 120, lv: 60, desc: 'Una égida de rayos absorbe el daño durante 10 s.' })],
+  md_escudo:    [mkS('sh_mirada_egida', 'Mirada de la Égida', '🐍', 'nova', { col: '120,230,120', r: 4, mult: 2, stun: 2500, cd: 80000, mana: 110, lv: 60, desc: 'La égida petrifica un instante a los cercanos (×2) y los aturde.' })],
+  md_carcaj:    [mkS('sh_viboras', 'Nido de víboras', '🐍', 'cloud', { col: '90,230,110', r: 3, secs: 8, mult: 0.7, slow: 2000, desc: 'Víboras en el suelo 8 s (×0,7 por segundo) que ralentizan.' })],
+  md_orbe:      [mkS('sh_orbe_serpientes', 'Orbe de serpientes', '🔮', 'volley', { col: '120,255,150', hits: 4, span: 1400, mult: 1.8, desc: 'Cuatro serpientes mágicas al objetivo (×1,8 cada una).' })],
+});
+// arma -> [A, B, C]; escudo -> [especial]; los datos que se envían al cliente
 const WSPEC = {}; for (const [w, l] of Object.entries(SP)) WSPEC[w] = l.map((s) => Object.assign({}, s, { aoe: s.r && !s.atTarget ? s.r : s.r, kindStr: s.kind }));
 
 function install(Game) {

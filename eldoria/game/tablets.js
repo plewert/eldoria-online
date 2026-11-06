@@ -33,6 +33,7 @@ const CAVE_TABLETS = [
   ['tp_cueva_olimpo', 'Tableta de Teletransporte: El Olimpo de Zeus',               342, 35],
   ['tp_cueva_hades',  'Tableta de Teletransporte: Trono de Hades (Inframundo)',      240, 311],
   ['tp_cueva_medusa', 'Tableta de Teletransporte: Cueva de Medusa (Inframundo)',          280, 311],
+  ['tp_cueva_cerbero', 'Tableta de Teletransporte: Las Fauces del Inframundo (Cerbero)',  317, 311],
 ];
 function build(ITEMS, SHOPS) {
   for (const [id, name, x, y] of CAVE_TABLETS) ITEMS[id] = { name, icon: '📜', type: 'tablet', dest: [x, y], stack: true, price: CAVE_PRICE, sell: 20000, desc: 'De un solo uso: te deja dentro de la cueva, cerca de la entrada (no se puede usar en combate).' };

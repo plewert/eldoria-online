@@ -581,3 +581,17 @@ En la pantalla de inicio hay un botón «📲 Instalar app» (`public/instalar.j
 ## Rendimiento del servidor con muchos jugadores juntos
 
 `sendSnapshot` serializa una sola vez por tick los datos de cada jugador, monstruo y efecto (caché `this._sc`) y los reutiliza para todos los que los ven. Antes se volvía a serializar por cada jugador que miraba (coste cuadrático al juntarse muchos contra un jefe). Con 30 jugadores peleando contra un jefe, el tick medio bajó de ~3,4 ms a ~1,8 ms (medido en local).
+
+## Tercer especial de armas de jefe y especiales de escudos de jefe
+- Las 28 armas de jefe tienen ahora **3 especiales** (teclas 4, 5 y 6). El tercero es el más fuerte: habilidad 75, 170 de maná y 110 s de espera (`THIRD` en `game/especiales.js`).
+- Seis escudos y objetos de mano de jefe tienen un especial propio, que va a continuación de los del arma (tecla 6 o 7 según el arma): Carcaj de Plumas Celestiales (cura), Reserva Ígnea (explosión), Égida de Zeus (barrera de rayos), Égida de la Hidra de Piedra (aturde), Carcaj de las Víboras (nube) y Orbe de las Cuatro Serpientes (ráfaga).
+- El cliente construye la barra con las habilidades del estilo + las del arma + las del escudo (`G.stats.sid`); atajos de teclado 1–7.
+
+## Cerbero, Guardián del Inframundo (cueva «Las Fauces del Inframundo»)
+- **Jefe** `cerbero` (nivel 910, 600.000 de vida base; escala por nivel como los demás jefes, tope ×1,5) en la cueva `cueva_cerbero` ([301,296]–[334,314], puerta en 317,315, a la derecha de la cueva de Medusa; entrada 2.000 de oro). Código: `game/cerbero.js` (servidor) y `public/cerbero.js` (efectos y adornos).
+- **6 ataques especiales** (casi todos avisan en el suelo): *Triple llamarada* (3 rayos de fuego a 3 jugadores), *Triple zarpazo*, *Aullido infernal* (daña y ralentiza), *Fuego de almas* (llamas azules que se quedan ardiendo), *Embestida* (se lanza en línea recta) y *Cadenas de almas* (arrastran a todos y los dejan quietos antes del mordisco).
+- **Cueva**: obsidiana dentada, río de magma central con un vado de runas, plataforma de runas con 3 pilares con antorchas azul y naranja, 2 cofres de la Tríada, un cofre de lava solidificada, 2 altares y 3 estatuas de perro de dos cabezas (casillas sólidas `CBK/CBL/CBA/CBS/CBP`), y adornos sin colisión (`world.CB_PROPS`: llamas azules de almas, huesos de titán, cadenas rotas, monedas con huella de pata, armas clavadas y un huevo de basilisco).
+- **Botín** (equipo del Inframundo, más daño = más suerte): yelmo, coraza, guanteletes, grebas, pisadores, anillo del Guardián Infernal, amuleto de las Tres Cabezas, Arco Infernal, Arco Rastreador, Báculo Tríptico y Báculo de la Garra (cada arma con 3 especiales). También Colmillo de Cerbero, materiales y Elixir del Guardián.
+- Sprite animado `cerbero_b` (atlas 2), iconos y capas en `gear.png`. Tableta de teletransporte y encargo de Boris incluidos; modo historia con capítulos.
+- **Instancia privada** (7 copias, 1.500.000 de oro, jefe más fuerte y más botín como las demás): el mundo creció a 420 filas para alojar la fila extra de plazas al sur (`INST_POS`, y=398). El cliente dibuja los adornos y las antorchas también en las instancias.
+- **Cría de Cerbero** (`pet_cerbero`, automática de todo jefe, escala 0,85, aura de brasas y llamas azules) y **Sabueso Infernal de Cerbero** (`montura_cerbero`, nivel 106, velocidad ×0,46 = más del doble, pasiva +6 ataque/+5 defensa/+120 vida, 0,08 % de botín como la Bestia de Brasas). Los dos usan el sprite pequeño `cerbero` del atlas principal.

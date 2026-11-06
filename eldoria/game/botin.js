@@ -27,6 +27,8 @@ const BOSS_MATS = {
                     elixir: ['elixir_trueno', 'Elixir del Trueno', 'p_cazador', { loot: 1.3 }, 600, '+30 % de probabilidad de botín (no mascotas) durante 10 min.'] },
   medusa:         { mats: [['escama_gorgona', 'Escama de Gorgona', '🐍', 100000], ['ojo_petreo', 'Ojo Pétreo', '🗿', 100000]],
                     elixir: ['elixir_gorgona', 'Elixir de la Gorgona', 'p_resistencia', { def: 1.25 }, 600, '+25 % de defensa durante 10 min.'] },
+  cerbero:        { mats: [['colmillo_infernal', 'Colmillo Infernal', '🦷', 100000], ['cadena_almas', 'Cadena de Almas', '⛓️', 100000]],
+                    elixir: ['elixir_cerbero', 'Elixir del Guardián', 'p_resistencia', { def: 1.3 }, 600, '+30 % de defensa durante 10 min.'] },
   hades:          { mats: [['llama_inframundo', 'Llama del Inframundo', '🔥', 100000], ['alma_condenada', 'Alma Condenada', '👻', 100000]],
                     elixir: ['elixir_inframundo', 'Elixir del Inframundo', 'p_furia', { atk: 1.25 }, 300, '+25 % de ataque durante 5 min.'] },
 };

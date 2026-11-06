@@ -84,6 +84,13 @@ const STORIES = [
       { title: 'Cada serpiente, un vigilante', text: 'Cuando el fuego del Sin Nombre llegó al Inframundo, sus serpientes se volvieron ojos que no dormían. Las runas del suelo son lo único que su luz no alcanza.' },
       { title: 'La estatua y el espejo', text: '«Quien se esconde a tiempo, vive. Quien se queda quieto, es estatua. Y las estatuas, héroes, no ganan batallas.»' } ],
     ending: ['Las serpientes de su cabello se apagan una a una y el templo vuelve a quedar en silencio.', 'Medusa sonríe por última vez: «Por fin alguien que sabe cuándo esconderse… y cuándo dar la cara.»'] },
+  { boss: 'cerbero', cave: 'cueva_cerbero', icon: '🐕', name: 'Cerbero, Guardián del Inframundo', gold: 78000,
+    intro: ['Al este del Trono de Hades, la roca se abre como unas fauces: obsidiana dentada, ríos de magma y un fuego azul que no calienta.', 'Allí vigila el que nunca duerme: el perro de tres cabezas.'],
+    chapters: [
+      { title: 'El perro de las tres cabezas', text: 'La Orden buscaba un guardián que vigilara a los vivos y a los muertos a la vez. Hizo falta una cabeza para cada lado de la puerta… y una para no olvidar.' },
+      { title: 'Los trofeos del guardián', text: 'Los huesos de titanes, las armas ennegrecidas y las cadenas rotas de la cueva son de quienes intentaron entrar o escapar. Cerbero no mata por gusto: guarda lo que le encargaron.' },
+      { title: 'Las llamas azules', text: '«Cada llama azul es un alma que no pudo cruzar. Si vencéis a mis cabezas, quizá aprendan a descansar. Si no, seréis la siguiente llama.»' } ],
+    ending: ['Las tres cabezas bajan a la vez y el fuego azul se apaga en las grietas.', 'Cerbero se echa junto al trono: «Por fin… alguien que no vino a robar, sino a relevarme.»'] },
 ];
 
 const BY_BOSS = Object.fromEntries(STORIES.map((s) => [s.boss, s]));

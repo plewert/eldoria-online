@@ -519,6 +519,7 @@ require('./mage').build(ITEMS, SHOPS, MONSTERS);
   require('./zeus').build(ITEMS, MONSTERS);
   require('./hades').build(ITEMS, MONSTERS);
   require('./medusa').build(ITEMS, MONSTERS);
+  require('./cerbero').build(ITEMS, MONSTERS);
   require('./raid').build(ITEMS, MONSTERS);
   require('./halloween').build(ITEMS, MONSTERS);
   require('./regiones').build(ITEMS, MONSTERS, SPAWN_PLAN);
@@ -564,7 +565,7 @@ for (const d of Object.values(MONSTERS)) if (!d.lv) d.lv = Math.max(1, Math.roun
   const F = { weapon: 1, body: 1, head: 0.8, legs: 0.8, shield: 0.8, boots: 0.5, gloves: 0.5, belt: 0.5 };
   CFG.SHOP_GEAR_MIN_LV = 80;
   for (const [id, d] of Object.entries(ITEMS)) {
-    if (!F[d.type] || (d.minLevel || 1) < CFG.SHOP_GEAR_MIN_LV || d.zeus || d.medusa || d.raid || id.startsWith('hd_') || SHOPS.boris.includes(id)) continue;
+    if (!F[d.type] || (d.minLevel || 1) < CFG.SHOP_GEAR_MIN_LV || d.zeus || d.medusa || d.cerbero || d.raid || id.startsWith('hd_') || SHOPS.boris.includes(id)) continue;
     d.price = Math.max(10e6, Math.round(lvPrice(d.minLevel) * F[d.type] / 5e5) * 5e5);      // d.sell no se toca: es lo que paga Boris al comprar
     SHOPS.boris.push(id);
   }
@@ -579,9 +580,9 @@ ITEMS.gema_ascension = { name: 'Gema de Ascensión', icon: '🟡', spr: 'gem_asc
   desc: `Úsala sobre un arma o equipo (menú de la mochila, ${CFG.ASC_COST.toLocaleString('es')} de oro, en zona segura): sube 1 el +N (máx. +${CFG.ASC_MAX}). ${Math.round(CFG.ASC_FAIL * 100)} % de fallo: se consume sin cambiar nada; el equipo nunca baja ni se rompe.` };
 SHOPS.boris.push('gema_ascension');
 // solo los jefes del Inframundo la sueltan, y es el botín más raro del juego
-for (const t of ['hades', 'medusa', 'serafin_caido', 'serafina_noche', 'serafin_infernal']) if (MONSTERS[t]) MONSTERS[t].loot.push(['gema_corrupta', CFG.CORRUPT_CHANCE, 1, 1]);
+for (const t of ['hades', 'medusa', 'cerbero', 'serafin_caido', 'serafina_noche', 'serafin_infernal']) if (MONSTERS[t]) MONSTERS[t].loot.push(['gema_corrupta', CFG.CORRUPT_CHANCE, 1, 1]);
 // Gema de Ascensión: jefes de la superficie (no del Inframundo); cuanto más débil el jefe, menos probable (proporcional a su nivel, mín. 10 %)
-const INFRA_BOSS = ['hades', 'medusa', 'serafin_caido', 'serafina_noche', 'serafin_infernal'];
+const INFRA_BOSS = ['hades', 'medusa', 'cerbero', 'serafin_caido', 'serafina_noche', 'serafin_infernal'];
 for (const [t, m] of Object.entries(MONSTERS)) if (m.boss && !INFRA_BOSS.includes(t)) m.loot.push(['gema_ascension', +(CFG.ASC_CHANCE * Math.max(0.1, Math.min(1, (m.lv || 1) / 800))).toFixed(7), 1, 1]);
 // las gemas solo salen de las rocas (minería): se quitan de toda tabla de botín de monstruos y jefes
 for (const m of Object.values(MONSTERS)) if (m.loot) m.loot = m.loot.filter((q) => !GEMS[q[0]]);
