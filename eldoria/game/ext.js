@@ -1107,6 +1107,7 @@ module.exports = function install(Game) {
     else if (m.def.special === 'hades' && !m.dead) this.hadesAI(m, now);
     else if (m.def.special === 'medusa' && !m.dead) this.medusaAI(m, now);
     else if (m.def.special === 'cerbero' && !m.dead) this.cerberoAI(m, now);
+    else if (m.def.special === 'e2' && !m.dead) this.e2AI(m, now);
     else if (m.def.special === 'zeus' && !m.dead) this.zeusAI(m, now);
     else if (m.def.special === 'raid' && !m.dead) this.raidAI(m, now);
     else if (m.def.special === 'halloween' && !m.dead) this.hwAI(m, now);

@@ -185,6 +185,39 @@ Object.assign(SP, {
     mk3('sp_cb_garra', 'Garra del abismo', '🐾', 'nova', { col: '255,110,30', r: 5, mult: 4.8, pull: 3, atTarget: 1, desc: 'Una garra enorme atrae a los enemigos y los desgarra (×4,8).' }),
   ],
 });
+// ---- armas de la ampliación Este II (3 especiales cada una: A barato, B definitivo, C el más fuerte) ----
+Object.assign(SP, {
+  th_arco: [
+    mk('sp_th_triple', 'Disparo triple', '🏹', 'volley', { col: '210,190,140', hits: 3, span: 900, mult: 2.1, cd: 28000, mana: 55, desc: 'Tres flechas al objetivo (×2,1 cada una).' }),
+    mk('sp_th_lluvia', 'Lluvia de flechas', '🌧️', 'rain', { col: '210,190,140', n: 7, r: 4, hr: 1.7, mult: 1.8, cd: 80000, mana: 125, lv: 60, desc: '7 flechas caen alrededor del objetivo (×1,8).' }),
+    mk3('sp_th_recurvo', 'Tiro recurvo', '🎯', 'line', { col: '230,210,150', len: 11, mult: 4.6, desc: 'Una flecha atraviesa 11 casillas (×4,6).' }),
+  ],
+  th_daga: [
+    mk('sp_th_tajo', 'Tajo veloz', '🗡️', 'nova', { col: '150,230,120', r: 2.5, mult: 3, cd: 25000, mana: 50, desc: 'Un tajo giratorio a tu alrededor (×3).' }),
+    mk('sp_th_cuatro', 'Cuatro tajos', '⚔️', 'volley', { col: '150,230,120', hits: 4, span: 1000, mult: 1.9, cd: 75000, mana: 115, lv: 60, desc: 'Cuatro cortes rápidos al objetivo (×1,9 cada uno).' }),
+    mk3('sp_th_sombra', 'Estocada de sombra', '🌑', 'line', { col: '170,130,255', len: 6, mult: 5.2, desc: 'Una estocada a través de 6 casillas (×5,2).' }),
+  ],
+  ka_arco: [
+    mk('sp_ka_triple', 'Flechas verdantes', '🌿', 'volley', { col: '120,230,130', hits: 3, span: 900, mult: 2.2, cd: 28000, mana: 55, desc: 'Tres flechas de savia al objetivo (×2,2 cada una).' }),
+    mk('sp_ka_nube', 'Nube de esporas', '☣️', 'cloud', { col: '110,220,120', r: 3, secs: 8, mult: 0.8, slow: 2500, cd: 80000, mana: 125, lv: 60, desc: 'Esporas 8 s (×0,8 por segundo) que ralentizan.' }),
+    mk3('sp_ka_guardabosques', 'Flecha del guardabosques', '🏹', 'line', { col: '140,255,160', len: 12, mult: 5, slow: 3000, desc: 'Una flecha cruza 12 casillas (×5) y ralentiza.' }),
+  ],
+  ae_baston: [
+    mk('sp_ae_destello', 'Destello estelar', '✨', 'bolt', { col: '170,220,255', mult: 3.4, cd: 28000, mana: 60, desc: 'Un rayo de luz estelar (×3,4).' }),
+    mk('sp_ae_estrellas', 'Lluvia de estrellas', '🌠', 'nova', { col: '170,220,255', r: 4, mult: 3.4, stun: 1500, atTarget: 1, cd: 85000, mana: 130, lv: 60, desc: 'Estrellas caen sobre el objetivo (×3,4) y lo aturden.' }),
+    mk3('sp_ae_meteoros', 'Meteoros estelares', '☄️', 'rain', { col: '200,230,255', n: 10, r: 6, hr: 1.7, mult: 2.2, desc: '10 meteoros caen alrededor del objetivo (×2,2).' }),
+  ],
+  va_espada: [
+    mk('sp_va_runa', 'Tajo rúnico', '🔷', 'fan', { col: '120,200,255', r: 4, mult: 3.2, cd: 28000, mana: 60, desc: 'Tajo de runas en abanico frente a ti (×3,2).' }),
+    mk('sp_va_onda', 'Onda ancestral', '🌀', 'line', { col: '120,200,255', len: 9, mult: 3.6, cd: 80000, mana: 125, lv: 60, desc: 'Una onda rúnica cruza 9 casillas (×3,6).' }),
+    mk3('sp_va_ancestral', 'Furia ancestral', '⚔️', 'nova', { col: '150,220,255', r: 5, mult: 4.8, stun: 2000, atTarget: 1, desc: 'La hoja descarga energía ancestral sobre el objetivo (×4,8) y lo aturde.' }),
+  ],
+  el_baston: [
+    mk('sp_el_vacio', 'Lanza del vacío', '🌌', 'bolt', { col: '170,110,255', mult: 3.5, cd: 28000, mana: 60, desc: 'Un rayo del vacío (×3,5).' }),
+    mk('sp_el_pozo', 'Pozo de sombras', '🕳️', 'nova', { col: '150,80,230', r: 4, mult: 3.6, pull: 3, atTarget: 1, cd: 85000, mana: 130, lv: 60, desc: 'Atrae a los enemigos hacia el objetivo (×3,6).' }),
+    mk3('sp_el_invocador', 'Llamada del invocador', '👁️', 'rain', { col: '170,110,255', n: 10, r: 6, hr: 1.7, mult: 2.3, desc: '10 grietas del vacío estallan alrededor del objetivo (×2,3).' }),
+  ],
+});
 // ---- especiales de escudos y objetos de mano de jefe (tecla siguiente a las del arma) ----
 const mkS = (id, name, icon, kind, o) => mk(id, name, icon, kind, Object.assign({ cd: 75000, mana: 100, lv: 50 }, o));
 Object.assign(SP, {
@@ -193,6 +226,8 @@ Object.assign(SP, {
   zs_escudo:    [mkS('sh_egida_olimpo', 'Égida del Olimpo', '⚡', null, { col: '170,220,255', shield: true, secs: 10, shm: 6, cd: 90000, mana: 120, lv: 60, desc: 'Una égida de rayos absorbe el daño durante 10 s.' })],
   md_escudo:    [mkS('sh_mirada_egida', 'Mirada de la Égida', '🐍', 'nova', { col: '120,230,120', r: 4, mult: 2, stun: 2500, cd: 80000, mana: 110, lv: 60, desc: 'La égida petrifica un instante a los cercanos (×2) y los aturde.' })],
   md_carcaj:    [mkS('sh_viboras', 'Nido de víboras', '🐍', 'cloud', { col: '90,230,110', r: 3, secs: 8, mult: 0.7, slow: 2000, desc: 'Víboras en el suelo 8 s (×0,7 por segundo) que ralentizan.' })],
+  ka_carcaj:    [mkS('sh_ka_susurros', 'Susurros del carcaj', '🌿', 'volley', { col: '120,230,140', hits: 4, span: 1300, mult: 1.8, desc: 'Cuatro flechas susurrantes al objetivo (×1,8 cada una).' })],
+  va_escudo:    [mkS('sh_va_escamas', 'Escamas de dragón', '🐉', null, { col: '255,170,90', shield: true, secs: 10, shm: 6, cd: 90000, mana: 120, lv: 60, desc: 'Escamas que absorben el daño durante 10 s.' })],
   md_orbe:      [mkS('sh_orbe_serpientes', 'Orbe de serpientes', '🔮', 'volley', { col: '120,255,150', hits: 4, span: 1400, mult: 1.8, desc: 'Cuatro serpientes mágicas al objetivo (×1,8 cada una).' })],
 });
 // arma -> [A, B, C]; escudo -> [especial]; los datos que se envían al cliente

@@ -17,7 +17,7 @@
     cam: { x: 0, y: 0 }, path: [], lastTp: -1, zoneId: '', shopOpen: false, hover: null,
   };
   if (location.hash === '#debug') { window.__eld = G; G.renderInv = () => renderInv(); G.openShop = (m) => openShop(m); }
-  let ws = null, joined = false, wantMode = 'login';
+  let ws = null, joined = false, wantMode = 'login', connecting = false;
   /* Ganchos para los módulos extra (audio, clima, táctil, misiones, social...) */
   const HK = { ground: [], msg: [], fx: [], snap: [], draw: [], under: [], click: [], key: [], chat: [], inv: [], stats: [], ctx: [] };
   const EXT = (window.EldExt = {
@@ -39,8 +39,9 @@
     return new Promise((resolve, reject) => {
       if (ws && ws.readyState === 1) return resolve();
       const s = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
-      s.onopen = () => { ws = s; resolve(); };
-      s.onerror = () => reject(new Error('No se pudo conectar con el servidor.'));
+      const tmo = setTimeout(() => { if (s.readyState === 0) { try { s.close(); } catch (e) { /* nada */ } reject(new Error('No se pudo conectar con el servidor.')); } }, 12000);      // servidor dormido: no esperar eternamente
+      s.onopen = () => { clearTimeout(tmo); ws = s; resolve(); };
+      s.onerror = () => { clearTimeout(tmo); reject(new Error('No se pudo conectar con el servidor.')); };
       s.onmessage = (ev) => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } onMsg(m); };
       s.onclose = () => {
         if (ws === s) ws = null;
@@ -69,8 +70,24 @@
       ev.preventDefault();
       const name = $('#lname').value.trim(), pass = $('#lpass').value;
       const color = (document.querySelector('#swatches input:checked') || {}).value || COLORS[0];
-      $('#loginErr').textContent = '';
-      try { await connect(); } catch (e) { $('#loginErr').textContent = e.message; return; }
+      if (connecting) return;
+      connecting = true;
+      const btns = document.querySelectorAll('#loginForm button[type=submit]'), err = $('#loginErr');
+      btns.forEach((b) => { b.disabled = true; });
+      err.textContent = ''; err.style.color = '';
+      /* El servidor gratuito se duerme: se reintenta solo (≈ 90 s) y entra con los mismos datos sin volver a escribirlos. */
+      const MAX = 10; let ok = false;
+      for (let i = 1; i <= MAX && !ok; i++) {
+        try { await connect(); ok = true; } catch (e) {
+          if (i === MAX) break;
+          err.style.color = '#e6b450';
+          err.textContent = `⏳ Despertando el servidor… puede tardar hasta un minuto (intento ${i + 1} de ${MAX})`;
+          await new Promise((r) => setTimeout(r, i < 3 ? 4000 : 8000));
+        }
+      }
+      btns.forEach((b) => { b.disabled = false; }); connecting = false;
+      if (!ok) { err.style.color = ''; err.textContent = 'El servidor no responde. Inténtalo de nuevo en un momento.'; return; }
+      err.textContent = ''; err.style.color = '';
       store.set('eldoria.name', name); store.set('eldoria.color', color);
       send({ t: 'auth', mode: wantMode, name, pass, color });
     });
@@ -110,7 +127,7 @@
 
   function onWelcome(m) {
     joined = true; if (G.autoRet) send({ t: 'autoret', on: true });
-    G.id = m.id; G.W = m.w; G.H = m.h; G.zones = m.zones; G.portals = m.portals; G.npcs = m.npcs; G.items = m.items; G.mons = m.mons; aliasSprites(); G.cfg = m.cfg; G.rar = m.rar; G.gems = m.gems;
+    G.id = m.id; G.W = m.w; G.H = m.h; G.zones = m.zones; G.portals = m.portals; G.npcs = m.npcs; G.items = m.items; G.fams = m.fams || {}; G.mons = m.mons; aliasSprites(); G.cfg = m.cfg; G.rar = m.rar; G.gems = m.gems;
     for (const [iid, idf] of Object.entries(m.items)) if (idf.el) WEAPON_ELEM[iid] = idf.el;
     const CH = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTU';
     G.tiles = new Uint8Array(G.W * G.H);
@@ -442,6 +459,11 @@
     else if (d.type === 'consumable') box.append(el('div', 'tl', d.buff || d.blink ? d.desc : d.heal ? `Cura ${d.heal} de vida` : `Restaura ${d.restore} de maná`));
     else if (d.type === 'pet' || d.type === 'mount') { box.append(el('div', 'tl', d.desc)); box.append(el('div', 'ts', d.type === 'mount' && d.minLevel > 1 ? `Nivel ${d.minLevel} · clic para montar` : 'Clic para invocar o guardar')); }
     else if (d.type === 'gem' || d.corrupt || d.ascend) box.append(el('div', 'tl', d.desc));
+    if (gear && d.fam && G.fams && G.fams[d.fam]) {
+      const f = G.fams[d.fam], lvl = Math.min(1, (d.minLevel || 1) / 100);
+      const ft = d.type === 'weapon' ? `${f.icon} +${Math.round(15 + 20 * lvl)}% de daño contra ${f.name.toLowerCase()}` : `${f.icon} −${(1.5 + lvl).toFixed(1)}% de daño recibido de ${f.name.toLowerCase()}`;
+      const fe = el('div', 'tl', ft); fe.style.color = '#ffc86b'; box.append(fe);
+    }
     if (gear) {
       box.append(el('div', 'tsep'));
       if (it[4] > 0) {
@@ -821,7 +843,7 @@
     const st = $('#dropStats'); st.replaceChildren();
     const stat = (k, v) => { const x = el('div'); x.append(el('small', '', k), el('b', '', v)); st.append(x); };
     stat('Nivel', fmt(d.lv || 1)); stat('Vida', fmt(d.hp)); stat('Daño', `${d.dmg[0]}–${d.dmg[1]}`); stat('Experiencia', fmt(d.exp));
-    stat('Ataque', d.range > 1 ? `a ${d.range} casillas` : 'cuerpo a cuerpo'); stat('Oro', `${d.gold[0]}–${d.gold[1]}`); stat('Reaparece en', secs(d.respawn));
+    if (d.fam && G.fams) stat('Familia', d.fam.map((f) => (G.fams[f] ? G.fams[f].icon + ' ' + G.fams[f].name : f)).join(', ')); stat('Ataque', d.range > 1 ? `a ${d.range} casillas` : 'cuerpo a cuerpo'); stat('Oro', `${d.gold[0]}–${d.gold[1]}`); stat('Reaparece en', secs(d.respawn));
     const list = $('#dropList'); list.replaceChildren();
     const addRow = (icon, name, color, sub, p, rare) => {
       const r = el('div', 'drow' + (rare ? ' rare' : '')), nm = el('div', 'nm');
@@ -2109,12 +2131,15 @@
   const sprImg2 = new Image(), pend2 = {};
   const add2 = () => { if (sprImg2.complete && sprImg2.naturalWidth > 0) for (const k of Object.keys(pend2)) { SPR[k] = pend2[k]; delete pend2[k]; } };
   sprImg2.addEventListener('load', add2); sprImg2.src = 'sprites2.png';
-  fetch('sprites.json').then((r) => r.json()).then((j) => { for (const k of Object.keys(j)) { if (j[k].i2) pend2[k] = j[k]; else SPR[k] = j[k]; } add2(); aliasSprites(); }).catch(() => { /* sin sprites: se usan emojis */ });
+  const sprImg3 = new Image(), pend3 = {};                                   // tercer atlas: Ampliación Este II (monstruos animados de las Llanuras y el Bosque, jefes de cueva)
+  const add3 = () => { if (sprImg3.complete && sprImg3.naturalWidth > 0) for (const k of Object.keys(pend3)) { SPR[k] = pend3[k]; delete pend3[k]; } aliasSprites(); };
+  sprImg3.addEventListener('load', add3); sprImg3.src = 'sprites3.png';
+  fetch('sprites.json').then((r) => r.json()).then((j) => { for (const k of Object.keys(j)) { if (j[k].i3) pend3[k] = j[k]; else if (j[k].i2) pend2[k] = j[k]; else SPR[k] = j[k]; } add2(); add3(); aliasSprites(); }).catch(() => { /* sin sprites: se usan emojis */ });
   function aliasSprites() { for (const [k, d] of Object.entries(G.mons || {})) if (d.spr && SPR[d.spr] && !SPR[k]) SPR[k] = SPR[d.spr]; }      // monstruos nuevos que usan el dibujo de otro
   const sprReady = () => sprImg.complete && sprImg.naturalWidth > 0;
   /** Dibuja el fotograma `fi` del sprite `key` con los pies en (cx, feetY). */
   function drawSprite(c, key, fi, cx, feetY, flip, squash = 1) {
-    const s = SPR[key], f = s.f[fi % s.f.length], img = s.i2 ? sprImg2 : sprImg;
+    const s = SPR[key], f = s.f[fi % s.f.length], img = s.i3 ? sprImg3 : s.i2 ? sprImg2 : sprImg;
     c.save(); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
     c.translate(Math.round(cx), Math.round(feetY));
     if (flip) c.scale(-1, 1);
@@ -2303,6 +2328,29 @@
     if (P.orbit) for (let i = 0; i < 6; i++) { const a = t * 1.3 + i * 1.047, rr = spr.h * 0.42; c.fillStyle = `rgba(${col},${0.7})`; c.beginPath(); c.arc(cx + ox + Math.cos(a) * rr, gy + oy - lift + Math.sin(a) * rr * 0.35, 2.6, 0, 7); c.fill(); }
     c.restore();
   }
+  /* Monstruos animados de la ampliación Este II (sprites3.png): id -> color del aura de jefe. Fotogramas: idle, walk, atk, cast, hurt. */
+  const E2T = { hada_traviesa: 0, grifo_joven: 0, caballero_renegado: 0, arquero_renegado: 0, mago_renegado: 0, golem_piedra: '190,170,140', jefe_orco: '230,110,80', bestia_aguila: '255,220,150',
+    zombi: 0, zombi_podrido: 0, zombi_bruto: 0, zombi_caballero: 0, zombi_yelmo: 0, banshee: 0, nigromante: 0, ogro_zombi: '120,200,90', zombi_caudillo: '200,70,70', nigromante_oscuro: '170,100,255', ent_viejo: '110,200,90',
+    rey_ogro: '120,210,90', grifo_rey: '255,210,120', ent_ancestral: '110,210,100', dragon_esqueleto: '255,140,50' };
+  window.E2T = E2T;
+  function drawAnimMon(c, e, spr, cx, ground, now, key, d) {
+    const A = spr.anim, st = (EXT.zs && EXT.zs.get(e.id)) || {}, moving = (e.amp || 0) > 0.3, castT = (EXT.casts.get(e.id) || 0), cast = castT > now, fly = !!d.fly;
+    const cl = (v) => Math.max(0, Math.min(0.99, v));
+    let fi;
+    if (st.hurt > now) fi = A.hurt[Math.min(A.hurt.length - 1, Math.floor(cl(1 - (st.hurt - now) / 320) * A.hurt.length))];
+    else if (cast) fi = A.cast[Math.floor(cl(1 - (castT - now) / 1200) * A.cast.length)];
+    else if (st.atk > now) fi = A.atk[Math.floor(cl(1 - (st.atk - now) / 460) * A.atk.length)];
+    else if (moving || fly) fi = A.walk[Math.floor(now / (fly ? 150 : 170)) % A.walk.length];
+    else fi = A.idle[Math.floor(now / 520 + e.id) % A.idle.length];
+    const lift = fly ? 8 + Math.sin(now / 300 + e.id) * 2.5 + (spr.h > 150 ? 8 : 0) : 0, y = ground + 2 - Math.round(lift);
+    const col = E2T[key];
+    if (d.boss && col) {                                                          // aura de jefe
+      const hot = cast || st.atk > now, pulse = 0.5 + 0.5 * Math.sin(now / 330 + e.id), g = c.createRadialGradient(cx, y - spr.h * 0.5, 4, cx, y - spr.h * 0.5, spr.h * 0.8);
+      g.addColorStop(0, `rgba(${col},${0.13 + 0.09 * pulse + (hot ? 0.22 : 0)})`); g.addColorStop(1, `rgba(${col},0)`); c.fillStyle = g; c.fillRect(cx - spr.h, y - spr.h * 1.4, spr.h * 2, spr.h * 1.6);
+    }
+    drawSprite(c, key, fi, cx, y - Math.round(Math.sin(now / 600 + e.id) * 1) - 2, (e.face || 1) < 0, 1);
+    if (cast || st.atk > now) { c.save(); c.globalAlpha = 0.22 + 0.15 * Math.sin(now / 25); c.globalCompositeOperation = 'lighter'; drawSprite(c, key, fi, cx, y - 2, (e.face || 1) < 0, 1); c.restore(); }
+  }
   function drawMonster(c, e, sx, sy, now) {
     const d = G.mons[e.t] || { icon: '❓', boss: false };
     const rig = RIG[e.t] || { kind: 'bi', col: '#8a7a66' };
@@ -2335,6 +2383,7 @@
         drawZeus(c, e, SPR[e.t + '_b'], cx + ox, ground + oy - Math.round(lift), now, e.t + '_b', P.col); return;
       }
       if (RB[e.t]) { drawRaidBoss(c, e, d, skey, spr, cx, ground, now); return; }
+      if (spr.anim && typeof spr.anim === 'object' && e.t in E2T) { drawAnimMon(c, e, spr, cx, ground, now, e.t, d); return; }
       drawSprite(c, skey, sprFrame(e, spr), cx, ground + 2 - Math.round(hop) - Math.round(float), (e.face || 1) < 0, sq);
       return;
     }

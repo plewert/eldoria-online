@@ -260,7 +260,8 @@ ok('comida: sardina 80, salmón 100, tiburón 150; se come con el mensaje eat y 
   assert.ok(require('../game/data').SHOPS.boris.includes('tiburon'));
 });
 ok('mapa ampliado: Selva Esmeralda, Sabana Dorada y Aldea Pesquera con comida y banco', () => {
-  assert.equal(world.W, 480);
+  assert.equal(world.W, 640);
+  { const a = world.zoneAt(500, 70), b = world.zoneAt(600, 70); assert.ok(a.id === 'llanuras_este' && b.id === 'bosque_este' && !a.pvp && !b.pvp, 'ampliación Este II: zonas nuevas'); assert.ok(world.reach[70 * world.W + 500] && world.reach[70 * world.W + 620], 'el terreno nuevo se alcanza a pie desde el mapa anterior'); assert.ok(world.rows[0].length === 640 || world.tiles.length === 640 * world.H, 'tamaño del mapa'); }
   { const z = world.zoneById('tierras_nuevas'); assert.ok(z && !z.pvp && z.rect[0] === 320 && z.rect[2] === 479, 'zona reservada al este'); let n = 0; for (let y = 0; y < 140; y++) for (let x = 320; x < 480; x++) if (world.reach[y * world.W + x]) n++; assert.ok(n > 10000, 'las tierras nuevas se pueden recorrer (' + n + ')'); assert.ok(world.reach[70 * world.W + 330], 'hay paso desde las Tierras de Lava'); assert.ok(!world.monsterSpawns.some((m) => world.zoneAt(m.x, m.y).id === 'tierras_nuevas'), 'vacías, sin puntos de aparición'); }
   assert.equal(world.zoneAt(220, 30).id, 'selva'); assert.equal(world.zoneAt(240, 110).id, 'sabana'); assert.equal(world.zoneAt(210, 77).id, 'aldea');
   assert.ok(world.zoneAt(210, 77).kind === 'town' && !world.zoneAt(210, 77).pvp);
@@ -474,7 +475,7 @@ ok('Aracnídeo Fuego Negro: guarida de telarañas en la zona de lava, set raro y
   { const a = require('../public/sprites.json').leviatan_b; assert.ok(a && a.anim.idle.length === 2 && a.anim.walk.length === 4 && a.anim.atk.length >= 4 && a.anim.hurt.length === 3 && a.anim.death.length >= 1, 'Leviatán animado'); for (const k of Object.keys(a.anim)) for (const n of a.anim[k]) assert.ok(a.f[n], 'fotograma ' + k); }
   { const a = require('../public/sprites.json').arcangel_b; assert.ok(a && a.anim.idle.length === 3 && a.anim.walk.length === 5 && a.anim.atk.length === 5 && a.anim.cast.length === 3 && a.anim.hurt.length === 3 && a.anim.death.length === 3, 'Arcángel animado'); for (const k of Object.keys(a.anim)) for (const n of a.anim[k]) assert.ok(a.f[n], 'fotograma ' + k); }
   { const fs = require('fs'), pa = require('path'), mf = JSON.parse(fs.readFileSync(pa.join(__dirname, '../public/manifest.webmanifest'), 'utf8')); assert.ok(mf.icons.some((i) => i.sizes === '192x192') && mf.icons.some((i) => i.sizes === '512x512') && mf.icons.some((i) => i.purpose === 'maskable'), 'manifest con iconos'); for (const i of mf.icons) assert.ok(fs.existsSync(pa.join(__dirname, '../public', i.src)), 'icono ' + i.src); assert.ok(fs.existsSync(pa.join(__dirname, '../public/sw.js')) && /serviceWorker/.test(fs.readFileSync(pa.join(__dirname, '../public/index.html'), 'utf8')), 'service worker'); }
-  { const fs = require('fs'), pa = require('path'); const sj = require('../public/sprites.json'); const dim = (f) => { const b = fs.readFileSync(pa.join(__dirname, '../public', f)); return [b.readUInt32BE(16), b.readUInt32BE(20)]; }; const [w1, h1] = dim('sprites.png'), [w2, h2] = dim('sprites2.png'); assert.ok(h1 <= 8192 && w1 <= 4096 && h2 <= 4096 && w2 <= 4096, 'los atlas caben en una textura de GPU de móvil'); for (const [k, v] of Object.entries(sj)) for (const f of v.f) { const [W, H] = v.i2 ? [w2, h2] : [w1, h1]; assert.ok(f[0] + f[2] <= W && f[1] + f[3] <= H, 'fotograma dentro del atlas: ' + k); } }
+  { const fs = require('fs'), pa = require('path'); const sj = require('../public/sprites.json'); const dim = (f) => { const b = fs.readFileSync(pa.join(__dirname, '../public', f)); return [b.readUInt32BE(16), b.readUInt32BE(20)]; }; const [w1, h1] = dim('sprites.png'), [w2, h2] = dim('sprites2.png'), [w3, h3] = dim('sprites3.png'); assert.ok(h1 <= 8192 && w1 <= 4096 && h2 <= 4096 && w2 <= 4096 && h3 <= 4096 && w3 <= 4096, 'los atlas caben en una textura de GPU de móvil'); for (const [k, v] of Object.entries(sj)) for (const f of v.f) { const [W, H] = v.i3 ? [w3, h3] : v.i2 ? [w2, h2] : [w1, h1]; assert.ok(f[0] + f[2] <= W && f[1] + f[3] <= H, 'fotograma dentro del atlas: ' + k); } }
   assert.ok(/instalar\.js/.test(require('fs').readFileSync(require('path').join(__dirname, '../public/index.html'), 'utf8')) && /beforeinstallprompt/.test(require('fs').readFileSync(require('path').join(__dirname, '../public/instalar.js'), 'utf8')), 'botón instalar app');
   { const sj = require('../public/sprites.json'); for (const b of ['slyvra', 'koros', 'aranak', 'xaelis', 'malgathor']) { const a = sj['raid_' + b + '_b']; assert.ok(a && a.anim.idle.length === 4 && a.anim.walk.length >= 4 && a.anim.atk.length === 4 && a.anim.cast.length >= 3 && a.anim.hurt.length === 3, 'Raid ' + b + ' animado'); for (const k of Object.keys(a.anim)) for (const n of a.anim[k]) assert.ok(a.f[n], 'fotograma ' + b + ' ' + k); } }
 });
@@ -759,8 +760,8 @@ ok('vida de los jefes según el nivel del jugador (todos los jefes menos Raids e
   game.killMonster(b, game.now); assert.equal(b.maxHp, base, 'se restaura al morir'); assert.ok(!b.scaled);
 });
 
-ok('especiales de armas de jefe: 32 armas x 3 especiales (teclas 4, 5 y 6) y 6 escudos de jefe con uno (tecla siguiente) con daño, espera, maná y controles reducidos en jefes', () => {
-  const { WSPEC } = require('../game/especiales'); const ids = Object.keys(WSPEC).filter((k) => ITEMS[k] && ITEMS[k].type === 'weapon'); assert.equal(ids.length, 32); assert.equal(Object.keys(WSPEC).length, 38);
+ok('especiales de armas de jefe: 38 armas x 3 especiales (teclas 4, 5 y 6) y 8 escudos de jefe con uno (tecla siguiente) con daño, espera, maná y controles reducidos en jefes', () => {
+  const { WSPEC } = require('../game/especiales'); const ids = Object.keys(WSPEC).filter((k) => ITEMS[k] && ITEMS[k].type === 'weapon'); assert.equal(ids.length, 38); assert.equal(Object.keys(WSPEC).length, 46);
   const run = (ms) => { for (let k = 0; k <= ms; k += 100) { game.now += 100; const due = game.sched.filter((e) => e.at <= game.now); game.sched = game.sched.filter((e) => e.at > game.now); due.forEach((e) => e.fn()); } };
   const { p } = login('Espec1'); place(p, 150, 70); p.hp = p.maxHp = 1e7; const SX = require('../game/skills');
   for (const id of ids) {
@@ -1047,7 +1048,7 @@ ok('Banco ampliable (1M por 5 espacios) y entrada de 2k a las cuevas de jefe', (
   p.bank[n0 + 14] = { id: 'pocion_vida', qty: 3 }; const d = game.serialize(p); assert.equal(d.bankSlots, n0 + 15);
   const q = game.createPlayer({ key: 'x', name: 'x', data: d }); assert.equal(q.bank.length, n0 + 15); assert.ok(q.bank[n0 + 14]);
   place(p, g.x + 40, g.y); p.gold = 2e6; game.bankBuy(p); assert.equal(p.bank.length, n0 + 15, 'hay que estar junto a la banquera');
-  const fees = world.PORTALS.filter((o) => o.fee && !o.inst); assert.equal(fees.length, 11, "las 11 cuevas de jefe cobran"); assert.ok(fees.every((o) => o.fee === 2000));
+  const fees = world.PORTALS.filter((o) => o.fee && !o.inst); assert.equal(fees.length, 15, "las 15 cuevas de jefe cobran (11 + 4 de la ampliación Este II)"); assert.ok(fees.every((o) => o.fee === 2000));
   const po = fees[5], z0 = [po.tx, po.ty];
   const stepOn = (pl) => { const sx = po.x + 1, sy = po.y; place(pl, sx, sy); pl.pvpLock = 0; pl.nextMove = 0; game.tryStep(pl, -1, 0, game.now + 1e6); };
   const { p: r } = login('Pobre'); r.gold = 1999; stepOn(r); assert.ok(!(r.x === z0[0] && r.y === z0[1]), 'sin 2k no entra'); assert.equal(r.gold, 1999);
@@ -1178,6 +1179,34 @@ ok('camino por clic: el servidor recorre la ruta solo, al ritmo de la montura', 
   assert.ok(p.x >= 46, 'avanza sin más mensajes del cliente (x=' + p.x + ')');
   game.handle(p, { t: 'walkpath', p: [[p.x + 5, p.y + 5]] }); advance(500); assert.ok(!p.route, 'ruta no contigua se descarta');
   game.handle(p, { t: 'walkpath', p: 'x' }); assert.equal(p.route, null);
+});
+
+ok('Este II: monstruos, jefes, cuevas y sets existen y son alcanzables', () => {
+  const D = require('../game/data'), world = require('../game/world'), E2 = require('../game/este2');
+  const ids = Object.keys(D.MONSTERS).filter((k) => D.MONSTERS[k].special === 'e2');
+  assert.ok(ids.length >= 11, 'jefes e2: ' + ids.length);
+  for (const k of ['hada_traviesa', 'zombi', 'banshee', 'rey_ogro', 'grifo_rey', 'ent_ancestral', 'dragon_esqueleto']) assert.ok(D.MONSTERS[k], k);
+  for (const k of ['rey_ogro', 'grifo_rey', 'ent_ancestral', 'dragon_esqueleto']) { const d = D.MONSTERS[k]; assert.ok(d.e2.atks.length >= 4 && d.boss, k); }
+  assert.equal(Object.keys(world.E2_CAVES).length, 4);
+  for (const k in world.E2_CAVES) { const c = world.E2_CAVES[k]; assert.ok(c.lair && c.inside, k); }
+  for (const s of ['thorne', 'kaelen', 'aeliana', 'valeria', 'eldrin']) assert.ok(E2.SETS[s] && E2.SETS[s].length >= 3, s);
+});
+
+ok('familias: el arma de la familia hace más daño y la armadura reduce el daño de esa familia', () => {
+  const D = require('./../game/data'), I = require('../game/items'), F = require('../game/familias');
+  assert.deepEqual(D.MONSTERS.dragon_sombra.fam, ['dragon']); assert.ok(D.MONSTERS.hidra_jade.fam.includes('hidra'));
+  assert.equal(D.ITEMS.arco_dragon.fam, 'dragon'); assert.equal(D.ITEMS.colmillo_hidra.fam, 'hidra'); assert.equal(D.ITEMS.sombra_arco.fam, 'dragon');
+  const { p } = login('FamTest'); place(p, 60, 70); clearAround(60, 70, 8); p.hp = p.maxHp = 1e9; p.dirty = p.dirty || {};
+  const m = game.spawnMonster('dragon', 61, 70); m.hp = m.maxHp = 1e9; const now = Date.now();
+  p.eq.weapon = I.mk('espada_hierro'); let h0 = m.hp; game.hurtMonster(m, 1000, p, now); const base = h0 - m.hp;
+  p.eq.weapon = I.mk('arco_dragon'); p.famFx = 0; h0 = m.hp; game.hurtMonster(m, 1000, p, now); const bon = h0 - m.hp;
+  assert.equal(base, 1000); assert.ok(bon > 1000 && bon <= 1350, 'bono ' + bon);
+  p.eq.weapon = I.mk('colmillo_hidra'); h0 = m.hp; game.hurtMonster(m, 1000, p, now); assert.equal(h0 - m.hp, 1000, 'arma de otra familia no suma');
+  p.eq.head = I.mk('casco_dragon'); p.eq.body = I.mk('armadura_dragon'); const r = game.famResist(p, m.def);
+  assert.ok(r > 0.03 && r <= F.ARMOR_CAP, 'resistencia ' + r);
+  assert.equal(game.famResist(p, D.MONSTERS.rata), 0);
+  for (const slot of ['shield', 'legs', 'boots', 'gloves', 'belt', 'amulet', 'ring1', 'ring2', 'cape']) p.eq[slot] = I.mk('sombra_capucha');
+  assert.equal(game.famResist(p, m.def), F.ARMOR_CAP, 'tope 15 %');
 });
 
 console.log(`\n${n} pruebas correctas`);

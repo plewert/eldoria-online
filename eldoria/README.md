@@ -595,3 +595,22 @@ En la pantalla de inicio hay un botón «📲 Instalar app» (`public/instalar.j
 - Sprite animado `cerbero_b` (atlas 2), iconos y capas en `gear.png`. Tableta de teletransporte y encargo de Boris incluidos; modo historia con capítulos.
 - **Instancia privada** (7 copias, 1.500.000 de oro, jefe más fuerte y más botín como las demás): el mundo creció a 420 filas para alojar la fila extra de plazas al sur (`INST_POS`, y=398). El cliente dibuja los adornos y las antorchas también en las instancias.
 - **Cría de Cerbero** (`pet_cerbero`, automática de todo jefe, escala 0,85, aura de brasas y llamas azules) y **Sabueso Infernal de Cerbero** (`montura_cerbero`, nivel 106, velocidad ×0,46 = más del doble, pasiva +6 ataque/+5 defensa/+120 vida, 0,08 % de botín como la Bestia de Brasas). Los dos usan el sprite pequeño `cerbero` del atlas principal.
+
+### Reintento de conexión («Despertando el servidor…»)
+Si el servidor gratuito de Render está dormido, al pulsar «Entrar» o «Crear personaje» el cliente reintenta solo hasta 10 veces (≈ 90 s; cada intento espera como máximo 12 s) mostrando «⏳ Despertando el servidor… (intento n de 10)». Cuando responde, entra con el usuario y la contraseña ya escritos. Si agota los intentos muestra «El servidor no responde. Inténtalo de nuevo en un momento.». Para que no se duerma, usa un monitor externo (UptimeRobot) que visite `/status` cada 5 min.
+
+### Ampliación Este II (mapa 640 × 420)
+El mapa pasó de 480 a 640 columnas (`W = 640`, `W2 = 480` es el ancho anterior). Al este del Paraíso de Coral y las Tierras Inexploradas hay terreno nuevo, de momento sin monstruos ni PNJ: **Llanuras del Amanecer** (x 480–559: pradera con lagos y flores) y **Bosque Susurrante** (x 560–639: bosque denso con claros). Un camino despejado en y 67–73 conecta con lo anterior. Son zonas seguras (sin PvP). El generador es propio (`mulberry32(16180339)`), así que el resto del mapa no cambia. Para poblarlo, añade entradas a `SPAWN_PLAN` (game/data.js) con esas zonas.
+
+#### Este II – monstruos, mini-jefes y 4 cuevas
+- **Llanuras del Amanecer** (hadas, grifos, renegados) y **Bosque Susurrante** (zombis, banshees, nigromantes), con animaciones (atlas `sprites3.png`).
+- 7 mini-jefes abiertos (respawn 8 min) que sueltan el 5.º set (Thorne).
+- 4 cuevas de dificultad creciente (Cripta, Nido, Santuario, Osario) con jefe y set propio: Kaelen, Aeliana, Valeria, Eldrin. Entrada con tasa de 2000.
+- 15 objetos nuevos con iconos y ataques especiales; lógica en `game/este2.js`, efectos en `public/este2.js`.
+- Pendiente: tablillas, misiones e instancias para estas cuevas.
+- Misiones Este II (17): 6 de caza en las zonas abiertas, 7 de mini-jefes y 4 de cuevas (repetibles cada día), con Ilda, Gerda, Orin, Marta y Brisa.
+
+### Familias (armas y armaduras contra tipos de monstruo)
+- 10 familias: dragones, hidras/reptiles, no-muertos, demonios, ángeles, bestias, gigantes/golems, hielo, marinas y fuego (`game/familias.js`). Cada monstruo tiene una o varias; cada pieza de equipo, una.
+- Arma de la familia: +15 % a +35 % de daño según su nivel (también con los especiales). Armadura de la familia: −1,5 % a −2,5 % de daño recibido por pieza, tope −15 %.
+- El tooltip del objeto muestra el bono y la ficha del monstruo muestra su familia. Aparece un aviso flotante (🐉 +25 %) al golpear con bono.

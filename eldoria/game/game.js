@@ -494,7 +494,7 @@ class Game {
     for (const [k, d] of Object.entries(MONSTERS)) {
       monsDefs[k] = Object.assign({
         name: d.name, icon: d.icon, spr: d.spr, shade: d.shade, glow: d.glow, fly: !!d.fly, boss: !!d.boss, range: d.range || 1, lv: d.lv || 1,
-        hp: d.hp, dmg: d.dmg, exp: Math.round(d.exp * CFG.XP_RATE), aggro: d.aggro, respawn: d.respawn, move: d.move,
+        hp: d.hp, dmg: d.dmg, fam: d.fam, exp: Math.round(d.exp * CFG.XP_RATE), aggro: d.aggro, respawn: d.respawn, move: d.move,
       }, I.dropInfo(d));
     }
     const gems = {};
@@ -503,7 +503,7 @@ class Game {
       t: 'welcome', id: p.id, w: W, h: H, rows: world.rows,
       zones: ZONES.map((z) => ({ id: z.id, name: z.name, pvp: z.pvp, kind: z.kind, dark: !!z.dark, rect: z.rect, tint: z.tint || null })),
       portals: PORTALS.map((q) => ({ x: q.x, y: q.y, label: q.label + (q.fee ? ` — entrada ${q.fee.toLocaleString('es')} 💰` : '') })),
-      npcs: NPCS, decor: world.DECOR, cbp: world.CB_PROPS, houses: world.HOUSES.map((h) => [h.ax, h.ay, h.bx, h.by, h.doorX, h.kind]), items: ITEMS, mons: monsDefs, gems, rar: RAR,
+      npcs: NPCS, decor: world.DECOR, cbp: world.CB_PROPS, houses: world.HOUSES.map((h) => [h.ax, h.ay, h.bx, h.by, h.doorX, h.kind]), items: ITEMS, fams: require('./familias').FAMS, mons: monsDefs, gems, rar: RAR,
       cfg: {
         pvpMin: CFG.PVP_MIN_LEVEL, step: CFG.STEP_MS, invSize: CFG.INV_SIZE, bankSize: CFG.BANK_SIZE, caveFee: CFG.CAVE_FEE,
         tradeMax: CFG.TRADE_MAX_ITEMS, gemCost: CFG.GEM_REMOVE_COST, gemBreak: CFG.GEM_BREAK, ascCost: CFG.ASC_COST, ascFail: CFG.ASC_FAIL, ascMax: CFG.ASC_MAX, corruptCost: CFG.CORRUPT_COST, corruptFail: CFG.CORRUPT_FAIL, maxCorrupt: CFG.MAX_CORRUPT, gemBreakRare: CFG.GEM_BREAK_RARE, plusChance: CFG.PLUS_CHANCE, ancChance: CFG.ANCIENT_CHANCE,
@@ -1318,7 +1318,7 @@ require('./fishing').install(Game);
 require('./mining').install(Game);
 require('./raid').install(Game);
 require('./halloween').install(Game);
-require('./magma').install(Game); require('./anubis').install(Game); require('./zeus').install(Game); require('./hades').install(Game); require('./medusa').install(Game); require('./cerbero').install(Game); require('./bossnivel').install(Game); require('./historia').install(Game); require('./especiales').install(Game); require('./bots').install(Game);
+require('./magma').install(Game); require('./anubis').install(Game); require('./zeus').install(Game); require('./hades').install(Game); require('./medusa').install(Game); require('./cerbero').install(Game); require('./este2').install(Game); require('./bossnivel').install(Game); require('./historia').install(Game); require('./especiales').install(Game); require('./bots').install(Game); require('./familias').install(Game, ITEMS, MONSTERS);
 require('./petloot').install(Game); require('./torneo').install(Game); require('./album').install(Game);
 require('./album').install(Game); require('./pociones').install(Game); require('./instancias').install(Game);
 module.exports = { Game, NAME_RE, levelFromXp, xpForLevel, skillFromXp };

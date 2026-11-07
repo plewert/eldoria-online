@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Mundo de Eldoria (480 x 140 en el exterior + las salas de la Raid al sur): se genera de forma determinista (siempre el mismo mapa).
+ * Mundo de Eldoria (640 x 140 en el exterior + las salas de la Raid al sur): se genera de forma determinista (siempre el mismo mapa).
  *
  *   norte    Bosque Maldito (PvP) · Cumbres Heladas (PvP) -> Fortaleza de Hielo (mazmorra PvP)
  *   centro   Ciudad de Aldea Real (segura) · Prado de los Novatos (seguro)
@@ -13,7 +13,8 @@ const { SPAWN_PLAN } = require('./data');
 
 const W0 = 180;                 // el mapa original (se genera igual que siempre)
 const W1 = 320;                 // ancho del mundo antes de la gran ampliación al este (esa parte se genera igual que siempre)
-const W = 480, H0 = 140;        // mundo exterior: Selva Esmeralda, Sabana Dorada, Aldea Pesquera, Tierras de Lava y, al este, las Tierras Inexploradas (vacías, para zonas futuras)
+const W2 = 480;                 // ancho del mundo antes de la ampliación Este II (esa parte se genera igual que siempre)
+const W = 640, H0 = 140;        // mundo exterior: Selva Esmeralda, Sabana Dorada, Aldea Pesquera, Tierras de Lava y, al este, las Tierras Inexploradas (vacías, para zonas futuras)
 const H = 420;                  // + 124 filas al sur: salas de la Raid y copias de las instancias de jefe (el exterior se genera igual que siempre con H0)
 const T = {
   GRASS: 0, WATER: 1, TREE: 2, ROAD: 3, WALL: 4, DFLOOR: 5, PORTAL: 6, ROCK: 7, FLOWER: 8, SHOP: 9, AFLOOR: 10,
@@ -73,6 +74,12 @@ const ZONES = [
   { id: 'desierto_piramides', name: 'Desierto de las Pirámides', pvp: false, kind: 'wild', rect: [320, 84, 399, 139], tint: 'rgba(255,190,80,.10)' },
   { id: 'paraiso', name: 'Paraíso de Coral', pvp: false, kind: 'field', rect: [400, 84, 479, 139], tint: 'rgba(80,220,220,.08)' },
   { id: 'tierras_nuevas', name: 'Tierras Inexploradas', pvp: false, kind: 'field', rect: [320, 0, 479, 139] },   // reservado para zonas futuras
+  { id: 'cueva_cripta', name: 'Cripta del Rey Ogro Putrefacto', pvp: false, kind: 'dungeon', dark: true, tint: 'rgba(90,170,70,.14)', rect: [484, 150, 517, 169] },
+  { id: 'cueva_nido', name: 'Nido del Grifo Real Ancestral', pvp: false, kind: 'dungeon', tint: 'rgba(255,215,130,.10)', rect: [522, 150, 555, 169] },
+  { id: 'cueva_santuario', name: 'Santuario del Ent Ancestral', pvp: false, kind: 'dungeon', tint: 'rgba(80,180,90,.13)', rect: [560, 150, 593, 169] },
+  { id: 'cueva_osario', name: 'Osario del Dragón Esqueleto Eterno', pvp: false, kind: 'dungeon', dark: true, tint: 'rgba(255,120,40,.15)', rect: [598, 150, 631, 169] },
+  { id: 'llanuras_este', name: 'Llanuras del Amanecer', pvp: false, kind: 'field', rect: [480, 0, 559, 139] },      // ampliación Este II: solo terreno por ahora
+  { id: 'bosque_este', name: 'Bosque Susurrante', pvp: false, kind: 'wild', rect: [560, 0, 639, 139], tint: 'rgba(70,150,90,.08)' },
   { id: 'prado',      name: 'Prado de los Novatos',   pvp: false, kind: 'field',   rect: [0, 0, 179, 139] },
 ];
 // ---- Instancias privadas de los jefes de cueva: copias exactas de cada cueva al sur del mapa (7 por cueva) ----
@@ -210,7 +217,7 @@ for (let y = 0; y < H0; y++) {
 {
   const r3 = mulberry32(31415926), n6 = makeNoise(101), n7 = makeNoise(202);
   for (let y = 0; y < H0; y++) {
-    for (let x = W1; x < W; x++) {
+    for (let x = W1; x < W2; x++) {
       const a = n6(x / 7, y / 7), b = n7(x / 10, y / 10);
       let t = T.GRASS;
       if (a > 0.72 || r3() < 0.02) t = T.TREE; else if (b > 0.84) t = T.WATER; else if (r3() < 0.007) t = T.ROCK; else if (r3() < 0.04) t = T.FLOWER;
@@ -225,7 +232,7 @@ for (let y = 0; y < H0; y++) {
 {
   const r4 = mulberry32(27182818), n8 = makeNoise(303), n9 = makeNoise(404), n10 = makeNoise(505);
   for (let y = 0; y < H0; y++) {
-    for (let x = W1; x < W; x++) {
+    for (let x = W1; x < W2; x++) {
       const z = zoneAt(x, y).id; if (z === 'ciudad_alba' || z === 'tierras_nuevas') continue;
       const a = n8(x / 5, y / 5), b = n9(x / 9, y / 9), c = n10(x / 12, y / 12);
       let t;
@@ -251,6 +258,25 @@ for (let y = 0; y < H0; y++) {
   }
   // montaña: cima nevada con un claro para el jefe, y cuevas (claros) en las laderas
   for (let y = 9; y <= 17; y++) for (let x = 352; x <= 366; x++) if (Math.hypot(x - 359, y - 13) < 6.5) tiles[idx(x, y)] = T.SNOW;
+}
+// ampliación Este II (x 480-639): solo terreno (llanuras con lagos y un bosque denso). Generador propio: no toca nada de lo anterior
+{
+  const r5 = mulberry32(16180339), n11 = makeNoise(707), n12 = makeNoise(808), n13 = makeNoise(909);
+  for (let y = 0; y < H0; y++) {
+    for (let x = W2; x < W; x++) {
+      const z = zoneAt(x, y).id, a = n11(x / 6, y / 6), b = n12(x / 11, y / 11), c = n13(x / 5, y / 5);
+      let t = T.GRASS;
+      if (z === 'llanuras_este') {
+        if (b > 0.80) t = T.WATER; else if (a > 0.82 || r5() < 0.012) t = T.TREE; else if (r5() < 0.006) t = T.ROCK; else if (c > 0.6 && r5() < 0.3) t = T.FLOWER; else if (r5() < 0.03) t = T.FLOWER;
+      } else {
+        if (b > 0.84) t = T.WATER; else if (a > 0.64 || r5() < 0.03) t = T.TREE; else if (r5() < 0.01) t = T.ROCK; else if (r5() < 0.03) t = T.FLOWER;
+      }
+      tiles[idx(x, y)] = t;
+    }
+  }
+  // camino despejado desde el Paraíso de Coral y las Tierras Inexploradas hacia el este (7 casillas de ancho)
+  for (let y = 67; y <= 73; y++) for (let x = W2 - 20; x < W - 6; x++) { const t = tiles[idx(x, y)]; if (BLOCKED[t]) tiles[idx(x, y)] = T.GRASS; }
+  for (let x = W2 - 20; x < W - 6; x++) tiles[idx(x, 70)] = T.ROAD;
 }
 // costa de agua alrededor del mapa
 for (let y = 0; y < H0; y++) {
@@ -551,7 +577,7 @@ const INFRA = { rect: zoneById('inframundo').rect, gate: [431, 70], spawn: [240,
 (function carveInframundo() {
   const [x0, y0, x1, y1] = INFRA.rect, rr = mulberry32(666013), nz = makeNoise(31337);
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
-    const edge = x < 2 || x > W - 3 || y < y0 + 2 || y > y1 - 1;
+    const edge = x < 2 || x > x1 - 2 || y < y0 + 2 || y > y1 - 1;
     tiles[idx(x, y)] = edge ? T.CWALL : T.ASH;
     if (edge) continue;
     // ríos de lava serpenteantes (con vados cada ~70 casillas) y lagos
@@ -633,6 +659,21 @@ const CB_PROPS = [];
   put('bones', 9); put('coins', 5, (x, y) => y < 303 || y > 308); put('chain', 6, nearWall); put('weapon', 8, (x, y) => nearWall(x, y) || tiles[idx(x - 1, y)] === T.CBW || tiles[idx(x + 1, y)] === T.CBW);
   put('egg', 1, (x, y) => y > 308 && (x < 313 || x > 321));
 })(CAVE11);
+/* Cuatro cuevas de la ampliación Este II (x 480-639, y 150-169): salón con pilares sueltos; el jefe espera al fondo (norte), la entrada está al sur. */
+const E2_CAVES = [
+  { zone: 'cueva_cripta',    door: [584, 40],  floor: T.TOMBF,  wall: T.TOMBW,  boss: 'rey_ogro',         label: 'Cripta del Rey Ogro Putrefacto (peligro alto)',      back: 'Salir al Bosque Susurrante' },
+  { zone: 'cueva_nido',      door: [520, 105], floor: T.CLOUDF, wall: T.CLOUDW, boss: 'grifo_rey',        label: 'Nido del Grifo Real Ancestral (peligro alto)',       back: 'Salir a las Llanuras del Amanecer' },
+  { zone: 'cueva_santuario', door: [606, 105], floor: T.GRASS,  wall: T.TREE,   boss: 'ent_ancestral',    label: 'Santuario del Ent Ancestral (peligro muy alto)',     back: 'Salir al Bosque Susurrante' },
+  { zone: 'cueva_osario',    door: [626, 50],  floor: T.DFLOOR, wall: T.WALL,   boss: 'dragon_esqueleto', label: 'Osario del Dragón Esqueleto Eterno (peligro extremo)', back: 'Salir al Bosque Susurrante' },
+];
+for (const C of E2_CAVES) {
+  const [x0, y0, x1, y1] = zoneById(C.zone).rect, cx = Math.floor((x0 + x1) / 2), rr = mulberry32(x0 * 31 + 7);
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) tiles[idx(x, y)] = (x === x0 || x === x1 || y === y0 || y === y1) ? C.wall : C.floor;
+  for (let y = y0 + 8; y <= y1 - 5; y += 4) for (let x = x0 + 4; x <= x1 - 4; x += 5) if (rr() < 0.8) tiles[idx(x + (y % 8 ? 0 : 2), y)] = C.wall;          // pilares sueltos (nunca cierran el paso)
+  for (let x = cx - 5; x <= cx + 5; x += 5) { tiles[idx(x, y0 + 3)] = C.wall; }                                                                         // columnas ante el jefe
+  if (C.floor === T.GRASS) for (let y = y0 + 1; y < y1; y++) for (let x = x0 + 1; x < x1; x++) if (tiles[idx(x, y)] === T.GRASS && rr() < 0.05) tiles[idx(x, y)] = T.FLOWER;
+  C.rect = [x0, y0, x1, y1]; C.inside = [cx, y1 - 3]; C.exit = [cx, y1 - 1]; C.lair = [cx, y0 + 5];
+}
 
 
 /* 4) Caminos (despejan árboles, agua y rocas del trazado) */
@@ -697,6 +738,10 @@ addPortal(CAVE10.door[0], CAVE10.door[1], CAVE10.inside[0], CAVE10.inside[1], 'C
 addPortal(CAVE10.exit[0], CAVE10.exit[1], CAVE10.door[0], CAVE10.door[1] + 1, 'Salir al Inframundo');
 addPortal(CAVE11.door[0], CAVE11.door[1], CAVE11.inside[0], CAVE11.inside[1], 'Las Fauces del Inframundo (peligro extremo)', CAVE_FEE);
 addPortal(CAVE11.exit[0], CAVE11.exit[1], CAVE11.door[0], CAVE11.door[1] + 1, 'Salir al Inframundo');
+for (const C of E2_CAVES) {
+  addPortal(C.door[0], C.door[1], C.inside[0], C.inside[1], C.label, CAVE_FEE);
+  addPortal(C.exit[0], C.exit[1], C.door[0], C.door[1] + 1, C.back);
+}
 addPortal(INFRA.gate[0], INFRA.gate[1], INFRA.spawn[0], INFRA.spawn[1], 'El Inframundo (portal maldito)');
 addPortal(INFRA.back[0], INFRA.back[1], INFRA.gate[0], INFRA.gate[1] + 1, 'Volver al mundo de los vivos');
 addPortal(GUILD.door[0], GUILD.door[1], GUILD.inside[0], GUILD.inside[1], 'Cueva del Gremio de Mineros (zona segura)');
@@ -855,6 +900,7 @@ monsterSpawns.push({ type: 'aracnido_fuego', x: CAVE4.lair[0], y: CAVE4.lair[1] 
   monsterSpawns.push({ type: 'hades', x: CAVE9.lair[0], y: CAVE9.lair[1] });
   monsterSpawns.push({ type: 'medusa', x: CAVE10.lair[0], y: CAVE10.lair[1] });
   monsterSpawns.push({ type: 'cerbero', x: CAVE11.lair[0], y: CAVE11.lair[1] });
+  for (const C of E2_CAVES) monsterSpawns.push({ type: C.boss, x: C.lair[0], y: C.lair[1] });
   const nearest = (zoneId, px, py) => {
     let best = null, bd = 1e9;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -881,6 +927,6 @@ for (let y = 0; y < H; y++) {
 }
 
 module.exports = {
-  W, H, T, BLOCKED, tiles, DECOR, CB_PROPS, HOUSES, ZONES, zoneAt, zoneById, PORTALS, CAVES_BY_ZONE, INST_CAVES, portalAt, NPCS, SPAWN_POINT,
+  W, H, T, BLOCKED, tiles, DECOR, CB_PROPS, E2_CAVES, HOUSES, ZONES, zoneAt, zoneById, PORTALS, CAVES_BY_ZONE, INST_CAVES, portalAt, NPCS, SPAWN_POINT,
   RAID, INSTANCES, INFRA, isWalkable, reach, monsterSpawns, rows, catRooms, abyRooms, minRooms, pirRooms, forRooms,
 };
