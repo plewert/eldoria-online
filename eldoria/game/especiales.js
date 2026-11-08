@@ -231,6 +231,7 @@ Object.assign(SP, {
   md_orbe:      [mkS('sh_orbe_serpientes', 'Orbe de serpientes', '🔮', 'volley', { col: '120,255,150', hits: 4, span: 1400, mult: 1.8, desc: 'Cuatro serpientes mágicas al objetivo (×1,8 cada una).' })],
 });
 // arma -> [A, B, C]; escudo -> [especial]; los datos que se envían al cliente
+require('./spicons').assign(SP);                                       // icono nuevo de cada especial (public/spicons.png)
 const WSPEC = {}; for (const [w, l] of Object.entries(SP)) WSPEC[w] = l.map((s) => Object.assign({}, s, { aoe: s.r && !s.atTarget ? s.r : s.r, kindStr: s.kind }));
 
 function install(Game) {

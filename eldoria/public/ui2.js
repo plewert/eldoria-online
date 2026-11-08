@@ -501,7 +501,9 @@
     sk.style = style; sk.wid = wid; sk.list = full; sk.btns = []; sk.box.replaceChildren();
     full.forEach((d, i) => {
       const b = el('button', 'skb' + (i > 2 ? ' skw' : '')); b.type = 'button'; b.dataset.i = i;
-      b.append(el('b', '', d.icon), el('small', '', String(i + 1)), el('i', 'cdv'));
+      const ib = el('b', '', d.ic != null ? '' : d.icon);
+      if (d.ic != null) { ib.className = 'spi'; ib.style.backgroundPosition = `${-(d.ic % 11) * 28}px ${-Math.floor(d.ic / 11) * 28}px`; }       // icono dibujado (atlas spicons.png)
+      b.append(ib, el('small', '', String(i + 1)), el('i', 'cdv'));
       b.title = `${d.name} (${i + 1}) — ${d.desc} Maná ${d.mana}. Enfriamiento ${d.cd / 1000} s. Nivel ${d.lv} con ${STYLE_ICON[style]}.${i > 2 ? (i >= 3 + ((xi.wsk && xi.wsk[G.stats.wid || '']) || []).length ? ' 🛡️ Especial de tu escudo.' : ' ⭐ Especial de tu arma.') : ''}`;
       b.addEventListener('click', () => useSkill(i)); sk.box.append(b); sk.btns.push(b);
     });

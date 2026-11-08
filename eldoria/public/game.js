@@ -139,7 +139,7 @@
       G.zoneGrid[y * G.W + x] = zi;
     }
     G.npcTiles = new Set(G.npcs.map((n) => n.y * G.W + n.x));
-    G.cbp = m.cbp || []; G.decor = m.decor || []; G.houses = m.houses || []; G.decorSet = new Set(G.decor.map((d) => d[1] * G.W + d[0]));      // mobiliario sólido
+    G.cbp = m.cbp || []; G.e2p = m.e2p || []; G.decor = m.decor || []; G.houses = m.houses || []; G.decorSet = new Set(G.decor.map((d) => d[1] * G.W + d[0]));      // mobiliario sólido
     buildMiniBase();
     $('#login').hidden = true; $('#game').hidden = false;
     $('#lpass').value = '';
@@ -1684,7 +1684,7 @@
   function drawHead(c, id, hx, hy, view, side, now) {
     const d = G.items[id];
     if (d && d.spr && GJ['c_' + d.spr]) {
-      const hood = /^hat1[234]$/.test(d.spr), boss = /^(t_helm|s_hood|j_helm|a_helm|f_helm|l_helm|ig_helm|an_helm|zs_helm|hd_helm|md_helm|r[mvxka]_helm)$/.test(d.spr), dy = hood ? 7.5 : d.spr === 't_helm' ? 9.5 : d.spr === 'a_helm' || d.spr === 'f_helm' || d.spr === 'l_helm' || d.spr === 'ig_helm' || d.spr === 'an_helm' || d.spr === 'zs_helm' || /^r[mvxka]_helm$/.test(d.spr) ? 8.5 : d.spr === 'g_helm' ? 3.5 : boss ? 5.5 : 0.5;   // capuchas y cascos de jefe: cubren el rostro
+      const hood = /^hat1[234]$/.test(d.spr), boss = /^(t_helm|s_hood|j_helm|a_helm|f_helm|l_helm|ig_helm|an_helm|zs_helm|hd_helm|md_helm|r[mvxka]_helm|rd_helm)$/.test(d.spr), dy = hood ? 7.5 : d.spr === 't_helm' ? 9.5 : d.spr === 'a_helm' || d.spr === 'f_helm' || d.spr === 'l_helm' || d.spr === 'ig_helm' || d.spr === 'an_helm' || d.spr === 'zs_helm' || /^r[mvxka]_helm$/.test(d.spr) || d.spr === 'rd_helm' ? 8.5 : d.spr === 'g_helm' ? 3.5 : boss ? 5.5 : 0.5;   // capuchas y cascos de jefe: cubren el rostro
       if (d.spr === 'md_helm') { c.save(); c.translate(hx, hy + 3.5); c.scale(0.7, 0.7); drawLayer(c, d.spr, 0, 0, 0.5, 1, false, 0); c.restore(); return; }   // yelmo de Medusa: siempre de frente
       if ((hood || boss) && view === 'b') { drawLayer(c, d.spr, hx, hy + dy, 0.5, 1, false, 0); return; }
       if ((hood || boss) && view !== 'f') {                                       // de perfil: se estrecha y se voltea hacia donde mira el personaje
@@ -1794,7 +1794,7 @@
     lobo: { legs: 0.34, col: '130,180,100', kind: 'grass' }, oso: { legs: 0.32, col: '120,160,90', kind: 'grass' },
     jabali: { legs: 0.3, col: '175,145,105', kind: 'dust' }, mamut: { legs: 0.3, col: '200,185,160', kind: 'dust', big: 1 },
     dragon: { fly: 1, col: '160,160,170', kind: 'smoke' }, cerbero: { legs: 0.3, col: '255,120,40', kind: 'fire' },
-    demonio_cornudo: { fly: 1, col: '255,150,50', kind: 'spark' },
+    demonio_cornudo: { fly: 1, col: '255,150,50', kind: 'spark' }, rey_dragones_mt: { fly: 1, col: '255,110,30', kind: 'spark' },
   };
   function drawMountAnim(c, e, md, sx, sy, now) {
     const s = SPR[md.mon], cx = sx + TS / 2, feet = sy + TS - 2, flip = (e.face || 1) < 0, k = md.scale || 0.9;
@@ -1802,7 +1802,11 @@
     const fx = MOUNT_FX[md.mon] || { legs: 0.3, col: '190,170,140', kind: 'dust' }, id = e.id || 0, mv = e.amp || 0, ph = e.phase || 0, moving = mv > 0.25;
     const frames = s.f.length;
     const fi = frames < 2 ? 0 : fx.fly ? Math.floor(now / (moving ? 130 : 260) + id) % frames : (moving ? sprFrame(e, s) : 0);
-    const f = s.f[fi]; if (f.length > 4) { drawSpriteS(c, md.mon, fi, cx, feet, flip, k); return 0; }
+    const f = s.f[fi]; if (f.length > 4) {                                                       // montura de sprite recortado (Dragón Abisal): flota, bate y suelta brasas
+      const hv = fx.fly ? 5 + Math.sin(now / 280 + id) * 2.4 + (moving ? 2 : 0) : 0;
+      if (fx.fly) { c.save(); c.globalCompositeOperation = 'lighter'; for (let q = 0; q < 3; q++) { const u = ((now / 700 + q / 3 + id * 0.13) % 1), bx = cx + (flip ? 1 : -1) * (10 + q * 5) + Math.sin(now / 200 + q) * 3, by = feet - hv - 12 - u * 22; c.fillStyle = `rgba(255,${120 + Math.round(90 * (1 - u))},40,${0.8 * (1 - u)})`; c.fillRect(bx, by, 2, 2); } c.restore(); }
+      drawSpriteS(c, md.mon, fi, cx, feet - hv, flip, k); return hv;
+    }
     const img = atlasOf(s), w = f[2] * k, h = f[3] * k, sn = Math.sin(ph), t = now / 1000;
     const mp = e._mp || (e._mp = []);
     // ---- partículas / huellas ----
@@ -2209,10 +2213,10 @@
     robe6: ['#b02a2a', '#6e1818', '#d4d9e0', 0], robe7: ['#40307a', '#251a4a', '#7a5ac0', 0], robe8: ['#5a3aa0', '#2e1f5c', '#ffe070', 1],
     robe9: ['#2f5a9a', '#1c3868', '#d8ecff', 1], robe10: ['#8a2a10', '#4a1208', '#ff8a2a', 2], robe11: ['#e06a10', '#8a2a08', '#ffd040', 2], robe12: ['#6ab0e0', '#3a78b0', '#f0fcff', 2],
   };
-  const GLOVE_COL = { glove0: '#b8a88a', glove1: '#b8a88a', glove2: '#8a5a30', glove3: '#7a4a28', glove4: '#6a3e20', glove5: '#6a3e20', t_glove1: '#7a5a48', t_glove2: '#7a5a48', s_gauntlet: '#2f2a3c', j_glove: '#2f7a4a', a_glove: '#e9f1fa', f_glove: '#2f2a30', l_glove: '#2a7a8a', rm_glove: '#3a1a66', rv_glove: '#2f7a3a', rx_glove: '#e8c860', rk_glove: '#5a3a2a', ra_glove: '#7a5a3a', an_glove: '#3a2f58', md_glove: '#2f5a3a' };
-  const BOOT_COL = { t_boot: ['#5d4637', '#ff8a1f'], s_boot: ['#2c2838', '#9a6ad8'], j_boot: ['#24603a', '#9ee85a'], a_boot: ['#e9f1fa', '#ffd96a'], f_boot: ['#26242a', '#ff6a1f'], g_boot: ['#3e4a30', '#8a7a50'], l_boot: ['#234f5c', '#7fe3f2'], rm_boot: ['#241040', '#b070ff'], rv_boot: ['#1f4a2a', '#7dff7a'], rx_boot: ['#e8d49a', '#ffe27a'], rk_boot: ['#3a2418', '#ff7a20'], ra_boot: ['#5a4630', '#ff9a40'], an_boot: ['#241a3a', '#6fe08a'], md_boot: ['#24402c', '#7dff9a'] };
-  const LEG_COL = { j_leg: ['#2f8a4a', '#1f5c33', '#9ee85a'], s_leg: ['#2c2838', '#1c1928', '#9a6ad8'], a_leg: ['#e9f1fa', '#a9c0e0', '#ffd96a'], f_leg: ['#2c2a30', '#18161a', '#ff6a1f'], g_leg: ['#6b5a34', '#4a3d22', '#3f5a30'], l_leg: ['#2a6a78', '#1a4452', '#8be8f5'], rm_leg: ['#2a1250', '#160a2c', '#b070ff'], rv_leg: ['#2a6a38', '#174022', '#7dff7a'], rx_leg: ['#f0dca0', '#c9a24a', '#ffe27a'], rk_leg: ['#5a3a28', '#34200f', '#ff7a20'], ra_leg: ['#7a5a38', '#4a3620', '#ff9a40'], an_leg: ['#2a2040', '#150f24', '#6fe08a'], md_leg: ['#2f5a3a', '#1c3a26', '#7dff9a'] };
-  const CHEST_SPR = new Set(['t_chest', 's_chest', 'j_chest', 'a_chest', 'f_chest', 'g_chest', 'l_chest', 'rm_chest', 'rv_chest', 'rx_chest', 'rk_chest', 'ra_chest', 'an_chest', 'zs_chest', 'hd_chest', 'md_chest', 'md_chest2', 'ig_chest']);
+  const GLOVE_COL = { rd_glove: '#3a2418', glove0: '#b8a88a', glove1: '#b8a88a', glove2: '#8a5a30', glove3: '#7a4a28', glove4: '#6a3e20', glove5: '#6a3e20', t_glove1: '#7a5a48', t_glove2: '#7a5a48', s_gauntlet: '#2f2a3c', j_glove: '#2f7a4a', a_glove: '#e9f1fa', f_glove: '#2f2a30', l_glove: '#2a7a8a', rm_glove: '#3a1a66', rv_glove: '#2f7a3a', rx_glove: '#e8c860', rk_glove: '#5a3a2a', ra_glove: '#7a5a3a', an_glove: '#3a2f58', md_glove: '#2f5a3a' };
+  const BOOT_COL = { rd_boot: ['#2a1c18', '#ff8a2a'], t_boot: ['#5d4637', '#ff8a1f'], s_boot: ['#2c2838', '#9a6ad8'], j_boot: ['#24603a', '#9ee85a'], a_boot: ['#e9f1fa', '#ffd96a'], f_boot: ['#26242a', '#ff6a1f'], g_boot: ['#3e4a30', '#8a7a50'], l_boot: ['#234f5c', '#7fe3f2'], rm_boot: ['#241040', '#b070ff'], rv_boot: ['#1f4a2a', '#7dff7a'], rx_boot: ['#e8d49a', '#ffe27a'], rk_boot: ['#3a2418', '#ff7a20'], ra_boot: ['#5a4630', '#ff9a40'], an_boot: ['#241a3a', '#6fe08a'], md_boot: ['#24402c', '#7dff9a'] };
+  const LEG_COL = { rd_leg: ['#3a2a22', '#201510', '#ff7a20'], j_leg: ['#2f8a4a', '#1f5c33', '#9ee85a'], s_leg: ['#2c2838', '#1c1928', '#9a6ad8'], a_leg: ['#e9f1fa', '#a9c0e0', '#ffd96a'], f_leg: ['#2c2a30', '#18161a', '#ff6a1f'], g_leg: ['#6b5a34', '#4a3d22', '#3f5a30'], l_leg: ['#2a6a78', '#1a4452', '#8be8f5'], rm_leg: ['#2a1250', '#160a2c', '#b070ff'], rv_leg: ['#2a6a38', '#174022', '#7dff7a'], rx_leg: ['#f0dca0', '#c9a24a', '#ffe27a'], rk_leg: ['#5a3a28', '#34200f', '#ff7a20'], ra_leg: ['#7a5a38', '#4a3620', '#ff9a40'], an_leg: ['#2a2040', '#150f24', '#6fe08a'], md_leg: ['#2f5a3a', '#1c3a26', '#7dff9a'] };
+  const CHEST_SPR = new Set(['rd_chest', 't_chest', 's_chest', 'j_chest', 'a_chest', 'f_chest', 'g_chest', 'l_chest', 'rm_chest', 'rv_chest', 'rx_chest', 'rk_chest', 'ra_chest', 'an_chest', 'zs_chest', 'hd_chest', 'md_chest', 'md_chest2', 'ig_chest']);
 
   /* ---------- sprites de píxel-art (monstruos y PNJ) ---------- */
   const SPR = {};
@@ -2423,7 +2427,7 @@
   /* Monstruos animados de la ampliación Este II (sprites3.png): id -> color del aura de jefe. Fotogramas: idle, walk, atk, cast, hurt. */
   const E2T = { hada_traviesa: 0, grifo_joven: 0, caballero_renegado: 0, arquero_renegado: 0, mago_renegado: 0, golem_piedra: '190,170,140', jefe_orco: '230,110,80', bestia_aguila: '255,220,150',
     zombi: 0, zombi_podrido: 0, zombi_bruto: 0, zombi_caballero: 0, zombi_yelmo: 0, banshee: 0, nigromante: 0, ogro_zombi: '120,200,90', zombi_caudillo: '200,70,70', nigromante_oscuro: '170,100,255', ent_viejo: '110,200,90',
-    rey_ogro: '120,210,90', grifo_rey: '255,210,120', ent_ancestral: '110,210,100', dragon_esqueleto: '255,140,50' };
+    rey_ogro: '120,210,90', grifo_rey: '255,210,120', ent_ancestral: '110,210,100', dragon_esqueleto: '255,140,50', rey_dragones: '255,120,40' };
   window.E2T = E2T;
   function drawAnimMon(c, e, spr, cx, ground, now, key, d) {
     const A = spr.anim, st = (EXT.zs && EXT.zs.get(e.id)) || {}, moving = (e.amp || 0) > 0.3, castT = (EXT.casts.get(e.id) || 0), cast = castT > now, fly = !!d.fly;
@@ -2434,7 +2438,10 @@
     else if (st.atk > now) fi = A.atk[Math.floor(cl(1 - (st.atk - now) / 460) * A.atk.length)];
     else if (moving || fly) fi = A.walk[Math.floor(now / (fly ? 150 : 170)) % A.walk.length];
     else fi = A.idle[Math.floor(now / 520 + e.id) % A.idle.length];
-    const lift = fly ? 8 + Math.sin(now / 300 + e.id) * 2.5 + (spr.h > 150 ? 8 : 0) : 0, y = ground + 2 - Math.round(lift);
+    const rf = key === 'rey_dragones' && (window.RDFLY && (window.RDFLY.get(e.id) || 0)) > now, rt = rf ? Math.min(1, (now - (window.RDFLY0.get(e.id) || now)) / 600, (window.RDFLY.get(e.id) - now) / 600 + 0.01) : 0;
+    if (rf && !st.hurt) fi = A.fly[Math.floor(now / 180) % A.fly.length];
+    const lift = rf ? Math.max(0, rt) * (44 + Math.sin(now / 260 + e.id) * 4) : fly ? 8 + Math.sin(now / 300 + e.id) * 2.5 + (spr.h > 150 ? 8 : 0) : 0, y = ground + 2 - Math.round(lift);
+    if (rf) { c.fillStyle = `rgba(0,0,0,${0.18 * Math.max(0, rt)})`; c.beginPath(); c.ellipse(cx, ground + 1, 52, 8, 0, 0, 7); c.fill(); }
     const col = E2T[key];
     if (d.boss && col) {                                                          // aura de jefe
       const hot = cast || st.atk > now, pulse = 0.5 + 0.5 * Math.sin(now / 330 + e.id), g = c.createRadialGradient(cx, y - spr.h * 0.5, 4, cx, y - spr.h * 0.5, spr.h * 0.8);

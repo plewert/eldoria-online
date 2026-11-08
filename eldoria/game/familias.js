@@ -53,7 +53,7 @@ function tag(ITEMS, MONSTERS) {
     if (f.length) d.fam = f;
   }
   for (const [k, d] of Object.entries(ITEMS)) {
-    if (!GEAR.has(d.type)) continue;
+    if (!GEAR.has(d.type) || d.famFixed) continue;
     const s = (k + ' ' + (d.name || '')).toLowerCase();
     const hit = ITEM_RULES.find(([, re]) => re.test(s));
     if (hit) d.fam = hit[0];
@@ -82,7 +82,11 @@ function install(Game, ITEMS, MONSTERS) {
   };
   P.hurtMonster = function (m, dmg, p, now) {
     const b = p && p.kind === 'pl' && m && m.def && m.def.fam ? this.famBonus(p, m.def) : 0;
-    if (b > 0) {
+    if (p && p.kind === 'pl' && m && m.def && m.def.weakOnly) {            // jefe débil solo a una familia de armas (Rey de los Dragones)
+      const w = p.eq && p.eq.weapon, d = w && ITEMS[w.id];
+      if (d && d.fam === m.def.weakOnly) dmg = Math.max(1, Math.round(dmg * 2.1));
+      else { dmg = Math.max(1, Math.round(dmg * 0.4)); if (!(p.famFx > now)) { p.famFx = now + 3000; this.fx.push({ k: 'd', x: m.x, y: m.y, v: `🛡️ solo le dañan las armas de ${FAMS[m.def.weakOnly].name.toLowerCase()}`, c: 'x' }); } }
+    } else if (b > 0) {
       dmg = Math.max(1, Math.round(dmg * (1 + b)));
       if (!(p.famFx > now)) { p.famFx = now + 3000; this.fx.push({ k: 'd', x: m.x, y: m.y, v: `${FAMS[ITEMS[p.eq.weapon.id].fam].icon} +${Math.round(b * 100)}%`, c: 'x' }); }
     }

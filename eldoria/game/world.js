@@ -78,6 +78,7 @@ const ZONES = [
   { id: 'cueva_nido', name: 'Nido del Grifo Real Ancestral', pvp: false, kind: 'dungeon', tint: 'rgba(255,215,130,.10)', rect: [522, 150, 555, 169] },
   { id: 'cueva_santuario', name: 'Santuario del Ent Ancestral', pvp: false, kind: 'dungeon', tint: 'rgba(80,180,90,.13)', rect: [560, 150, 593, 169] },
   { id: 'cueva_osario', name: 'Osario del Dragón Esqueleto Eterno', pvp: false, kind: 'dungeon', dark: true, tint: 'rgba(255,120,40,.15)', rect: [598, 150, 631, 169] },
+  { id: 'cueva_dragones', name: 'Guarida del Rey de los Dragones', pvp: false, kind: 'dungeon', dark: true, tint: 'rgba(255,70,20,.20)', rect: [484, 174, 559, 205] },
   { id: 'llanuras_este', name: 'Llanuras del Amanecer', pvp: false, kind: 'field', rect: [480, 0, 559, 139] },      // ampliación Este II: solo terreno por ahora
   { id: 'bosque_este', name: 'Bosque Susurrante', pvp: false, kind: 'wild', rect: [560, 0, 639, 139], tint: 'rgba(70,150,90,.08)' },
   { id: 'prado',      name: 'Prado de los Novatos',   pvp: false, kind: 'field',   rect: [0, 0, 179, 139] },
@@ -660,19 +661,30 @@ const CB_PROPS = [];
   put('egg', 1, (x, y) => y > 308 && (x < 313 || x > 321));
 })(CAVE11);
 /* Cuatro cuevas de la ampliación Este II (x 480-639, y 150-169): salón con pilares sueltos; el jefe espera al fondo (norte), la entrada está al sur. */
+const E2_PROPS = [];       // adornos de la Guarida del Rey de los Dragones [x, y, tipo] (solo visuales; el trono ocupa casillas sólidas)
 const E2_CAVES = [
   { zone: 'cueva_cripta',    door: [584, 40],  floor: T.TOMBF,  wall: T.TOMBW,  boss: 'rey_ogro',         label: 'Cripta del Rey Ogro Putrefacto (peligro alto)',      back: 'Salir al Bosque Susurrante' },
   { zone: 'cueva_nido',      door: [520, 105], floor: T.CLOUDF, wall: T.CLOUDW, boss: 'grifo_rey',        label: 'Nido del Grifo Real Ancestral (peligro alto)',       back: 'Salir a las Llanuras del Amanecer' },
   { zone: 'cueva_santuario', door: [606, 105], floor: T.GRASS,  wall: T.TREE,   boss: 'ent_ancestral',    label: 'Santuario del Ent Ancestral (peligro muy alto)',     back: 'Salir al Bosque Susurrante' },
+  { zone: 'cueva_dragones',  door: [548, 128], floor: T.DFLOOR, wall: T.WALL,   boss: 'rey_dragones',     label: 'Guarida del Rey de los Dragones (peligro legendario)', back: 'Salir a las Llanuras del Amanecer', open: true },
   { zone: 'cueva_osario',    door: [626, 50],  floor: T.DFLOOR, wall: T.WALL,   boss: 'dragon_esqueleto', label: 'Osario del Dragón Esqueleto Eterno (peligro extremo)', back: 'Salir al Bosque Susurrante' },
 ];
 for (const C of E2_CAVES) {
   const [x0, y0, x1, y1] = zoneById(C.zone).rect, cx = Math.floor((x0 + x1) / 2), rr = mulberry32(x0 * 31 + 7);
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) tiles[idx(x, y)] = (x === x0 || x === x1 || y === y0 || y === y1) ? C.wall : C.floor;
-  for (let y = y0 + 8; y <= y1 - 5; y += 4) for (let x = x0 + 4; x <= x1 - 4; x += 5) if (rr() < 0.8) tiles[idx(x + (y % 8 ? 0 : 2), y)] = C.wall;          // pilares sueltos (nunca cierran el paso)
-  for (let x = cx - 5; x <= cx + 5; x += 5) { tiles[idx(x, y0 + 3)] = C.wall; }                                                                         // columnas ante el jefe
+  if (!C.open) for (let y = y0 + 8; y <= y1 - 5; y += 4) for (let x = x0 + 4; x <= x1 - 4; x += 5) if (rr() < 0.8) tiles[idx(x + (y % 8 ? 0 : 2), y)] = C.wall;          // pilares sueltos (nunca cierran el paso)
+  if (!C.open) for (let x = cx - 5; x <= cx + 5; x += 5) { tiles[idx(x, y0 + 3)] = C.wall; }                                                                         // columnas ante el jefe
   if (C.floor === T.GRASS) for (let y = y0 + 1; y < y1; y++) for (let x = x0 + 1; x < x1; x++) if (tiles[idx(x, y)] === T.GRASS && rr() < 0.05) tiles[idx(x, y)] = T.FLOWER;
   C.rect = [x0, y0, x1, y1]; C.inside = [cx, y1 - 3]; C.exit = [cx, y1 - 1]; C.lair = [cx, y0 + 5];
+  if (C.open) {                                                                                      // Guarida del Rey de los Dragones: sala abierta, trono en la esquina NE y restos por el suelo
+    for (let y = y0 + 1; y <= y0 + 3; y++) for (let x = x1 - 7; x <= x1 - 5; x++) tiles[idx(x, y)] = T.WALL;     // el trono ocupa 3×3 casillas (se dibuja encima)
+    E2_PROPS.push([x1 - 6, y0 + 2, 'throne']);
+    for (const [px, py] of [[x1 - 9, y0 + 2], [x1 - 3, y0 + 2], [x1 - 9, y0 + 5], [x1 - 3, y0 + 5]]) E2_PROPS.push([px, py, 'brazier']);
+    const okp = (x, y) => tiles[idx(x, y)] === T.DFLOOR && Math.abs(x - C.lair[0]) + Math.abs(y - C.lair[1]) > 3 && Math.abs(x - C.inside[0]) + Math.abs(y - C.inside[1]) > 3 && !E2_PROPS.some((q) => q[0] === x && q[1] === y);
+    const put = (kind, n, need) => { let tries = 0, got = 0; while (got < n && tries++ < 4000) { const x = x0 + 1 + Math.floor(rr() * (x1 - x0 - 1)), y = y0 + 1 + Math.floor(rr() * (y1 - y0 - 1)); if (!okp(x, y) || (need && !need(x, y))) continue; E2_PROPS.push([x, y, kind]); got++; } };
+    const nearW = (x, y) => tiles[idx(x - 1, y)] === T.WALL || tiles[idx(x + 1, y)] === T.WALL || tiles[idx(x, y - 1)] === T.WALL || tiles[idx(x, y + 1)] === T.WALL;
+    put('corpse', 22); put('corpse', 8, nearW); put('bones', 26); put('skull', 18); put('ribs', 8); put('weapon', 10); put('coins', 8); put('rubble', 14); put('skull', 5, (x, y) => Math.abs(x - (x1 - 6)) < 6 && y < y0 + 8);
+  }
 }
 
 
@@ -927,6 +939,6 @@ for (let y = 0; y < H; y++) {
 }
 
 module.exports = {
-  W, H, T, BLOCKED, tiles, DECOR, CB_PROPS, E2_CAVES, HOUSES, ZONES, zoneAt, zoneById, PORTALS, CAVES_BY_ZONE, INST_CAVES, portalAt, NPCS, SPAWN_POINT,
+  W, H, T, BLOCKED, tiles, DECOR, CB_PROPS, E2_CAVES, E2_PROPS, HOUSES, ZONES, zoneAt, zoneById, PORTALS, CAVES_BY_ZONE, INST_CAVES, portalAt, NPCS, SPAWN_POINT,
   RAID, INSTANCES, INFRA, isWalkable, reach, monsterSpawns, rows, catRooms, abyRooms, minRooms, pirRooms, forRooms,
 };

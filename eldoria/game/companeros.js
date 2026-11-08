@@ -31,8 +31,9 @@ const MOUNTS = {
   montura_mamut: { name: 'Mamut de Guerra', icon: '🦣', type: 'mount', mon: 'mamut', scale: 0.8, speed: 0.62, minLevel: 60, price: 400000, sell: 100000, desc: 'Cabalgas un 38% más rápido.' },
   montura_cerbero: { name: 'Sabueso Infernal de Cerbero', icon: '🐕', type: 'mount', mon: 'cerbero', scale: 1.15, speed: 0.46, minLevel: 106, sell: 3000000, desc: 'Cabalgas más del doble de rápido. Solo la suelta Cerbero, muy rara vez.' },
   montura_brasas: { name: 'Bestia de Brasas', icon: '🔥', type: 'mount', mon: 'demonio_cornudo', scale: 0.75, speed: 0.5, minLevel: 100, sell: 2000000, desc: 'Cabalgas el doble de rápido. Solo la suelta Hades, muy rara vez.' },
+  montura_rey_dragones: { name: 'Dragón Abisal', icon: '🐉', type: 'mount', mon: 'rey_dragones_mt', scale: 0.9, speed: 0.44, minLevel: 120, sell: 6000000, desc: 'Vuelas más del doble de rápido. Solo la suelta el Rey de los Dragones, rarísima vez.' },
 };
-const MOUNT_PAS = { montura_lobo: { hp: 30 }, montura_oso: { def: 3 }, montura_dragon: { atk: 3 }, montura_jabali: { def: 4 }, montura_mamut: { hp: 120 }, montura_brasas: { atk: 5, def: 4, hp: 100 }, montura_cerbero: { atk: 6, def: 5, hp: 120 } };
+const MOUNT_PAS = { montura_lobo: { hp: 30 }, montura_oso: { def: 3 }, montura_dragon: { atk: 3 }, montura_jabali: { def: 4 }, montura_mamut: { hp: 120 }, montura_brasas: { atk: 5, def: 4, hp: 100 }, montura_cerbero: { atk: 6, def: 5, hp: 120 }, montura_rey_dragones: { atk: 9, def: 7, hp: 200 } };
 const BRASAS_DROP = 0.0008;
 
 function build(ITEMS, MONSTERS, SHOPS) {

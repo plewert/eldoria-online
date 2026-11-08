@@ -331,7 +331,7 @@ ol.rank li span { display: inline-block; min-width: 150px; }
 ol.rank li.me { color: #ffd96a; }
 .item.dim { opacity: .55; }
 .skbox { display: inline-flex; gap: 4px; }
-#hotbar .skb { position: relative; overflow: hidden; }
+#hotbar .skb { position: relative; overflow: hidden; padding: 0; }
 #hotbar .skb.lock { opacity: .35; filter: grayscale(1); }
 #hotbar .skb.nomana { opacity: .6; }
 #hotbar .skb .cdv { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: rgba(0, 0, 0, .65); pointer-events: none; }
@@ -512,3 +512,5 @@ body.touch #hotbar, body.touch #hotbar button, body.touch #stage button { touch-
 #installTip { max-width: 320px; margin: 10px auto 0; padding: 10px 14px; background: rgba(14, 18, 24, .92); border: 1px solid var(--edge, #444); border-radius: 6px; color: var(--bone, #eee); font-size: 13px; line-height: 1.4; text-align: left; }
 #installTip ol { margin: 6px 0 6px 18px; padding: 0; }
 #installTip small { color: var(--muted, #999); }
+
+#hotbar button b.spi { display: block; width: 28px; height: 28px; background: url(spicons.png) 0 0 / 308px 196px no-repeat; image-rendering: auto; filter: drop-shadow(0 0 2px rgba(0,0,0,.8)); }
