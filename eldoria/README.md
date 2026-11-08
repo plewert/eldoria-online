@@ -618,3 +618,14 @@ El mapa pasó de 480 a 640 columnas (`W = 640`, `W2 = 480` es el ancho anterior)
 ### Monturas animadas y reaparición de jefes
 - Monturas (`drawMountAnim` en `public/game.js`): al andar, las patas delanteras y traseras se mueven a contrafase con el paso (más rápido si corres más), el cuerpo rebota y cabecea; en reposo respira, mueve la cabeza y patea el suelo de vez en cuando. Dragón y Bestia de Brasas baten alas y flotan. Efectos: hierba (lobo, oso), polvo (jabalí, mamut), humo (dragón), huellas de fuego (Cerbero), chispas (Brasas).
 - Los jefes que reaparecían a 1 min (Dragón de las Sombras, Hidra de Jade, Arcángel, Aracnídeo, Leviatán, Ignaros, Anubis, Zeus, Hades, Medusa, Cerbero) ahora reaparecen a 30 s (± 20 %).
+
+### Iconos de los especiales
+- Los especiales de armas y escudos usan iconos dibujados (`public/spicons.png`, 77 iconos de 64 px, 11 columnas) en vez de emojis. La asignación de cada especial está en `game/spicons.js` (`IC`; si falta uno se elige por tipo). El botón de la barra los muestra con `ic` (`public/ui2.js`).
+
+
+## Rey de los Dragones (Este II)
+- **Guarida del Rey de los Dragones**: gran cueva al sur de las Llanuras del Amanecer (puerta en 548,128, entrada 2.000 de oro). Sala abierta con trono de huesos en la esquina NE, braseros, cadáveres, huesos, calaveras, costillas y escombros (`E2_PROPS` en `world.js`, dibujados en `public/reydragon.js`).
+- **Jefe** (`game/reydragon.js`): 1,2 M de vida, `armor` 0,62 (más que ningún otro jefe) y `weakOnly: 'dragon'`: solo las armas de la familia dragón le hacen daño de verdad (×2,1); cualquier otra arma hace el 40 % (ver `familias.js`).
+- **7 ataques** con aviso en el suelo: llamarada + temblor + lluvia de rocas, aleteo (viento que empuja y daña), coletazo, bolas de fuego desde el aire (vuela), zarpazo triple, ráfagas de fuego volando contra los más cercanos y aterrizaje con lava (refugios) y derrumbe con rocas grandes. Con menos del 30 % de vida la lava se repite más a menudo.
+- **Botín**: set Abisal (arco, guadaña, bastón, casco, peto, guanteletes, musleras, espolones, 2 amuletos, anillo; todos familia dragón), cría (`pet_rey_dragones`) y montura voladora (`montura_rey_dragones`) muy raras.
+- Sprites: `rey_dragones` (animado, con pose de vuelo), `rey_dragones_p` (cría) y `rey_dragones_mt` (montura) en `sprites3.png`; iconos y capas en `gear.png`.
