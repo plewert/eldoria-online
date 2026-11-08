@@ -139,7 +139,7 @@
       G.zoneGrid[y * G.W + x] = zi;
     }
     G.npcTiles = new Set(G.npcs.map((n) => n.y * G.W + n.x));
-    G.cbp = m.cbp || []; G.e2p = m.e2p || []; G.decor = m.decor || []; G.houses = m.houses || []; G.decorSet = new Set(G.decor.map((d) => d[1] * G.W + d[0]));      // mobiliario sólido
+    G.cbp = m.cbp || []; G.e2p = m.e2p || []; G.decor = m.decor || []; G.houses = m.houses || []; G.decorSet = new Set(G.decor.map((d) => d[1] * G.W + d[0])); for (const q of G.e2p) if (q[2] === 'mouth') for (let yy = q[1] - 4; yy <= q[1]; yy++) for (let xx = q[0] - 4; xx <= q[0] + 4; xx++) if (!(yy === q[1] && Math.abs(xx - q[0]) <= 1)) G.decorSet.add(yy * G.W + xx);      // mobiliario sólido
     buildMiniBase();
     $('#login').hidden = true; $('#game').hidden = false;
     $('#lpass').value = '';

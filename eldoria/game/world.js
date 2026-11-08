@@ -679,6 +679,9 @@ for (const C of E2_CAVES) {
   if (C.open) {                                                                                      // Guarida del Rey de los Dragones: sala abierta, trono en la esquina NE y restos por el suelo
     for (let y = y0 + 1; y <= y0 + 3; y++) for (let x = x1 - 7; x <= x1 - 5; x++) tiles[idx(x, y)] = T.WALL;     // el trono ocupa 3×3 casillas (se dibuja encima)
     E2_PROPS.push([x1 - 6, y0 + 2, 'throne']);
+    const [dx, dy] = C.door;                                                                          // boca de la cueva por fuera: montículo sólido con el portal en el centro (se dibuja en el cliente)
+    for (let y = dy - 4; y <= dy; y++) for (let x = dx - 4; x <= dx + 4; x++) if (!(y === dy && Math.abs(x - dx) <= 1) && inb(x, y) && tiles[idx(x, y)] !== T.PORTAL) DECOR_SET.add(y * W + x);   // sólido sin cambiar el suelo
+    E2_PROPS.push([dx, dy, 'mouth']);
     for (const [px, py] of [[x1 - 9, y0 + 2], [x1 - 3, y0 + 2], [x1 - 9, y0 + 5], [x1 - 3, y0 + 5]]) E2_PROPS.push([px, py, 'brazier']);
     const okp = (x, y) => tiles[idx(x, y)] === T.DFLOOR && Math.abs(x - C.lair[0]) + Math.abs(y - C.lair[1]) > 3 && Math.abs(x - C.inside[0]) + Math.abs(y - C.inside[1]) > 3 && !E2_PROPS.some((q) => q[0] === x && q[1] === y);
     const put = (kind, n, need) => { let tries = 0, got = 0; while (got < n && tries++ < 4000) { const x = x0 + 1 + Math.floor(rr() * (x1 - x0 - 1)), y = y0 + 1 + Math.floor(rr() * (y1 - y0 - 1)); if (!okp(x, y) || (need && !need(x, y))) continue; E2_PROPS.push([x, y, kind]); got++; } };
@@ -754,6 +757,7 @@ for (const C of E2_CAVES) {
   addPortal(C.door[0], C.door[1], C.inside[0], C.inside[1], C.label, CAVE_FEE);
   addPortal(C.exit[0], C.exit[1], C.door[0], C.door[1] + 1, C.back);
 }
+{ const D = E2_CAVES.find((c) => c.open); addPortal(88, 72, D.door[0], D.door[1] + 2, 'Teletransporte a la entrada de la Guarida del Rey de los Dragones (peligro legendario)'); }   // atajo desde la ciudad hasta la puerta (la entrada sigue costando 2.000)
 addPortal(INFRA.gate[0], INFRA.gate[1], INFRA.spawn[0], INFRA.spawn[1], 'El Inframundo (portal maldito)');
 addPortal(INFRA.back[0], INFRA.back[1], INFRA.gate[0], INFRA.gate[1] + 1, 'Volver al mundo de los vivos');
 addPortal(GUILD.door[0], GUILD.door[1], GUILD.inside[0], GUILD.inside[1], 'Cueva del Gremio de Mineros (zona segura)');

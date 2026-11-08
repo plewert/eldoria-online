@@ -54,6 +54,33 @@
       c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(255,${110 + Math.round(60 * fl)},30,${0.8})`; c.fillRect(-6, -h * 1.07, 3, 3); c.fillRect(3, -h * 1.07, 3, 3);
       glow(c, 0, -h * 0.6, 60, '255,90,20', 0.13 + 0.07 * fl); c.restore();
       c.save(); c.fillStyle = '#d8cfb6'; for (let q = 0; q < 7; q++) { const bx = x - 40 + q * 13 + hs(q, 1) * 6, by = y + 18 + hs(q, 2) * 6; c.beginPath(); c.ellipse(bx, by, 5, 2.4, hs(q, 3) * 3, 0, 7); c.fill(); } c.restore();
+    } else if (k === 'mouth') {                                                                         // entrada exterior: boca de roca con colmillos, calavera de dragón y antorchas
+      const s = 0.8, fl = 0.6 + 0.4 * Math.sin(now / 130); c.save(); c.translate(x, y + 4); c.scale(s, s);
+      const P = (pts, col) => { c.fillStyle = col; c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (const q of pts.slice(1)) c.lineTo(q[0], q[1]); c.closePath(); c.fill(); };
+      c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.ellipse(0, 52, 205, 22, 0, 0, 7); c.fill();
+      P([[-190, 52], [-175, -38], [-130, -103], [-70, -143], [0, -158], [70, -143], [130, -103], [175, -38], [190, 52]], '#2e2826');
+      for (let q = 0; q < 70; q++) { const rx = (hs(q, 1) - 0.5) * 340, ry = -140 + hs(q, 2) * 185; if (Math.abs(rx) < 80 && ry > -92) continue; const sz = 6 + hs(q, 3) * 10; P([[rx - sz, ry + sz * 0.5], [rx - sz / 3, ry - sz], [rx + sz, ry - sz / 3], [rx + sz * 0.7, ry + sz * 0.6]], ['#3c3532', '#241f1e', '#463e3a', '#342e2b'][q % 4]); }
+      P([[-72, 50], [-76, -28], [-52, -84], [0, -100], [52, -84], [76, -28], [72, 50]], '#0a0505');
+      c.save(); c.globalCompositeOperation = 'lighter'; const g = c.createRadialGradient(0, 0, 5, 0, 0, 90); g.addColorStop(0, `rgba(255,90,25,${0.35 + 0.15 * fl})`); g.addColorStop(1, 'rgba(255,60,10,0)'); c.fillStyle = g; c.fillRect(-90, -100, 180, 170); c.restore();
+      c.save(); c.globalCompositeOperation = 'lighter'; const pg = c.createRadialGradient(0, 14, 2, 0, 14, 34); pg.addColorStop(0, 'rgba(190,210,255,.95)'); pg.addColorStop(0.5, 'rgba(110,130,255,.55)'); pg.addColorStop(1, 'rgba(80,90,255,0)'); c.fillStyle = pg; c.fillRect(-40, -22, 80, 72);
+      c.strokeStyle = `rgba(210,225,255,${0.6 + 0.3 * fl})`; c.lineWidth = 3; for (let q = 0; q < 2; q++) { c.beginPath(); c.ellipse(0, 14, 20 - q * 8, 26 - q * 10, now / 700 * (q ? -1 : 1), 0, 4.6); c.stroke(); } c.restore();
+      for (let q = -5; q <= 5; q++) { const tx = q * 13; P([[tx - 6, -86 + Math.abs(q) * 3 + (Math.abs(q) < 5 ? 0 : 20)], [tx, -60 + Math.abs(q) * 2], [tx + 6, -86 + Math.abs(q) * 3]], '#e2dac4'); }
+      for (let q = -4; q <= 4; q++) { const tx = q * 14 + 7; P([[tx - 6, 50], [tx, 26], [tx + 6, 50]], '#d6cfb8'); }
+      for (const sd of [-1, 1]) {                                                                         // calavera de dragón con cuernos y ojos encendidos
+        P([[sd * 38, -170], [sd * 74, -196], [sd * 92, -244], [sd * 62, -214], [sd * 34, -186]], '#cdc4ac');
+      }
+      P([[-46, -138], [-38, -180], [0, -192], [38, -180], [46, -138], [22, -124], [-22, -124]], '#e4dcc6');
+      for (const sd of [-1, 1]) { c.fillStyle = '#120a08'; c.beginPath(); c.ellipse(sd * 22, -158, 11, 11, 0, 0, 7); c.fill(); c.fillStyle = `rgba(255,${100 + Math.round(60 * fl)},30,1)`; c.fillRect(sd * 22 - 4, -162, 8, 8); }
+      c.fillStyle = '#1c130e'; c.fillRect(-4, -146, 8, 10);
+      for (const sd of [-1, 1]) {                                                                         // antorchas
+        const tx = sd * 120, ty = 40; c.fillStyle = '#241c18'; c.fillRect(tx - 4, ty - 20, 8, 38); P([[tx - 12, ty - 22], [tx + 12, ty - 22], [tx + 8, ty - 12], [tx - 8, ty - 12]], '#3a2e26');
+        c.save(); c.globalCompositeOperation = 'lighter'; const gg = c.createRadialGradient(tx, ty - 40, 3, tx, ty - 40, 46); gg.addColorStop(0, `rgba(255,120,30,${0.4 + 0.2 * fl})`); gg.addColorStop(1, 'rgba(255,90,20,0)'); c.fillStyle = gg; c.fillRect(tx - 50, ty - 90, 100, 100); c.restore();
+        P([[tx - 9, ty - 22], [tx - 6, ty - 44 - 3 * fl], [tx, ty - 62 - 5 * fl], [tx + 6, ty - 44], [tx + 9, ty - 22]], '#ff9628'); P([[tx - 4, ty - 22], [tx, ty - 42], [tx + 4, ty - 22]], '#ffeb96');
+      }
+      for (let q = 0; q < 12; q++) { const bx = (hs(q, 5) - 0.5) * 330, by = 54 + hs(q, 6) * 22; if (Math.abs(bx) < 55) continue;
+        if (q % 2) { c.fillStyle = '#e2dac4'; c.beginPath(); c.arc(bx, by, 7, 0, 7); c.fill(); c.fillRect(bx - 4, by + 2, 8, 6); c.fillStyle = '#140c0a'; c.fillRect(bx - 4, by - 3, 3, 3); c.fillRect(bx + 1, by - 3, 3, 3); }
+        else { c.strokeStyle = '#d6cfb8'; c.lineWidth = 4; c.beginPath(); c.moveTo(bx - 12, by); c.lineTo(bx + 12, by + 3); c.stroke(); } }
+      c.restore();
     } else if (k === 'brazier') {                                                                       // brasero con fuego
       const fl = 0.6 + 0.4 * Math.sin(now / 110 + i * 2); c.save();
       c.fillStyle = '#241c18'; c.fillRect(x - 3, y - 2, 6, 14); c.fillStyle = '#332820'; c.beginPath(); c.moveTo(x - 10, y - 4); c.lineTo(x + 10, y - 4); c.lineTo(x + 6, y + 4); c.lineTo(x - 6, y + 4); c.closePath(); c.fill();
@@ -96,7 +123,7 @@
 
   X.on('under', (c, now) => {
     const TS = X.TS;
-    if (G.e2p && G.e2p.length && G.me) { const z = X.zoneAt(G.me.x, G.me.y); if (z && z.id === 'cueva_dragones') for (let i = 0; i < G.e2p.length; i++) { const [x0, y0, k] = G.e2p[i]; if (k === 'throne' || k === 'brazier') continue; const sx = px(x0), sy = py(y0); if (onScr(c, sx, sy, 60)) drawProp(c, k, sx, sy, now, i); } }
+    if (G.e2p && G.e2p.length && G.me) { const z = X.zoneAt(G.me.x, G.me.y); for (let i = 0; i < G.e2p.length; i++) { const [x0, y0, k] = G.e2p[i]; if (k === 'throne' || k === 'brazier' || (k !== 'mouth' && !(z && z.id === 'cueva_dragones'))) continue; const sx = px(x0), sy = py(y0); if (onScr(c, sx, sy, 200)) drawProp(c, k, sx, sy, now, i); } }
     if (QUAKE > now) G.shake = { t: now, m: 2.6 };
     for (const r of RUB) { const p = (now - r.t) / 5000; if (p >= 1) continue; const x = px(r.x), y = py(r.y); drawProp(c, 'rubble', x, y, now, Math.round(r.x * 7 + r.y)); }
     for (const b of AN) {

@@ -20,8 +20,8 @@ const TABLETS = [
   ['tp_paraiso',  'Tableta de Teletransporte: Paraíso de Coral',     440, 98],
   ['tp_gremio',   'Tableta de Teletransporte: Gremio de Mineros',    74, 65],
 ];
-/** Tabletas de las cuevas de jefe: 100 000 de oro en Boris; te dejan dentro de la cueva, cerca de la entrada. */
-const CAVE_PRICE = 100000;
+/** Tabletas de las cuevas de jefe: 40 000 de oro en Boris; te dejan dentro de la cueva, cerca de la entrada. */
+const CAVE_PRICE = 40000;
 const CAVE_TABLETS = [
   ['tp_cueva_dragon', 'Tableta de Teletransporte: Cueva del Dragón de las Sombras', 122, 85],
   ['tp_cueva_jade',   'Tableta de Teletransporte: Cueva del Hidra de Jade',         52, 52],
@@ -34,6 +34,7 @@ const CAVE_TABLETS = [
   ['tp_cueva_hades',  'Tableta de Teletransporte: Trono de Hades (Inframundo)',      240, 311],
   ['tp_cueva_medusa', 'Tableta de Teletransporte: Cueva de Medusa (Inframundo)',          280, 311],
   ['tp_cueva_cerbero', 'Tableta de Teletransporte: Las Fauces del Inframundo (Cerbero)',  317, 311],
+  ['tp_cueva_dragones', 'Tableta de Teletransporte: Guarida del Rey de los Dragones',    521, 202],
 ];
 function build(ITEMS, SHOPS) {
   for (const [id, name, x, y] of CAVE_TABLETS) ITEMS[id] = { name, icon: '📜', type: 'tablet', dest: [x, y], stack: true, price: CAVE_PRICE, sell: 20000, desc: 'De un solo uso: te deja dentro de la cueva, cerca de la entrada (no se puede usar en combate).' };
