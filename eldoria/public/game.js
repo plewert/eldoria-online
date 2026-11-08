@@ -838,7 +838,7 @@
   }
   function showDrops(type) {
     const d = G.mons[type]; if (!d) return;
-    $('#dropIcon').textContent = d.icon; $('#dropTitle').textContent = d.name;
+    { const di = $('#dropIcon'); di.textContent = ''; if (SPR[type] || (d.spr && SPR[d.spr])) { const cv = spriteIcon(SPR[type] ? type : d.spr, d.icon); cv.style.cssText = 'width:44px;height:44px;object-fit:contain;display:block;margin:auto'; di.append(cv); } else di.textContent = d.icon; } $('#dropTitle').textContent = d.name;
     const b = $('#dropBadge'); b.textContent = d.boss ? 'Jefe' : d.aggro > 0 ? 'Agresivo' : 'Pasivo'; b.className = 'badge' + (d.boss ? ' boss' : '');
     const st = $('#dropStats'); st.replaceChildren();
     const stat = (k, v) => { const x = el('div'); x.append(el('small', '', k), el('b', '', v)); st.append(x); };
@@ -1780,9 +1780,10 @@
   /* Personaje con ciclo de paso: la fase avanza con la distancia recorrida (ver frame()). Dibuja el equipo puesto. */
   function drawSpriteS(c, key, fi, cx, feetY, flip, scale) {
     const s = SPR[key]; if (!s || !sprReady()) return false;
-    const f = s.f[fi % s.f.length], w = f[2] * scale, h = f[3] * scale;
+    const f = s.f[fi % s.f.length], w = f[2] * scale, h = f[3] * scale, cr = f.length > 4;
     c.save(); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high'; c.translate(Math.round(cx), Math.round(feetY)); if (flip) c.scale(-1, 1);
-    c.drawImage(sprImg, f[0], f[1], f[2], f[3], -w / 2, -h, w, h); c.restore(); return true;
+    if (cr) c.drawImage(atlasOf(s), f[0], f[1], f[2], f[3], (-f[6] / 2 + f[4]) * scale, (-f[7] + f[5]) * scale, w, h);       // fotograma recortado (atlas 2 y 3)
+    else c.drawImage(atlasOf(s), f[0], f[1], f[2], f[3], -w / 2, -h, w, h); c.restore(); return true;
   }
   function drawPlayer(c, e, sx, sy, now) {
     if (e.mt && G.items[e.mt]) {                                 // montado: la montura va debajo y el jinete sube
@@ -2092,8 +2093,27 @@
     if (IGA.size) requestAnimationFrame(igLoop); else igOn = false;
   }
   const igAnimate = (cv, spr, f, th) => { cv._spr = spr; cv._f = f; cv._th = th || null; cv._seed = (spr.length * 0.137) % 1; IGA.add(cv); if (!igOn) { igOn = true; requestAnimationFrame(igLoop); } };
+  /** Mascotas y monturas: el icono es el mismo dibujo que se ve en el mundo (no un emoji). */
+  function petIcon(d) { return spriteIcon(d.mon, d.icon); }
+  function spriteIcon(mon, icon) {
+    const cv = document.createElement('canvas'); cv.width = cv.height = 72; cv.className = 'gico';
+    const x = cv.getContext('2d');
+    const paint = () => {
+      const s = SPR[mon]; if (!s || !sprReady()) return false;
+      const f = s.f[0]; if (!f) return false;
+      const k = Math.min(68 / f[2], 68 / f[3]), w = f[2] * k, h = f[3] * k;
+      x.clearRect(0, 0, 72, 72); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+      x.drawImage(atlasOf(s), f[0], f[1], f[2], f[3], (72 - w) / 2, 70 - h, w, h); return true;
+    };
+    if (!paint()) {
+      x.font = '56px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(icon || '?', 36, 40);
+      let n = 0; const iv = setInterval(() => { if (paint() || ++n > 30) clearInterval(iv); }, 500);       // los atlas pueden tardar en cargar
+    }
+    return cv;
+  }
   function iconNode(id) {
     const d = G.items[id], k = iconKey(id), f = GJ[k];
+    if (d && (d.type === 'pet' || d.type === 'mount') && d.mon && !d.emoji && (SPR[d.mon] || G.mons[d.mon])) return petIcon(d);
     if (!f || !gearReady()) return el('span', /^(trofeo_|pluma_fenix)/.test(id) ? 'trophy' : '', d ? d.icon : '?');
     const cv = document.createElement('canvas'); cv.width = f[2]; cv.height = f[3]; cv.className = 'gico';
     const x = cv.getContext('2d'); x.drawImage(gearImg, f[0], f[1], f[2], f[3], 0, 0, f[2], f[3]);
@@ -2137,6 +2157,7 @@
   fetch('sprites.json').then((r) => r.json()).then((j) => { for (const k of Object.keys(j)) { if (j[k].i3) pend3[k] = j[k]; else if (j[k].i2) pend2[k] = j[k]; else SPR[k] = j[k]; } add2(); add3(); aliasSprites(); }).catch(() => { /* sin sprites: se usan emojis */ });
   function aliasSprites() { for (const [k, d] of Object.entries(G.mons || {})) if (d.spr && SPR[d.spr] && !SPR[k]) SPR[k] = SPR[d.spr]; }      // monstruos nuevos que usan el dibujo de otro
   const sprReady = () => sprImg.complete && sprImg.naturalWidth > 0;
+  const atlasOf = (s) => (s.i3 ? sprImg3 : s.i2 ? sprImg2 : sprImg);
   /** Dibuja el fotograma `fi` del sprite `key` con los pies en (cx, feetY). */
   function drawSprite(c, key, fi, cx, feetY, flip, squash = 1) {
     const s = SPR[key], f = s.f[fi % s.f.length], img = s.i3 ? sprImg3 : s.i2 ? sprImg2 : sprImg;
@@ -3142,7 +3163,7 @@
     if (now - G.pathStuck > 1500) { G.path = []; send({ t: 'walkpath', p: [] }); }
   }
   Object.assign(EXT, {
-    itemRow, toast, fmt, itName, iconNode, drawSpriteS, SPR, sprImg, sprReady, sprFrame, burst, ring, openCtx, walkTo, outlined, hpBar,
+    itemRow, toast, fmt, itName, iconNode, drawSpriteS, SPR, sprImg, atlasOf, sprReady, sprFrame, burst, ring, openCtx, walkTo, outlined, hpBar,
     addFx: (f) => addFx(f, performance.now()), TEX, sxOf, syOf, TS, shade, send, closeCtx, itColor, rarOf, connect,
   });
 })();

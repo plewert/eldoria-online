@@ -56,11 +56,13 @@
     if (ac) { c.save(); c.globalCompositeOperation = 'lighter'; const g = c.createRadialGradient(sx, sy - h * 0.5 - lift, 2, sx, sy - h * 0.5 - lift, Math.max(18, h * 0.95)); g.addColorStop(0, `rgba(${ac},${0.2 + 0.1 * Math.sin(t * 3 + ph)})`); g.addColorStop(1, `rgba(${ac},0)`); c.fillStyle = g; c.fillRect(sx - 40, sy - h - 30 - lift, 80, h + 60); c.restore(); }
     // dibujo en tiras: respiración y cola/pelaje que se balancean
     c.save(); c.imageSmoothingEnabled = true; c.translate(Math.round(sx + shake), Math.round(sy - lift)); if (fl) c.scale(-1, 1);
+    if (f.length > 4) c.translate((-f[6] / 2 + f[4] + f[2] / 2) * k, (f[7] - f[5] - f[3]) * k);        // fotograma recortado (atlas 2 y 3): vuelve a centrarlo sobre los pies
+    const atl = X.atlasOf(spr);
     const step = Math.max(1, Math.round(f[3] / 28)), tail = moving ? 1.6 : 1;
     for (let r = 0; r < f[3]; r += step) {
       const u = (r + step / 2) / f[3], dy = -h + (r / f[3]) * h, hh = (step / f[3]) * h + 0.5;
       const sw = Math.sin(t * 3.2 + ph + u * 2.6) * 1.1 * u * u * tail + (pp.sit ? 0 : Math.sin(t * 1.3 + ph) * 0.4 * (1 - u));
-      c.drawImage(X.sprImg, f[0], f[1] + r, f[2], step, -w / 2 + sw, dy, w, hh);
+      c.drawImage(atl, f[0], f[1] + r, f[2], step, -w / 2 + sw, dy, w, hh);
     }
     c.restore();
     // reacciones
