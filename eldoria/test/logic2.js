@@ -199,7 +199,7 @@ ok('Dragón de las Sombras: nivel 500, aliento negro, pisotón con grietas y bot
   game.removeEventBoss = game.removeEventBoss; game.mgrid.delete(m.y * world.W + m.x); game.monsters = game.monsters.filter((q) => q !== m); game.ents.delete(m.id);
 });
 ok('Hidra de Jade: cueva propia, set de arquero y sus tres ataques', () => {
-  assert.equal(MONSTERS.hidra_jade.special, 'hydra'); assert.equal(MONSTERS.hidra_jade.respawn, 60000);
+  assert.equal(MONSTERS.hidra_jade.special, 'hydra'); assert.equal(MONSTERS.hidra_jade.respawn, 30000);
   const loot = MONSTERS.hidra_jade.loot.map((l) => l[0]);
   ['jade_yelmo', 'jade_coraza', 'jade_guantes', 'jade_botas', 'jade_arco', 'jade_pantalon', 'jade_carcaj', 'jade_anillo_rubi', 'jade_anillo_hoja', 'jade_cinturon', 'jade_amuleto'].forEach((i) => assert.ok(loot.includes(i), i));
   assert.equal(ITEMS.jade_carcaj.type, 'shield');
@@ -303,7 +303,7 @@ ok('mazmorras y cuevas: nadie ataca a través de la entrada', () => {
   m.target = a.p.id; m.nextAtk = 0; for (let i = 0; i < 40; i++) { T0 += CFG.TICK_MS; game.tick(T0); }
   assert.equal(a.p.hp, 5000, 'el dragón no daña hacia fuera'); assert.notEqual(m.target, a.p.id);
   place(a.p, 122, 86); const hp1 = m.hp; game.hurtMonster(m, 500, a.p, T0); assert.equal(m.hp, hp1 - 275, 'dentro sí, con 45% de defensa');
-  assert.equal(MONSTERS.dragon_sombra.respawn, 60000);
+  assert.equal(MONSTERS.dragon_sombra.respawn, 30000);
   game.mgrid.delete(m.y * world.W + m.x); game.monsters = game.monsters.filter((q) => q !== m); game.ents.delete(m.id);
 });
 ok('jefes: botín compartido, el que más daño hace tiene mejor suerte y todos reciben el suyo', () => {

@@ -1785,13 +1785,84 @@
     if (cr) c.drawImage(atlasOf(s), f[0], f[1], f[2], f[3], (-f[6] / 2 + f[4]) * scale, (-f[7] + f[5]) * scale, w, h);       // fotograma recortado (atlas 2 y 3)
     else c.drawImage(atlasOf(s), f[0], f[1], f[2], f[3], -w / 2, -h, w, h); c.restore(); return true;
   }
+
+  /* ---------- Monturas animadas ----------
+   * Caminar: la grupa y la parte delantera de las patas se mueven a contrafase con la fase de la zancada (e.phase, que avanza con la distancia: más rápido = ciclo más rápido),
+   * el cuerpo rebota y cabecea. Reposo: respira, mueve la cabeza y de vez en cuando patea el suelo. Las voladoras (dragón, Brasas) baten las alas y flotan.
+   * Extras: hierba (lobo, oso), polvo (jabalí, mamut), humo (dragón), huellas de fuego (Cerbero) y chispas (Brasas). */
+  const MOUNT_FX = {
+    lobo: { legs: 0.34, col: '130,180,100', kind: 'grass' }, oso: { legs: 0.32, col: '120,160,90', kind: 'grass' },
+    jabali: { legs: 0.3, col: '175,145,105', kind: 'dust' }, mamut: { legs: 0.3, col: '200,185,160', kind: 'dust', big: 1 },
+    dragon: { fly: 1, col: '160,160,170', kind: 'smoke' }, cerbero: { legs: 0.3, col: '255,120,40', kind: 'fire' },
+    demonio_cornudo: { fly: 1, col: '255,150,50', kind: 'spark' },
+  };
+  function drawMountAnim(c, e, md, sx, sy, now) {
+    const s = SPR[md.mon], cx = sx + TS / 2, feet = sy + TS - 2, flip = (e.face || 1) < 0, k = md.scale || 0.9;
+    if (!s || !sprReady()) return 0;
+    const fx = MOUNT_FX[md.mon] || { legs: 0.3, col: '190,170,140', kind: 'dust' }, id = e.id || 0, mv = e.amp || 0, ph = e.phase || 0, moving = mv > 0.25;
+    const frames = s.f.length;
+    const fi = frames < 2 ? 0 : fx.fly ? Math.floor(now / (moving ? 130 : 260) + id) % frames : (moving ? sprFrame(e, s) : 0);
+    const f = s.f[fi]; if (f.length > 4) { drawSpriteS(c, md.mon, fi, cx, feet, flip, k); return 0; }
+    const img = atlasOf(s), w = f[2] * k, h = f[3] * k, sn = Math.sin(ph), t = now / 1000;
+    const mp = e._mp || (e._mp = []);
+    // ---- partículas / huellas ----
+    if (moving && now > (e._mpn || 0)) {
+      e._mpn = now + (fx.kind === 'fire' ? 230 : fx.kind === 'smoke' ? 150 : fx.kind === 'spark' ? 70 : 90);
+      if (mp.length < 26) {
+        const wx = (cx - cw / 2) / TS + G.cam.x + 0.5 - 0.5, wy = (sy - ch / 2 + TS / 2) / TS + G.cam.y, back = flip ? 1 : -1, r = Math.random;
+        if (fx.kind === 'fire') mp.push({ wx, wy, ox: (r() - 0.5) * 8 + back * 6, oy: (e._fp = !e._fp) ? -3 : 2, vx: 0, vy: 0, t: now, life: 1500, kind: 'print' });
+        else if (fx.kind === 'smoke') mp.push({ wx, wy, ox: -back * 10, oy: -h * 0.55, vx: -back * 14, vy: -10 - r() * 8, t: now, life: 900, kind: 'smoke', sz: 3 + r() * 2 });
+        else if (fx.kind === 'spark') mp.push({ wx, wy, ox: (r() - 0.5) * 10, oy: -h * 0.3 - r() * 8, vx: back * 8 + (r() - 0.5) * 14, vy: -16 - r() * 16, t: now, life: 650, kind: 'spark', sz: 1.5 });
+        else mp.push({ wx, wy, ox: back * 8 + (r() - 0.5) * 6, oy: -1, vx: back * (8 + r() * 10), vy: -(8 + r() * 12), t: now, life: 520, kind: fx.kind, sz: fx.big ? 3.4 : 2 });
+      }
+    }
+    for (let i = mp.length - 1; i >= 0; i--) if (now - mp[i].t > mp[i].life) mp.splice(i, 1);
+    c.save();
+    for (const p of mp) {                                                     // huellas por debajo del animal
+      if (p.kind !== 'print') continue;
+      const a = 1 - (now - p.t) / p.life, x = sxOf(p.wx) + TS / 2 + p.ox, y = syOf(p.wy) + TS - 2 + p.oy;
+      c.globalCompositeOperation = 'lighter'; const g = c.createRadialGradient(x, y, 0, x, y, 6); g.addColorStop(0, `rgba(255,150,50,${0.7 * a})`); g.addColorStop(1, 'rgba(255,60,0,0)'); c.fillStyle = g; c.fillRect(x - 6, y - 4, 12, 8);
+      c.globalCompositeOperation = 'source-over'; c.fillStyle = `rgba(40,20,10,${0.5 * a})`; c.beginPath(); c.ellipse(x, y, 2.6, 1.6, 0, 0, 7); c.fill();
+    }
+    c.restore();
+    // ---- cuerpo ----
+    let bob = 0, pitch = 0, sy2 = 1, hover = 0;
+    if (fx.fly) {
+      hover = 4 + Math.sin(t * 2.4 + id) * 2.2 + (moving ? 1.5 : 0);
+      sy2 = 1 + Math.sin(now / (moving ? 95 : 190) + id) * (moving ? 0.07 : 0.035);                // aleteo: el dibujo se estira y encoge
+      pitch = moving ? 0.03 * Math.sin(now / 190 + id) : 0.012 * Math.sin(t * 1.1 + id);
+    } else if (moving) { bob = Math.abs(sn) * 2.6 * Math.min(1, mv); pitch = sn * 0.045 * Math.min(1, mv); }
+    else { sy2 = 1 + 0.018 * Math.sin(t * 2.3 + id); pitch = 0.016 * Math.sin(t * 0.9 + id * 1.7); }          // respira y mueve la cabeza
+    c.save(); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+    c.translate(Math.round(cx), Math.round(feet - hover)); if (flip) c.scale(-1, 1);
+    const piece = (x0, y0, ww, hh, dx, dy) => c.drawImage(img, f[0] + x0, f[1] + y0, ww, hh, -w / 2 + x0 * k + dx, -h + y0 * k + dy, ww * k, hh * k + 0.6);
+    if (!fx.fly && fx.legs) {
+      const lh = Math.round(f[3] * fx.legs), top = f[3] - lh, half = Math.round(f[2] / 2);
+      let fl = 0, fd = 0, bl = 0, bd = 0;
+      if (moving) { const a = 3.2 * Math.min(1, mv); fl = sn * a; bl = -sn * a; fd = -Math.max(0, Math.cos(ph)) * 2.6; bd = -Math.max(0, -Math.cos(ph)) * 2.6; }
+      else { const u = ((t + id * 3.1) % 7) / 0.8; if (u < 1) fd = -Math.sin(u * Math.PI) * 3.6; }       // de vez en cuando patea el suelo con una pata delantera
+      piece(0, top, half, lh, bl, bd); piece(half, top, f[2] - half, lh, fl, fd);                 // patas traseras / delanteras
+      c.save(); c.translate(0, -bob); c.rotate(pitch); c.scale(1, sy2); piece(0, 0, f[2], top + 1, 0, 0); c.restore();
+    } else { c.rotate(pitch); c.scale(1, sy2); piece(0, 0, f[2], f[3], 0, 0); }
+    c.restore();
+    // ---- partículas por encima ----
+    c.save(); c.textBaseline = 'middle';
+    for (const p of mp) {
+      if (p.kind === 'print') continue;
+      const a = 1 - (now - p.t) / p.life, dt = (now - p.t) / 1000, x = sxOf(p.wx) + TS / 2 + p.ox + p.vx * dt, y = syOf(p.wy) + TS - 2 + p.oy + p.vy * dt - hover;
+      if (p.kind === 'spark') { c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(255,${150 + Math.round(80 * a)},60,${a})`; c.fillRect(x - 1, y - 1, 2.2, 2.2); c.globalCompositeOperation = 'source-over'; continue; }
+      c.globalAlpha = a * (p.kind === 'smoke' ? 0.55 : 0.75); c.fillStyle = `rgb(${p.kind === 'smoke' ? fx.col : fx.col})`;
+      if (p.kind === 'grass') { c.fillRect(Math.round(x), Math.round(y), 1.6, 3); } else { c.beginPath(); c.arc(x, y, p.sz * (p.kind === 'smoke' ? 1 + (1 - a) : 1), 0, 7); c.fill(); }
+    }
+    c.restore(); c.globalAlpha = 1;
+    return bob + hover;
+  }
   function drawPlayer(c, e, sx, sy, now) {
     if (e.mt && G.items[e.mt]) {                                 // montado: la montura va debajo y el jinete sube
       const md = G.items[e.mt], bob = Math.abs(Math.sin(e.phase || 0)) * 1.6 * (e.amp || 0);
       c.fillStyle = 'rgba(0,0,0,.34)'; c.beginPath(); c.ellipse(sx + TS / 2, sy + TS - 2, 14, 4, 0, 0, 7); c.fill();
-      const fr = SPR[md.mon] ? sprFrame(e, SPR[md.mon]) : 0;
-      drawSpriteS(c, md.mon, fr, sx + TS / 2, sy + TS - 2 - bob, (e.face || 1) < 0, md.scale || 0.9);
-      sy -= Math.round(8 + (SPR[md.mon] ? SPR[md.mon].h * (md.scale || 0.9) * 0.18 : 0));
+      const lift = drawMountAnim(c, e, md, sx, sy, now);
+      sy -= Math.round(8 + (SPR[md.mon] ? SPR[md.mon].h * (md.scale || 0.9) * 0.18 : 0) + lift);
     }
     const cx = sx + TS / 2, base = sy + TS - 3;
     const amp = e.amp || 0, ph = e.phase || 0, fd = e.fd == null ? 2 : e.fd;

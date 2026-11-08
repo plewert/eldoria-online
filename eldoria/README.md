@@ -614,3 +614,7 @@ El mapa pasó de 480 a 640 columnas (`W = 640`, `W2 = 480` es el ancho anterior)
 - 10 familias: dragones, hidras/reptiles, no-muertos, demonios, ángeles, bestias, gigantes/golems, hielo, marinas y fuego (`game/familias.js`). Cada monstruo tiene una o varias; cada pieza de equipo, una.
 - Arma de la familia: +15 % a +35 % de daño según su nivel (también con los especiales). Armadura de la familia: −1,5 % a −2,5 % de daño recibido por pieza, tope −15 %.
 - El tooltip del objeto muestra el bono y la ficha del monstruo muestra su familia. Aparece un aviso flotante (🐉 +25 %) al golpear con bono.
+
+### Monturas animadas y reaparición de jefes
+- Monturas (`drawMountAnim` en `public/game.js`): al andar, las patas delanteras y traseras se mueven a contrafase con el paso (más rápido si corres más), el cuerpo rebota y cabecea; en reposo respira, mueve la cabeza y patea el suelo de vez en cuando. Dragón y Bestia de Brasas baten alas y flotan. Efectos: hierba (lobo, oso), polvo (jabalí, mamut), humo (dragón), huellas de fuego (Cerbero), chispas (Brasas).
+- Los jefes que reaparecían a 1 min (Dragón de las Sombras, Hidra de Jade, Arcángel, Aracnídeo, Leviatán, Ignaros, Anubis, Zeus, Hades, Medusa, Cerbero) ahora reaparecen a 30 s (± 20 %).
