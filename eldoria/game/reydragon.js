@@ -39,7 +39,7 @@ function build(ITEMS, MONSTERS, SPAWN_PLAN) {
   ITEMS.trofeo_rey_dragones = { name: 'Corona del Rey de los Dragones', icon: '👑', type: 'misc', stack: true, sell: 90000 };
   MONSTERS[BOSS] = {
     boss: true, shared: true, name: 'Rey de los Dragones', icon: '🐲', lv: 900, hp: 1200000, dmg: [520, 780], dmgK: 3.3, exp: 260000, move: 470, atkCd: 1300, aggro: 18,
-    respawn: 15 * 60000, armor: 0.62, weakOnly: 'dragon', fam: ['dragon', 'fuego'], gold: [20000, 32000], special: 'rdr',
+    respawn: 30000, armor: 0.62, weakOnly: 'dragon', fam: ['dragon', 'fuego'], gold: [20000, 32000], special: 'rdr',
     loot: [['trofeo_rey_dragones', 1, 1, 2], ['pocion_vida_g', 1, 6, 10], ['pocion_mana_g', 1, 5, 8], ['pluma_fenix', 0.9, 1, 3], ['rubi', 0.9, 3, 6], ['zafiro', 0.9, 3, 6], ['esmeralda', 0.8, 2, 5], ['montura_rey_dragones', 0.0012, 1, 1]],
   };
   for (const [type, n] of [['zombi_caballero', 6], ['nigromante', 5], ['banshee', 5]]) SPAWN_PLAN.push({ zone: ZONE, type, n });
