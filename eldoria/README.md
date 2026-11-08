@@ -487,7 +487,7 @@ Boris vende 9 tabletas (una por cueva de jefe) a 100 000 de oro; de un solo uso,
 
 ## Gemas solo en las rocas, botín de jefes y banco
 - **Las gemas ya solo se consiguen minando rocas** (Granito … Obsidiana): los monstruos normales no las sueltan (los jefes solo muy muy raro, 0,1 %) y se quitaron las recetas de «pulir gema». La probabilidad por roca bajó a la mitad.
-- **Botín de jefes −20 %** (`CFG.BOSS_DROP_K = 0.8`): afecta a lo que no es seguro (equipo, materiales, mascotas…); el trofeo y las pociones siguen cayendo igual. Hades y Zeus aplican el mismo factor a su equipo.
+- **Botín de jefes −5 %** (`CFG.BOSS_DROP_K = 0.95`, antes 0,8: subido al añadir las fases): afecta a lo que no es seguro (equipo, materiales, mascotas…); el trofeo y las pociones siguen cayendo igual. Hades y Zeus aplican el mismo factor a su equipo.
 - **Banco**: arrastra objetos de la mochila al banco (depositar), del banco a la mochila (retirar) y reordena el banco; también con el dedo (mantén pulsado ~¼ s y arrastra). En la mochila, soltar sobre una casilla de equipo equipa.
 
 ### Gemas en la tienda de Boris
