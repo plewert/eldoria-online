@@ -9,8 +9,8 @@
  *  - Piezas de ataque (iguales para todos, cada jefe las combina con su tema/color): lluvia de círculos, líneas, salto sobre un jugador,
  *    onda alrededor del jefe, charcos que se quedan, «refugios» (toda la zona daña salvo círculos seguros) e invocación de esbirros.
  *
- * INTERRUPTOR: para quitar las fases de un jefe → `off: true` en su entrada de PROFILES (abajo); para quitarlas de todos →
- * variable de entorno ELDORIA_NO_PHASES=1 (o borrar la línea `require('./fases').install(Game)` de game.js).
+ * APAGADO POR DEFECTO. Para encenderlas: variable de entorno ELDORIA_PHASES=1 (en Render: Environment). Para quitarlas de un jefe →
+ * `off: true` en su entrada de PROFILES (abajo). Para quitarlas del todo: borrar la línea `require('./fases').install(Game)` de game.js.
  */
 let _w = null; const world = new Proxy({}, { get: (_, k) => (_w || (_w = require('./world')))[k] });
 const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
@@ -69,7 +69,7 @@ const RANGE = 26;                                         // jugadores a los que
 
 function install(Game) {
   const P = Game.prototype;
-  const ON = !process.env.ELDORIA_NO_PHASES;
+  const ON = () => process.env.ELDORIA_PHASES === '1';           // se mira en cada llamada (las pruebas lo encienden)
   const zoneOf = (e) => world.zoneAt(e.x, e.y);
   const free = (x, y) => world.isWalkable(x, y) && world.zoneAt(x, y).kind !== 'town';
   const distSeg = (px, py, x1, y1, x2, y2) => { const vx = x2 - x1, vy = y2 - y1, u = Math.max(0, Math.min(1, ((px - x1) * vx + (py - y1) * vy) / (vx * vx + vy * vy || 1))); return Math.hypot(px - (x1 + vx * u), py - (y1 + vy * u)); };
@@ -190,7 +190,7 @@ function install(Game) {
 
   const U0 = P.updateMonster;
   P.updateMonster = function (m, now) {
-    const pr = ON && m.def && m.def.boss && PROFILES[m.type]; const a0 = m.nextAtk, v0 = m.nextMove;
+    const pr = ON() && m.def && m.def.boss && PROFILES[m.type]; const a0 = m.nextAtk, v0 = m.nextMove;
     U0.call(this, m, now);
     if (!pr || pr.off) return;
     if (m.dead) { this.phCleanup(m, now, false); return; }
@@ -214,7 +214,7 @@ function install(Game) {
 
   const H0 = P.hurtMonster;
   P.hurtMonster = function (m, dmg, p, now) {
-    if (m.phInv > now) { if (!(m.phMsg > now)) { m.phMsg = now + 700; this.fx.push({ k: 'd', x: m.x, y: m.y, v: '🛡️ ¡Cambia de fase!', c: 'x' }); } return; }
+    if (m.phInv > now && ON()) { if (!(m.phMsg > now)) { m.phMsg = now + 700; this.fx.push({ k: 'd', x: m.x, y: m.y, v: '🛡️ ¡Cambia de fase!', c: 'x' }); } return; }
     return H0.call(this, m, dmg, p, now);
   };
 }

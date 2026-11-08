@@ -2703,7 +2703,7 @@
     G.rings = G.rings.filter((r) => now - r.t < r.max);
     c.save(); c.globalCompositeOperation = 'lighter';
     for (const r of G.rings) {
-      const k = (now - r.t) / r.max, a = 1 - k;
+      const k = Math.max(0, (now - r.t) / r.max), a = 1 - k;
       c.strokeStyle = `rgba(${r.col},${a * 0.9})`; c.lineWidth = r.w * a + 0.6;
       c.beginPath(); c.ellipse(px(r.x), py(r.y) + 2, r.r * (0.3 + k), r.r * (0.3 + k) * 0.6, 0, 0, 7); c.stroke();
     }
@@ -3023,10 +3023,10 @@
     c.fillStyle = '#05070a'; c.fillRect(0, 0, cw, ch);
     if (now - G.shake.t < (RF ? 240 : 150)) c.translate((Math.random() - 0.5) * G.shake.m, (Math.random() - 0.5) * G.shake.m);
     paintTerrain(c, now);
-    { const x0 = Math.floor(G.cam.x - cw / 2 / TS) - 1, x1 = Math.ceil(G.cam.x + cw / 2 / TS) + 1, y0 = Math.floor(G.cam.y - ch / 2 / TS) - 1, y1 = Math.ceil(G.cam.y + ch / 2 / TS) + 1;
-      for (const g of G.ground) itemOne(c, g, now);
-      for (const n of G.npcs) { if (n.x < x0 || n.x > x1 || n.y < y0 || n.y > y1) continue; npcOne(c, n, now); } }
     EXT.under(c, now, cw, ch);
+    { const x0 = Math.floor(G.cam.x - cw / 2 / TS) - 1, x1 = Math.ceil(G.cam.x + cw / 2 / TS) + 1, y0 = Math.floor(G.cam.y - ch / 2 / TS) - 1, y1 = Math.ceil(G.cam.y + ch / 2 / TS) + 1;
+      for (const g of G.ground) itemOne(c, g, now);                          // (objetos y PNJ se dibujan DESPUÉS de lo «de abajo»: así el suelo de la sala del trono no los tapa)
+      for (const n of G.npcs) { if (n.x < x0 || n.x > x1 || n.y < y0 || n.y > y1) continue; npcOne(c, n, now); } }
     const list = [...G.ents.values()].sort((a, b) => a.ry - b.ry);
     const tgId = G.me.tg;
     for (const e of list) {

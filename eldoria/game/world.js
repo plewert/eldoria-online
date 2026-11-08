@@ -38,6 +38,7 @@ for (const r of RAID_ROOMS) { r.x1 = r.x0 + RAID_W - 1; r.y0 = RAID_Y0; r.y1 = R
 const ZONES = [
   ...RAID_ROOMS.map((r) => ({ id: r.id, name: r.name, pvp: false, kind: 'dungeon', tint: r.tint, rect: [r.x0, r.y0, r.x1, r.y1] })),
   { id: 'ciudad',     name: 'Ciudad de Aldea Real',   pvp: false, kind: 'town',    rect: [78, 58, 102, 74] },
+  { id: 'castillo',   name: 'Castillo Real',          pvp: false, kind: 'town',    rect: [76, 36, 104, 57] },
   { id: 'puerto',     name: 'Puerto Marea',           pvp: false, kind: 'town',    rect: [90, 120, 108, 131] },
   { id: 'aldea',      name: 'Aldea Pesquera de Coral', pvp: false, kind: 'town',    rect: [200, 70, 222, 84] },
   { id: 'catacumbas', name: 'Catacumbas Silenciosas', pvp: false, kind: 'dungeon', rect: [3, 40, 30, 91] },
@@ -717,6 +718,20 @@ carvePath(90, 100, 100, 119);   // camino al Puerto Marea
 carvePath(67, 102, 30, 102);    // calle del pantano
 carvePath(30, 102, 30, 118);
 
+/* Castillo Real: al norte de la Ciudad de Aldea Real. Foso, muros con 4 torres, dos puertas con puente, patio con fuente y la torre del
+   homenaje (casa de tipo «castillo») con la sala del trono. El camino del norte lo atraviesa de puerta a puerta. */
+{
+  const fill = (x0, y0, x1, y1, t) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (inb(x, y)) tiles[idx(x, y)] = t; };
+  fill(76, 36, 104, 57, T.WATER);                                   // foso
+  fill(77, 37, 103, 56, T.WALL);                                    // muros
+  fill(78, 38, 102, 55, T.ROAD);                                    // patio
+  for (const [x0, y0] of [[77, 37], [100, 37], [77, 53], [100, 53]]) fill(x0, y0, x0 + 3, y0 + 3, T.WALL);        // torres (4 × 4)
+  fill(89, 36, 91, 37, T.ROAD); fill(89, 56, 91, 57, T.ROAD);       // puertas y puentes: norte (hacia el bosque) y sur (hacia la ciudad)
+  fill(89, 51, 91, 52, T.WATER);                                    // fuente
+  for (const [fx, fy] of [[81, 44], [82, 44], [81, 49], [82, 49], [98, 44], [99, 44], [98, 49], [99, 49], [84, 52], [96, 52]]) tiles[idx(fx, fy)] = T.FLOWER;
+  house(83, 39, 97, 48, 90, 'castillo');                            // torre del homenaje: sala del trono dentro (x 84–96, y 40–47)
+}
+
 /* 5) Portales */
 const PORTALS = [];
 function addPortal(x, y, tx, ty, label, fee) { tiles[idx(x, y)] = T.PORTAL; PORTALS.push({ x, y, tx, ty, label, fee: fee || 0 }); }
@@ -816,6 +831,14 @@ const NPCS = [
   { id: 'tomas', name: 'Tomás el Banquero',  icon: '🧑‍💼', x: 216, y: 74, type: 'bank' },
   { id: 'brisa', name: 'Capitán Brisa',      icon: '🧑‍✈️', x: 94,  y: 124, type: 'shop', shop: 'brisa' },
   { id: 'marta', name: 'Marta la Banquera',  icon: '💁‍♀️', x: 104, y: 124, type: 'bank' },
+  // Castillo Real: el rey (misiones principales) y la guardia real
+  { id: 'rey', name: 'Rey Aldric III', icon: '👑', spr: 'rey', x: 90, y: 41, type: 'talk', say: ['Bienvenido al Castillo Real, aventurero. El reino necesita héroes como tú.', 'Cumple mis encargos y la corona te recompensará con oro, fama y tesoros.', 'Hay bestias y jefes que amenazan mis tierras. ¿Te atreves a enfrentarlos?', 'Cada día el reino necesita brazos fuertes. Vuelve mañana por un nuevo decreto.'] },
+  { id: 'guardia1', name: 'Guardia Real', icon: '💂', spr: 'guardia', x: 88, y: 55, type: 'talk', say: ['Alto ahí… ah, eres tú. Pasa, aventurero.', 'El castillo está a salvo mientras yo esté aquí.'] },
+  { id: 'guardia2', name: 'Guardia Real', icon: '💂', spr: 'guardia', x: 92, y: 55, type: 'talk', say: ['Los monstruos no pasan de la muralla.', 'Si buscas al rey, está en la sala del trono, dentro de la torre.'] },
+  { id: 'guardia3', name: 'Guardia Real', icon: '💂', spr: 'guardia', x: 88, y: 44, type: 'talk', say: ['Respeto ante el rey.', 'Su Majestad tiene encargos para los valientes.'] },
+  { id: 'guardia4', name: 'Guardia Real', icon: '💂', spr: 'guardia', x: 92, y: 44, type: 'talk', say: ['Habla con el rey; él te dirá qué necesita el reino.', 'Cuidado con los jefes del sur: no perdonan.'] },
+  { id: 'guardia5', name: 'Guardia Real', icon: '💂', spr: 'guardia', x: 88, y: 47, type: 'talk', say: ['Esta sala ha visto grandes juramentos.'] },
+  { id: 'guardia6', name: 'Guardia Real', icon: '💂', spr: 'guardia', x: 92, y: 47, type: 'talk', say: ['Que la luz guíe tus pasos, aventurero.'] },
 ];
 /* Mobiliario sólido de las casas (cofres, estantes, barras, yunques…): pegado a la pared del fondo, sin tapar la puerta ni a los PNJ. */
 {
@@ -824,6 +847,7 @@ const NPCS = [
     taberna: ['barril', 'barra', 'barra', 'barra', 'barra', 'barra', 'barril'],
     herreria: ['fragua', 'yunque', null, 'estante', 'barril', null, 'yunque'],
     biblioteca: ['estante', 'estante', 'estante', 'estante', 'estante', 'estante', 'estante'],
+    castillo: [null],
   };
   const npcAt = new Set(NPCS.map((n) => n.y * W + n.x));
   const put = (x, y, k) => { if (npcAt.has(y * W + x) || tiles[idx(x, y)] !== T.SHOP) return; DECOR.push([x, y, k]); DECOR_SET.add(y * W + x); };
@@ -832,7 +856,7 @@ const NPCS = [
     const pat = PAT[h.kind] || PAT.general, by0 = h.ay + 1;
     for (let x = h.ax + 1, k = 0; x < h.bx; x++, k++) { const kind = pat[k % pat.length]; if (kind) put(x, by0, kind); }
     if ((h.kind === 'taberna' || h.kind === 'biblioteca') && rows >= 4) for (const x of [h.ax + 2, h.bx - 2]) if (Math.abs(x - h.doorX) > 1) put(x, h.ay + 3, 'mesa');
-  }
+  }  for (const [x, y, k] of [[90, 40, 'trono'], [87, 40, 'brasero'], [93, 40, 'brasero'], [86, 42, 'columna'], [86, 44, 'columna'], [86, 46, 'columna'], [94, 42, 'columna'], [94, 44, 'columna'], [94, 46, 'columna']]) put(x, y, k);   // sala del trono
 }
 
 

@@ -685,7 +685,7 @@ class Game {
       this.sendBank(p);
       this.msg(p, `${n.name}: Guardo tu oro y tus objetos a salvo. Lo que está en el banco no se pierde si te matan.`, 'n');
     } else {
-      this.msg(p, `${n.name}: ${NPC_TIPS[rnd(0, NPC_TIPS.length - 1)]}`, 'n');
+      this.msg(p, `${n.name}: ${n.say ? n.say[rnd(0, n.say.length - 1)] : NPC_TIPS[rnd(0, NPC_TIPS.length - 1)]}`, 'n');
     }
     this.sendQuests(p, n.id);
   }
@@ -1318,7 +1318,7 @@ require('./fishing').install(Game);
 require('./mining').install(Game);
 require('./raid').install(Game);
 require('./halloween').install(Game);
-require('./magma').install(Game); require('./anubis').install(Game); require('./zeus').install(Game); require('./hades').install(Game); require('./medusa').install(Game); require('./cerbero').install(Game); require('./este2').install(Game); require('./reydragon').install(Game); require('./bossnivel').install(Game); require('./historia').install(Game); require('./especiales').install(Game); require('./bots').install(Game); require('./familias').install(Game, ITEMS, MONSTERS);
+require('./magma').install(Game); require('./anubis').install(Game); require('./zeus').install(Game); require('./hades').install(Game); require('./medusa').install(Game); require('./cerbero').install(Game); require('./este2').install(Game); require('./reydragon').install(Game); require('./bossnivel').install(Game); require('./fases').install(Game); require('./historia').install(Game); require('./especiales').install(Game); require('./bots').install(Game); require('./familias').install(Game, ITEMS, MONSTERS);
 for (const d of Object.values(MONSTERS)) if (d.boss && d.respawn === 60000) d.respawn = 30000;      // jefes de reaparición rápida: 30 s en vez de 1 min
 require('./petloot').install(Game); require('./torneo').install(Game); require('./album').install(Game);
 require('./album').install(Game); require('./pociones').install(Game); require('./instancias').install(Game);

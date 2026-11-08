@@ -20,7 +20,7 @@
   };
 
   let houses = null, forTiles = null;
-  const KPAL = { taberna: [['#7a4a2e', '#4e2c18', '#9a6240']], herreria: [['#4b4f58', '#2c2f36', '#666b76']], biblioteca: [['#4f7d86', '#33565e', '#6aa0aa']] };
+  const KPAL = { taberna: [['#7a4a2e', '#4e2c18', '#9a6240']], herreria: [['#4b4f58', '#2c2f36', '#666b76']], biblioteca: [['#4f7d86', '#33565e', '#6aa0aa']], castillo: [['#9a2f3a', '#651b25', '#c24a54']] };
   function scan() {                                          // casas: las que manda el servidor (con su tipo)
     if (houses && forTiles === G.tiles) return houses;
     houses = []; forTiles = G.tiles; if (!G.tiles) return houses;
@@ -49,6 +49,7 @@
       // decoración interior: alfombra en el centro y objetos en la pared del fondo
       const cx = (h.x0 + h.x1) / 2, cy = (h.y0 + h.y1 - 1) / 2, v = hs(h.ax, h.ay, 5);
       for (let y = h.y0; y < h.y1; y++) for (let x = h.x0; x <= h.x1; x++) {
+        if (h.kind === 'castillo') break;                              // la sala del trono se dibuja en castillo.js
         if (G.npcTiles && G.npcTiles.has(y * G.W + x)) continue;
         if (Math.abs(x - cx) <= (h.x1 - h.x0 > 4 ? 1.6 : 0.6) && Math.abs(y - cy) <= 0.6 && h.y1 - h.y0 >= 3) {
           const X0 = sx(x, cw), Y0 = sy(y, ch);
@@ -79,7 +80,7 @@
           if (h.kind === 'herreria') { c.save(); c.translate(X0 + 22, Y0 + 14); c.rotate(-0.8 + sw * 1.2); c.fillStyle = '#6b4a2a'; c.fillRect(0, -1, 10, 2); c.fillStyle = '#9aa0aa'; c.fillRect(8, -3, 4, 6); c.restore(); }
         }
       }
-      for (let x = h.x0; x <= h.x1; x++) {                          // pared del fondo (fila de muro superior)
+      for (let x = h.x0; x <= h.x1 && h.kind !== 'castillo'; x++) {                          // pared del fondo (fila de muro superior)
         const X0 = sx(x, cw), Y0 = sy(h.ay, ch), k = (hs(x, h.ay, 9) * 5) | 0;
         c.fillStyle = 'rgba(40,26,16,.55)'; c.fillRect(X0, Y0 + TS - 5, TS, 5);
         if (k === 0) { c.fillStyle = '#6b4a2a'; c.fillRect(X0 + 3, Y0 + 10, TS - 6, 3); c.fillRect(X0 + 3, Y0 + 20, TS - 6, 3);   // estante con libros y frascos
