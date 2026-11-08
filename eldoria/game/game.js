@@ -1318,7 +1318,7 @@ require('./fishing').install(Game);
 require('./mining').install(Game);
 require('./raid').install(Game);
 require('./halloween').install(Game);
-require('./magma').install(Game); require('./anubis').install(Game); require('./zeus').install(Game); require('./hades').install(Game); require('./medusa').install(Game); require('./cerbero').install(Game); require('./este2').install(Game); require('./reydragon').install(Game); require('./bossnivel').install(Game); require('./historia').install(Game); require('./especiales').install(Game); require('./bots').install(Game); require('./familias').install(Game, ITEMS, MONSTERS);
+require('./magma').install(Game); require('./anubis').install(Game); require('./zeus').install(Game); require('./hades').install(Game); require('./medusa').install(Game); require('./cerbero').install(Game); require('./este2').install(Game); require('./reydragon').install(Game); require('./bossnivel').install(Game); require('./fases').install(Game); require('./historia').install(Game); require('./especiales').install(Game); require('./bots').install(Game); require('./familias').install(Game, ITEMS, MONSTERS);
 for (const d of Object.values(MONSTERS)) if (d.boss && d.respawn === 60000) d.respawn = 30000;      // jefes de reaparición rápida: 30 s en vez de 1 min
 require('./petloot').install(Game); require('./torneo').install(Game); require('./album').install(Game);
 require('./album').install(Game); require('./pociones').install(Game); require('./instancias').install(Game);
