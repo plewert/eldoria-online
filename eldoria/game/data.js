@@ -40,7 +40,7 @@ const CFG = {
   GEM_CHANCE: 0,                // monstruos normales: no sueltan gemas (solo se consiguen minando rocas)
   GEM_CHANCE_BOSS: 0.001,       // jefes: 0,1 % por participante (muy muy raro; el que más daño hace tiene algo más de suerte)
   BOSS_GOLD_K: 2,               // oro por muerte de cualquier jefe ×2 (se aplica al final de data.js)
-  BOSS_DROP_K: 0.95,            // el botín de jefes (lo que no es seguro) cae un 5 % menos (era 0,8; subido porque los jefes tienen fases)
+  BOSS_DROP_K: 0.8,             // el botín de jefes (lo que no es seguro) cae un 20 % menos
   GEAR_DROP_MULT: 0.5,          // los equipos raros que sueltan monstruos y jefes caen la mitad de seguido
   BOSS_RARE_MULT: 4,
   MAX_SOCKETS: 3,

@@ -2703,7 +2703,7 @@
     G.rings = G.rings.filter((r) => now - r.t < r.max);
     c.save(); c.globalCompositeOperation = 'lighter';
     for (const r of G.rings) {
-      const k = Math.max(0, (now - r.t) / r.max), a = 1 - k;
+      const k = (now - r.t) / r.max, a = 1 - k;
       c.strokeStyle = `rgba(${r.col},${a * 0.9})`; c.lineWidth = r.w * a + 0.6;
       c.beginPath(); c.ellipse(px(r.x), py(r.y) + 2, r.r * (0.3 + k), r.r * (0.3 + k) * 0.6, 0, 0, 7); c.stroke();
     }
