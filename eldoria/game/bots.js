@@ -62,7 +62,7 @@ const ZONE_TYPES = {
   volcan: ['golem_lava', 'demonio_menor'],
   abismo: ['troll', 'demonio_menor', 'golem_lava'],
 };
-const ALLOWED = new Set(['prado', 'ciudad', ...Object.keys(ZONE_TYPES)]);
+const ALLOWED = new Set(['prado', 'ciudad', 'castillo', ...Object.keys(ZONE_TYPES)]);
 const isRaidZone = (id) => id.startsWith('raid_');
 
 function noviceTypes(level) {
