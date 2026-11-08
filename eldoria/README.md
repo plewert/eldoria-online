@@ -487,7 +487,7 @@ Boris vende 9 tabletas (una por cueva de jefe) a 100 000 de oro; de un solo uso,
 
 ## Gemas solo en las rocas, botín de jefes y banco
 - **Las gemas ya solo se consiguen minando rocas** (Granito … Obsidiana): los monstruos normales no las sueltan (los jefes solo muy muy raro, 0,1 %) y se quitaron las recetas de «pulir gema». La probabilidad por roca bajó a la mitad.
-- **Botín de jefes −20 %** (`CFG.BOSS_DROP_K = 0.8`): afecta a lo que no es seguro (equipo, materiales, mascotas…); el trofeo y las pociones siguen cayendo igual. Hades y Zeus aplican el mismo factor a su equipo.
+- **Botín de jefes −20 %** (`CFG.BOSS_DROP_K = 0.8`; si activas las fases puedes subirlo un poco, p. ej. 0,95): afecta a lo que no es seguro (equipo, materiales, mascotas…); el trofeo y las pociones siguen cayendo igual. Hades y Zeus aplican el mismo factor a su equipo.
 - **Banco**: arrastra objetos de la mochila al banco (depositar), del banco a la mochila (retirar) y reordena el banco; también con el dedo (mantén pulsado ~¼ s y arrastra). En la mochila, soltar sobre una casilla de equipo equipa.
 
 ### Gemas en la tienda de Boris
@@ -630,3 +630,18 @@ El mapa pasó de 480 a 640 columnas (`W = 640`, `W2 = 480` es el ancho anterior)
 - **Botín**: set Abisal (arco, guadaña, bastón, casco, peto, guanteletes, musleras, espolones, 2 amuletos, anillo; todos familia dragón), cría (`pet_rey_dragones`) y montura voladora (`montura_rey_dragones`) muy raras.
 - Sprites: `rey_dragones` (animado, con pose de vuelo), `rey_dragones_p` (cría) y `rey_dragones_mt` (montura) en `sprites3.png`; iconos y capas en `gear.png`.
 - **Tableta de teletransporte** (`tp_cueva_dragones`): la vende Boris por 40.000 de oro y te deja dentro de la Guarida, cerca de la entrada (como las de los otros jefes).
+
+## Fases de jefe y ataques con cuenta atrás
+Los 16 jefes de cueva (11 clásicos, Rey de los Dragones y los 4 de Este II) tienen **3 fases** según su vida: 100–70 % (como siempre), 70–35 % (**fase 2**) y 35–0 % (**fase 3, furia**).
+- Al cambiar de fase: cartel en pantalla, temblor, aura, el jefe es **intocable 2,5 s**, y después ataca y se mueve más rápido (fase 2 ×0,85, fase 3 ×0,7 de espera).
+- En fases 2 y 3 añade **ataques propios** (además de los que ya tenía) que avisan con una **zona de color en el suelo y un número de cuenta atrás**; si sales de la zona antes de llegar a 0 no recibes daño. Piezas: lluvia de círculos, líneas, salto sobre un jugador, onda alrededor del jefe, charcos que se quedan, «refugios» (toda la zona daña salvo los círculos verdes «SEGURO») y esbirros (fase 3 de algunos jefes).
+- Cada jefe combina esas piezas con su tema y color (Cerbero: veneno/fuego/sombra, Zeus: rayos y tormenta con refugio, Hades: almas y oscuridad, etc.). Todo está en `PROFILES` de `game/fases.js`.
+- **APAGADO POR DEFECTO** (los jefes se comportan como siempre). Para encenderlo: variable de entorno `ELDORIA_PHASES=1` (en Render → Environment). Con `off: true` en la entrada de un jefe en `PROFILES` se quitan sus fases aunque estén encendidas. Cliente: `public/fases.js` (solo visual).
+- No incluye: jefes de Raid, jefe de Halloween ni los mini-jefes de Este II (golem, orco, águila, ogro, zombi, nigromante, ent).
+
+## Castillo Real (al norte de la Ciudad de Aldea Real)
+- **Dónde:** zona segura «Castillo Real» (`castillo`, x 76–104, y 36–57), justo al norte de la ciudad. Foso de agua, muros con 4 torres, dos puertas con puente de madera (sur → ciudad, norte → camino del bosque; el camino del norte lo atraviesa), patio con fuente y la **torre del homenaje** (casa de tipo `castillo`) con la **sala del trono** dentro: alfombra real, tarima, trono, 6 columnas y 2 braseros (sólidos).
+- **Rey Aldric III** (en el trono) y **6 guardias reales** (sprites `npc_rey` / `npc_guardia`). El rey tiene las **misiones principales del reino** (`npc: 'rey'` en `game/quests.js`): Juramento ante la corona, el Rey Esqueleto, el Señor Orco, la Hidra, el Faraón, la Reina de Hielo y un **decreto diario** repetible.
+- **Código:** terreno y PNJ en `game/world.js` (bloque «Castillo Real»); `type: 'talk'` con `say: [...]` para frases propias (`game/game.js`); dibujo en `public/castillo.js` (puentes, fuente, almenas, antorchas, estandartes, torres con tejado, banderas, sala del trono) y `public/casas.js` (tipo de casa `castillo`). Para quitar solo lo visual: borrar `public/castillo.js` y su `<script>`.
+- Cambio de dibujo: los objetos del suelo y los PNJ se dibujan **después** de lo «de abajo» (`EXT.under`), para que el suelo de la sala del trono no los tape.
+- **Pendiente (propuesto, no hecho):** fortaleza orca, ruinas antiguas y asedio semanal.
