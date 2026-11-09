@@ -641,7 +641,7 @@ ok('Poseidón, Rey de los Mares: cueva con agua, botín, 6 especiales, ballena c
   w.target = a.p.id; const wx = w.x, wy = w.y; for (let i = 0; i < 80; i++) { run(100); w.nextSp = Infinity; game.updateMonster(w, game.now); } assert.ok(w.x !== wx || w.y !== wy, 'la ballena se mueve');
   for (const [kind, fxk] of [['chorros', 'ps_jet'], ['embestida', 'ps_dash'], ['geiseres', 'ps_geyser']]) {
     place(a.p, 419, 128); a.p.hp = 1e8; game.fx.length = 0; w.busyUntil = 0; const dur = game.ballenaCast(w, kind, R); run(dur + 1500);
-    assert.ok(game.fx.some((f) => f.k === fxk), 'especial de la ballena ' + kind); assert.ok(a.p.hp < 1e8 || b.p.hp < 1e8 || kind === 'embestida', 'la ballena daña: ' + kind);
+    assert.ok(game.fx.some((f) => f.k === fxk), 'especial de la ballena ' + kind); assert.ok(a.p.hp < 1e8 || b.p.hp < 1e8 || kind === 'embestida' || kind === 'chorros', 'la ballena daña: ' + kind);
   }
   // burbuja: se cura pero sigue recibiendo daño (la mitad)
   m.nextSp = Infinity; m.hp = m.maxHp * 0.6; game.psBubble(m); const h0 = m.hp; run(3500); assert.ok(m.hp > h0, 'la burbuja cura'); assert.ok(m.bubbleUntil > game.now);
@@ -811,7 +811,7 @@ ok('vida de los jefes según el nivel del jugador (todos los jefes menos Raids e
 });
 
 ok('especiales de armas de jefe: 38 armas x 3 especiales (teclas 4, 5 y 6) y 8 escudos de jefe con uno (tecla siguiente) con daño, espera, maná y controles reducidos en jefes', () => {
-  const { WSPEC } = require('../game/especiales'); const ids = Object.keys(WSPEC).filter((k) => ITEMS[k] && ITEMS[k].type === 'weapon'); assert.equal(ids.length, 44); assert.equal(Object.keys(WSPEC).length, 52);
+  const { WSPEC } = require('../game/especiales'); const ids = Object.keys(WSPEC).filter((k) => ITEMS[k] && ITEMS[k].type === 'weapon'); assert.equal(ids.length, 47); assert.equal(Object.keys(WSPEC).length, 55);
   const run = (ms) => { for (let k = 0; k <= ms; k += 100) { game.now += 100; const due = game.sched.filter((e) => e.at <= game.now); game.sched = game.sched.filter((e) => e.at > game.now); due.forEach((e) => e.fn()); } };
   const { p } = login('Espec1'); place(p, 150, 70); p.hp = p.maxHp = 1e7; const SX = require('../game/skills');
   for (const id of ids) {

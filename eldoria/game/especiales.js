@@ -118,6 +118,18 @@ const SP = {
     mk('sp_rayo_arco', 'Flecha de rayo', '⚡', 'line', { col: '170,220,255', len: 10, mult: 3.4, slow: 2000, cd: 30000, mana: 60, desc: 'Flecha eléctrica que cruza 10 casillas (×3,4) y ralentiza.' }),
     mk('sp_lluvia_rayos', 'Lluvia de rayos', '🌩️', 'rain', { col: '170,220,255', n: 8, r: 5, hr: 1.6, mult: 1.7, cd: 80000, mana: 130, lv: 60, desc: '8 rayos caen alrededor del objetivo (×1,7).' }),
   ],
+  rdr_arco: [
+    mk('sp_flecha_tiempo', 'Flecha del tiempo', '⏳', 'line', { col: '255,150,60', len: 10, mult: 3.6, burn: { ticks: 4, mult: 0.3 }, slow: 2000, cd: 30000, mana: 60, desc: 'Flecha de fuego que cruza 10 casillas (×3,6), quema y ralentiza.' }),
+    mk('sp_lluvia_eterna', 'Lluvia eterna', '🔥', 'rain', { col: '255,150,60', n: 9, r: 5, hr: 1.6, mult: 1.8, burn: { ticks: 3, mult: 0.3 }, cd: 80000, mana: 130, lv: 60, desc: '9 flechas incendiarias alrededor del objetivo (×1,8).' }),
+  ],
+  rdr_guadana: [
+    mk('sp_siega_infernal', 'Siega infernal', '🔥', 'fan', { col: '255,110,30', mult: 3.6, burn: { ticks: 4, mult: 0.3 }, cd: 28000, mana: 60, desc: 'Tres tajos de fuego infernal en abanico (×3,6) y quemadura.' }),
+    mk('sp_cosecha_dragon', 'Cosecha del dragón', '☠️', 'nova', { col: '255,110,30', r: 4, mult: 4, stun: 1500, burn: { ticks: 4, mult: 0.3 }, cd: 80000, mana: 130, lv: 60, desc: 'Giras la guadaña (×4), aturdes y quemas a los cercanos.' }),
+  ],
+  rdr_baston: [
+    mk('sp_rayo_abisal', 'Rayo abisal', '🌀', 'nova', { col: '170,90,255', r: 3, mult: 3.6, stun: 1500, atTarget: 1, cd: 30000, mana: 65, desc: 'Un rayo del abismo sobre el objetivo (×3,6) que aturde.' }),
+    mk('sp_lluvia_abismo', 'Lluvia del abismo', '🌌', 'rain', { col: '170,90,255', n: 9, r: 5, hr: 1.6, mult: 2, cd: 85000, mana: 140, lv: 60, desc: '9 descargas abisales alrededor del objetivo (×2).' }),
+  ],
   md_hacha: [
     mk('sp_tajo_gorgona', 'Tajo de la Gorgona', '🪓', 'fan', { col: '110,230,120', mult: 3.4, burn: { ticks: 4, mult: 0.3 }, cd: 28000, mana: 60, desc: 'Tres tajos venenosos en abanico (×3,4) que envenenan.' }),
     mk('sp_mirada_petrea', 'Mirada pétrea', '🗿', 'nova', { col: '120,230,120', r: 4, mult: 3.8, stun: 2000, cd: 80000, mana: 130, lv: 60, desc: 'Un destello de piedra a tu alrededor (×3,8) que aturde.' }),
@@ -181,6 +193,9 @@ const THIRD = {
   hd_guadana:     mk3('sp_eclipse_infra', 'Eclipse del Inframundo', '🌑', 'nova', { col: '255,120,30', r: 5, mult: 4.6, stun: 2000, burn: { ticks: 5, mult: 0.35 }, desc: 'Un eclipse a tu alrededor (×4,6) que aturde y quema.' }),
   hd_arco:        mk3('sp_cielo_llamas', 'Cielo en llamas', '🔥', 'rain', { col: '255,120,30', n: 10, r: 6, hr: 1.7, mult: 1.9, burn: { ticks: 3, mult: 0.3 }, desc: '10 flechas incendiarias alrededor del objetivo (×1,9).' }),
   zs_arco:        mk3('sp_cadena_rayos', 'Cadena de rayos', '⚡', 'volley', { col: '170,220,255', hits: 10, span: 3000, mult: 1.5, desc: 'Diez rayos encadenados al objetivo (×1,5 cada uno).' }),
+  rdr_arco:       mk3('sp_fin_tiempo', 'Fin del tiempo', '⏳', 'volley', { col: '255,150,60', hits: 10, span: 3000, mult: 1.7, burn: { ticks: 3, mult: 0.3 }, desc: 'Diez flechas de fuego al objetivo (×1,7 cada una) que queman.' }),
+  rdr_guadana:    mk3('sp_eclipse_dragon', 'Cosecha infernal total', '☠️', 'nova', { col: '255,110,30', r: 5, mult: 5, stun: 2000, burn: { ticks: 5, mult: 0.35 }, desc: 'Una guadañada gigante (×5) que aturde y quema.' }),
+  rdr_baston:     mk3('sp_colapso_abisal', 'Colapso abisal', '🌌', 'nova', { col: '170,90,255', r: 5, mult: 5, pull: 4, atTarget: 1, desc: 'El abismo colapsa sobre el objetivo (×5) y atrae a los cercanos.' }),
   md_hacha:       mk3('sp_decapitacion', 'Decapitación', '🪓', 'nova', { col: '110,230,120', r: 5, mult: 4.8, stun: 2000, burn: { ticks: 4, mult: 0.3 }, desc: 'Un tajo giratorio (×4,8) que aturde y envenena.' }),
   md_arco:        mk3('sp_mordida_espectral', 'Mordida espectral', '🐍', 'volley', { col: '110,230,120', hits: 8, span: 2200, mult: 1.6, desc: 'Ocho colmillos espectrales al objetivo (×1,6 cada uno).' }),
   md_baculo:      mk3('sp_mirada_cuatro', 'Mirada de cuatro cabezas', '🐍', 'nova', { col: '110,230,120', r: 4, mult: 4.8, stun: 2500, atTarget: 1, desc: 'Cuatro miradas sobre el objetivo (×4,8) que aturden.' }),

@@ -16,6 +16,7 @@ const IC = {
   cielo_llamas: 31, rayo_arco: 71, lluvia_rayos: 14, cadena_rayos: 75, trueno: 64, tormenta_olimpo: 14,
   flecha_marea: 63, lluvia_marina: 29, ola_cetro: 3, tormenta_marina: 14, estocada_marina: 7, remolino_mano: 52, cadena_olas: 32, furia_mar: 3, ira_poseidon: 48,
   tajo_gorgona: 66, mirada_petrea: 17, flecha_vibora: 32, lluvia_serpientes: 39, susurro_gorgona: 4, nido_cabezas: 39, decapitacion: 16, mordida_espectral: 17, mirada_cuatro: 39,
+  flecha_tiempo: 71, lluvia_eterna: 20, siega_infernal: 16, cosecha_dragon: 58, rayo_abisal: 64, lluvia_abismo: 14, fin_tiempo: 32, eclipse_dragon: 41, colapso_abisal: 40,
   ira_zeus: 71, sol: 72, amanecer: 31, eclipse_solar: 65,
   cb_triple: 32, cb_quemadura: 20, cb_aliento: 42, cb_marca: 4, cb_veloz: 73, cb_obsidiana: 41,
   cb_invocacion: 15, cb_triptico: 28, cb_jauria: 15, cb_onda: 3, cb_azote: 75, cb_garra: 23,
