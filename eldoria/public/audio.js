@@ -176,7 +176,7 @@
     ciudad: 'town', puerto: 'costa', aldea: 'pueblo', prado: 'prado', colinas: 'prado', sabana: 'prado', playa: 'costa',
     bosque: 'bosque', cumbres: 'cumbres', dunas: 'dunas', pantano: 'pantano', selva: 'selva', volcan: 'volcan',
     catacumbas: 'catac', minas: 'minas', abismo: 'pvp', piramide: 'pvp', fortaleza: 'pvp',
-    cueva: 'dragon', cueva_jade: 'jade', cueva_nube: 'nube', cueva_arana: 'arana', cueva_mar: 'mar', cueva_magma: 'magma', cueva_anubis: 'anubis', cueva_olimpo: 'nube', cueva_hades: 'magma', cueva_cerbero: 'magma', cueva_medusa: 'pantano', inframundo: 'magma',
+    cueva: 'dragon', cueva_jade: 'jade', cueva_nube: 'nube', cueva_arana: 'arana', cueva_mar: 'mar', cueva_magma: 'magma', cueva_anubis: 'anubis', cueva_olimpo: 'nube', cueva_poseidon: 'mar', cueva_hades: 'magma', cueva_cerbero: 'magma', cueva_medusa: 'pantano', inframundo: 'magma',
     montana_alta: 'cumbres', nubes_reino: 'nube', desierto_piramides: 'dunas', paraiso: 'costa', tierras_nuevas: 'prado', ciudad_alba: 'town',
   };
   let mood = 'town', nextT = 0, stepN = 0, moodAt = 0;
