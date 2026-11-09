@@ -118,6 +118,30 @@ const SP = {
     mk('sp_rayo_arco', 'Flecha de rayo', '⚡', 'line', { col: '170,220,255', len: 10, mult: 3.4, slow: 2000, cd: 30000, mana: 60, desc: 'Flecha eléctrica que cruza 10 casillas (×3,4) y ralentiza.' }),
     mk('sp_lluvia_rayos', 'Lluvia de rayos', '🌩️', 'rain', { col: '170,220,255', n: 8, r: 5, hr: 1.6, mult: 1.7, cd: 80000, mana: 130, lv: 60, desc: '8 rayos caen alrededor del objetivo (×1,7).' }),
   ],
+  md_hacha: [
+    mk('sp_tajo_gorgona', 'Tajo de la Gorgona', '🪓', 'fan', { col: '110,230,120', mult: 3.4, burn: { ticks: 4, mult: 0.3 }, cd: 28000, mana: 60, desc: 'Tres tajos venenosos en abanico (×3,4) que envenenan.' }),
+    mk('sp_mirada_petrea', 'Mirada pétrea', '🗿', 'nova', { col: '120,230,120', r: 4, mult: 3.8, stun: 2000, cd: 80000, mana: 130, lv: 60, desc: 'Un destello de piedra a tu alrededor (×3,8) que aturde.' }),
+  ],
+  md_arco: [
+    mk('sp_flecha_vibora', 'Flecha víbora', '🐍', 'line', { col: '110,230,120', len: 10, mult: 3.4, slow: 2000, cd: 30000, mana: 60, desc: 'Flecha venenosa que cruza 10 casillas (×3,4) y ralentiza.' }),
+    mk('sp_lluvia_serpientes', 'Lluvia de serpientes', '🐍', 'rain', { col: '110,230,120', n: 8, r: 5, hr: 1.6, mult: 1.7, cd: 80000, mana: 130, lv: 60, desc: '8 serpientes caen alrededor del objetivo (×1,7).' }),
+  ],
+  md_baculo: [
+    mk('sp_susurro_gorgona', 'Susurro de la Gorgona', '🐍', 'nova', { col: '110,230,120', r: 3, mult: 3.4, stun: 1500, atTarget: 1, cd: 30000, mana: 65, desc: 'Un susurro petrifica al objetivo (×3,4) y lo aturde.' }),
+    mk('sp_nido_cabezas', 'Nido de cuatro cabezas', '🐍', 'cloud', { col: '110,230,120', r: 4, secs: 10, mult: 0.8, slow: 2500, cd: 85000, mana: 140, lv: 60, desc: 'Serpientes 10 s (×0,8 por segundo) que ralentizan.' }),
+  ],
+  ps_arco: [
+    mk('sp_flecha_marea', 'Flecha de marea', '🌊', 'line', { col: '90,210,255', len: 10, mult: 3.4, slow: 2000, cd: 30000, mana: 60, desc: 'Flecha de agua que cruza 10 casillas (×3,4) y ralentiza.' }),
+    mk('sp_lluvia_marina', 'Lluvia marina', '🌧️', 'rain', { col: '90,210,255', n: 8, r: 5, hr: 1.6, mult: 1.7, cd: 80000, mana: 130, lv: 60, desc: '8 flechas de agua caen alrededor del objetivo (×1,7).' }),
+  ],
+  ps_cetro: [
+    mk('sp_ola_cetro', 'Ola del abismo', '🌊', 'nova', { col: '90,210,255', r: 3, mult: 3.4, stun: 1500, atTarget: 1, cd: 30000, mana: 65, desc: 'Una ola rompe sobre el objetivo (×3,4) y lo aturde.' }),
+    mk('sp_tormenta_marina', 'Tormenta marina', '🌧️', 'rain', { col: '90,210,255', n: 9, r: 5, hr: 1.6, mult: 1.9, cd: 85000, mana: 140, lv: 60, desc: '9 chorros de agua caen alrededor del objetivo (×1,9).' }),
+  ],
+  ps_tridente: [
+    mk('sp_estocada_marina', 'Estocada marina', '🔱', 'fan', { col: '90,210,255', mult: 3.4, slow: 2000, cd: 28000, mana: 60, desc: 'Tres estocadas de agua en abanico (×3,4) que ralentizan.' }),
+    mk('sp_remolino_mano', 'Remolino', '🌀', 'nova', { col: '90,210,255', r: 4, mult: 3.8, pull: 3, stun: 1500, cd: 80000, mana: 130, lv: 60, desc: 'Un remolino atrae y aturde a los cercanos (×3,8).' }),
+  ],
   zs_cetro: [
     mk('sp_trueno', 'Trueno divino', '⚡', 'nova', { col: '170,220,255', r: 3, mult: 3.4, stun: 1500, atTarget: 1, cd: 30000, mana: 65, desc: 'Un trueno cae sobre el objetivo (×3,4) y lo aturde.' }),
     mk('sp_tormenta_olimpo', 'Tormenta del Olimpo', '🌩️', 'rain', { col: '170,220,255', n: 9, r: 5, hr: 1.6, mult: 1.9, cd: 85000, mana: 140, lv: 60, desc: '9 rayos caen alrededor del objetivo (×1,9).' }),
@@ -157,6 +181,12 @@ const THIRD = {
   hd_guadana:     mk3('sp_eclipse_infra', 'Eclipse del Inframundo', '🌑', 'nova', { col: '255,120,30', r: 5, mult: 4.6, stun: 2000, burn: { ticks: 5, mult: 0.35 }, desc: 'Un eclipse a tu alrededor (×4,6) que aturde y quema.' }),
   hd_arco:        mk3('sp_cielo_llamas', 'Cielo en llamas', '🔥', 'rain', { col: '255,120,30', n: 10, r: 6, hr: 1.7, mult: 1.9, burn: { ticks: 3, mult: 0.3 }, desc: '10 flechas incendiarias alrededor del objetivo (×1,9).' }),
   zs_arco:        mk3('sp_cadena_rayos', 'Cadena de rayos', '⚡', 'volley', { col: '170,220,255', hits: 10, span: 3000, mult: 1.5, desc: 'Diez rayos encadenados al objetivo (×1,5 cada uno).' }),
+  md_hacha:       mk3('sp_decapitacion', 'Decapitación', '🪓', 'nova', { col: '110,230,120', r: 5, mult: 4.8, stun: 2000, burn: { ticks: 4, mult: 0.3 }, desc: 'Un tajo giratorio (×4,8) que aturde y envenena.' }),
+  md_arco:        mk3('sp_mordida_espectral', 'Mordida espectral', '🐍', 'volley', { col: '110,230,120', hits: 8, span: 2200, mult: 1.6, desc: 'Ocho colmillos espectrales al objetivo (×1,6 cada uno).' }),
+  md_baculo:      mk3('sp_mirada_cuatro', 'Mirada de cuatro cabezas', '🐍', 'nova', { col: '110,230,120', r: 4, mult: 4.8, stun: 2500, atTarget: 1, desc: 'Cuatro miradas sobre el objetivo (×4,8) que aturden.' }),
+  ps_arco:        mk3('sp_cadena_olas', 'Diluvio de flechas', '🌊', 'volley', { col: '90,210,255', hits: 10, span: 3000, mult: 1.5, desc: 'Diez flechas de agua encadenadas al objetivo (×1,5 cada una).' }),
+  ps_cetro:       mk3('sp_furia_mar', 'Furia del mar', '🌊', 'nova', { col: '90,210,255', r: 4, mult: 4.8, stun: 2000, atTarget: 1, desc: 'El mar descarga su furia sobre el objetivo (×4,8) y lo aturde.' }),
+  ps_tridente:    mk3('sp_ira_poseidon', 'Ira de Poseidón', '🔱', 'nova', { col: '90,210,255', r: 5, mult: 4.8, slow: 3000, stun: 1500, desc: 'Poseidón golpea a tu alrededor (×4,8), aturde y ralentiza.' }),
   zs_cetro:       mk3('sp_ira_zeus', 'Ira de Zeus', '🌩️', 'nova', { col: '170,220,255', r: 4, mult: 4.8, stun: 2000, atTarget: 1, desc: 'Zeus descarga su ira sobre el objetivo (×4,8) y lo aturde.' }),
   rd_rx_staff:    mk3('sp_eclipse_solar', 'Eclipse solar', '🌞', 'heal', { col: '255,230,150', r: 6, mult: 3.6, heal: 0.25, desc: 'Gran destello (×3,6) que cura un 25 % a tu grupo.' }),
 };

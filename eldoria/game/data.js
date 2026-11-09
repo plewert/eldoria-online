@@ -517,6 +517,7 @@ require('./mage').build(ITEMS, SHOPS, MONSTERS);
   require('./magma').build(ITEMS, MONSTERS);
   require('./anubis').build(ITEMS, MONSTERS);
   require('./zeus').build(ITEMS, MONSTERS);
+  require('./poseidon').build(ITEMS, MONSTERS);
   require('./hades').build(ITEMS, MONSTERS);
   require('./medusa').build(ITEMS, MONSTERS);
   require('./cerbero').build(ITEMS, MONSTERS);
@@ -569,7 +570,7 @@ for (const d of Object.values(MONSTERS)) if (!d.lv) d.lv = Math.max(1, Math.roun
   const F = { weapon: 1, body: 1, head: 0.8, legs: 0.8, shield: 0.8, boots: 0.5, gloves: 0.5, belt: 0.5 };
   CFG.SHOP_GEAR_MIN_LV = 80;
   for (const [id, d] of Object.entries(ITEMS)) {
-    if (!F[d.type] || (d.minLevel || 1) < CFG.SHOP_GEAR_MIN_LV || d.zeus || d.medusa || d.cerbero || d.este2 || d.raid || id.startsWith('hd_') || SHOPS.boris.includes(id)) continue;
+    if (!F[d.type] || (d.minLevel || 1) < CFG.SHOP_GEAR_MIN_LV || d.zeus || d.poseidon || d.medusa || d.cerbero || d.este2 || d.raid || id.startsWith('hd_') || SHOPS.boris.includes(id)) continue;
     d.price = Math.max(10e6, Math.round(lvPrice(d.minLevel) * F[d.type] / 5e5) * 5e5);      // d.sell no se toca: es lo que paga Boris al comprar
     SHOPS.boris.push(id);
   }

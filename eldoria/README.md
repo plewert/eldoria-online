@@ -656,3 +656,12 @@ Los bloques de la interfaz nueva se pueden **ocultar y volver a abrir** (marco d
 
 ### Bots cazadores (PvP)
 Un tercio de los aventureros simulados que no son novatos (`ai.pk`) son **cazadores**: cuando están en una zona PvP (Bosque Maldito, Cumbres, Dunas, Pantano, Selva, Lava, Abismo…) atacan primero a un jugador real que tengan cerca (a menos de 14 casillas, ambos con nivel de PvP), lo persiguen hasta 25 s y se retiran si se quedan con poca vida. En zonas seguras nunca atacan. Los demás bots siguen siendo pacíficos (solo se defienden). `BOTS_PK=0` apaga a los cazadores.
+
+## Poseidón, Rey de los Mares (Santuario de Poseidón, Paraíso de Coral)
+
+Nueva cueva de jefe (portal en la playa del Paraíso de Coral, ≈ (419,136), cuesta 2.000 como las demás; también hay tableta de teletransporte y encargo de Boris). El suelo es arena azul con **agua poco profunda** (se camina), **pozas profundas** (no se cruzan) y pilares de coral.
+- **6 especiales de Poseidón** (`game/poseidon.js`, `psCast`): remolino (atrae y daña; estalla al final), tridente (lanzado contra los jugadores, marca en el suelo), olas gigantes (recorren toda la cueva; solo se salva quien esté en el carril calmo), oscuridad (la cueva se oscurece y las corrientes abisales golpean), ráfagas de agua (abanicos de chorros) y bolas de agua (una para cada jugador de la cueva).
+- **Burbuja de agua**: al 72 %, 45 % y 22 % de vida se envuelve en una burbuja 9 s: se cura, pero sigue recibiendo daño (la mitad).
+- **Ballena Abisal**: la invoca (y la vuelve a invocar si la matan); recorre toda la cueva golpeando y tiene 3 especiales: chorros en todas direcciones, embestida en línea recta y géiseres bajo los jugadores. No da botín.
+- **Botín**: corona, coraza, guanteletes, grebas, botas, capa, sello, perla, Arco de las Mareas, Báculo de Poseidón y Tridente de Poseidón (cada arma con 3 especiales), con el mismo reparto por daño que Zeus.
+- Cliente: `public/poseidon.js` (efectos), texturas del santuario y sprites `poseidon`/`ballena` (sprites3.png).

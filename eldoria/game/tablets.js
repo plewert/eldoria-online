@@ -31,6 +31,7 @@ const CAVE_TABLETS = [
   ['tp_cueva_magma',  'Tableta de Teletransporte: Caldera del Magma',               288, 123],
   ['tp_cueva_anubis', 'Tableta de Teletransporte: Tumba de Anubis',                 377, 122],
   ['tp_cueva_olimpo', 'Tableta de Teletransporte: El Olimpo de Zeus',               342, 35],
+  ['tp_cueva_poseidon', 'Tableta de Teletransporte: Santuario de Poseidón (Paraíso de Coral)', 419, 132],
   ['tp_cueva_hades',  'Tableta de Teletransporte: Trono de Hades (Inframundo)',      240, 311],
   ['tp_cueva_medusa', 'Tableta de Teletransporte: Cueva de Medusa (Inframundo)',          280, 311],
   ['tp_cueva_cerbero', 'Tableta de Teletransporte: Las Fauces del Inframundo (Cerbero)',  317, 311],

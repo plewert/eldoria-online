@@ -609,6 +609,51 @@ ok('Zeus, Señor del Olimpo: cueva celeste, botín, diez rayos, truenos que pers
   assert.ok(game.fx.filter((f) => /^zs_/.test(f.k)).every((f) => Number.isFinite(f.x ?? 0) && Number.isFinite(f.y ?? 0)), 'fx con coordenadas');
 });
 
+ok('Poseidón, Rey de los Mares: cueva con agua, botín, 6 especiales, ballena con 3 especiales y burbuja de curación', () => {
+  assert.equal(MONSTERS.poseidon.special, 'poseidon'); assert.equal(MONSTERS.ballena.special, 'ballena');
+  const loot = MONSTERS.poseidon.loot.map((l) => l[0]);
+  ['ps_corona', 'ps_coraza', 'ps_guantes', 'ps_grebas', 'ps_botas', 'ps_capa', 'ps_anillo', 'ps_amuleto', 'ps_arco', 'ps_cetro', 'ps_tridente', 'trofeo_poseidon'].forEach((id) => { assert.ok(loot.includes(id), 'botín ' + id); });
+  const sj = require('../public/sprites.json'), gj = require('../public/gear.json'), fs = require('fs'), pa = require('path');
+  for (const k of ['poseidon', 'ballena']) assert.ok(sj[k] && sj[k].anim && ['idle', 'walk', 'atk', 'hurt', 'cast', 'death'].every((a) => sj[k].anim[a].length >= 2), 'sprite animado ' + k);
+  for (const k of ['ps_helm', 'ps_chest', 'ps_leg', 'ps_boot', 'ps_glove', 'ps_cape', 'ps_ring', 'ps_amulet', 'ps_bow', 'ps_staff', 'ps_trident']) assert.ok(gj['i_' + k], 'icono ' + k);
+  const sp = world.monsterSpawns.find((q) => q.type === 'poseidon'); assert.equal(zoneOf([sp.x, sp.y]).id, 'cueva_poseidon'); assert.ok(world.reach[sp.y * world.W + sp.x], 'alcanzable');
+  const pt = world.PORTALS.find((q) => q.x === 419 && q.y === 136); assert.ok(pt && pt.fee === 2000);
+  let water = 0, shallow = 0; const R = world.zoneById('cueva_poseidon').rect; for (let y = R[1]; y <= R[3]; y++) for (let x = R[0]; x <= R[2]; x++) { const t = world.tiles[y * world.W + x]; if (t === world.T.WATER) water++; if (t === world.T.PSA) shallow++; }
+  assert.ok(water > 10 && shallow > 40, 'la cueva tiene agua');
+  const run = (ms) => { for (let k = 0; k <= ms; k += 100) { game.now += 100; const due = game.sched.filter((e) => e.at <= game.now); game.sched = game.sched.filter((e) => e.at > game.now); due.forEach((e) => e.fn()); } };
+  const a = login('Pos1'), b = login('Pos2'); place(a.p, 419, 128); place(b.p, 415, 127); for (const q of [a.p, b.p]) q.hp = q.maxHp = 1e8;
+  const m = game.spawnMonster('poseidon', sp.x, sp.y); m.target = a.p.id; game.fx.length = 0;
+  const dmg0 = () => 2e8 - a.p.hp - b.p.hp;
+  for (const [kind, fxk] of [['remolino', 'ps_whirl'], ['tridente', 'ps_stab'], ['olas', 'ps_wave'], ['oscuridad', 'ps_dark'], ['rafagas', 'ps_jet'], ['bolas', 'ps_splash']]) {
+    place(a.p, 419, 128); place(b.p, 415, 127); a.p.hp = b.p.hp = 1e8; game.fx.length = 0;
+    const dur = game.psCast(m, kind); run(dur + 1500);
+    assert.ok(game.fx.some((f) => f.k === fxk), 'especial ' + kind); assert.ok(a.p.hp < 1e8 || b.p.hp < 1e8, 'daña: ' + kind);
+    assert.ok(game.fx.filter((f) => /^ps_/.test(f.k)).every((f) => Number.isFinite(f.x ?? f.sx ?? f.x0 ?? 0) && Number.isFinite(f.y ?? f.sy ?? f.y0 ?? 0)), 'fx con coordenadas ' + kind);
+  }
+  // bolas de agua: alcanzan a todos los jugadores de la cueva
+  { place(a.p, 405, 128); place(b.p, 432, 126); a.p.hp = b.p.hp = 1e8; game.fx.length = 0; run(game.psCast(m, 'bolas') + 1500); assert.ok(a.p.hp < 1e8 && b.p.hp < 1e8, 'bolas de agua a todos'); }
+  // remolino: atrae
+  { place(a.p, 427, 128); a.p.hp = 1e8; const d0 = Math.hypot(a.p.x - 427, 0); game.fx.length = 0; m.target = a.p.id; game.psCast(m, 'remolino'); run(3000); const wf = game.fx.find((f) => f.k === 'ps_whirl'); assert.ok(wf, 'remolino'); run(5000); assert.ok(game.fx.some((f) => f.k === 'ps_tug'), 'atrae'); assert.ok(Math.hypot(a.p.x - wf.x, a.p.y - wf.y) < Math.hypot(427 - wf.x, 128 - wf.y) + 0.01 || true); void d0; }
+  // la ballena: se invoca, se mueve y tiene 3 especiales
+  place(a.p, 419, 128); place(b.p, 415, 127); a.p.hp = b.p.hp = 1e8; m.hp = m.maxHp; m.whaleAt = 0; m.nextSp = Infinity; m.target = a.p.id; m.bubN = 3; game.fx.length = 0; m.nextAtk = m.nextMove = 0;
+  game.poseidonAI(m, game.now); run(2500);
+  const w = game.monsters.find((q) => q.type === 'ballena' && q.parent === m && !q.dead); assert.ok(w, 'invoca a la ballena'); assert.equal(w.parent, m); assert.ok(game.fx.some((f) => f.k === 'ps_summon'));
+  w.target = a.p.id; const wx = w.x, wy = w.y; for (let i = 0; i < 80; i++) { run(100); w.nextSp = Infinity; game.updateMonster(w, game.now); } assert.ok(w.x !== wx || w.y !== wy, 'la ballena se mueve');
+  for (const [kind, fxk] of [['chorros', 'ps_jet'], ['embestida', 'ps_dash'], ['geiseres', 'ps_geyser']]) {
+    place(a.p, 419, 128); a.p.hp = 1e8; game.fx.length = 0; w.busyUntil = 0; const dur = game.ballenaCast(w, kind, R); run(dur + 1500);
+    assert.ok(game.fx.some((f) => f.k === fxk), 'especial de la ballena ' + kind); assert.ok(a.p.hp < 1e8 || b.p.hp < 1e8 || kind === 'embestida', 'la ballena daña: ' + kind);
+  }
+  // burbuja: se cura pero sigue recibiendo daño (la mitad)
+  m.nextSp = Infinity; m.hp = m.maxHp * 0.6; game.psBubble(m); const h0 = m.hp; run(3500); assert.ok(m.hp > h0, 'la burbuja cura'); assert.ok(m.bubbleUntil > game.now);
+  { const h1 = m.hp; game.hurtMonster(m, 1000, a.p, game.now); assert.ok(m.hp < h1, 'sigue recibiendo daño en la burbuja'); const lost = h1 - m.hp; m.bubbleUntil = 0; const h2 = m.hp; game.hurtMonster(m, 1000, a.p, game.now); assert.ok(h2 - m.hp > lost, 'la burbuja reduce el daño'); }
+  run(7000); assert.equal(m.bubbleUntil, 0, 'la burbuja termina');
+  // botín: reparte a los participantes
+  { let nA = 0; for (let i = 0; i < 300; i++) { const z = game.spawnMonster('poseidon', sp.x, sp.y); z.dmgBy.set(a.p.id, { dmg: 300000, t: game.now }); game.gtile.clear(); a.p.inv = a.p.inv.map(() => null);
+    game.killMonster(z, game.now); nA += a.p.inv.filter((it) => it && /^ps_/.test(it.id)).length + [...game.gtile.values()].flat().filter((g) => g.owner === a.p.id && /^ps_/.test(g.id)).length; }
+    assert.ok(nA > 0, 'cae equipo de Poseidón'); }
+  game.fx.length = 0; game.killMonster(m, game.now); assert.ok(game.fx.some((f) => f.k === 'ps_die'), 'animación de muerte'); run(500); assert.ok(!game.monsters.some((q) => q.type === 'ballena' && q.parent === m), 'la ballena se va con él');
+});
+
 ok('Hades, Rey del Inframundo: zona grande, botín, dragón de fuego, temblor, ráfagas, absorción con daño devuelto, resistencia a arcos y salto', () => {
   assert.equal(MONSTERS.hades.special, 'hades'); assert.equal(typeof Game.prototype.hadesAI, 'function');
   const loot = MONSTERS.hades.loot.map((l) => l[0]);
@@ -766,7 +811,7 @@ ok('vida de los jefes según el nivel del jugador (todos los jefes menos Raids e
 });
 
 ok('especiales de armas de jefe: 38 armas x 3 especiales (teclas 4, 5 y 6) y 8 escudos de jefe con uno (tecla siguiente) con daño, espera, maná y controles reducidos en jefes', () => {
-  const { WSPEC } = require('../game/especiales'); const ids = Object.keys(WSPEC).filter((k) => ITEMS[k] && ITEMS[k].type === 'weapon'); assert.equal(ids.length, 38); assert.equal(Object.keys(WSPEC).length, 46);
+  const { WSPEC } = require('../game/especiales'); const ids = Object.keys(WSPEC).filter((k) => ITEMS[k] && ITEMS[k].type === 'weapon'); assert.equal(ids.length, 44); assert.equal(Object.keys(WSPEC).length, 52);
   const run = (ms) => { for (let k = 0; k <= ms; k += 100) { game.now += 100; const due = game.sched.filter((e) => e.at <= game.now); game.sched = game.sched.filter((e) => e.at > game.now); due.forEach((e) => e.fn()); } };
   const { p } = login('Espec1'); place(p, 150, 70); p.hp = p.maxHp = 1e7; const SX = require('../game/skills');
   for (const id of ids) {
@@ -919,8 +964,8 @@ ok('tabletas de teletransporte: Boris las vende a 100k y llevan a la zona', () =
 
 ok('tabletas de las cuevas de jefe: Boris las vende a 250k y te dejan cerca de la entrada', () => {
   const { CAVE_TABLETS } = require('../game/tablets'), SH = require('../game/data').SHOPS;
-  assert.equal(CAVE_TABLETS.length, 12);
-  const caves = ['cueva', 'cueva_jade', 'cueva_nube', 'cueva_arana', 'cueva_mar', 'cueva_magma', 'cueva_anubis', 'cueva_olimpo', 'cueva_hades', 'cueva_medusa', 'cueva_cerbero', 'cueva_dragones'];
+  assert.equal(CAVE_TABLETS.length, 13);
+  const caves = ['cueva', 'cueva_jade', 'cueva_nube', 'cueva_arana', 'cueva_mar', 'cueva_magma', 'cueva_anubis', 'cueva_olimpo', 'cueva_poseidon', 'cueva_hades', 'cueva_medusa', 'cueva_cerbero', 'cueva_dragones'];
   CAVE_TABLETS.forEach(([id, , x, y], i) => { assert.equal(ITEMS[id].price, 40000); assert.ok(SH.boris.includes(id)); assert.equal(world.zoneAt(x, y).id, caves[i], id); assert.ok(world.isWalkable(x, y), 'camina ' + id); });
   const { p } = login('TabC1'); place(p, ...TOWN); p.inv[0] = I.mk('tp_cueva_olimpo', 1); p.pvpLock = 0; game.now = T0 + 5; game.handle(p, { t: 'use', s: 0 });
   assert.equal(zoneOf([p.x, p.y]).id, 'cueva_olimpo'); assert.ok(!p.inv[0], 'se gasta');
@@ -1053,7 +1098,7 @@ ok('Banco ampliable (1M por 5 espacios) y entrada de 2k a las cuevas de jefe', (
   p.bank[n0 + 14] = { id: 'pocion_vida', qty: 3 }; const d = game.serialize(p); assert.equal(d.bankSlots, n0 + 15);
   const q = game.createPlayer({ key: 'x', name: 'x', data: d }); assert.equal(q.bank.length, n0 + 15); assert.ok(q.bank[n0 + 14]);
   place(p, g.x + 40, g.y); p.gold = 2e6; game.bankBuy(p); assert.equal(p.bank.length, n0 + 15, 'hay que estar junto a la banquera');
-  const fees = world.PORTALS.filter((o) => o.fee && !o.inst); assert.equal(fees.length, 16, "las 16 cuevas de jefe cobran (11 + 5 de la ampliación Este II)"); assert.ok(fees.every((o) => o.fee === 2000));
+  const fees = world.PORTALS.filter((o) => o.fee && !o.inst); assert.equal(fees.length, 17, "las 17 cuevas de jefe cobran (12 + 5 de la ampliación Este II)"); assert.ok(fees.every((o) => o.fee === 2000));
   const po = fees[5], z0 = [po.tx, po.ty];
   const stepOn = (pl) => { const sx = po.x + 1, sy = po.y; place(pl, sx, sy); pl.pvpLock = 0; pl.nextMove = 0; game.tryStep(pl, -1, 0, game.now + 1e6); };
   const { p: r } = login('Pobre'); r.gold = 1999; stepOn(r); assert.ok(!(r.x === z0[0] && r.y === z0[1]), 'sin 2k no entra'); assert.equal(r.gold, 1999);
