@@ -13,7 +13,7 @@ const game = new Game(store);
 let t = 2_000_000;
 game.now = t;
 game.botCfg = { firstBossMs: 125000, bossCdMs: 600000, firstRaidMs: 125000, raidCdMs: 3600000 };
-assert.strictEqual(game.initBots(16), 16);
+assert.strictEqual(game.initBots(32), 32);
 const chats = [];
 const bc = game.broadcastChat.bind(game);
 game.broadcastChat = (m, k, n) => { chats.push(m); return bc(m, k, n); };
@@ -130,8 +130,9 @@ console.log('OK bots (' + game.bots.length + ' aventureros; jefe derrotado, Raid
   const sp = game.botSpot(hu); if (sp) { hu.x = sp[0]; hu.y = sp[1]; }
   const ox = hu.x, oy = hu.y;
   game.tn = { phase: 'idle', next: t + 40000, ent: [], round: 0, pend: [], act: [], win: [], bye: [], lastAnn: 0, nextTick: 0, count: 0 };
+  { let k = 0; for (const b of game.bots) { if (k >= 4) break; const sp2 = game.botSpot(b); if (sp2 && b.hp > 0 && b.level >= CFG.PVP_MIN_LEVEL && ['hunt', 'idle', 'town'].includes(b.ai.mode)) { b.x = sp2[0]; b.y = sp2[1]; b.tn = null; b.ai.mode = 'idle'; b.ai.until = t + 90000; k++; } } }   // a pocos bots les toca estar en mazmorra/Raid: se aseguran candidatos
   advance(21000); assert.equal(game.tn.phase, 'reg'); game.handle(hu, { t: 'chat', text: '/torneo' }); assert.equal(game.tn.ent.length, 1);
-  advance(21000);
+  advance(12000);
   assert.ok(game.tn.ent.length >= TNm.TN.MIN && game.tn.ent.filter((p) => p.bot).length >= 3, 'los bots completan el mínimo');
   let guard = 0; while (game.tn.phase !== 'idle' && guard++ < 400) advance(1000);
   assert.equal(game.tn.phase, 'idle', 'el torneo termina solo (los bots pelean)');

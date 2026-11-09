@@ -18,7 +18,7 @@ const PORT = parseInt(process.env.PORT, 10) || 3000;
 const PUB = path.join(__dirname, 'public');
 const store = new Store(process.env.DATA_FILE || path.join(__dirname, 'data', 'players.json'));
 const game = new Game(store);
-const NBOTS = process.env.BOTS === undefined ? 16 : parseInt(process.env.BOTS, 10) || 0;   // aventureros simulados (BOTS=0 los desactiva)
+const NBOTS = process.env.BOTS === undefined ? 24 : parseInt(process.env.BOTS, 10) || 0;   // aventureros simulados (BOTS=0 los desactiva)
 if (NBOTS > 0) game.initBots(NBOTS);
 
 const MIME = {
