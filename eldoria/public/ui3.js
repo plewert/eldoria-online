@@ -18,6 +18,12 @@
   const stage = () => $('#stage');
   const sh = (n) => { n = Math.floor(n); const f = (v, u) => (Math.floor(v * 10) / 10) + u; return n >= 1e9 ? f(n / 1e9, 'G') : n >= 1e6 ? f(n / 1e6, 'M') : n >= 1e5 ? Math.floor(n / 1e3) + 'k' : fmt(n); };
   let built = false;
+  /* ---- bloques plegables (se recuerda cuáles quedaron cerrados) ---- */
+  let COL = {}; try { COL = JSON.parse(store.get('eldoria.ui3c') || '{}') || {}; } catch (e) { COL = {}; }
+  const setCol = (k, v) => { COL[k] = !!v; document.body.classList.toggle('u3c-' + k, !!v); try { store.set('eldoria.ui3c', JSON.stringify(COL)); } catch (e) { /* nada */ } if (k === 'hb' || k === 'mn') setTimeout(() => window.dispatchEvent(new Event('resize')), 30); };
+  const applyCol = () => { for (const k of ['pf', 'hb', 'mn', 'qt']) document.body.classList.toggle('u3c-' + k, !!COL[k]); };
+  const xbtn = (k, txt, title) => { const b = el('button', 'u3x', txt); b.type = 'button'; b.title = title; b.addEventListener('click', (ev) => { ev.stopPropagation(); setCol(k, true); }); return b; };
+  const pill = (k, txt, title) => { const b = el('button', 'u3pill'); b.innerHTML = txt; b.type = 'button'; b.dataset.k = k; b.title = title; b.addEventListener('click', () => setCol(k, false)); return b; };
 
   function build() {
     const st = stage(); if (!st || built || !$('#side')) return; built = true;
@@ -26,7 +32,8 @@
     const pf = el('div', 'u3 g3', ''); pf.id = 'u3pf';
     pf.innerHTML = '<div class="u3av"><span id="u3ic">⚔️</span><b id="u3lv">1</b></div><div class="u3pb"><div class="u3nm"><span id="u3nm"></span></div>'
       + '<div class="u3bar hp"><i id="u3hp"></i><span id="u3hpT"></span></div><div class="u3bar mp"><i id="u3mp"></i><span id="u3mpT"></span></div><div class="u3bar xp"><i id="u3xp"></i></div></div>';
-    st.append(pf);
+    pf.append(xbtn('pf', '◂', 'Ocultar el marco del jugador'));
+    st.append(pf, pill('pf', '🧙 <b id="u3pl"></b> ▸', 'Mostrar vida y maná'));
 
     /* ---- minimapa redondo ---- */
     const mb = el('div', 'u3mm'); mb.id = 'u3mm';
@@ -36,7 +43,7 @@
     st.append(mb, co);
 
     /* ---- misiones activas ---- */
-    const qt = el('div', 'u3qt g3'); qt.id = 'u3qt'; qt.innerHTML = '<h4>📜 Misiones activas</h4><div id="u3ql"></div>'; st.append(qt);
+    const qt = el('div', 'u3qt g3'); qt.id = 'u3qt'; qt.innerHTML = '<h4>📜 Misiones activas</h4><div id="u3ql"></div>'; qt.append(xbtn('qt', '▴', 'Ocultar misiones')); st.append(qt, pill('qt', '📜 ▾', 'Mostrar misiones activas'));
 
     /* ---- barra inferior: orbes + barra de habilidades + experiencia ---- */
     if (!touch()) {
@@ -46,6 +53,7 @@
       const mid = el('div', 'u3mid'); const hb = $('#hotbar'); const xb = el('div', 'u3xb'); xb.innerHTML = '<i id="u3xb"></i>';
       mid.append(hb, xb); row.append(oh, mid, om); st.append(row);
     }
+    { const hb = $('#hotbar'); if (hb) hb.append(xbtn('hb', '▾', 'Ocultar la barra de habilidades')); st.append(pill('hb', '⚔ Habilidades ▴', 'Mostrar la barra de habilidades')); }
 
     /* ---- chat con pestañas ---- */
     const bar = $('#chatBar');
@@ -77,8 +85,9 @@
     if (dock) {
       const bag = el('button', 'u3bag', '🎒'); bag.type = 'button'; bag.title = 'Mochila y equipo (I)'; bag.addEventListener('click', () => setPanel());
       const sw = el('button', 'ui3sw', '🎨'); sw.type = 'button'; sw.title = 'Volver a la interfaz clásica'; sw.addEventListener('click', () => { store.set('eldoria.ui3', '0'); location.reload(); });
-      dock.prepend(bag); dock.append(sw);
+      dock.prepend(bag); dock.append(sw); dock.append(xbtn('mn', '▴ ocultar', 'Ocultar el menú')); st.append(pill('mn', '☰ menú', 'Mostrar el menú'));
     }
+    applyCol();
     X.on('key', (k) => { if (k === 'i') { setPanel(); return true; } return false; });
     setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
   }
@@ -117,7 +126,7 @@
       set('#u3hp', hp, null); set('#u3hpT', null, `${fmt(m.h)} / ${fmt(s.maxHp)}`); set('#u3mp', mp, null); set('#u3mpT', null, `${fmt(m.m)} / ${fmt(s.maxMana)}`);
       const xr = (s.xp - s.xpLo) / Math.max(1, s.xpHi - s.xpLo); set('#u3xp', xr, null);
       const xb = $('#u3xb'); if (xb) xb.style.width = Math.max(0, Math.min(100, xr * 100)) + '%';
-      const lv = $('#u3lv'); if (lv) lv.textContent = s.lv;
+      const lv = $('#u3lv'); if (lv) lv.textContent = s.lv; const pl = $('#u3pl'); if (pl) pl.textContent = s.lv;
       const ic = $('#u3ic'); if (ic) ic.textContent = s.style === 'ranged' ? '🏹' : s.style === 'magic' ? '🔮' : '⚔️';
       const oh = $('#u3oh'), om = $('#u3om');
       if (oh) { oh.style.setProperty('--f', Math.max(0, Math.min(1, hp))); oh.firstChild.textContent = sh(m.h); }

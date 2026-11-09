@@ -652,3 +652,4 @@ minimapa redondo con coordenadas, misiones activas, menú lateral en dos columna
 chat con pestañas (Todo / Global / Combate) y panel con pestañas (Mochila / Equipo / Habilidades) que se abre con **I** o con el botón 🎒.
 En teléfono se mantiene el joystick y los botones grandes de siempre, con los marcos compactos. Es solo una capa: usa los mismos elementos que la
 interfaz clásica. Para volver a la clásica: botón 🎨 del menú (recarga el juego) o `?ui=old` en la dirección; `?ui=new` vuelve a la nueva.
+Los bloques de la interfaz nueva se pueden **ocultar y volver a abrir** (marco del jugador ◂, barra de habilidades ▾, menú ▴, misiones ▴; el chat ya tenía su botón): al ocultarlos queda una pastilla pequeña para reabrirlos, y el juego recuerda cuáles dejaste cerrados (`eldoria.ui3c`). Tamaños más compactos en PC y teléfono.

@@ -76,8 +76,8 @@ body.ui3 #chatToggle { border-radius: 7px; border-color: var(--g3d); background:
 #chat.closed #u3ct { display: none; }
 
 /* ---- panel lateral con pestañas ---- */
-body.ui3 #side { position: fixed; top: 12px; right: 124px; bottom: 12px; width: 340px; z-index: 7; transform: translateX(130%); transition: transform .2s ease; border: 1px solid var(--g3d); border-radius: 12px; box-shadow: 0 8px 28px rgba(0, 0, 0, .7); background: linear-gradient(180deg, rgba(30, 26, 40, .96), rgba(16, 14, 24, .96)); padding: 0 12px 14px; }
-body.ui3.drawer #side { transform: none; }
+body.ui3 #side { position: fixed; top: 12px; right: 124px; bottom: 12px; width: 340px; z-index: 7; transform: translateX(calc(100% + 150px)); visibility: hidden; transition: transform .2s ease, visibility 0s .2s; border: 1px solid var(--g3d); border-radius: 12px; box-shadow: 0 8px 28px rgba(0, 0, 0, .7); background: linear-gradient(180deg, rgba(30, 26, 40, .96), rgba(16, 14, 24, .96)); padding: 0 12px 14px; }
+body.ui3.drawer #side { transform: none; visibility: visible; transition: transform .2s ease; }
 body.ui3.drawer:not(.touch) #u3mm, body.ui3.drawer:not(.touch) #u3co, body.ui3.drawer:not(.touch) #u3qt { visibility: hidden; }
 body.ui3.touch #side { right: 0; top: 0; bottom: 0; border-radius: 12px 0 0 12px; }
 body.ui3 #side section.u3hide { display: none; }
@@ -104,3 +104,49 @@ body.ui3 #inv { grid-template-columns: repeat(6, 1fr); }
 }
 @media (max-width: 1000px) and (pointer: fine) { #u3qt { display: none; } #u3pf { width: 230px; } .u3orb { width: 70px; height: 70px; } }
 @media (prefers-reduced-motion: reduce) { body.ui3 #side { transition: none; } .u3bar i { transition: none; } }
+
+/* ===== versión compacta + bloques plegables ===== */
+.u3x { position: absolute; z-index: 6; width: auto; padding: 1px 7px; border-radius: 8px; background: #2b2538; border: 1px solid #c9a24a; color: #e8c76a; font: 700 11px var(--sans); cursor: pointer; pointer-events: auto; }
+.u3pill { position: absolute; z-index: 6; display: none; padding: 6px 12px; border-radius: 10px; background: linear-gradient(180deg, rgba(26, 22, 34, .9), rgba(14, 12, 20, .9)); border: 1px solid #c9a24a; color: #e8c76a; font: 700 12px var(--sans); cursor: pointer; box-shadow: 0 3px 10px rgba(0, 0, 0, .6); }
+.u3pill b { color: #fff; }
+body.u3c-pf #u3pf, body.u3c-qt #u3qt, body.u3c-mn .menu2 { display: none !important; }
+body.u3c-hb #u3row { display: none !important; } body.u3c-hb.touch #hotbar { display: none !important; }
+body.u3c-pf .u3pill[data-k="pf"], body.u3c-hb .u3pill[data-k="hb"], body.u3c-mn .u3pill[data-k="mn"], body.u3c-qt .u3pill[data-k="qt"] { display: block; }
+.u3pill[data-k="pf"] { left: 12px; top: 98px; } .u3pill[data-k="qt"] { right: 14px; top: 208px; } .u3pill[data-k="mn"] { right: 14px; top: 340px; }
+.u3pill[data-k="hb"] { left: 50%; bottom: 12px; transform: translateX(-50%); }
+#u3pf .u3x { right: 6px; top: 4px; } #u3qt .u3x { right: 8px; top: 6px; }
+#hotbar > .u3x { top: -20px; right: 8px; }
+body.ui3 .menu2 > .u3x { position: static; grid-column: 1 / -1; }
+body.ui3:not(.touch) #hotbar { position: relative; }
+/* tamaños compactos (PC) */
+body.ui3:not(.touch) #u3pf { width: 215px; padding: 7px 9px; gap: 8px; }
+body.ui3:not(.touch) .u3av { width: 40px; height: 40px; font-size: 19px; } body.ui3:not(.touch) .u3av b { font-size: 9px; }
+body.ui3:not(.touch) .u3nm { font-size: 13px; } body.ui3:not(.touch) .u3bar { height: 10px; margin-top: 3px; } body.ui3:not(.touch) .u3bar span { font-size: 8px; line-height: 9px; } body.ui3:not(.touch) .u3bar.xp { height: 4px; }
+body.ui3:not(.touch) #target { width: 230px; padding: 5px 10px; } body.ui3:not(.touch) #target .bar { height: 9px; }
+body.ui3:not(.touch) #u3mm { width: 118px; height: 118px; border-width: 2px; } body.ui3:not(.touch) #u3co { width: 118px; top: 134px; font-size: 10px; }
+body.ui3:not(.touch) #u3qt { top: 162px; width: 190px; padding: 7px 9px; } body.ui3:not(.touch) .u3q { font-size: 11px; }
+.u3pill[data-k="qt"] { top: 162px; }
+body.ui3:not(.touch) .menu2 { top: 300px; grid-template-columns: repeat(3, 30px); padding: 5px; gap: 4px; }
+body.ui3:not(.touch) .menu2 button { width: 30px; height: 30px; font-size: 14px; border-radius: 7px; } body.ui3:not(.touch) .menu2 > .u3x { width: auto; height: auto; font-size: 10px; }
+.u3pill[data-k="mn"] { top: 300px; }
+body.ui3:not(.touch) #hotbar { gap: 5px; padding: 5px 8px; }
+body.ui3:not(.touch) #hotbar button { width: 36px; height: 36px; border-radius: 7px; } body.ui3:not(.touch) #hotbar button b { font-size: 17px; } body.ui3:not(.touch) #hotbar button small { font-size: 8px; }
+body.ui3:not(.touch) .u3orb { width: 64px; height: 64px; border-width: 2px; } .u3orb b { font-size: 11px; }
+.u3xb { height: 5px; }
+body.ui3:not(.touch) #chat { width: 245px; min-width: 200px; } body.ui3:not(.touch) #log { height: 110px; font-size: 11.5px; }
+body.ui3:not(.touch) .u3orb + .u3mid, #u3row { gap: 8px; }
+/* teléfono: botones de habilidades un poco más pequeños */
+@media (orientation: landscape) and (max-height: 520px) {
+  body.ui3.touch #hotbar { grid-template-columns: repeat(4, 38px); gap: 4px; padding: 4px; }
+  body.ui3.touch #hotbar button, body.ui3.touch #hotbar .skb { width: 38px; height: 38px; } body.ui3.touch #hotbar button b { font-size: 18px; }
+  body.ui3.touch .menu2 button { width: 32px; height: 32px; font-size: 15px; } body.ui3.touch #u3pf { width: 170px; }
+  body.ui3.touch .u3pill[data-k="pf"] { left: calc(8px + env(safe-area-inset-left)); top: calc(100px + env(safe-area-inset-top)); }
+  body.ui3.touch .u3pill[data-k="hb"] { left: auto; right: calc(10px + env(safe-area-inset-right)); bottom: calc(10px + env(safe-area-inset-bottom)); transform: none; }
+  body.ui3.touch .u3pill[data-k="mn"] { left: calc(92px + env(safe-area-inset-left)); top: calc(8px + env(safe-area-inset-top)); right: auto; }
+  body.ui3.touch .menu2 > .u3x { width: auto; height: auto; font-size: 10px; align-self: center; }
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  body.ui3.touch .u3pill[data-k="pf"] { left: 10px; top: 100px; } body.ui3.touch .u3pill[data-k="hb"] { left: 50%; bottom: 10px; transform: translateX(-50%); } body.ui3.touch .u3pill[data-k="mn"] { left: 56px; top: 10px; right: auto; }
+}
+body.ui3 #hotbar > .u3x { width: auto !important; height: auto !important; min-width: 0; font-size: 11px !important; border-radius: 8px !important; padding: 1px 7px !important; display: block; }
+body.ui3 #hotbar > .u3x { position: absolute !important; }
