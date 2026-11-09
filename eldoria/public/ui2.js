@@ -7,7 +7,7 @@
   const fmt = (n) => Math.round(n).toLocaleString('es');
   const xi = (G.xi = { ach: {}, title: '', st: {}, defs: [], skills: {}, recipes: [], nodes: {}, quests: [], guild: '' });
   const qst = (G.qst = {});                       // id → { st, n }
-  const QD = {};
+  const QD = {}; X.QD = QD;
   const have = (id) => (G.inv || []).reduce((a, it) => a + (it && it[0] === id ? it[1] : 0), 0);
   const iname = (id) => (G.items[id] ? G.items[id].name : id);
   const iicon = (id) => (G.items[id] ? G.items[id].icon || '' : '');
