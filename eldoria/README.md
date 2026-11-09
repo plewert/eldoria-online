@@ -124,7 +124,7 @@ Sprites animados del jefe (`hidra_b` en sprites.json: reposo 5 + mirar 4, enrosc
 Segunda cueva oscura (zona `cueva_jade`, sin PvP) en el prado del noroeste: puerta en (52,59). Dentro solo vive la **Hidra de Jade** (nivel 550, 320.000 de vida, 80 % de defensa, reaparece al minuto, botín compartido). Tres ataques con aviso en el suelo: **lluvia ácida** (tres oleadas de gotas que dejan charcos), **fuego amarillo** por las tres bocas (línea larga + quemadura) y **golpe al suelo** con onda y **caída de piedras**. Botín raro: set de arquero de jade (Yelmo, Coraza, Guanteletes, Botas) y el Arco de la Hidra, además de la Escama de Jade.
 
 ## Habilidades (cuerpo a cuerpo, distancia, magia)
-Máximo nivel 320 en cada una. El nivel general (vida, maná, daño) también se congela en 320: la experiencia deja de subir y vida máx. = 6480. Cada nivel cuesta más experiencia que el anterior (curva ~ 20·(n-1)²·(1+(n-1)/150): nivel 100 ≈ 325 mil, nivel 320 ≈ 6 millones). El bonus de daño es +5 % por nivel hasta el 100 y +1 % por nivel después. Al llegar al 320 la experiencia se detiene.
+Máximo nivel 320 en cada una. El **poder** del nivel general (vida, maná, daño) se congela en 320 (vida máx. = 6480), pero la barra de experiencia **sigue subiendo hasta el nivel de carrera 999**: del 321 al 999 el nivel es solo una marca (se ve en el marco, el ranking y sobre el personaje) para saber quién llega antes; no da más fuerza, vida ni maná. Al llegar al 999 se anuncia a todo el servidor. Cada nivel cuesta más experiencia que el anterior (curva ~ 20·(n-1)²·(1+(n-1)/150): nivel 100 ≈ 325 mil, nivel 320 ≈ 6 millones). El bonus de daño es +5 % por nivel hasta el 100 y +1 % por nivel después. Al llegar al 320 la experiencia se detiene.
 
 Las armas raras (Arco de las Sombras y Arco de la Hidra) caen con un 1 % base (antes 4 %); quien más daño hace tiene +60 %.
 Las armas del Coloso (Hoja de Magma 0,8 %, Martillo 0,6 %) también son más raras.
@@ -653,3 +653,6 @@ chat con pestañas (Todo / Global / Combate) y panel con pestañas (Mochila / Eq
 En teléfono se mantiene el joystick y los botones grandes de siempre, con los marcos compactos. Es solo una capa: usa los mismos elementos que la
 interfaz clásica. Para volver a la clásica: botón 🎨 del menú (recarga el juego) o `?ui=old` en la dirección; `?ui=new` vuelve a la nueva.
 Los bloques de la interfaz nueva se pueden **ocultar y volver a abrir** (marco del jugador ◂, barra de habilidades ▾, menú ▴, misiones ▴; el chat ya tenía su botón): al ocultarlos queda una pastilla pequeña para reabrirlos, y el juego recuerda cuáles dejaste cerrados (`eldoria.ui3c`). Tamaños más compactos en PC y teléfono.
+
+### Bots cazadores (PvP)
+Un tercio de los aventureros simulados que no son novatos (`ai.pk`) son **cazadores**: cuando están en una zona PvP (Bosque Maldito, Cumbres, Dunas, Pantano, Selva, Lava, Abismo…) atacan primero a un jugador real que tengan cerca (a menos de 14 casillas, ambos con nivel de PvP), lo persiguen hasta 25 s y se retiran si se quedan con poca vida. En zonas seguras nunca atacan. Los demás bots siguen siendo pacíficos (solo se defienden). `BOTS_PK=0` apaga a los cazadores.

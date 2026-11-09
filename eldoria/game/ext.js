@@ -15,8 +15,9 @@ const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const kxy = (x, y) => y * W + x;
 const BOSS_DMG = 1.9;
 const cheb = (ax, ay, bx, by) => Math.max(Math.abs(ax - bx), Math.abs(ay - by));
-const { LEVEL_MAX } = require('./skills');
+const { LEVEL_MAX, LEVEL_RACE } = require('./skills');
 const levelFromXp = (xp) => Math.min(LEVEL_MAX, 1 + Math.floor(Math.sqrt(xp / 50)));
+const raceLevel = (xp) => Math.min(LEVEL_RACE, 1 + Math.floor(Math.sqrt(xp / 50)));
 const { skillFromXp, skillMult } = require('./skills');
 const craftLevel = (cxp) => 1 + Math.floor(Math.sqrt(cxp / 15));
 require('./historia').addAchs(X.ACHS);                  // logros del modo historia (uno por cueva + Cronista)
@@ -445,7 +446,7 @@ module.exports = function install(Game) {
       const on = this.players.get(k);
       const e = on ? on.ext : acc.data && acc.data.ext;
       if (!e || !e.guild || e.guild.toLowerCase() !== low) continue;
-      out.push({ n: acc.name, l: on ? on.level : levelFromXp((acc.data && acc.data.xp) || 0), r: e.grole === 'lider' ? 'lider' : 'miembro', on: on && on.ws ? 1 : 0 });
+      out.push({ n: acc.name, l: on ? (on.rl || on.level) : raceLevel((acc.data && acc.data.xp) || 0), r: e.grole === 'lider' ? 'lider' : 'miembro', on: on && on.ws ? 1 : 0 });
     }
     return out.sort((a, b) => (b.r === 'lider') - (a.r === 'lider') || b.l - a.l);
   };
@@ -569,7 +570,7 @@ module.exports = function install(Game) {
       rows.push({ n: acc.name, xp: on ? on.xp : acc.data.xp | 0, kt: e.kt | 0, pvp: e.pvp | 0, bosses: e.bosses | 0, g: e.guild || '' });
     }
     const top = (key, fn) => rows.slice().sort((a, b) => b[key] - a[key]).filter((r) => r[key] > 0).slice(0, 10).map((r) => [r.n, fn ? fn(r) : r[key], r.g]);
-    const v = { lvl: top('xp', (r) => levelFromXp(r.xp)), kills: top('kt'), pvp: top('pvp'), boss: top('bosses') };
+    const v = { lvl: top('xp', (r) => raceLevel(r.xp)), kills: top('kt'), pvp: top('pvp'), boss: top('bosses') };
     this.rankCache = { t: now, v };
     return v;
   };

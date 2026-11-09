@@ -17,10 +17,11 @@ const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
 const clampDir = (v) => (v > 0 ? 1 : v < 0 ? -1 : 0);
 
 const levelFromXp = (xp) => Math.min(LEVEL_MAX, 1 + Math.floor(Math.sqrt(xp / 50)));
+const raceLevel = (xp) => Math.min(LEVEL_RACE, 1 + Math.floor(Math.sqrt(xp / 50)));
 const xpForLevel = (l) => 50 * (l - 1) * (l - 1);
 // los equipos raros de monstruos y jefes caen menos (una sola vez al cargar)
 for (const d of Object.values(MONSTERS)) for (const l of d.loot) if (I.isGear(l[0])) l[1] *= CFG.GEAR_DROP_MULT;
-const { LEVEL_MAX, SKILL_MAX, skillFromXp, skillXpFor, skillMult } = require('./skills');
+const { LEVEL_RACE, LEVEL_MAX, SKILL_MAX, skillFromXp, skillXpFor, skillMult } = require('./skills');
 
 const FISTS = { name: 'Puños', style: 'melee', atk: 3, cd: 1500, range: 1 };
 const SKILL_NAMES = { melee: 'combate cuerpo a cuerpo', ranged: 'combate a distancia', magic: 'magia' };
@@ -348,7 +349,7 @@ class Game {
   gbOf(p) { return require('./companeros').apply(I.gearBonus(p.eq), ITEMS, p.ext); }
 
   recalc(p) {
-    p.level = levelFromXp(p.xp);
+    p.level = levelFromXp(p.xp); p.rl = raceLevel(p.xp);        // level: poder real (tope 320) · rl: nivel de carrera (tope 999)
     const gb = this.gbOf(p);
     p.maxHp = 100 + 20 * (p.level - 1) + gb.hp;
     p.maxMana = 40 + 12 * (p.level - 1) + gb.mana;
@@ -386,7 +387,7 @@ class Game {
     };
     this.extLoad(p, d);
     if (d) {
-      p.xp = Math.min(xpForLevel(LEVEL_MAX), d.xp | 0); p.gold = d.gold | 0;
+      p.xp = Math.min(xpForLevel(LEVEL_RACE), d.xp | 0); p.gold = d.gold | 0;
       const cap = skillXpFor(SKILL_MAX); p.sxp = { melee: Math.min(cap, d.sxp.melee | 0), ranged: Math.min(cap, d.sxp.ranged | 0), magic: Math.min(cap, d.sxp.magic | 0) };
       d.inv.forEach((it, i) => { const n = I.normalize(it); if (n && i < CFG.INV_SIZE) p.inv[i] = n; });
       if (Array.isArray(d.bank)) d.bank.forEach((it, i) => { const n = I.normalize(it); if (n && i < p.bank.length) p.bank[i] = n; });
@@ -527,7 +528,7 @@ class Game {
     }
     const w = this.weaponOf(p);
     this.send(p, {
-      t: 'stats', lv: p.level, xp: p.xp, xpLo: xpForLevel(Math.min(p.level, LEVEL_MAX - 1)), xpHi: xpForLevel(Math.min(p.level + 1, LEVEL_MAX)),
+      t: 'stats', lv: p.rl || p.level, pw: p.level, xp: p.xp, xpLo: xpForLevel(Math.min(p.rl || p.level, LEVEL_RACE - 1)), xpHi: xpForLevel(Math.min((p.rl || p.level) + 1, LEVEL_RACE)),
       maxHp: p.maxHp, maxMana: p.maxMana, gold: p.gold, sk, style: w.style, def: this.defOf(p), weapon: w.name, wid: p.eq.weapon ? p.eq.weapon.id : '', sid: p.eq.shield ? p.eq.shield.id : '',
       gb: this.gbOf(p), glow: this.visOf(p).g,
     });
@@ -546,7 +547,7 @@ class Game {
       let js = sc.pl.get(q);
       if (js === undefined) {
         const vis = this.visOf(q);
-        js = JSON.stringify({ i: q.id, n: q.name, x: q.x, y: q.y, h: q.hp, H: q.maxHp, l: q.level, c: q.color, s: this.styleOf(q), d: q.dir, k: now < q.pvpLock ? 1 : 0, o: q.ws || q.bot ? 0 : 1, v: vis.g, a: vis.an, t: q.trade ? 1 : 0, q: SLOTS.map((s) => (q.eq[s] ? q.eq[s].id : 0)), ...this.extView(q) });
+        js = JSON.stringify({ i: q.id, n: q.name, x: q.x, y: q.y, h: q.hp, H: q.maxHp, l: q.rl || q.level, c: q.color, s: this.styleOf(q), d: q.dir, k: now < q.pvpLock ? 1 : 0, o: q.ws || q.bot ? 0 : 1, v: vis.g, a: vis.an, t: q.trade ? 1 : 0, q: SLOTS.map((s) => (q.eq[s] ? q.eq[s].id : 0)), ...this.extView(q) });
         sc.pl.set(q, js);
       }
       pl.push(js);
@@ -1010,14 +1011,18 @@ class Game {
   }
 
   gainXp(p, xp) {
-    const before = p.level;
-    p.xp = Math.min(xpForLevel(LEVEL_MAX), p.xp + xp);   // experiencia congelada al nivel máximo
+    const before = p.level, beforeRl = p.rl || p.level;
+    p.xp = Math.min(xpForLevel(LEVEL_RACE), p.xp + xp);   // la experiencia sigue hasta el nivel 999 (carrera)
     this.recalc(p);
     this.fx.push({ k: 'd', x: p.x, y: p.y, v: '+' + xp + ' xp', c: 'x' });
     if (p.level > before) {
       p.hp = p.maxHp; p.mana = p.maxMana;
       this.fx.push({ k: 'l', x: p.x, y: p.y });
       this.msg(p, `¡Has subido al nivel ${p.level}! Tu vida y maná se han restaurado.`, 's');
+    } else if (p.rl > beforeRl) {
+      if (p.rl === LEVEL_RACE) { this.msgC(p, `🏆 ¡Nivel ${LEVEL_RACE}! Has completado la carrera de niveles.`, '#ffd96a'); this.broadcastChat(`🏆 ${p.name} ha llegado al nivel ${LEVEL_RACE}.`, 'g'); }
+      else if (beforeRl < LEVEL_MAX + 1 && p.rl > LEVEL_MAX) this.msgC(p, `✨ Nivel ${p.rl}: pasas del nivel ${LEVEL_MAX}. Desde aquí tu poder ya no crece; los niveles son una marca de carrera.`, '#ffd96a');
+      else if (p.rl % 10 === 0) this.msg(p, `Nivel de carrera ${p.rl} / ${LEVEL_RACE}.`, 's');
     }
     p.dirty.stats = true;
   }
@@ -1322,4 +1327,4 @@ require('./magma').install(Game); require('./anubis').install(Game); require('./
 for (const d of Object.values(MONSTERS)) if (d.boss && d.respawn === 60000) d.respawn = 30000;      // jefes de reaparición rápida: 30 s en vez de 1 min
 require('./petloot').install(Game); require('./torneo').install(Game); require('./album').install(Game);
 require('./album').install(Game); require('./pociones').install(Game); require('./instancias').install(Game);
-module.exports = { Game, NAME_RE, levelFromXp, xpForLevel, skillFromXp };
+module.exports = { Game, NAME_RE, levelFromXp, raceLevel, xpForLevel, skillFromXp };

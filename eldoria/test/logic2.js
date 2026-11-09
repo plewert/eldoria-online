@@ -360,13 +360,18 @@ ok('set del Titán: cae del Coloso y se equipa en todas las casillas (incluidas 
   assert.ok(I.gearBonus(p.eq).hp >= 90 + 280 + 40 + 120 + 70 + 80);
 });
 
-ok('nivel general congelado en 320: experiencia, vida y maná dejan de crecer', () => {
+ok('nivel: el poder (vida, maná) se congela en 320 pero la experiencia sigue hasta el nivel de carrera 999', () => {
   const S = require('../game/skills'); const { xpForLevel } = require('../game/game');
-  assert.equal(S.LEVEL_MAX, 320);
+  assert.equal(S.LEVEL_MAX, 320); assert.equal(S.LEVEL_RACE, 999);
   const a = login('Lvl1'); a.p.xp = xpForLevel(319); game.gainXp(a.p, 10 ** 9);
-  assert.equal(a.p.level, 320); assert.equal(a.p.xp, xpForLevel(320));
-  const hp = a.p.maxHp; game.gainXp(a.p, 10 ** 9); assert.equal(a.p.maxHp, hp); assert.equal(a.p.xp, xpForLevel(320));
+  assert.equal(a.p.level, 320); assert.ok(a.p.rl > 320, 'el nivel de carrera pasa de 320');
+  const hp = a.p.maxHp, mana = a.p.maxMana; game.gainXp(a.p, 10 ** 9);
+  assert.equal(a.p.maxHp, hp); assert.equal(a.p.maxMana, mana); assert.equal(a.p.level, 320);
   assert.equal(hp, 100 + 20 * 319);
+  a.p.xp = xpForLevel(998); game.gainXp(a.p, 10 ** 12);
+  assert.equal(a.p.rl, 999); assert.equal(a.p.xp, xpForLevel(999), 'la experiencia se detiene en el 999');
+  assert.equal(a.p.maxHp, hp, 'a 999 el poder sigue igual que a 320');
+  game.sendStats && game.sendStats(a.p);
 });
 
 ok('pesca: caña, picada, minijuego de temporización, nivel y peces por zona', () => {

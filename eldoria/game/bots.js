@@ -15,6 +15,7 @@
  *    la incursión que inicie un jugador real.
  *  - No se guardan (al reiniciar el servidor vuelven a empezar), no salen en rankings, no comercian de jugador a jugador
  *    ni atacan primero a nadie.
+ *  Cazadores (PvP): un tercio de los bots no novatos ataca a jugadores reales en las zonas PvP (se retiran con poca vida). BOTS_PK=0 los apaga.
  *  Desactivar: BOTS=0 (variable de entorno). Cantidad: BOTS=24 (por defecto, máximo 32). Cada nivel puede cazar en muchas zonas abiertas (sabana, playa, dunas, cumbres nevadas…).
  */
 const { ITEMS } = require('./data');
@@ -168,7 +169,7 @@ function install(Game) {
       p.xp = xpForLevel(lvl) + rnd(0, 40);
       p.sxp = { melee: 0, ranged: 0, magic: 0 };
       if (tier.skill) p.sxp[style] = skillXpFor(tier.skill);
-      p.ai = { role, tier, style, zone: tier.zone, zoneUntil: this.now + rnd(6, 14) * 60000, mode: 'hunt', until: 0, px: -1, py: -1, stuckAt: 0, skip: new Map(), lootSkip: new Map(), nextTrip: this.now + rnd(5, 12) * 60000, nextChat: this.now + rnd(30000, 120000), nextHeal: 0, capLv: tier.capLv, capSk: tier.capSk, power: tier.power || 1, tough: tier.tough || 1 };
+      p.ai = { pk: process.env.BOTS_PK !== '0' && role !== 'novato' && i % 3 === 1, role, tier, style, zone: tier.zone, zoneUntil: this.now + rnd(6, 14) * 60000, mode: 'hunt', until: 0, px: -1, py: -1, stuckAt: 0, skip: new Map(), lootSkip: new Map(), nextTrip: this.now + rnd(5, 12) * 60000, nextChat: this.now + rnd(30000, 120000), nextHeal: 0, capLv: tier.capLv, capSk: tier.capSk, power: tier.power || 1, tough: tier.tough || 1 };
       this.recalc(p);
       p.hp = p.maxHp; p.mana = p.maxMana; p.gold = tier.gold;
       const spot = this.botSpot(p);
@@ -274,6 +275,16 @@ function install(Game) {
     if (now >= p.nextSpell && p.mana >= 25) this.castHeal(p);
   };
 
+  /** Jugador real al alcance de un cazador (misma zona PvP, ambos con nivel para pelear). */
+  P.botPkVictim = function (p) {
+    const zid = zoneAt(p.x, p.y).id; let best = null, bd = 15;
+    for (const q of this.players.values()) {
+      if (!q.ws || q.bot || q.hp <= 0 || zoneAt(q.x, q.y).id !== zid || !this.canPvp(p, q)) continue;
+      const d = cheb(p.x, p.y, q.x, q.y); if (d < bd) { bd = d; best = q; }
+    }
+    return best;
+  };
+
   P.botPick = function (p, now) {
     const ai = p.ai, zone = ai.zone, types = ai.role === 'novato' ? noviceTypes(p.level) : ZONE_TYPES[zone];
     const taken = new Set();
@@ -338,11 +349,26 @@ function install(Game) {
     if (p.target) {
       const t = this.ents.get(p.target);
       if (t && t.kind === 'mo' && !t.dead) return;   // updatePlayer persigue y ataca
-      if (t && t.kind === 'pl' && t.hp > 0 && this.canPvp(p, t) && cheb(p.x, p.y, t.x, t.y) <= 12 && p.pvpLock > now - 15000) return;   // defensa propia
+      if (t && t.kind === 'pl' && t.hp > 0 && this.canPvp(p, t) && cheb(p.x, p.y, t.x, t.y) <= 12 && p.pvpLock > now - 15000) {   // defensa propia
+        if (ai.pk && p.hp < p.maxHp * 0.3) { p.target = null; ai.pkNext = now + 30000; ai.pkTarget = 0; return; }       // un cazador herido se retira un rato
+        return;
+      }
+      if (ai.pk && t && t.kind === 'pl' && t.id === ai.pkTarget && now < ai.pkUntil && t.hp > 0 && this.canPvp(p, t) && cheb(p.x, p.y, t.x, t.y) <= 12 && p.hp >= p.maxHp * 0.35) return;   // persigue a su presa
       const wasKill = t && t.dead;
       if (wasKill) ai.killAt = { x: t.x, y: t.y, until: now + 15000 };
       p.target = null;
       if (wasKill && Math.random() < 0.25) { ai.mode = 'idle'; ai.until = now + rnd(2500, 9000); return; }
+    }
+    if (ai.pk && now >= (ai.pkNext || 0) && zoneAt(p.x, p.y).pvp) {       // cazadores: en zonas PvP atacan a jugadores reales cercanos
+      if (p.hp < p.maxHp * 0.5) ai.pkNext = now + 25000;
+      else {
+        const v = this.botPkVictim(p);
+        if (v) {
+          ai.wander = null; ai.pkTarget = v.id; ai.pkUntil = now + 25000;
+          if (cheb(p.x, p.y, v.x, v.y) <= 9) p.target = v.id; else this.botWalk(p, v.x, v.y, now, true, 1500);
+          return;
+        }
+      }
     }
     const loot = this.botFindLoot(p, now);
     if (loot) {

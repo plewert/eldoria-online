@@ -107,6 +107,19 @@ assert.ok(game.raid && game.raid.botRun, 'los bots tienen una Raid en curso');
   game.hurtPlayer(av, 5, me, t, me.name);
   assert.strictEqual(av.target, me.id, 'el bot se defiende del jugador que lo ataca');
 }
+// cazadores PvP: un bot "pk" en zona PvP ataca primero a un jugador real cercano; uno normal no
+{
+  const hunter = game.bots.find((b) => b.ai.role !== 'novato' && b.ai.pk), calm = game.bots.find((b) => b.ai.role !== 'novato' && !b.ai.pk);
+  assert.ok(hunter && calm, 'hay cazadores y bots pacíficos');
+  for (const [b, expect] of [[hunter, true], [calm, false]]) {
+    const sp = game.botSpot(b, 40, 18, 12, 'bosque'); assert.ok(sp, 'sitio en el Bosque');
+    b.x = sp[0]; b.y = sp[1]; b.tpSeq++; b.hp = b.maxHp; b.target = null; b.ai.mode = 'hunt'; b.ai.zone = 'bosque'; b.ai.zoneUntil = t + 1e9; b.ai.pkNext = 0; b.ai.nextTrip = t + 1e9;
+    me.x = Math.min(99, b.x + 3); me.y = b.y; me.tpSeq++; me.hp = me.maxHp; me.xp = 50 * 9 * 9; game.recalc(me); me.hp = me.maxHp;
+    let hit = false; for (let i = 0; i < 60 && !hit; i++) { advance(500); me.hp = me.maxHp; hit = b.target === me.id || me.pvpLock > t; }
+    assert.strictEqual(hit, expect, expect ? 'el cazador ataca primero' : 'el bot pacífico no ataca primero');
+    b.target = null; me.pvpLock = 0; const away = game.botSpot(b); if (away) { b.x = away[0]; b.y = away[1]; b.tpSeq++; } b.ai.zone = b.ai.tier.zone; b.ai.mode = 'hunt';
+  }
+}
 // ni el ranking /top ni el comercio los incluyen
 game.handle(me, { t: 'chat', text: '/top' });
 const topMsg = ws.got.filter((m) => m.t === 'chat').pop().m;
