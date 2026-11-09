@@ -15,7 +15,7 @@
  *    la incursión que inicie un jugador real.
  *  - No se guardan (al reiniciar el servidor vuelven a empezar), no salen en rankings, no comercian de jugador a jugador
  *    ni atacan primero a nadie.
- *  Desactivar: BOTS=0 (variable de entorno). Cantidad: BOTS=16 (por defecto, máximo 16).
+ *  Desactivar: BOTS=0 (variable de entorno). Cantidad: BOTS=24 (por defecto, máximo 32). Cada nivel puede cazar en muchas zonas abiertas (sabana, playa, dunas, cumbres nevadas…).
  */
 const { ITEMS } = require('./data');
 const I = require('./items');
@@ -29,9 +29,11 @@ const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const xpForLevel = (l) => 50 * (l - 1) * (l - 1);
 const DIRS8 = [[0, -1], [1, 0], [0, 1], [-1, 0], [1, -1], [1, 1], [-1, 1], [-1, -1]];
 
-const NAMES = ['Kael', 'MiraSol', 'Thorn92', 'Lyra', 'DoranX', 'Selene_', 'BramVK', 'Ysolde', 'Garrick7', 'NiaLuz', 'Orlan', 'TessK', 'Varek', 'Elin_', 'RodrikZ', 'SoraV'];
+const NAMES = ['Kael', 'MiraSol', 'Thorn92', 'Lyra', 'DoranX', 'Selene_', 'BramVK', 'Ysolde', 'Garrick7', 'NiaLuz', 'Orlan', 'TessK', 'Varek', 'Elin_', 'RodrikZ', 'SoraV',
+  'Daxen', 'Iria_', 'Moltar', 'Wyn88', 'Caelum', 'Brisa_', 'Hakon', 'Zafira', 'Ulric', 'Nox_', 'PerlaR', 'Tarkan', 'Alba_', 'Dorian3', 'Kiru', 'Mabel_'];
 const COLORS = ['#e0584a', '#4aa3ff', '#6fcf6f', '#e0b84a', '#b06ae0', '#4ad0c0', '#e08a4a', '#d96aa8'];
-const ROLE_ORDER = ['novato', 'aventurero', 'elite', 'novato', 'veterano', 'elite', 'novato', 'aventurero', 'elite', 'veterano', 'novato', 'aventurero', 'elite', 'elite', 'elite', 'novato'];
+const ROLE_ORDER = ['novato', 'aventurero', 'elite', 'novato', 'veterano', 'elite', 'novato', 'aventurero', 'elite', 'veterano', 'novato', 'aventurero', 'elite', 'elite', 'elite', 'novato',
+  'aventurero', 'novato', 'veterano', 'elite', 'aventurero', 'novato', 'veterano', 'elite', 'veterano', 'elite', 'aventurero', 'novato', 'veterano', 'elite', 'aventurero', 'elite'];
 
 const SEARCH = 36;              // radio de búsqueda de monstruos
 const STYLE_OF = ['melee', 'ranged', 'magic'];
@@ -39,14 +41,14 @@ const STYLE_OF = ['melee', 'ranged', 'magic'];
 const TIERS = {
   novato: { zone: 'prado', lv: [2, 9], capLv: 14, capSk: 12, gold: 120 },
   aventurero: {
-    zone: 'catacumbas', zones: ['catacumbas', 'bosque'], lv: [22, 26], capLv: 30, capSk: 24, skill: 18, gold: 1500,
+    zone: 'catacumbas', zones: ['catacumbas', 'bosque', 'sabana', 'playa', 'colinas'], lv: [22, 26], capLv: 30, capSk: 24, skill: 18, gold: 1500,
     gear: { melee: ['hacha_acero', 'casco_acero', 'armadura_placas', 'escudo_torre'], ranged: ['ballesta', 'casco_acero', 'armadura_placas'], magic: ['baston_hielo', 'casco_acero', 'armadura_placas'] },
   },
   veterano: {
-    zone: 'minas', zones: ['minas', 'selva', 'pantano'], lv: [42, 48], capLv: 60, capSk: 70, skill: 55, gold: 6000,
+    zone: 'minas', zones: ['minas', 'selva', 'pantano', 'dunas', 'cumbres', 'sabana', 'playa'], lv: [42, 48], capLv: 60, capSk: 70, skill: 55, gold: 6000,
     gear: { melee: ['martillo_titan', 'casco_dragon', 'armadura_abismo', 'escudo_titan'], ranged: ['arco_celestial', 'casco_dragon', 'armadura_abismo'], magic: ['baston_abismo', 'casco_dragon', 'armadura_abismo'] },
   },
-  elite: { zone: 'colinas', zones: ['colinas', 'volcan', 'abismo'], lv: [100, 100], capLv: 110, capSk: 160, skill: 150, power: 3, tough: 0.62, gold: 20000 },
+  elite: { zone: 'colinas', zones: ['colinas', 'volcan', 'abismo', 'dunas', 'cumbres', 'selva', 'pantano'], lv: [100, 100], capLv: 110, capSk: 160, skill: 150, power: 3, tough: 0.62, gold: 20000 },
 };
 // jefes de mazmorra sin ataques especiales
 const BOSSES = [{ type: 'rey_esqueleto', zone: 'catacumbas', min: 3 }, { type: 'maestro_forjador', zone: 'minas', min: 3 }];
@@ -62,7 +64,16 @@ const ZONE_TYPES = {
   volcan: ['golem_lava', 'demonio_menor'],
   abismo: ['troll', 'demonio_menor', 'golem_lava'],
 };
-const ALLOWED = new Set(['prado', 'ciudad', 'castillo', ...Object.keys(ZONE_TYPES)]);
+// zonas abiertas extra: los monstruos se deducen de los que nacen allí (sin jefes ni dragones)
+const EXTRA_ZONES = ['sabana', 'playa', 'dunas', 'cumbres'];
+const { MONSTERS } = require('./data');
+const EXTRA_HUB = {};
+for (const z of EXTRA_ZONES) {
+  const sp = world.monsterSpawns.filter((m) => zoneAt(m.x, m.y).id === z && MONSTERS[m.type] && !MONSTERS[m.type].boss && m.type !== 'dragon');
+  ZONE_TYPES[z] = [...new Set(sp.map((m) => m.type))];
+  if (sp.length) { const m = sp[sp.length >> 1]; EXTRA_HUB[z] = [m.x, m.y]; }
+}
+const ALLOWED = new Set(['prado', 'ciudad', 'castillo', 'puerto', 'aldea', 'ciudad_alba', ...Object.keys(ZONE_TYPES)]);
 const isRaidZone = (id) => id.startsWith('raid_');
 
 function noviceTypes(level) {
@@ -129,6 +140,7 @@ const HUBS = {
   volcan: () => tileNear('volcan', 285, 70),
   abismo: () => [world.abyRooms[0].cx + 1, world.abyRooms[0].cy],
   shop: () => tileNear('ciudad', 85, 64),
+  ...Object.fromEntries(Object.entries(EXTRA_HUB).map(([z, c]) => [z, () => tileNear(z, c[0], c[1])])),
   bank: () => tileNear('ciudad', 95, 70),
 };
 
