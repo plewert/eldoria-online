@@ -645,3 +645,10 @@ Los 16 jefes de cueva (11 clásicos, Rey de los Dragones y los 4 de Este II) tie
 - **Código:** terreno y PNJ en `game/world.js` (bloque «Castillo Real»); `type: 'talk'` con `say: [...]` para frases propias (`game/game.js`); dibujo en `public/castillo.js` (puentes, fuente, almenas, antorchas, estandartes, torres con tejado, banderas, sala del trono) y `public/casas.js` (tipo de casa `castillo`). Para quitar solo lo visual: borrar `public/castillo.js` y su `<script>`.
 - Cambio de dibujo: los objetos del suelo y los PNJ se dibujan **después** de lo «de abajo» (`EXT.under`), para que el suelo de la sala del trono no los tape.
 - **Pendiente (propuesto, no hecho):** fortaleza orca, ruinas antiguas y asedio semanal.
+
+## Interfaz nueva (ui3)
+Capa visual activada por defecto (`public/ui3.js` + `public/ui3.css`): marco del jugador (vida, maná, experiencia), marco del enemigo arriba al centro,
+minimapa redondo con coordenadas, misiones activas, menú lateral en dos columnas, barra de habilidades con orbes de vida y maná,
+chat con pestañas (Todo / Global / Combate) y panel con pestañas (Mochila / Equipo / Habilidades) que se abre con **I** o con el botón 🎒.
+En teléfono se mantiene el joystick y los botones grandes de siempre, con los marcos compactos. Es solo una capa: usa los mismos elementos que la
+interfaz clásica. Para volver a la clásica: botón 🎨 del menú (recarga el juego) o `?ui=old` en la dirección; `?ui=new` vuelve a la nueva.
