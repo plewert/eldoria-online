@@ -24,7 +24,7 @@
     const now = Date.now(), s = Math.floor(now / SLOT), f = (now % SLOT) / SLOT;
     const r = hash(s), edge = Math.min(1, f / 0.08, (1 - f) / 0.08);
     if (r < 0.22) return { kind: 'rain', k: edge * (0.55 + 0.45 * hash(s + 9)) };
-    if (r < 0.34) return { kind: 'fog', k: edge * 0.8 };
+    // la niebla / nublado se quitó: los degradados grandes hacían bajar los fps en teléfonos y PC
     return { kind: null, k: 0 };
   }
 
@@ -47,12 +47,13 @@
     const wi = indoors ? '' : W.kind === 'rain' && !desert ? (snow ? ' ❄️' : ' 🌧️') : W.kind === 'fog' ? ' 🌫️' : '';
     const txt = `${icon} ${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}${wi}`;
     if (clock.textContent !== txt) clock.textContent = txt;
-    if (indoors) { if (lastRain !== 0) { lastRain = 0; X.setRain && X.setRain(0); } return; }
+    const cave = !!z.dark;
+    if (indoors && !cave) { if (lastRain !== 0) { lastRain = 0; X.setRain && X.setRain(0); } return; }
 
     // --- noche / ocaso con luces alrededor del jugador, las antorchas y otros jugadores ---
-    const [a0, r, g, b] = tone(h);
+    const [a0, r, g, b] = cave ? [0.9, 6, 3, 14] : tone(h);
     const wet = W.kind === 'rain' && !desert ? W.k : 0, fog = W.kind === 'fog' ? W.k : 0;
-    const a = Math.min(0.78, a0 + 0.14 * wet + 0.08 * fog);
+    const a = cave ? 0.8 : Math.min(0.78, a0 + 0.14 * wet + 0.08 * fog);
     if (a > 0.01) {
       const sc = 0.5, w = Math.ceil(cw * sc), hgt = Math.ceil(ch * sc);
       if (lc.width !== w || lc.height !== hgt) { lc.width = w; lc.height = hgt; }
@@ -64,9 +65,10 @@
         gr.addColorStop(0, `rgba(0,0,0,${k})`); gr.addColorStop(1, 'rgba(0,0,0,0)'); lx.fillStyle = gr; lx.beginPath(); lx.arc(x * sc, y * sc, rad * sc, 0, 7); lx.fill();
       };
       const px = (tx - G.cam.x) * TS + cw / 2, py = (ty - G.cam.y) * TS + ch / 2 - 6;
-      const lit = a0 > 0.12 ? 1 : 0.5 * (a0 / 0.12);
-      hole(px, py, 150 + 16 * Math.min(4, G.me.v || 0), 0.95 * Math.max(0.2, lit));
+      const lit = cave || a0 > 0.12 ? 1 : 0.5 * (a0 / 0.12);
+      hole(px, py, (cave ? 150 + 4 * Math.min(4, G.me.v || 0) : 120 + 14 * Math.min(4, G.me.v || 0)), 0.85 * Math.max(0.2, lit));
       for (const e of G.ents.values()) if (e.kind === 'pl' && e.id !== G.id) hole((e.rx - G.cam.x) * TS + cw / 2, (e.ry - G.cam.y) * TS + ch / 2 - 6, 70, 0.8 * lit);
+      if (cave) for (const e of G.ents.values()) if (e.kind === 'mo' && G.mons[e.t] && G.mons[e.t].boss) hole((e.rx - G.cam.x) * TS + cw / 2, (e.ry - G.cam.y) * TS + ch / 2 - 30, 150, 0.9);   // el jefe de la cueva se ve de lejos
       for (const n of G.npcs) hole((n.x - G.cam.x) * TS + cw / 2 + TS / 2 - 16, (n.y - G.cam.y) * TS + ch / 2, 90, 0.85 * lit);
       for (const p of G.portals) hole((p.x - G.cam.x) * TS + cw / 2, (p.y - G.cam.y) * TS + ch / 2, 80, 0.8 * lit);
       c.drawImage(lc, 0, 0, w, hgt, 0, 0, cw, ch);
@@ -74,8 +76,9 @@
       if (a0 > 0.1) {
         c.save(); c.globalCompositeOperation = 'lighter';
         const warm = (x, y, rad, k) => { const gr = c.createRadialGradient(x, y, 2, x, y, rad); gr.addColorStop(0, `rgba(255,170,80,${k})`); gr.addColorStop(1, 'rgba(255,170,80,0)'); c.fillStyle = gr; c.fillRect(x - rad, y - rad, rad * 2, rad * 2); };
-        for (const n of G.npcs) warm((n.x - G.cam.x) * TS + cw / 2 + TS / 2 - 16, (n.y - G.cam.y) * TS + ch / 2, 46, 0.18 * a0 / 0.6);
-        for (const p of G.portals) warm((p.x - G.cam.x) * TS + cw / 2, (p.y - G.cam.y) * TS + ch / 2, 40, 0.22 * a0 / 0.6);
+        const dry = 1 - 0.85 * wet;                                  // la lluvia apaga las antorchas del exterior
+        for (const n of G.npcs) warm((n.x - G.cam.x) * TS + cw / 2 + TS / 2 - 16, (n.y - G.cam.y) * TS + ch / 2, 46, 0.18 * a0 / 0.6 * dry);
+        for (const p of G.portals) warm((p.x - G.cam.x) * TS + cw / 2, (p.y - G.cam.y) * TS + ch / 2, 40, 0.22 * a0 / 0.6 * dry);
         c.restore();
       }
     }
@@ -119,9 +122,9 @@
       }
       c.restore();
       // relámpagos en tormentas fuertes
-      if (kind === 'rain' && inten > 0.7) {
+      if (kind === 'rain' && inten > 0.7 && !(window.EldSafe && window.EldSafe.on())) {   // modo seguro: sin relámpagos ni truenos
         const t = performance.now();
-        if (t > nextBolt) { flash = 1; nextBolt = t + 9000 + Math.random() * 14000; setTimeout(() => X.sfx && X.sfx('thunder'), 400 + Math.random() * 600); }
+        if (t > nextBolt) { flash = 1; X.bolt && X.bolt(); nextBolt = t + 9000 + Math.random() * 14000; setTimeout(() => X.sfx && X.sfx('thunder'), 400 + Math.random() * 600); }
       }
     }
     if (flash > 0.02) { c.fillStyle = `rgba(235,240,255,${flash * 0.55})`; c.fillRect(0, 0, cw, ch); flash *= Math.pow(0.04, dt); }

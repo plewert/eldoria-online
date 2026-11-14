@@ -1,0 +1,152 @@
+/* ===== Interfaz nueva (ui3). Todo cuelga de body.ui3; sin esa clase el juego se ve como siempre. ===== */
+body.ui3 { --g3: #e8c76a; --g3d: #6b5a33; }
+.g3 { background: linear-gradient(180deg, rgba(26, 22, 34, .84), rgba(14, 12, 20, .84)); border: 1px solid var(--g3d); border-radius: 10px; box-shadow: 0 4px 14px rgba(0, 0, 0, .6), inset 0 0 0 1px rgba(255, 255, 255, .06); backdrop-filter: blur(3px); }
+body.ui3 #game { grid-template-columns: minmax(0, 1fr); }
+
+/* ---- marco del jugador ---- */
+#u3pf { position: absolute; left: 12px; top: 98px; width: 270px; padding: 9px 11px; display: flex; gap: 10px; z-index: 4; pointer-events: none; }
+.u3av { position: relative; width: 52px; height: 52px; flex: none; border-radius: 50%; border: 2px solid var(--g3); background: #2a3a5a; display: grid; place-items: center; font-size: 25px; }
+.u3av b { position: absolute; right: -6px; bottom: -6px; background: var(--g3); color: #1a1520; font: 700 11px var(--sans); border-radius: 9px; padding: 1px 6px; }
+.u3pb { flex: 1; min-width: 0; }
+.u3nm { font: 700 14px var(--serif); color: var(--g3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.u3bar { position: relative; height: 13px; margin-top: 4px; border-radius: 7px; background: rgba(0, 0, 0, .5); border: 1px solid rgba(0, 0, 0, .6); overflow: hidden; }
+.u3bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 7px; transition: width .15s; }
+.u3bar span { position: absolute; inset: 0; text-align: center; font: 600 10px/12px var(--sans); color: #fff; text-shadow: 0 1px 2px #000; }
+.u3bar.hp i { background: linear-gradient(#ff7468, #b3261e); } .u3bar.mp i { background: linear-gradient(#6fb6ff, #2155b8); }
+.u3bar.xp { height: 5px; } .u3bar.xp i { background: linear-gradient(#f5d97a, #b88a1e); }
+body.ui3:not(.touch) .hud2 { left: 16px; top: 176px; }
+body.ui3:not(.touch) .pj-bar { right: 182px; top: 12px; flex-direction: row; }
+
+/* ---- enemigo (marco de objetivo) ---- */
+body.ui3 #target { left: 50%; top: 12px; transform: translateX(-50%); width: 290px; padding: 7px 12px; text-align: center; border-radius: 10px; border: 1px solid var(--g3d); background: linear-gradient(180deg, rgba(26, 22, 34, .88), rgba(14, 12, 20, .88)); box-shadow: 0 4px 14px rgba(0, 0, 0, .6); z-index: 4; }
+body.ui3 #target[hidden] { display: none; }
+body.ui3 #target .tname { color: #ff9a8a; font: 700 14px var(--serif); margin-bottom: 4px; }
+body.ui3 #target .bar { height: 12px; border-radius: 6px; }
+body.ui3 #target .bar i { border-radius: 6px; }
+/* el nombre de la zona baja un poco para no chocar con el enemigo */
+body.ui3 #zone { top: 66px; padding: 4px 14px 4px 8px; font-size: 12px; }
+body.ui3 #zone .zname { font-size: 13px; } body.ui3 #zone .zrule { font-size: 11.5px; }
+
+/* ---- minimapa redondo ---- */
+#u3mm { position: absolute; right: 14px; top: 12px; width: 156px; height: 156px; border-radius: 50%; border: 3px solid #c9a24a; box-shadow: 0 0 0 3px #1a1520, 0 6px 16px rgba(0, 0, 0, .7); overflow: hidden; background: #123; z-index: 4; }
+#u3mm #mini { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+#u3mm .u3n, #u3mm .u3s { position: absolute; left: 50%; transform: translateX(-50%); font: 700 11px var(--sans); color: var(--g3); text-shadow: 0 1px 2px #000; pointer-events: none; }
+#u3mm .u3n { top: 3px; } #u3mm .u3s { bottom: 3px; }
+#u3co { position: absolute; right: 14px; top: 176px; width: 156px; padding: 2px 6px; font: 11px var(--sans); color: var(--bone); text-align: center; border-radius: 9px; z-index: 4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---- misiones activas ---- */
+#u3qt { position: absolute; right: 14px; top: 208px; width: 220px; padding: 9px 11px; z-index: 4; pointer-events: none; }
+#u3qt h4 { margin: 0 0 5px; font: 700 11px var(--sans); letter-spacing: 1px; text-transform: uppercase; color: var(--g3); }
+.u3q { margin: 5px 0 2px; font-size: 12px; } .u3q span { display: inline-block; max-width: 150px; vertical-align: bottom; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .u3q b { float: right; font-weight: 600; }
+.u3q.ok b { color: #8be08b; }
+.u3qb { height: 4px; margin-top: 3px; background: rgba(0, 0, 0, .55); border-radius: 3px; } .u3qb i { display: block; height: 4px; border-radius: 3px; background: #6fcf6f; }
+.u3none { margin: 3px 0 0; font-size: 11px; color: var(--muted); }
+
+/* ---- menú lateral (dock) ---- */
+body.ui3:not(.touch) .menu2 { left: auto; right: 14px; top: 340px; grid-template-columns: repeat(2, 38px); z-index: 5; padding: 6px; gap: 6px; background: linear-gradient(180deg, rgba(26, 22, 34, .84), rgba(14, 12, 20, .84)); border: 1px solid var(--g3d); border-radius: 10px; box-shadow: 0 4px 14px rgba(0, 0, 0, .6); }
+body.ui3:not(.touch) .menu2 button { width: 38px; height: 38px; border-radius: 9px; background: #2b2538; border-color: var(--g3d); font-size: 18px; }
+body.ui3:not(.touch) .menu2 button:hover { border-color: var(--g3); box-shadow: 0 0 10px rgba(232, 199, 106, .4); }
+body.ui3 .u3bag { display: block; } body.ui3.touch .u3bag { display: none; }
+
+/* ---- barra inferior: orbes + hotbar ---- */
+#u3row { position: absolute; left: calc(50% + 60px); bottom: 10px; transform: translateX(-50%); display: flex; align-items: flex-end; gap: 10px; z-index: 4; pointer-events: none; }
+#u3row > * { pointer-events: auto; }
+.u3mid { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+body.ui3:not(.touch) #hotbar { position: static; gap: 7px; padding: 8px 12px; border-radius: 10px; background: linear-gradient(180deg, rgba(26, 22, 34, .86), rgba(14, 12, 20, .86)); border: 1px solid var(--g3d); }
+body.ui3:not(.touch) #hotbar button { width: 46px; height: 46px; border-radius: 9px; background: #201b2b; border-color: var(--g3d); }
+body.ui3:not(.touch) #hotbar button b { font-size: 22px; }
+body.ui3:not(.touch) #hotbar button small { font-size: 10px; color: var(--g3); }
+body.ui3:not(.touch) #hotbar button em { font: 700 11px var(--sans); text-shadow: 0 1px 2px #000; }
+.u3xb { width: 100%; height: 7px; border-radius: 4px; background: rgba(0, 0, 0, .6); border: 1px solid var(--g3d); overflow: hidden; } .u3xb i { display: block; height: 100%; width: 0; background: linear-gradient(#f5d97a, #b88a1e); }
+.u3orb { position: relative; width: 88px; height: 88px; flex: none; border-radius: 50%; border: 3px solid #c9a24a; box-shadow: 0 0 0 3px #1a1520, 0 5px 14px rgba(0, 0, 0, .75); overflow: hidden; display: grid; place-items: center; --f: 1; }
+.u3orb.hp { background: linear-gradient(to top, #d4352b calc(var(--f) * 100%), #2a0a0a 0); }
+.u3orb.mp { background: linear-gradient(to top, #2b6fe0 calc(var(--f) * 100%), #0a1230 0); }
+.u3orb b { font: 700 14px var(--sans); color: #fff; text-shadow: 0 1px 3px #000; }
+
+/* ---- chat con pestañas ---- */
+body.ui3:not(.touch) #chat { left: 12px; bottom: 12px; width: 270px; min-width: 220px; }
+@media (max-width: 1180px) { body.ui3:not(.touch) #chat { bottom: 112px; } body.ui3:not(.touch) #u3row { left: 50%; } }
+body.ui3:not(.touch) #log { background: linear-gradient(180deg, rgba(26, 22, 34, .8), rgba(14, 12, 20, .8)); border: 1px solid var(--g3d); border-radius: 8px; height: 150px; font-size: 12.5px; }
+body.ui3.touch #log { background: linear-gradient(180deg, rgba(26, 22, 34, .8), rgba(14, 12, 20, .8)); border-color: var(--g3d); border-radius: 8px; }
+body.ui3 #chatIn { border-radius: 7px; background: rgba(8, 8, 14, .8); border-color: var(--g3d); }
+body.ui3 #chatToggle { border-radius: 7px; border-color: var(--g3d); background: rgba(26, 22, 34, .85); }
+#u3ct { display: flex; gap: 4px; margin-left: 6px; } #u3ct button { padding: 3px 9px; border-radius: 7px; border: 1px solid var(--g3d); background: #2b2538; color: var(--bone); font-size: 11px; cursor: pointer; }
+#u3ct button.on { background: var(--g3d); color: #fff; }
+#log[data-t="g"] p:not([data-c="g"]) { display: none; } #log[data-t="c"] p:not([data-c="c"]) { display: none; }
+#chat.closed #u3ct { display: none; }
+
+/* ---- panel lateral con pestañas ---- */
+body.ui3 #side { position: fixed; top: 12px; right: 124px; bottom: 12px; width: 340px; z-index: 7; transform: translateX(calc(100% + 150px)); visibility: hidden; transition: transform .2s ease, visibility 0s .2s; border: 1px solid var(--g3d); border-radius: 12px; box-shadow: 0 8px 28px rgba(0, 0, 0, .7); background: linear-gradient(180deg, rgba(30, 26, 40, .96), rgba(16, 14, 24, .96)); padding: 0 12px 14px; }
+body.ui3.drawer #side { transform: none; visibility: visible; transition: transform .2s ease; }
+body.ui3.drawer:not(.touch) #u3mm, body.ui3.drawer:not(.touch) #u3co, body.ui3.drawer:not(.touch) #u3qt { visibility: hidden; }
+body.ui3.touch #side { right: 0; top: 0; bottom: 0; border-radius: 12px 0 0 12px; }
+body.ui3 #side section.u3hide { display: none; }
+#u3pt { position: sticky; top: 0; z-index: 2; display: flex; gap: 4px; padding: 10px 0 8px; background: rgba(24, 20, 32, .98); }
+#u3pt button { flex: 1; padding: 6px 4px; border-radius: 8px; border: 1px solid var(--g3d); background: #2b2538; color: var(--bone); font-size: 12px; cursor: pointer; }
+#u3pt button.on { background: var(--g3d); color: #fff; } #u3pt button.cl { flex: none; width: 34px; } body.ui3.touch #u3pt button.cl { display: none; }
+body.ui3 #inv { grid-template-columns: repeat(6, 1fr); }
+
+/* ---- teléfono (horizontal) ---- */
+@media (orientation: landscape) and (max-height: 520px) {
+  body.ui3.touch #u3pf { left: calc(8px + env(safe-area-inset-left)); top: calc(100px + env(safe-area-inset-top)); width: 190px; padding: 5px 8px; gap: 7px; }
+  body.ui3.touch .u3av { width: 34px; height: 34px; font-size: 17px; } body.ui3.touch .u3av b { font-size: 9px; padding: 0 4px; right: -4px; bottom: -5px; }
+  body.ui3.touch .u3nm { font-size: 12px; } body.ui3.touch .u3bar { height: 9px; margin-top: 3px; } body.ui3.touch .u3bar span { display: none; } body.ui3.touch .u3bar.xp { height: 4px; }
+  body.ui3.touch #target { left: calc(8px + env(safe-area-inset-left)); transform: none; top: calc(158px + env(safe-area-inset-top)); width: 190px; padding: 4px 8px; } body.ui3.touch #target .tname { font-size: 12px; margin-bottom: 2px; } body.ui3.touch #target .bar { height: 8px; }
+  body.ui3.touch #u3mm, body.ui3.touch #u3qt { display: none; }
+  body.ui3.touch .hud2 { top: calc(205px + env(safe-area-inset-top)); }
+  body.ui3.touch #u3co { display: none; }
+  body.ui3.touch #u3ct { display: none; }
+  body.ui3.touch #zone { top: calc(54px + env(safe-area-inset-top)); }
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  body.ui3.touch #u3pf { width: 200px; top: 100px; } body.ui3.touch #u3mm, body.ui3.touch #u3co, body.ui3.touch #u3qt { display: none; }
+  body.ui3.touch #target { top: 150px; width: 200px; }
+}
+@media (max-width: 1000px) and (pointer: fine) { #u3qt { display: none; } #u3pf { width: 230px; } .u3orb { width: 70px; height: 70px; } }
+@media (prefers-reduced-motion: reduce) { body.ui3 #side { transition: none; } .u3bar i { transition: none; } }
+
+/* ===== versión compacta + bloques plegables ===== */
+.u3x { position: absolute; z-index: 6; width: auto; padding: 1px 7px; border-radius: 8px; background: #2b2538; border: 1px solid #c9a24a; color: #e8c76a; font: 700 11px var(--sans); cursor: pointer; pointer-events: auto; }
+.u3pill { position: absolute; z-index: 6; display: none; padding: 6px 12px; border-radius: 10px; background: linear-gradient(180deg, rgba(26, 22, 34, .9), rgba(14, 12, 20, .9)); border: 1px solid #c9a24a; color: #e8c76a; font: 700 12px var(--sans); cursor: pointer; box-shadow: 0 3px 10px rgba(0, 0, 0, .6); }
+.u3pill b { color: #fff; }
+body.u3c-pf #u3pf, body.u3c-qt #u3qt, body.u3c-mn .menu2 { display: none !important; }
+body.u3c-hb #u3row { display: none !important; } body.u3c-hb.touch #hotbar { display: none !important; }
+body.u3c-pf .u3pill[data-k="pf"], body.u3c-hb .u3pill[data-k="hb"], body.u3c-mn .u3pill[data-k="mn"], body.u3c-qt .u3pill[data-k="qt"] { display: block; }
+.u3pill[data-k="pf"] { left: 12px; top: 98px; } .u3pill[data-k="qt"] { right: 14px; top: 208px; } .u3pill[data-k="mn"] { right: 14px; top: 340px; }
+.u3pill[data-k="hb"] { left: 50%; bottom: 12px; transform: translateX(-50%); }
+#u3pf .u3x { right: 6px; top: 4px; } #u3qt .u3x { right: 8px; top: 6px; }
+#hotbar > .u3x { top: -20px; right: 8px; }
+body.ui3 .menu2 > .u3x { position: static; grid-column: 1 / -1; }
+body.ui3:not(.touch) #hotbar { position: relative; }
+/* tamaños compactos (PC) */
+body.ui3:not(.touch) #u3pf { width: 215px; padding: 7px 9px; gap: 8px; }
+body.ui3:not(.touch) .u3av { width: 40px; height: 40px; font-size: 19px; } body.ui3:not(.touch) .u3av b { font-size: 9px; }
+body.ui3:not(.touch) .u3nm { font-size: 13px; } body.ui3:not(.touch) .u3bar { height: 10px; margin-top: 3px; } body.ui3:not(.touch) .u3bar span { font-size: 8px; line-height: 9px; } body.ui3:not(.touch) .u3bar.xp { height: 4px; }
+body.ui3:not(.touch) #target { width: 230px; padding: 5px 10px; } body.ui3:not(.touch) #target .bar { height: 9px; }
+body.ui3:not(.touch) #u3mm { width: 118px; height: 118px; border-width: 2px; } body.ui3:not(.touch) #u3co { width: 118px; top: 134px; font-size: 10px; }
+body.ui3:not(.touch) #u3qt { top: 162px; width: 190px; padding: 7px 9px; } body.ui3:not(.touch) .u3q { font-size: 11px; }
+.u3pill[data-k="qt"] { top: 162px; }
+body.ui3:not(.touch) .menu2 { top: 300px; grid-template-columns: repeat(3, 30px); padding: 5px; gap: 4px; }
+body.ui3:not(.touch) .menu2 button { width: 30px; height: 30px; font-size: 14px; border-radius: 7px; } body.ui3:not(.touch) .menu2 > .u3x { width: auto; height: auto; font-size: 10px; }
+.u3pill[data-k="mn"] { top: 300px; }
+body.ui3:not(.touch) #hotbar { gap: 5px; padding: 5px 8px; }
+body.ui3:not(.touch) #hotbar button { width: 36px; height: 36px; border-radius: 7px; } body.ui3:not(.touch) #hotbar button b { font-size: 17px; } body.ui3:not(.touch) #hotbar button small { font-size: 8px; }
+body.ui3:not(.touch) .u3orb { width: 64px; height: 64px; border-width: 2px; } .u3orb b { font-size: 11px; }
+.u3xb { height: 5px; }
+body.ui3:not(.touch) #chat { width: 245px; min-width: 200px; } body.ui3:not(.touch) #log { height: 110px; font-size: 11.5px; }
+body.ui3:not(.touch) .u3orb + .u3mid, #u3row { gap: 8px; }
+/* teléfono: botones de habilidades un poco más pequeños */
+@media (orientation: landscape) and (max-height: 520px) {
+  body.ui3.touch #hotbar { grid-template-columns: repeat(4, 38px); gap: 4px; padding: 4px; }
+  body.ui3.touch #hotbar button, body.ui3.touch #hotbar .skb { width: 38px; height: 38px; } body.ui3.touch #hotbar button b { font-size: 18px; }
+  body.ui3.touch .menu2 button { width: 32px; height: 32px; font-size: 15px; } body.ui3.touch #u3pf { width: 170px; }
+  body.ui3.touch .u3pill[data-k="pf"] { left: calc(8px + env(safe-area-inset-left)); top: calc(100px + env(safe-area-inset-top)); }
+  body.ui3.touch .u3pill[data-k="hb"] { left: auto; right: calc(10px + env(safe-area-inset-right)); bottom: calc(10px + env(safe-area-inset-bottom)); transform: none; }
+  body.ui3.touch .u3pill[data-k="mn"] { left: calc(92px + env(safe-area-inset-left)); top: calc(8px + env(safe-area-inset-top)); right: auto; }
+  body.ui3.touch .menu2 > .u3x { width: auto; height: auto; font-size: 10px; align-self: center; }
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  body.ui3.touch .u3pill[data-k="pf"] { left: 10px; top: 100px; } body.ui3.touch .u3pill[data-k="hb"] { left: 50%; bottom: 10px; transform: translateX(-50%); } body.ui3.touch .u3pill[data-k="mn"] { left: 56px; top: 10px; right: auto; }
+}
+body.ui3 #hotbar > .u3x { width: auto !important; height: auto !important; min-width: 0; font-size: 11px !important; border-radius: 8px !important; padding: 1px 7px !important; display: block; }
+body.ui3 #hotbar > .u3x { position: absolute !important; }
