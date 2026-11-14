@@ -3156,7 +3156,6 @@
 
   /* ---- clic en el mapa: atacar, hablar o caminar ---- */
   const tileAt = (ev) => {
-    if (EXT.gl3 && EXT.gl3.tile) return EXT.gl3.tile;                       // vista 3D WebGL: la casilla ya viene calculada
     const r = cv.getBoundingClientRect();
     if (mode3d) { const mx = (ev.clientX - r.left) / zoom, my = (ev.clientY - r.top) / zoom; return pick3(mx, my) || unproj3(mx, my); }
     return { x: Math.round(((ev.clientX - r.left) / zoom - cw / 2) / TS + G.cam.x), y: Math.round(((ev.clientY - r.top) / zoom - ch / 2) / TS + G.cam.y) };
@@ -3213,7 +3212,6 @@
   });
 
   const BLOCK = new Set([TILE.WATER, TILE.TREE, TILE.WALL, TILE.ROCK, TILE.PALM, TILE.PINE, TILE.DEADTREE, TILE.CACTUS, TILE.ICEBLOCK, TILE.BOG, TILE.CWALL, TILE.LAVA, TILE.CLOUDW, TILE.WEBW, TILE.AQW, TILE.MAGW, TILE.TOMBW, TILE.BRAZ, TILE.OLYW, TILE.OLYS, TILE.HDW, TILE.MDW, TILE.MDP, TILE.MDB, TILE.CBW, TILE.CBP, TILE.CBK, TILE.CBL, TILE.CBA, TILE.CBS, TILE.PSW, TILE.PSP]);
-  EXT.gi = { entOne, npcOne, itemOne, sxOf, syOf, TS, MINI_COL, TILE, BLOCK, cv, isBoss: (e) => e.kind === 'mo' && G.mons[e.t] && G.mons[e.t].boss };
   function walkable(x, y) { return x >= 0 && y >= 0 && x < G.W && y < G.H && !BLOCK.has(G.tiles[y * G.W + x]) && !G.npcTiles.has(y * G.W + x) && !(G.decorSet && G.decorSet.has(y * G.W + x)); }
   function walkTo(gx, gy) {
     if (!walkable(gx, gy)) return;
