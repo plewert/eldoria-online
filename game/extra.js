@@ -77,6 +77,11 @@ const EXTRA_ITEMS = {
   montura_lobo: { name: 'Lobo de Montar', icon: '🐺', type: 'mount', mon: 'lobo', scale: 0.95, speed: 0.78, minLevel: 15, price: 6000, sell: 1500, desc: 'Cabalgas un 22% más rápido.' },
   montura_oso: { name: 'Oso Pardo de Montar', icon: '🐻', type: 'mount', mon: 'oso', scale: 0.9, speed: 0.7, minLevel: 25, price: 20000, sell: 5000, desc: 'Cabalgas un 30% más rápido.' },
   montura_dragon: { name: 'Dragón Joven', icon: '🐉', type: 'mount', mon: 'dragon', scale: 0.62, speed: 0.58, minLevel: 40, sell: 30000, desc: 'Vuelas un 42% más rápido.' },
+  trofeo_hidra: { name: 'Escama de Jade', icon: '💚', type: 'misc', stack: true, sell: 22000 },
+  trofeo_arcangel: { name: 'Pluma Celestial', icon: '🪽', type: 'misc', stack: true, sell: 24000 },
+  trofeo_leviatan: { name: 'Escama del Leviatán Abisal', icon: '🌊', type: 'misc', stack: true, sell: 30000 },
+  trofeo_aracnido: { name: 'Colmillo de Fuego Negro', icon: '🔥', type: 'misc', stack: true, sell: 26000 },
+  trofeo_dragon: { name: 'Escama de las Sombras', icon: '🖤', type: 'misc', stack: true, sell: 20000 },
   trofeo_coloso: { name: 'Trofeo del Coloso', icon: '🏆', type: 'misc', stack: true, sell: 8000 },
 };
 
@@ -90,21 +95,48 @@ const RECIPES = [
   { id: 'r_roca', name: 'Elixir de Piel de Roca', lvl: 6, ing: [['hierba_curativa', 5], ['piel_lobo', 2]], out: ['elixir_defensa', 1], xp: 24 },
   { id: 'r_sabio', name: 'Elixir de Sabiduría', lvl: 9, ing: [['hierba_curativa', 6], ['flor_azul', 6], ['cristal_arcano', 1]], out: ['elixir_sabiduria', 1], xp: 40 },
   { id: 'r_poder', name: 'Elixir de Poder', lvl: 12, ing: [['flor_azul', 6], ['cristal_arcano', 2], ['cuerno_demonio', 1]], out: ['elixir_poder', 1], xp: 60 },
-  { id: 'r_pulir', name: 'Pulir gema (al azar)', lvl: 8, ing: [['mineral_hierro', 6]], out: ['@gem', 1], xp: 30 },
-  { id: 'r_pulir2', name: 'Gema rara (amatista, ópalo o diamante)', lvl: 15, ing: [['mineral_hierro', 10], ['cristal_arcano', 3]], out: ['@gem2', 1], xp: 80 },
 ];
 
 // Puntos de recolección: tipo → { icono, material, zonas, cantidad, tiempo de reaparición }
 const NODES = {
-  hierba: { icon: '🌿', name: 'Hierba curativa', give: [['hierba_curativa', 1, 2]], zones: ['prado', 'colinas', 'playa'], n: 70, respawn: 80000, xp: 2 },
+  hierba: { icon: '🌿', name: 'Hierba curativa', give: [['hierba_curativa', 1, 2]], zones: ['prado', 'colinas', 'playa', 'paraiso'], n: 70, respawn: 80000, xp: 2 },
   flor: { icon: '💠', name: 'Flor azul', give: [['flor_azul', 1, 2]], zones: ['prado', 'colinas', 'bosque', 'pantano'], n: 50, respawn: 90000, xp: 2 },
   mena: { icon: '⛏️', name: 'Veta de mineral', give: [['mineral_hierro', 1, 3]], zones: ['minas', 'catacumbas'], n: 45, respawn: 100000, xp: 3, gem: 0.05 },
-  cristal: { icon: '🔷', name: 'Cristal arcano', give: [['cristal_arcano', 1, 1]], zones: ['cumbres', 'fortaleza', 'abismo'], n: 28, respawn: 140000, xp: 5, gem: 0.04 },
+  cristal: { icon: '🔷', name: 'Cristal arcano', give: [['cristal_arcano', 1, 1]], zones: ['cumbres', 'fortaleza', 'abismo', 'montana_alta', 'nubes_reino'], n: 28, respawn: 140000, xp: 5, gem: 0.04 },
 };
 
 const BOSS = {
   type: 'coloso_ancestral',
-  def: { name: 'Coloso Ancestral', icon: '🗿', hp: 30000, dmg: [60, 110], exp: 9000, move: 520, atkCd: 1500, aggro: 12, respawn: 999999999, boss: true, gold: [3000, 6000], loot: [['trofeo_coloso', 1, 1, 2], ['pocion_vida_g', 1, 3, 6], ['pocion_mana_g', 1, 3, 6]] },
+  def: { name: 'Coloso Ancestral', icon: '🗿', lv: 150, hp: 90000, dmgK: 1.8, dmg: [60, 110], exp: 9000, move: 520, atkCd: 1500, aggro: 12, respawn: 999999999, boss: true, special: 'titan', gold: [3000, 6000], loot: [['trofeo_coloso', 1, 1, 2], ['pocion_vida_g', 1, 3, 6], ['pocion_mana_g', 1, 3, 6]] },
 };
 
-module.exports = { ACHS, SKILLS, EXTRA_ITEMS, RECIPES, NODES, BOSS };
+const DRAGON = {
+  type: 'dragon_sombra', mins: 15, arena: [160, 87], icon: '🐉',
+  def: { name: 'Dragón de las Sombras', icon: '🐉', lv: 500, hp: 300000, dmg: [220, 380], exp: 60000, move: 380, atkCd: 1300, aggro: 14, respawn: 60000, armor: 0.5, shared: true, boss: true, special: 'dragon', dmgK: 2.0,
+    gold: [10000, 20000], loot: [['trofeo_dragon', 1, 1, 2], ['pocion_vida_g', 1, 5, 10], ['pocion_mana_g', 1, 5, 10], ['pluma_fenix', 0.5, 1, 2]] },
+};
+const JADE = {
+  type: 'hidra_jade',
+  def: { name: 'Hidra de Jade', icon: '🐲', lv: 550, hp: 320000, dmg: [190, 340], exp: 70000, move: 400, atkCd: 1300, aggro: 14, respawn: 60000, armor: 0.5, shared: true, boss: true, special: 'hydra', dmgK: 2.0,
+    gold: [12000, 22000], loot: [['trofeo_hidra', 1, 1, 2], ['pocion_vida_g', 1, 5, 10], ['pocion_mana_g', 1, 5, 10], ['pluma_fenix', 0.5, 1, 2]] },
+};
+const ANGEL = {
+  type: 'arcangel',
+  def: { name: 'Arcángel del Santuario', icon: '👼', lv: 600, hp: 360000, dmg: [210, 360], exp: 80000, move: 380, atkCd: 1300, aggro: 14, respawn: 60000, armor: 0.5, shared: true, boss: true, special: 'angel', dmgK: 2.0,
+    gold: [14000, 24000], loot: [['trofeo_arcangel', 1, 1, 2], ['pocion_vida_g', 1, 5, 10], ['pocion_mana_g', 1, 5, 10], ['pluma_fenix', 0.5, 1, 2]] },
+};
+const SPIDER = {
+  type: 'aracnido_fuego',
+  def: { name: 'Aracnídeo Fuego Negro', icon: '🕷️', lv: 650, hp: 380000, dmg: [230, 400], dmgK: 2.6, exp: 90000, move: 400, atkCd: 1300, aggro: 14, respawn: 60000, armor: 0.5, shared: true, boss: true, special: 'spider',
+    gold: [16000, 26000], loot: [['trofeo_aracnido', 1, 1, 2], ['pocion_vida_g', 1, 5, 10], ['pocion_mana_g', 1, 5, 10], ['pluma_fenix', 0.5, 1, 2]] },
+  minion: { type: 'arana_fuego', def: { name: 'Araña de Fuego', icon: '🕷️', lv: 160, hp: 9000, dmg: [160, 250], exp: 400, move: 260, atkCd: 900, aggro: 16, respawn: 999999999, armor: 0.2, gold: [0, 0], loot: [] } },
+};
+const LEVIATAN = {
+  type: 'leviatan',
+  def: { name: 'Leviatán Abisal', icon: '🐉', lv: 700, hp: 420000, dmg: [250, 430], dmgK: 2.6, exp: 100000, move: 420, atkCd: 1300, aggro: 16, respawn: 60000, armor: 0.5, shared: true, boss: true, special: 'leviathan',
+    gold: [18000, 28000], loot: [['trofeo_leviatan', 1, 1, 2], ['pocion_vida_g', 1, 5, 10], ['pocion_mana_g', 1, 5, 10], ['pluma_fenix', 0.5, 1, 2]] },
+};
+BOSS.mins = 12; BOSS.arena = [100, 107]; BOSS.icon = '🗿';
+const BOSSES = [BOSS];   // el dragón vive en su cueva (no es jefe de evento)
+
+module.exports = { BOSSES, DRAGON, JADE, ANGEL, SPIDER, LEVIATAN, ACHS, SKILLS, EXTRA_ITEMS, RECIPES, NODES, BOSS };

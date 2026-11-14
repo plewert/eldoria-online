@@ -9,8 +9,8 @@
 const { ITEMS, GEMS, CFG, RAR } = require('./data');
 
 const CORE = ['weapon', 'head', 'body', 'shield'];
-const SLOTS = [...CORE, 'amulet', 'ring1', 'ring2', 'belt', 'gloves', 'legs', 'boots'];
-const GEAR_TYPES = new Set([...CORE, 'amulet', 'ring', 'belt', 'gloves', 'legs', 'boots']);
+const SLOTS = [...CORE, 'amulet', 'ring1', 'ring2', 'belt', 'gloves', 'legs', 'boots', 'cape'];
+const GEAR_TYPES = new Set([...CORE, 'amulet', 'ring', 'belt', 'gloves', 'legs', 'boots', 'cape']);
 /** ¿Un objeto de este tipo cabe en esa casilla? (los anillos van en cualquiera de las dos) */
 const fits = (slot, type) => slot === type || (type === 'ring' && (slot === 'ring1' || slot === 'ring2'));
 /** Casilla donde se equipa un objeto (anillo: la primera libre, si no la primera). */
@@ -32,13 +32,19 @@ function mk(id, qty = 1, props) {
 }
 
 /** Valida un objeto leído del disco (acepta el formato antiguo: solo el id como texto). */
+// armas de Raid retiradas → su equivalente nuevo (para no perder objetos de los jugadores)
+const ALIAS = { rd_rk_weapon: 'rd_rk_hammer', rd_rv_weapon: 'rd_rv_bow', rd_ra_weapon: 'rd_ra_staff', rd_rx_weapon: 'rd_rx_staff', rd_rm_weapon: 'rd_rm_staff' };
 function normalize(raw) {
   if (!raw) return null;
-  if (typeof raw === 'string') return mk(raw);
+  if (typeof raw === 'string') return mk(ALIAS[raw] || raw);
+  if (raw.id && ALIAS[raw.id]) raw = Object.assign({}, raw, { id: ALIAS[raw.id] });
   if (!raw.id || !ITEMS[raw.id]) return null;
   if (!isGear(raw.id)) return { id: raw.id, qty: Math.max(1, raw.qty | 0) };
-  const gm = Array.isArray(raw.gm) ? raw.gm.slice(0, CFG.MAX_SOCKETS).map((g) => (g && isGem(g) ? g : null)) : [];
-  return { id: raw.id, qty: 1, up: clamp(raw.up | 0, 0, 6), an: raw.an ? 1 : 0, gm };
+  const gm = Array.isArray(raw.gm) ? raw.gm.slice(0, CFG.MAX_SOCKETS + CFG.MAX_CORRUPT).map((g) => (g && isGem(g) ? g : null)) : [];
+  const out = { id: raw.id, qty: 1, up: clamp(raw.up | 0, 0, 6), an: raw.an ? 1 : 0, gm };
+  const nc = clamp(raw.nc | 0, 0, CFG.MAX_CORRUPT);
+  if (nc) out.nc = nc;
+  return out;
 }
 
 /* ---------------------------- estadísticas ---------------------------- */
@@ -61,7 +67,7 @@ function bonusOf(it) {
   return out;
 }
 
-function emptyFx() { return { atk: 0, hp: 0, mana: 0, def: 0, crit: 0, steal: 0, glow: 0 }; }
+function emptyFx() { return { atk: 0, hp: 0, mana: 0, def: 0, crit: 0, steal: 0, glow: 0, aspd: 0, cdr: 0 }; }
 
 function addGemFx(out, it) {
   if (!it || !it.gm) return out;
@@ -80,6 +86,10 @@ function gearBonus(eq) {
     const b = bonusOf(eq[s]);
     if (b) for (const k of Object.keys(b)) out[k] += b[k];
   }
+  if (out.crit > 0.10) out.crit = 0.10;                    // tope de crítico del equipo
+  if (out.steal > 0.15) out.steal = 0.15;                  // tope de robo de vida (gemas + equipo)
+  if (out.aspd > CFG.SPD_GEM_CAP) out.aspd = CFG.SPD_GEM_CAP;   // tope de velocidad de ataque
+  if (out.cdr > CFG.CDR_GEM_CAP) out.cdr = CFG.CDR_GEM_CAP;     // tope de reducción de espera
   return out;
 }
 
@@ -125,7 +135,8 @@ function pack(it) {
   if (!isGear(it.id)) return [it.id, it.qty];
   const out = [it.id, 1, it.up || 0, it.an ? 1 : 0, it.gm.length, it.gm.slice(), baseStat(it)];
   const b = bonusOf(it);
-  if (b) out.push(b);
+  if (b) out.push(b); else if (it.nc) out.push(null);
+  if (it.nc) out.push(it.nc);                       // ranuras abiertas con Gemas Corruptas (índice 8)
   return out;
 }
 
@@ -133,7 +144,7 @@ function pack(it) {
 function same(a, b) {
   if (!a || !b || a.id !== b.id) return false;
   if (!isGear(a.id)) return true;
-  return (a.up || 0) === (b.up || 0) && !!a.an === !!b.an && JSON.stringify(a.gm) === JSON.stringify(b.gm);
+  return (a.up || 0) === (b.up || 0) && !!a.an === !!b.an && (a.nc || 0) === (b.nc || 0) && JSON.stringify(a.gm) === JSON.stringify(b.gm);
 }
 
 /* ---------------- colocar objetos en una mochila (o banco) ---------------- */
@@ -183,13 +194,13 @@ function rollGear(id, boss) {
   return mk(id, 1, { up, an, ns });
 }
 
-const gemChance = (def) => (def.boss ? 1 : clamp(0.012 + def.exp / 10000, 0.012, 0.15));
+const gemChance = (def) => (def && def.boss ? CFG.GEM_CHANCE_BOSS : CFG.GEM_CHANCE);      // solo los jefes, y muy raro
 
 function pickGem(def) {
   const w = { rubi: 10, zafiro: 10, esmeralda: 10, topacio: 10 };
-  if (def.exp >= 100) w.amatista = 4;
-  if (def.exp >= 300) { w.diamante = 3; w.opalo = 1.5; }
-  if (def.boss) { w.diamante = 6; w.opalo = 3; w.amatista = 8; }
+  if (def.exp >= 100) w.amatista = 2.5;
+  if (def.exp >= 300) { w.diamante = 1.5; w.opalo = 0.8; }
+  if (def.boss) { w.diamante = 3; w.opalo = 1.5; w.amatista = 5; }
   const tot = Object.values(w).reduce((a, b) => a + b, 0);
   let r = Math.random() * tot;
   for (const [g, v] of Object.entries(w)) { if ((r -= v) < 0) return g; }

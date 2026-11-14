@@ -263,7 +263,7 @@ ok('el botín de un monstruo trae equipo con su propia rareza (instancia)', () =
 ok('gemas: se engarzan en zona segura, dan bonus y se pueden sacar pagando', () => {
   resetPair();
   D.p.eq.weapon = I.mk('espada_hierro', 1, { ns: 2 }); D.p.vis = null; game.recalc(D.p);
-  D.p.inv[0] = { id: 'rubi', qty: 2 }; D.p.inv[1] = { id: 'diamante', qty: 1 }; D.p.gold = 1000;
+  D.p.inv[0] = { id: 'rubi', qty: 2 }; D.p.inv[1] = { id: 'diamante', qty: 1 }; D.p.gold = 1000 + CFG.GEM_REMOVE_COST;
   const atk0 = game.weaponOf(D.p).atk, glow0 = game.visOf(D.p).g;
   game.handle(D.p, { t: 'socket', gem: 0, from: 'eq', at: 'weapon' });
   assert.equal(game.weaponOf(D.p).atk, atk0 + 3, 'rubí: +3 ataque');
@@ -271,10 +271,128 @@ ok('gemas: se engarzan en zona segura, dan bonus y se pueden sacar pagando', () 
   assert(game.visOf(D.p).g > glow0, 'diamante: más brillo');
   game.handle(D.p, { t: 'socket', gem: 0, from: 'eq', at: 'weapon' });
   assert.equal(D.p.inv[0].qty, 1, 'sin ranuras libres: no consume la gema');
-  game.handle(D.p, { t: 'unsocket', from: 'eq', at: 'weapon', hole: 0 });
-  assert.equal(D.p.gold, 1000 - CFG.GEM_REMOVE_COST);
+  { const r0 = Math.random; Math.random = () => 0.99; try { game.handle(D.p, { t: 'unsocket', from: 'eq', at: 'weapon', hole: 0 }); } finally { Math.random = r0; } }
+  assert.equal(D.p.gold, 1000);
   assert.equal(D.p.eq.weapon.gm[0], null);
   assert.equal(game.weaponOf(D.p).atk, atk0 + 1, 'queda solo el +1 del diamante');
+});
+ok('al sacar una gema puede romperse del todo: 10 % las comunes y 3 % las raras, se cobra igual y no hay protección', () => {
+  resetPair(); D.p.eq.weapon = I.mk('espada_hierro', 1, { ns: 2 }); D.p.vis = null; game.recalc(D.p);
+  D.p.inv.fill(null); D.p.inv[0] = { id: 'rubi', qty: 1 }; D.p.inv[1] = { id: 'diamante', qty: 1 }; D.p.gold = 5 * CFG.GEM_REMOVE_COST; assert.equal(CFG.GEM_REMOVE_COST, 50000);
+  game.handle(D.p, { t: 'socket', gem: 0, from: 'eq', at: 'weapon' }); game.handle(D.p, { t: 'socket', gem: 1, from: 'eq', at: 'weapon' });
+  const r0 = Math.random, has = (id) => D.p.inv.some((q) => q && q.id === id);
+  try {
+    Math.random = () => 0.05; game.handle(D.p, { t: 'unsocket', from: 'eq', at: 'weapon', hole: 0 });          // rubí (común, 10 %): se rompe
+    assert.ok(!has('rubi'), 'el rubí se rompió'); assert.equal(D.p.eq.weapon.gm[0], null); assert.equal(D.p.gold, 4 * CFG.GEM_REMOVE_COST, 'se cobra aunque se rompa');
+    game.handle(D.p, { t: 'unsocket', from: 'eq', at: 'weapon', hole: 1 });                                      // diamante (raro, 3 %): con 0,05 no se rompe
+    assert.ok(has('diamante'), 'el diamante se salva');
+  } finally { Math.random = r0; }
+});
+ok('Gema Corrupta: abre ranuras (máx. 5) por 200k, 10 % de fallo la consume, acepta cualquier gema; solo jefes del Inframundo; Boris 200M', () => {
+  resetPair(); D.p.eq.weapon = I.mk('espada_hierro', 1, { ns: 0 }); D.p.vis = null; game.recalc(D.p);
+  D.p.inv.fill(null); D.p.inv[0] = { id: 'gema_corrupta', qty: 8 }; D.p.inv[1] = { id: 'rubi', qty: 1 }; D.p.gold = 10 * CFG.CORRUPT_COST;
+  const D0 = require('../game/data'), r0 = Math.random, n0 = D.p.eq.weapon.gm.length;
+  assert.equal(CFG.CORRUPT_COST, 200000); assert.equal(CFG.CORRUPT_FAIL, 0.1); assert.equal(CFG.MAX_CORRUPT, 5);
+  assert.ok(!D0.GEMS.gema_corrupta && D0.ITEMS.gema_corrupta.type !== 'gem', 'no es una gema normal');
+  try {
+    Math.random = () => 0.05; game.handle(D.p, { t: 'corrupt', gem: 0, from: 'eq', at: 'weapon' });          // falla (10 %)
+    assert.equal(D.p.eq.weapon.gm.length, n0); assert.equal(D.p.inv[0].qty, 7, 'se consume'); assert.equal(D.p.gold, 9 * CFG.CORRUPT_COST);
+    Math.random = () => 0.5;
+    for (let k = 0; k < 6; k++) game.handle(D.p, { t: 'corrupt', gem: 0, from: 'eq', at: 'weapon' });
+  } finally { Math.random = r0; }
+  assert.equal(D.p.eq.weapon.nc, 5, 'máximo 5'); assert.equal(D.p.eq.weapon.gm.length, n0 + 5);
+  assert.equal(D.p.inv[0].qty, 2, 'la 6.ª no se gasta'); assert.equal(I.pack(D.p.eq.weapon)[8], 5);
+  game.handle(D.p, { t: 'socket', gem: 1, from: 'eq', at: 'weapon' });
+  assert.ok(D.p.eq.weapon.gm.includes('rubi'), 'la ranura corrupta acepta cualquier gema');
+  assert.deepEqual(I.normalize(JSON.parse(JSON.stringify(D.p.eq.weapon))).nc, 5, 'se guarda');
+  for (const t of ['hades', 'medusa', 'cerbero', 'serafin_caido', 'serafina_noche', 'serafin_infernal']) {
+    const l = D0.MONSTERS[t].loot.find((q) => q[0] === 'gema_corrupta'); assert.ok(l, t);
+  }
+  const min = Math.min(...Object.values(D0.MONSTERS).flatMap((m) => (m.loot || []).filter((q) => q[0] !== 'gema_corrupta').map((q) => q[1])));
+  assert.ok(CFG.CORRUPT_CHANCE < min, 'la más rara del juego');
+  assert.ok(!Object.entries(D0.MONSTERS).some(([t, m]) => !['hades', 'medusa', 'cerbero', 'serafin_caido', 'serafina_noche', 'serafin_infernal'].includes(t) && (m.loot || []).some((q) => q[0] === 'gema_corrupta')), 'solo Inframundo');
+  assert.ok(D0.SHOPS.boris.includes('gema_corrupta')); assert.equal(D0.ITEMS.gema_corrupta.price, 200000000); assert.equal(D0.ITEMS.gema_corrupta.sell, 200000000);
+});
+ok('Gema de Ascensión: sube el +N (máx. +6) por 300k, 20 % de fallo no cambia nada, muy rara y Boris 150M', () => {
+  resetPair(); D.p.eq.weapon = I.mk('espada_hierro', 1, { ns: 0 }); D.p.vis = null; game.recalc(D.p);
+  D.p.inv.fill(null); D.p.inv[0] = { id: 'gema_ascension', qty: 9 }; D.p.gold = 10 * CFG.ASC_COST;
+  const D0 = require('../game/data'), r0 = Math.random, up0 = D.p.eq.weapon.up || 0;
+  assert.ok(!D0.GEMS.gema_ascension);
+  try {
+    Math.random = () => 0.05; game.handle(D.p, { t: 'ascend', gem: 0, from: 'eq', at: 'weapon' });
+    assert.equal(D.p.eq.weapon.up || 0, up0); assert.equal(D.p.inv[0].qty, 8); assert.equal(D.p.gold, 9 * CFG.ASC_COST);
+    Math.random = () => 0.5; for (let k = 0; k < 8; k++) game.handle(D.p, { t: 'ascend', gem: 0, from: 'eq', at: 'weapon' });
+  } finally { Math.random = r0; }
+  assert.equal(D.p.eq.weapon.up, 6, 'tope +6'); assert.ok(D.p.inv[0].qty >= 1, 'no gasta de más');
+  const infra = ['hades', 'medusa', 'cerbero', 'serafin_caido', 'serafina_noche', 'serafin_infernal'], ch = (t) => (D0.MONSTERS[t].loot.find((q) => q[0] === 'gema_ascension') || [])[1];
+  for (const [t, m] of Object.entries(D0.MONSTERS)) if (m.boss) assert.ok(infra.includes(t) ? ch(t) === undefined : ch(t) > 0, t);
+  assert.ok(ch('rey_esqueleto') < ch('dragon_sombra') && ch('dragon_sombra') < ch('zeus'), 'jefes débiles, menos probabilidad');
+  assert.ok(ch('zeus') === CFG.ASC_CHANCE && ch('rey_esqueleto') >= CFG.ASC_CHANCE * 0.1 - 1e-9);
+  assert.ok(!Object.entries(D0.MONSTERS).some(([t, m]) => !m.boss && (m.loot || []).some((q) => q[0] === 'gema_ascension')));
+  assert.ok(CFG.ASC_CHANCE <= 0.0003 && D0.SHOPS.boris.includes('gema_ascension') && D0.ITEMS.gema_ascension.price === 150000000);
+});
+ok('Boris vende equipo nivel 80+ de fábrica desde 10M y lo recompra al valor de siempre', () => {
+  const D0 = require('../game/data'), ids = D0.SHOPS.boris.filter((i) => D0.ITEMS[i].minLevel >= 80);
+  assert.ok(ids.length > 30, 'hay equipo nivel 80+ a la venta');
+  for (const i of ids) { const d = D0.ITEMS[i]; assert.ok(d.price >= 10000000 && d.sell < d.price, i); assert.ok(!d.zeus && !d.medusa && !d.raid && !i.startsWith('hd_'), 'sin exclusivos de Zeus/Hades/raids'); }
+  const it = I.mk(ids[0]); assert.equal(it.gm.length, 0); assert.ok(!it.up && !it.an, 'sin ranuras ni +N');
+  assert.ok(D0.ITEMS.espada_hierro && D0.ITEMS.espada_hierro.price < 1e7, 'las baratas siguen igual');
+});
+ok('Compañeros: cada mascota y montura tiene pasiva pequeña (solo la activa cuenta); monturas nuevas', () => {
+  resetPair(); const D0 = require('../game/data'), C = require('../game/companeros');
+  const pets = Object.entries(D0.ITEMS).filter(([, d]) => d.type === 'pet'), mounts = Object.entries(D0.ITEMS).filter(([, d]) => d.type === 'mount');
+  assert.ok(pets.length > 40 && mounts.length >= 6);
+  for (const [id, d] of [...pets, ...mounts]) { assert.ok(d.pas && Object.keys(d.pas).length >= 1 && /Pasiva:/.test(d.desc), id); for (const [k, v] of Object.entries(d.pas)) assert.ok(v > 0 && (k !== 'crit' || v <= 0.03) && (k !== 'steal' || v <= 0.02), id + k); }
+  ['montura_jabali', 'montura_mamut'].forEach((m) => assert.ok(D0.SHOPS.brisa.includes(m)));
+  const bd = D0.MONSTERS.hades.loot.find((q) => q[0] === 'montura_brasas'); assert.ok(bd && bd[1] <= 0.001 && D0.ITEMS.montura_brasas.speed < D0.ITEMS.montura_dragon.speed);
+  D.p.level = 120; D.p.inv.fill(null); const base = game.defOf(D.p), hp0 = D.p.maxHp;
+  D.p.inv[0] = { id: 'montura_oso', qty: 1 }; D.p.inv[1] = { id: 'montura_lobo', qty: 1 }; D.p.xp = 1e9; game.recalc(D.p);
+  const hpL = D.p.maxHp; game.handle(D.p, { t: 'use', s: 1 });                       // monta el lobo: +30 vida
+  assert.equal(D.p.maxHp, hpL + 30); game.handle(D.p, { t: 'use', s: 0 });          // cambia al oso (solo una a la vez): +3 defensa, sin la vida del lobo
+  assert.equal(D.p.maxHp, hpL); assert.equal(game.defOf(D.p), game.defOf(Object.assign({}, D.p, { ext: Object.assign({}, D.p.ext, { mount: '' }) })) + 3);
+  game.handle(D.p, { t: 'use', s: 0 }); assert.equal(D.p.maxHp, hpL, 'desmontar quita la pasiva');
+  const g = C.apply({ atk: 0, crit: 0.099, steal: 0.149 }, D0.ITEMS, { pet: 'pet_hades', mount: 'montura_brasas' }); assert.ok(g.crit <= 0.1 && g.steal <= 0.15, 'topes');
+});
+ok('Torneo: inscripción, 1 contra 1 con stats iguales (200–300), eliminatoria, premio y todo vuelve a su sitio', () => {
+  const TNm = require('../game/torneo'), D0 = require('../game/data'), r0 = Math.random;
+  const ps = ['tnA', 'tnB', 'tnC', 'tnD'].map((nm) => login(nm).p);
+  ps.forEach((p, i) => { p.xp = 1e8; game.recalc(p); p.inv.fill(null); p.gold = 0; place(p, home.x + i, home.y + 5); p.hp = p.maxHp; p.ext.mount = ''; });
+  const origin = ps.map((p) => [p.x, p.y, p.hp, p.maxHp]);
+  game.tn = { phase: 'idle', next: T0 + 3000, ent: [], round: 0, pend: [], act: [], win: [], bye: [], lastAnn: 0, nextTick: 0, count: 0 };
+  advance(600); assert.equal(game.tn.phase, 'reg', 'abre la inscripción 3 min antes');
+  ps.forEach((p) => game.handle(p, { t: 'chat', text: '/torneo' })); assert.equal(game.tn.ent.length, 4);
+  advanceUntil(() => game.tn.phase === 'run', 8000); assert.equal(game.tn.phase, 'run');
+  advance(300);
+  const m = game.tn.act[0]; assert.ok(m && m.live, 'hay combate'); const [ax, ay] = TNm.TN.SLOTS[m.slot];
+  assert.ok(Math.abs(m.a.x - ax) <= 3 && Math.abs(m.a.y - ay) <= 3, 'llevados a la arena');
+  assert.equal(m.a.maxHp, 1000); assert.equal(game.weaponOf(m.a).atk, 1, 'arma igualada');
+  game.handle(m.a, { t: 'use', s: 0 }); // bloqueado dentro del torneo
+  const other = ps.find((p) => p !== m.a && p !== m.b), hpO = other.hp;
+  assert.equal(game.hurtPlayer(m.a, 5000, other, T0, 'x'), 0, 'un tercero no hace daño'); assert.equal(game.hurtPlayer(m.a, 5000, m.b, T0, 'x'), 0, 'cuenta atrás: sin daño');
+  advance(TNm.TN.PREP_MS + 300);
+  const d = game.hurtPlayer(m.a, 5000, m.b, T0, m.b.name); assert.ok(d >= 200 && d <= 300, 'daño 200–300: ' + d);
+  let guard = 0;
+  while (game.tn.phase === 'run' && guard++ < 60) {
+    for (const mm of game.tn.act.slice()) if (mm.live && T0 >= mm.fightAt) game.hurtPlayer(mm.a, 5000, mm.b, T0, mm.b.name);
+    advance(300);
+  }
+  assert.equal(game.tn.phase, 'idle', 'termina'); assert.equal(game.tn.next % TNm.TN.PERIOD, 0 === 0 ? game.tn.next % TNm.TN.PERIOD : 0);
+  const champ = ps.find((p) => p.gold === TNm.TN.GOLD); assert.ok(champ, 'el ganador cobra 2M');
+  assert.ok(champ.inv.some((q) => q && q.id === 'topacio'), 'y un topacio');
+  ps.forEach((p, i) => { assert.ok(!p.tn.fight); assert.equal(p.maxHp, origin[i][3], 'stats restaurados'); assert.ok(Math.abs(p.x - origin[i][0]) <= 3 && Math.abs(p.y - origin[i][1]) <= 3, 'vuelve a su sitio'); });
+  for (const w of TNm.WEAPONS) { assert.ok(D0.ITEMS[w[0]] && D0.ITEMS[w[0]].type === 'weapon'); assert.ok(TNm.TN.WEAPON_CHANCE < CFG.CORRUPT_CHANCE, 'más raras que la Gema Corrupta'); }
+  Math.random = () => 0; try { game.tnFinish(ps[0], T0); } finally { Math.random = r0; }
+  assert.equal(ps[0].inv.filter((q) => q && ['tn_arco', 'tn_baculo', 'tn_espada'].includes(q.id)).length, 3, 'con suerte llegan las 3 armas');
+});
+ok('botín de jefe: todos los que hacen daño tiran, con más suerte quien más daño hace, y cada uno ve su botín', () => {
+  const ps = ['bsA', 'bsB', 'bsC'].map((nm) => login(nm).p); const [x, y] = [home.x + 12, home.y + 12];
+  const m = game.spawnMonster('rey_esqueleto', x, y); m.def = Object.assign({}, m.def, { loot: [['pocion_vida', 0.5, 1, 1]], gold: [100, 100] });
+  m.dmgBy.set(ps[0].id, { dmg: 1000, t: game.now }); m.dmgBy.set(ps[1].id, { dmg: 300, t: game.now }); m.dmgBy.set(ps[2].id, { dmg: 10, t: game.now });
+  const r0 = Math.random; Math.random = () => 0.33;         // chance 0,5 × 0,8 (BOSS_DROP_K): el que menos daño hizo (f≈0,96) llega a 0,38 → también cae
+  try { game.killMonster(m, game.now); } finally { Math.random = r0; }
+  for (const p of ps) assert.ok([...game.ground.values()].some((g) => g.owner === p.id && g.item === 'pocion_vida'), p.name + ' recibe su botín');
+  assert.ok([...game.ground.values()].filter((g) => g.item === 'gold' && ps.some((p) => p.id === g.owner)).length === 3, 'oro para cada participante');
+  const spots = new Set([...game.ground.values()].filter((g) => ps.some((p) => p.id === g.owner)).map((g) => g.x + ',' + g.y)); assert.ok(spots.size >= 2, 'cada uno en su casilla');
 });
 ok('no se puede engarzar en zona PvP', () => {
   const g0 = JSON.stringify(D.p.eq.weapon.gm);
@@ -347,7 +465,7 @@ ok('la ficha de cada monstruo incluye su tabla de botín (clic derecho)', () => 
   const w = D.ws.got.find((m) => m.t === 'welcome');
   const dr = w.mons.dragon;
   assert(dr && Array.isArray(dr.loot) && dr.loot.length > 3 && dr.hp === MONSTERS.dragon.hp);
-  assert(dr.loot.some((l) => l[4] === 1), 'marca los equipos'); assert(dr.anc > 0 && dr.plus > 0 && dr.gem > 0);
+  assert(dr.loot.some((l) => l[4] === 1), 'marca los equipos'); assert(dr.anc > 0 && dr.plus > 0 && dr.gem === 0);
   assert(w.mons.demonio_supremo.anc > w.mons.dragon.anc, 'los jefes tienen más prob. de Ancient');
 });
 ok('guardar y cargar conserva +N, Ancient, gemas y banco', () => {

@@ -17,13 +17,25 @@ const PIECES = [
   ['titan_grebas_alt', 'Grebas Altas de Lava',       't_leg4',     'legs',   58, 26, { hp: 150, atk: 5 }, 0.03],
   ['titan_botas',      'Botas del Titán',            't_boot',     'boots',  52, 14, { hp: 80 }, 0.04],
 ];
+// armas y escudo: [id, nombre, sprite, nivel, ataque, cd, elemento, probabilidad]
+const WEAPONS = [
+  ['titan_espada',  'Hoja de Magma',        't_sword',  52, 90, 1050, 'fire', 0.008],
+  ['titan_martillo','Martillo del Coloso',  't_hammer', 56, 99, 1500, 'fire', 0.006],
+];
+const SHIELD = ['titan_escudo', 'Escudo del Dragón de Magma', 't_shield', 54, 34, { hp: 170, def: 6 }, 0.03];
 const ICON = { head: '⛑️', body: '🛡️', gloves: '🧤', belt: '🎗️', legs: '🦿', boots: '🥾' };
 
 function build(ITEMS, MONSTERS, bossType) {
   for (const [id, name, spr, type, L, def, bonus] of PIECES) {
     ITEMS[id] = { name, icon: ICON[type], spr, type, def, bonus, titan: 1, minLevel: L, sell: Math.round(8 + L * L * 3.4) * 3 };
   }
+  for (const [id, name, spr, L, atk, cd, el] of WEAPONS) {
+    ITEMS[id] = { name, icon: id === 'titan_martillo' ? '🔨' : '🗡️', spr, type: 'weapon', style: 'melee', atk, cd, range: 1, el, titan: 1, minLevel: L, sell: Math.round(8 + L * L * 3.4) * 5 };
+  }
+  { const [id, name, spr, L, def, bonus] = SHIELD; ITEMS[id] = { name, icon: '🛡️', spr, type: 'shield', def, bonus, titan: 1, minLevel: L, sell: Math.round(8 + L * L * 3.4) * 3 }; }
   const boss = MONSTERS[bossType];
+  for (const w of WEAPONS) boss.loot.push([w[0], w[7], 1, 1]);
+  boss.loot.push([SHIELD[0], SHIELD[6], 1, 1]);
   for (const [id, , , , , , , ch] of PIECES) boss.loot.push([id, ch, 1, 1]);
 }
-module.exports = { build, PIECES };
+module.exports = { build, PIECES, WEAPONS, SHIELD };

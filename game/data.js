@@ -13,7 +13,7 @@ const CFG = {
   PVP_DMG_MULT: 0.6,      // el daño entre jugadores se reduce para que los combates duren
   PVP_LOCK_MS: 20000,     // "en combate": no puedes huir a zona segura ni teletransportarte
   GHOST_MS: 20000,        // si te desconectas en combate, tu personaje sigue 20 s (anti combat-log)
-  INV_SIZE: 24,
+  INV_SIZE: 48,
   STACK_MAX: 100,
   VIEW_X: 16,             // radio de visión enviado al cliente
   VIEW_Y: 12,
@@ -24,7 +24,12 @@ const CFG = {
   DEATH_EQUIP_DROP: 0.15,       // probabilidad de soltar cada pieza equipada al morir en PvP
   DEATH_GOLD_DROP: 0.25,        // fracción de oro que se suelta al morir en PvP
   AUTOSAVE_MS: 30000,
-  BANK_SIZE: 48,                // casillas del banco
+  FOOD_CD_MS: 1500,             // enfriamiento al comer
+  HEAL_AMOUNT: 1000,            // hechizo de curar (V): vida por uso
+  HEAL_CD_MS: 4000,             // y su enfriamiento
+  BANK_SIZE: 120,
+  BANK_MAX: 480, BANK_PACK: 5, BANK_PACK_COST: 1000000,   // ampliar banco: +5 casillas por 1.000.000
+  CAVE_FEE: 2000,               // entrada a cada cueva de jefe               // casillas del banco
   TRADE_RANGE: 4,               // distancia máxima para comerciar
   TRADE_MAX_ITEMS: 8,
   TRADE_INVITE_MS: 20000,
@@ -32,9 +37,30 @@ const CFG = {
   ANC_MULT: 1.5,                // los Ancient valen x1.5
   PLUS_CHANCE: 0.22,            // prob. de que un arma/armadura soltada venga con +N
   ANCIENT_CHANCE: 0.015,        // prob. de que un equipo soltado sea Ancient (x4 en jefes)
+  GEM_CHANCE: 0,                // monstruos normales: no sueltan gemas (solo se consiguen minando rocas)
+  GEM_CHANCE_BOSS: 0.001,       // jefes: 0,1 % por participante (muy muy raro; el que más daño hace tiene algo más de suerte)
+  BOSS_GOLD_K: 2,               // oro por muerte de cualquier jefe ×2 (se aplica al final de data.js)
+  BOSS_DROP_K: 0.8,             // el botín de jefes (lo que no es seguro) cae un 20 % menos
+  GEAR_DROP_MULT: 0.5,          // los equipos raros que sueltan monstruos y jefes caen la mitad de seguido
   BOSS_RARE_MULT: 4,
   MAX_SOCKETS: 3,
-  GEM_REMOVE_COST: 250,         // oro por sacar una gema de una ranura
+  MAX_CORRUPT: 5,              // ranuras extra que se pueden abrir en un objeto con Gemas Corruptas
+  CORRUPT_COST: 200000,        // oro por usar una Gema Corrupta
+  CORRUPT_FAIL: 0.10,          // probabilidad de que falle (la gema se consume y no se abre nada)
+  CORRUPT_PRICE: 200000000,    // Boris la compra y la vende a este precio
+  ASC_COST: 300000,            // oro por usar una Gema de Ascensión (+1 al equipo)
+  ASC_FAIL: 0.20,              // fallo: la gema se consume y el equipo no cambia (nunca baja ni se rompe)
+  ASC_MAX: 6,                  // tope del +N
+  ASC_PRICE: 150000000,        // Boris la compra y la vende a este precio
+  ASC_CHANCE: 0.0003,          // muy rara; jefes de la superficie, escala con su nivel (lv 800+ = tasa completa)
+  SPD_GEM_CAP: 0.15,           // tope de velocidad de ataque por gemas (Aguamarina)
+  CDR_GEM_CAP: 0.20,           // tope de reducción de espera de especiales (Rodocrosita)
+  SPD_GEM_BOSS: 0.0005,        // Aguamarina y Rodocrosita en jefes: algo más que la Gema de Ascensión (0,0003), escala con el nivel del jefe
+  SPD_GEM_MINE: 0.0006,        // por cada roca minada (más con mejor pico)
+  CORRUPT_CHANCE: 0.00002,     // 0,002 % por participante en los jefes del Inframundo: lo más raro del juego
+  GEM_REMOVE_COST: 50000,      // oro por sacar una gema de una ranura
+  GEM_BREAK: 0.10,             // probabilidad de que una gema común (rubí, zafiro, esmeralda, topacio) se rompa del todo al sacarla
+  GEM_BREAK_RARE: 0.03,        // ídem para las raras (amatista, ópalo, diamante)
 };
 
 /* ------------------------------ OBJETOS ------------------------------ */
@@ -83,6 +109,10 @@ const ITEMS = {
   // ---- Consumibles ----
   pocion_vida:     { name: 'Poción de Vida',     icon: '🧪', type: 'consumable', heal: 70,     stack: true, price: 35,  sell: 5 },
   pocion_vida_g:   { name: 'Poción de Vida Grande', icon: '❤️‍🔥', type: 'consumable', heal: 180, stack: true, minLevel: 10, price: 110, sell: 20 },
+  // ---- Comida (tecla K): cura sin gastar pociones; enfriamiento propio ----
+  sardina:         { name: 'Sardina',            icon: '🐟', type: 'consumable', food: 1, heal: 80,  stack: true, price: 30, sell: 8 },
+  salmon:          { name: 'Salmón',             icon: '🍣', type: 'consumable', food: 1, heal: 100, stack: true, price: 45, sell: 12 },
+  tiburon:         { name: 'Tiburón',            icon: '🦈', type: 'consumable', food: 1, heal: 150, stack: true, price: 75, sell: 20 },
   pocion_mana:     { name: 'Poción de Maná',     icon: '💧', type: 'consumable', restore: 45,  stack: true, price: 40,  sell: 6 },
   pocion_mana_g:   { name: 'Poción de Maná Grande', icon: '🔷', type: 'consumable', restore: 120, stack: true, minLevel: 10, price: 120, sell: 22 },
   // ---- Trofeos / materiales (solo para vender) ----
@@ -179,9 +209,13 @@ const GEMS = {
   topacio:   { name: 'Topacio',   icon: '🟡', col: '#e8c04a', sell: 280,  desc: '+3 de defensa',                    fx: { def: 3 } },
   amatista:  { name: 'Amatista',  icon: '🟣', col: '#b07cff', sell: 800,  desc: '+4% de golpe crítico (x1.8)',      fx: { crit: 0.04 } },
   opalo:     { name: 'Ópalo',     icon: '🟠', col: '#f09a5a', sell: 2000, desc: 'Roba el 3% del daño como vida',    fx: { steal: 0.03 } },
+  aguamarina:{ name: 'Aguamarina', icon: '🩵', col: '#3fd6d0', sell: 5500000, desc: '+3% de velocidad de ataque (tope 15% en total)', fx: { aspd: 0.03 } },
+  rodocrosita:{ name: 'Rodocrosita', icon: '🩷', col: '#ff6fb5', sell: 5500000, desc: '-4% de espera de los poderes especiales (tope 20% en total)', fx: { cdr: 0.04 } },
   diamante:  { name: 'Diamante',  icon: '💎', col: '#bfe9ff', sell: 1500, desc: 'Brillo +1: tu set resplandece (+1 ataque)', fx: { glow: 1, atk: 1 } },
 };
-for (const [id, g] of Object.entries(GEMS)) ITEMS[id] = { name: g.name, icon: g.icon, type: 'gem', stack: true, sell: g.sell, col: g.col, desc: g.desc };
+// Boris compra y vende las gemas al MISMO precio (la más barata, 1 M)
+const GEM_PRICE = { topacio: 1000000, rubi: 1100000, zafiro: 1100000, esmeralda: 1100000, amatista: 3000000, diamante: 5500000, opalo: 7000000, aguamarina: 8000000, rodocrosita: 8000000 };
+for (const [id, g] of Object.entries(GEMS)) { g.sell = GEM_PRICE[id]; ITEMS[id] = { name: g.name, icon: g.icon, type: 'gem', stack: true, sell: g.sell, price: g.sell, col: g.col, desc: g.desc }; }
 
 // Colores de rareza de los nombres de equipo
 const RAR = { normal: '#9aa3ad', plus: '#5fd16a', ancient: '#4aa8ff', none: '#e8e2d0' };
@@ -220,15 +254,24 @@ Object.assign(ITEMS, {
 
 
 const SHOPS = {
+  durgan: [],
+  marela: [],   // Alba Dorada: pescado, cañas y cebos (se rellena al final)
+  zaroth: [],   // Alba Dorada: armas mágicas (se rellena al final)   // Gremio de Mineros: picos (se rellena en mining.js)
   boris: [
+    'sardina', 'salmon', 'tiburon',
     'pocion_vida', 'pocion_vida_g', 'pocion_mana', 'pocion_mana_g',
     'espada_hierro', 'hacha_acero', 'arco_largo', 'ballesta', 'baston_fuego', 'baston_hielo', 'baston_hueso',
     'anillo_cobre', 'anillo_fuerza', 'anillo_vida', 'anillo_mana', 'amuleto_hueso', 'amuleto_jade',
     'casco_cuero', 'casco_hierro', 'casco_acero',
     'armadura_cuero', 'cota_malla', 'armadura_placas',
     'escudo_madera', 'escudo_hierro', 'escudo_torre',
+    'topacio', 'rubi', 'zafiro', 'esmeralda', 'amatista', 'diamante', 'opalo',      // gemas: mismo precio de compra y de venta
+  ],
+  nilo: [
+    'sardina', 'salmon', 'tiburon', 'pocion_vida', 'pocion_vida_g', 'pocion_mana', 'pocion_mana_g',
   ],
   brisa: [
+    'sardina', 'salmon', 'tiburon',
     'pocion_vida_g', 'pocion_mana_g',
     'espada_dorada', 'arco_cazador', 'baston_tormenta', 'daga_sombra',
     'casco_bronce', 'armadura_bronce', 'escudo_bronce',
@@ -375,6 +418,19 @@ const SPAWN_PLAN = [
   { zone: 'prado',      type: 'rata',            n: 22, box: [31, 60, 111, 95] },
   { zone: 'prado',      type: 'serpiente',       n: 14, box: [31, 72, 111, 95] },
   { zone: 'prado',      type: 'arana',           n: 12, box: [31, 80, 111, 95] },
+  { zone: 'selva',      type: 'oso',             n: 14 },
+  { zone: 'selva',      type: 'troll',           n: 12 },
+  { zone: 'selva',      type: 'bruja',           n: 12 },
+  { zone: 'selva',      type: 'lagarto',         n: 16 },
+  { zone: 'selva',      type: 'cobra',           n: 14 },
+  { zone: 'sabana',     type: 'jabali',          n: 22 },
+  { zone: 'sabana',     type: 'bandido',         n: 16 },
+  { zone: 'sabana',     type: 'goblin',          n: 18 },
+  { zone: 'sabana',     type: 'arquero_goblin',  n: 12 },
+  { zone: 'sabana',     type: 'escarabajo_gigante', n: 10 },
+  { zone: 'volcan',     type: 'golem_lava',      n: 26 },
+  { zone: 'volcan',     type: 'demonio_menor',   n: 22 },
+  { zone: 'volcan',     type: 'dragon',          n: 12 },
   { zone: 'catacumbas', type: 'murcielago',      n: 14 },
   { zone: 'catacumbas', type: 'esqueleto',       n: 18 },
   { zone: 'catacumbas', type: 'esqueleto_arquero', n: 10 },
@@ -448,11 +504,93 @@ require('./mage').build(ITEMS, SHOPS, MONSTERS);
   Object.assign(ITEMS, X.EXTRA_ITEMS);
   MONSTERS[X.BOSS.type] = X.BOSS.def;
   require('./titan').build(ITEMS, MONSTERS, X.BOSS.type);
+  MONSTERS[X.DRAGON.type] = X.DRAGON.def;
+  require('./shadow').build(ITEMS, MONSTERS, X.DRAGON.type);
+  MONSTERS[X.JADE.type] = X.JADE.def;
+  require('./jade').build(ITEMS, MONSTERS, X.JADE.type);
+  MONSTERS[X.ANGEL.type] = X.ANGEL.def;
+  require('./angel').build(ITEMS, MONSTERS, X.ANGEL.type);
+  MONSTERS[X.SPIDER.type] = X.SPIDER.def; MONSTERS[X.SPIDER.minion.type] = X.SPIDER.minion.def;
+  require('./spider').build(ITEMS, MONSTERS, X.SPIDER.type);
+  MONSTERS[X.LEVIATAN.type] = X.LEVIATAN.def;
+  require('./leviatan').build(ITEMS, MONSTERS, X.LEVIATAN.type);
+  require('./magma').build(ITEMS, MONSTERS);
+  require('./anubis').build(ITEMS, MONSTERS);
+  require('./zeus').build(ITEMS, MONSTERS);
+  require('./poseidon').build(ITEMS, MONSTERS);
+  require('./hades').build(ITEMS, MONSTERS);
+  require('./medusa').build(ITEMS, MONSTERS);
+  require('./cerbero').build(ITEMS, MONSTERS);
+  require('./raid').build(ITEMS, MONSTERS);
+  require('./halloween').build(ITEMS, MONSTERS);
+  require('./regiones').build(ITEMS, MONSTERS, SPAWN_PLAN);
+  require('./este2').build(ITEMS, MONSTERS, SPAWN_PLAN);
+  require('./reydragon').build(ITEMS, MONSTERS, SPAWN_PLAN);
+  require('./familias').tag(ITEMS, MONSTERS);
+  require('./demonios').build(ITEMS, MONSTERS, SPAWN_PLAN);
+  require('./bosspets').build(ITEMS, MONSTERS);
+  require('./reydragon').post(ITEMS, MONSTERS);
+  require('./fishing').build(ITEMS, SHOPS);
+  require('./mining').build(ITEMS, SHOPS);
+  require('./pociones').build(ITEMS, SHOPS);
+  require('./tablets').build(ITEMS, SHOPS);
+  require('./companeros').build(ITEMS, MONSTERS, SHOPS);
+  require('./torneo').build(ITEMS);
+  require('./botin').build(ITEMS, MONSTERS, X.RECIPES);
+  // Equilibrio: armas y armaduras más suaves (se aplica una sola vez a todo el catálogo)
+  for (const it of Object.values(ITEMS)) {
+    if (it.nerfed) continue; const L = it.minLevel || 1;
+    if (it.type === 'weapon' && it.atk) { it.atk = Math.round(it.atk * (L >= 90 ? 0.8 : L >= 41 ? 0.88 : 0.95)); if (L >= 90 && it.cd) it.cd = Math.round(it.cd * 1.07); it.nerfed = 1; }
+    else if (['head', 'body', 'legs', 'boots', 'gloves', 'belt'].includes(it.type) && it.def) {
+      if (L >= 90) it.def = Math.round(it.def * 0.9);
+      if (it.bonus) { if (it.bonus.atk) it.bonus.atk = Math.max(1, Math.round(it.bonus.atk * 0.6)); if (it.bonus.hp) it.bonus.hp = Math.round(it.bonus.hp * 0.85); }
+      it.nerfed = 1;
+    }
+  }
+
+  // Equilibrio de jefes: menos vida y menos armadura
+  for (const m of Object.values(MONSTERS)) if (m.boss && !m.bossNerf) { m.hp = Math.round(m.hp * 0.9); if (m.armor) m.armor = Math.round(m.armor * 90) / 100; m.bossNerf = 1; }
+
+  SHOPS.marela.push(...SHOPS.nilo);
   SHOPS.brisa.push('mascota_lobito', 'mascota_murcielago', 'mascota_goblin', 'montura_lobo', 'montura_oso');
-  const rare = [['lobo', 'mascota_lobito', 0.004], ['murcielago', 'mascota_murcielago', 0.003], ['goblin', 'mascota_goblin', 0.003], ['dragon', 'mascota_dragoncito', 0.01],
-    ['espectro_helado', 'mascota_fantasma', 0.006], ['lobo_hielo', 'montura_lobo', 0.002], ['oso', 'montura_oso', 0.002], ['dragon', 'pluma_fenix', 0.08], ['faraon', 'pluma_fenix', 0.5],
+  const rare = [['lobo', 'mascota_lobito', 0.0016], ['murcielago', 'mascota_murcielago', 0.0012], ['goblin', 'mascota_goblin', 0.0012], ['dragon', 'mascota_dragoncito', 0.004],
+    ['espectro_helado', 'mascota_fantasma', 0.0024], ['lobo_hielo', 'montura_lobo', 0.002], ['oso', 'montura_oso', 0.002], ['dragon', 'pluma_fenix', 0.08], ['faraon', 'pluma_fenix', 0.5],
     ['elemental_hielo', 'cristal_arcano', 0.12], ['golem_hielo', 'cristal_arcano', 0.3], ['espectro_helado', 'cristal_arcano', 0.1], ['hidra', 'montura_dragon', 0.03], ['reina_hielo', 'montura_dragon', 0.2]];
   for (const [m, id, ch] of rare) if (MONSTERS[m]) MONSTERS[m].loot.push([id, ch, 1, 1]);
+  SHOPS.zaroth.push('pocion_mana', 'pocion_mana_g', ...Object.keys(ITEMS).filter((k) => ITEMS[k].type === 'weapon' && ITEMS[k].style === 'magic' && ITEMS[k].price).sort((a, b) => ITEMS[a].price - ITEMS[b].price));   // Zaroth: todas las armas mágicas a la venta
 }
 
+// Nivel de cada monstruo (se muestra sobre su cabeza): sale de la experiencia que da, salvo los que fijan el suyo.
+for (const d of Object.values(MONSTERS)) if (!d.lv) d.lv = Math.max(1, Math.round(0.6 * Math.sqrt(d.exp)));
+
+// Boris vende equipo de fábrica (sin ranuras, sin +N, sin Ancient) de nivel 80+ desde 10M; lo recompra al valor de venta normal de siempre.
+// Quedan fuera las piezas exclusivas de Zeus, de Hades y de las raids (siguen siendo solo botín de jefe).
+{
+  const lvPrice = (lv) => lv <= 95 ? 10e6 + (lv - 80) / 15 * 5e6 : lv <= 105 ? 20e6 + (lv - 96) / 9 * 10e6 : 35e6 + (lv - 106) / 14 * 15e6;
+  const F = { weapon: 1, body: 1, head: 0.8, legs: 0.8, shield: 0.8, boots: 0.5, gloves: 0.5, belt: 0.5 };
+  CFG.SHOP_GEAR_MIN_LV = 80;
+  for (const [id, d] of Object.entries(ITEMS)) {
+    if (!F[d.type] || (d.minLevel || 1) < CFG.SHOP_GEAR_MIN_LV || d.zeus || d.poseidon || d.medusa || d.cerbero || d.este2 || d.raid || id.startsWith('hd_') || SHOPS.boris.includes(id)) continue;
+    d.price = Math.max(10e6, Math.round(lvPrice(d.minLevel) * F[d.type] / 5e5) * 5e5);      // d.sell no se toca: es lo que paga Boris al comprar
+    SHOPS.boris.push(id);
+  }
+}
+// más oro por matar jefes (el oro se reparte entre los participantes según su daño)
+for (const m of Object.values(MONSTERS)) if (m.boss && m.gold && !m._goldK) { m.gold = [Math.round(m.gold[0] * CFG.BOSS_GOLD_K), Math.round(m.gold[1] * CFG.BOSS_GOLD_K)]; m._goldK = 1; }
+// Gema Corrupta: no es una gema normal (no se engarza); se usa sobre un arma o armadura y abre una ranura nueva
+ITEMS.gema_corrupta = { name: 'Gema Corrupta', icon: '🟣', spr: 'gem_corrupta', type: 'misc', stack: true, corrupt: 1, col: '#b46cff', sell: CFG.CORRUPT_PRICE, price: CFG.CORRUPT_PRICE,
+  desc: `Úsala sobre un arma o equipo (menú de la mochila, ${CFG.CORRUPT_COST.toLocaleString('es')} de oro, en zona segura): abre 1 ranura que acepta cualquier gema. Máx. ${CFG.MAX_CORRUPT} por objeto. ${Math.round(CFG.CORRUPT_FAIL * 100)} % de fallo: se consume sin abrir nada.` };
+SHOPS.boris.push('gema_corrupta');
+ITEMS.gema_ascension = { name: 'Gema de Ascensión', icon: '🟡', spr: 'gem_ascension', type: 'misc', stack: true, ascend: 1, col: '#ffd84a', sell: CFG.ASC_PRICE, price: CFG.ASC_PRICE,
+  desc: `Úsala sobre un arma o equipo (menú de la mochila, ${CFG.ASC_COST.toLocaleString('es')} de oro, en zona segura): sube 1 el +N (máx. +${CFG.ASC_MAX}). ${Math.round(CFG.ASC_FAIL * 100)} % de fallo: se consume sin cambiar nada; el equipo nunca baja ni se rompe.` };
+SHOPS.boris.push('gema_ascension');
+// solo los jefes del Inframundo la sueltan, y es el botín más raro del juego
+for (const t of ['hades', 'medusa', 'cerbero', 'serafin_caido', 'serafina_noche', 'serafin_infernal']) if (MONSTERS[t]) MONSTERS[t].loot.push(['gema_corrupta', CFG.CORRUPT_CHANCE, 1, 1]);
+// Gema de Ascensión: jefes de la superficie (no del Inframundo); cuanto más débil el jefe, menos probable (proporcional a su nivel, mín. 10 %)
+const INFRA_BOSS = ['hades', 'medusa', 'cerbero', 'serafin_caido', 'serafina_noche', 'serafin_infernal'];
+for (const [t, m] of Object.entries(MONSTERS)) if (m.boss && !INFRA_BOSS.includes(t)) m.loot.push(['gema_ascension', +(CFG.ASC_CHANCE * Math.max(0.1, Math.min(1, (m.lv || 1) / 800))).toFixed(7), 1, 1]);
+// las gemas solo salen de las rocas (minería): se quitan de toda tabla de botín de monstruos y jefes
+for (const m of Object.values(MONSTERS)) if (m.loot) m.loot = m.loot.filter((q) => !GEMS[q[0]]);
+// Aguamarina y Rodocrosita: solo en jefes (todos, proporcional a su nivel, mín. 10 %) y minando, muy raras; no están en la tienda
+for (const m of Object.values(MONSTERS)) if (m.boss && m.loot) for (const g of ['aguamarina', 'rodocrosita']) m.loot.push([g, +(CFG.SPD_GEM_BOSS * Math.max(0.1, Math.min(1, (m.lv || 1) / 800))).toFixed(7), 1, 1]);
 module.exports = { CFG, ITEMS, GEMS, RAR, SHOP, SHOPS, START_KIT, MONSTERS, SPAWN_PLAN, NPC_TIPS };

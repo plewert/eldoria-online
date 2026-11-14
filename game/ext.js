@@ -13,10 +13,14 @@ const { zoneAt, NPCS, W, H, T } = world;
 
 const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const kxy = (x, y) => y * W + x;
+const BOSS_DMG = 1.9;
 const cheb = (ax, ay, bx, by) => Math.max(Math.abs(ax - bx), Math.abs(ay - by));
-const levelFromXp = (xp) => 1 + Math.floor(Math.sqrt(xp / 50));
-const skillFromXp = (xp) => 1 + Math.floor(Math.sqrt(xp / 20));
+const { LEVEL_MAX, LEVEL_RACE } = require('./skills');
+const levelFromXp = (xp) => Math.min(LEVEL_MAX, 1 + Math.floor(Math.sqrt(xp / 50)));
+const raceLevel = (xp) => Math.min(LEVEL_RACE, 1 + Math.floor(Math.sqrt(xp / 50)));
+const { skillFromXp, skillMult } = require('./skills');
 const craftLevel = (cxp) => 1 + Math.floor(Math.sqrt(cxp / 15));
+require('./historia').addAchs(X.ACHS);                  // logros del modo historia (uno por cueva + Cronista)
 const ACH_BY = Object.fromEntries(X.ACHS.map((a) => [a[0], a]));
 const num = (v, max = 1e12) => Math.max(0, Math.min(max, Math.floor(Number(v) || 0)));
 const GUILD_RE = /^[A-Za-zÁÉÍÓÚÑáéíóúñ0-9][A-Za-zÁÉÍÓÚÑáéíóúñ0-9 ]{2,15}$/;
@@ -24,7 +28,7 @@ const PARTY_MAX = 5;
 const MARKET_MAX = 8, MARKET_FEE = 0.05, MARKET_HOURS = 72;
 const EVENT_EVERY = (parseFloat(process.env.EVENT_MIN) || 35) * 60000;
 
-const defExt = () => ({ q: {}, ach: {}, title: '', kt: 0, kills: {}, bosses: 0, pvp: 0, deaths: 0, quests: 0, crafts: 0, gather: 0, cxp: 0, events: 0, sold: 0, pet: '', mount: '', hadPet: 0, hadMount: 0, partyKills: 0, guild: '', grole: '', mail: [] });
+const defExt = () => ({ seen: {}, q: {}, ach: {}, title: '', kt: 0, kills: {}, bosses: 0, pvp: 0, deaths: 0, quests: 0, crafts: 0, gather: 0, cxp: 0, events: 0, sold: 0, pet: '', mount: '', hadPet: 0, hadMount: 0, partyKills: 0, guild: '', grole: '', mail: [], grave: null, col: {}, story: {}, fish: { xp: 0, c: {} }, mine: { xp: 0, c: {} } });
 
 function sanitizeExt(raw) {
   const e = defExt();
@@ -33,6 +37,12 @@ function sanitizeExt(raw) {
   if (raw.q && typeof raw.q === 'object') for (const [id, v] of Object.entries(raw.q)) if (QBY[id] && v && (v.s === 'a' || v.s === 'd')) e.q[id] = { s: v.s, n: num(v.n, 1e6), t: num(v.t, 1e15) };
   if (raw.ach && typeof raw.ach === 'object') for (const [id, t] of Object.entries(raw.ach)) if (ACH_BY[id]) e.ach[id] = num(t, 1e15) || 1;
   if (raw.kills && typeof raw.kills === 'object') for (const [m, n] of Object.entries(raw.kills)) if (MONSTERS[m]) e.kills[m] = num(n);
+  if (raw.grave && Number.isInteger(raw.grave.x) && Number.isInteger(raw.grave.y)) e.grave = { x: raw.grave.x, y: raw.grave.y, t: num(raw.grave.t, 1e15) };
+  if (raw.col && typeof raw.col === 'object') for (const [b, items] of Object.entries(raw.col)) if ((MONSTERS[b] || b === 'pesca' || b === 'mineria') && items && typeof items === 'object') { e.col[b] = {}; for (const [id, n] of Object.entries(items)) if (ITEMS[id]) e.col[b][id] = num(n, 1e9) || 1; }
+  if (raw.fish && typeof raw.fish === 'object') { e.fish.xp = num(raw.fish.xp, 1e9); if (raw.fish.c && typeof raw.fish.c === 'object') for (const [id, n] of Object.entries(raw.fish.c)) if (ITEMS[id]) e.fish.c[id] = num(n, 1e9); }
+  if (raw.mine && typeof raw.mine === 'object') { e.mine.xp = num(raw.mine.xp, 1e9); if (raw.mine.c && typeof raw.mine.c === 'object') for (const [id, n] of Object.entries(raw.mine.c)) if (ITEMS[id]) e.mine.c[id] = num(n, 1e9); }
+  if (raw.seen && typeof raw.seen === 'object') for (const id of Object.keys(raw.seen)) if (ITEMS[id]) e.seen[id] = 1;     // álbum de colecciones
+  e.story = require('./historia').sanitize(raw.story);
   e.title = typeof raw.title === 'string' ? raw.title.slice(0, 30) : '';
   e.pet = ITEMS[raw.pet] && ITEMS[raw.pet].type === 'pet' ? raw.pet : '';
   e.mount = ITEMS[raw.mount] && ITEMS[raw.mount].type === 'mount' ? raw.mount : '';
@@ -85,6 +95,7 @@ module.exports = function install(Game) {
 
   P.onLogin = function (p) {
     const e = p.ext;
+    this.recalc(p);                                                  // pasivas de la mascota y la montura activas
     // correo: oro y objetos que llegaron mientras estabas desconectado
     const keep = [];
     for (const m of e.mail) {
@@ -99,6 +110,8 @@ module.exports = function install(Game) {
     if (keep.length) this.msg(p, 'Tienes correo pendiente: libera espacio en tu mochila y vuelve a entrar.', 's');
     this.checkAch(p, true);
     this.sendXinfo(p, true);
+    this.sendGrave(p);
+    this.sendCol(p);
     this.sendBuffs(p);
     if (e.guild) this.sendGuild(p);
     if (this.event && this.event.state === 'active' && this.event.boss) this.send(p, { t: 'event', k: 'start', x: this.event.boss.x, y: this.event.boss.y, text: `¡${this.event.boss.def.name} está causando estragos! Ve a ${zoneAt(this.event.boss.x, this.event.boss.y).name}.` });
@@ -131,7 +144,7 @@ module.exports = function install(Game) {
       case 'kt': return e.kt; case 'bosses': return e.bosses; case 'lv': return p.level; case 'pvp': return e.pvp; case 'quests': return e.quests;
       case 'gold': return p.gold + p.bankGold; case 'crafts': return e.crafts; case 'gather': return e.gather; case 'deaths': return e.deaths; case 'events': return e.events;
       case 'pet': return e.hadPet; case 'mount': return e.hadMount; case 'sold': return e.sold; case 'guild': return e.guild ? 1 : 0; case 'party': return e.partyKills;
-      default: if (type.startsWith('mon:')) return e.kills[type.slice(4)] || 0; return 0;
+      default: if (type.startsWith('story')) return require('./historia').value(p, type); if (type.startsWith('mon:')) return e.kills[type.slice(4)] || 0; return 0;
     }
   };
   P.checkAch = function (p, quiet) {
@@ -151,7 +164,7 @@ module.exports = function install(Game) {
   P.sendXinfo = function (p, defs) {
     const e = p.ext;
     const m = { t: 'xinfo', ach: e.ach, title: e.title, st: { kt: e.kt, bosses: e.bosses, pvp: e.pvp, deaths: e.deaths, quests: e.quests, crafts: e.crafts, gather: e.gather, events: e.events, sold: e.sold, party: e.partyKills, pet: e.hadPet ? 1 : 0, mount: e.hadMount ? 1 : 0, guild: e.guild ? 1 : 0, clv: craftLevel(e.cxp), cxp: e.cxp }, guild: e.guild };
-    if (defs) { m.defs = X.ACHS; m.skills = X.SKILLS; m.recipes = X.RECIPES; m.nodes = X.NODES; m.quests = QUESTS.map((q) => ({ id: q.id, npc: q.npc, lv: q.lv, title: q.title, desc: q.desc, type: q.type, mon: q.mon, item: q.item, n: q.n, reward: q.reward, after: q.after, repeat: q.repeat })); }
+    if (defs) { m.defs = X.ACHS; m.skills = X.SKILLS; m.wsk = require('./especiales').WSPEC; m.recipes = X.RECIPES; m.nodes = X.NODES; m.quests = QUESTS.map((q) => ({ id: q.id, npc: q.npc, lv: q.lv, title: q.title, desc: q.desc, type: q.type, mon: q.mon, item: q.item, n: q.n, reward: q.reward, after: q.after, repeat: q.repeat })); }
     this.send(p, m);
   };
   P.setTitle = function (p, id) {
@@ -186,7 +199,7 @@ module.exports = function install(Game) {
     if (qState(p, q, Date.now()) !== 'new') return;
     if (Object.values(p.ext.q).filter((e) => e.s === 'a').length >= 10) { this.msg(p, 'Ya tienes 10 misiones activas.', 's'); return; }
     p.ext.q[q.id] = { s: 'a', n: 0, t: Date.now() };
-    this.msg(p, `Misión aceptada: ${q.title}.`, 's');
+    this.msg(p, `Misión aceptada: ${q.title}.`, 's'); this.questGuide(p);
     this.sendQuests(p, q.npc);
   };
   P.questTurn = function (p, id) {
@@ -199,7 +212,7 @@ module.exports = function install(Game) {
     if (r.g) p.gold += r.g;
     for (const [iid, qty] of r.items || []) this.giveOrDrop(p, iid, qty);
     if (r.xp) this.gainXp(p, r.xp);
-    this.send(p, { t: 'quest_done', id: q.id, title: q.title });
+    this.send(p, { t: 'quest_done', id: q.id, title: q.title }); this.questGuide(p);
     this.msgC(p, `✅ Misión cumplida: ${q.title}. +${r.g} de oro, +${r.xp} xp${(r.items || []).length ? ', ' + r.items.map(([i, n]) => (n > 1 ? n + '× ' : '') + ITEMS[i].name).join(', ') : ''}.`, '#7fe08a');
     p.dirty.inv = true; p.dirty.stats = true;
     this.checkAch(p);
@@ -207,8 +220,40 @@ module.exports = function install(Game) {
   };
   P.questAbandon = function (p, id) {
     const e = p.ext.q[String(id)]; if (!e || e.s !== 'a') return;
-    delete p.ext.q[String(id)];
+    delete p.ext.q[String(id)]; this.questGuide(p);
     this.sendQuests(p, '');
+  };
+
+  /* ---- flechas de misión: a dónde ir con cada misión aceptada (el cliente dibuja la flecha) ---- */
+  const nearestOf = (p, list) => { let b = null, bd = 1e9; for (const o of list) { const d = Math.hypot(o.x - p.x, o.y - p.y); if (d < bd) { bd = d; b = o; } } return b; };
+  // si el destino está en otra zona (una cueva), la flecha apunta al portal de entrada; si estás dentro de una cueva, al portal de salida
+  const hopTo = (p, tx, ty) => {
+    const Z = zoneAt(tx, ty), cur = zoneAt(p.x, p.y);
+    if (Z === cur) return { x: tx, y: ty };
+    const exits = (z) => world.PORTALS.filter((o) => zoneAt(o.x, o.y) === z && zoneAt(o.tx, o.ty) !== z);     // portales de salida de una zona interior
+    const isInt = (z) => z.kind === 'dungeon' || z.id === 'gremio_minero' || z.id === 'gremio_minero2';
+    const exit = isInt(cur) ? exits(cur) : [];
+    if (exit.length) { const e = nearestOf(p, exit); return { x: e.x, y: e.y, via: 'Salida' }; }                // estás dentro de una cueva: sal primero
+    if (isInt(Z)) { const ent = world.PORTALS.filter((o) => zoneAt(o.tx, o.ty) === Z && zoneAt(o.x, o.y) !== Z); if (ent.length) { const e = nearestOf(p, ent); return { x: e.x, y: e.y, via: 'Entrada' }; } }
+    return { x: tx, y: ty };
+  };
+  const SRC = {};     // objeto -> monstruos que lo sueltan (se rellena una vez)
+  P.questGuide = function (p) {
+    const now = Date.now(), out = [];
+    for (const q of QUESTS) {
+      const e = p.ext.q[q.id]; if (!e || e.s !== 'a') continue;
+      let tg = null;
+      if (qState(p, q, now) === 'ready') { const n = NPCS.find((o) => o.id === q.npc); if (n) tg = { x: n.x, y: n.y, label: `Entregar: ${n.name}` }; }
+      else if (q.type === 'kill') { const sp = nearestOf(p, world.monsterSpawns.filter((s) => s.type === q.mon)); if (sp) tg = Object.assign(hopTo(p, sp.x, sp.y), { label: (MONSTERS[q.mon] || {}).name || q.mon }); }
+      else if (q.type === 'collect') {
+        if (!SRC[q.item]) { SRC[q.item] = Object.keys(MONSTERS).filter((k) => (MONSTERS[k].loot || []).some((l) => l[0] === q.item)); }
+        const cand = world.monsterSpawns.filter((s) => SRC[q.item].includes(s.type)).concat((this.nodes || []).filter((nd) => (X.NODES[nd.type].give || []).some((gv) => gv[0] === q.item)));
+        const sp = nearestOf(p, cand); if (sp) tg = Object.assign(hopTo(p, sp.x, sp.y), { label: ITEMS[q.item] ? ITEMS[q.item].name : q.item });
+      } else if (q.type === 'killany') { const sp = nearestOf(p, this.monsters.filter((m) => !m.dead && !m.def.boss && Math.abs(m.def.lv - p.level) < 20 && zoneAt(m.x, m.y) === zoneAt(p.x, p.y))); if (sp) tg = { x: sp.x, y: sp.y, label: 'Monstruos' }; }
+      if (tg) out.push({ id: q.id, title: q.title, x: tg.x, y: tg.y, zone: zoneAt(tg.x, tg.y).name, label: tg.via ? `${tg.via}: ${tg.label}` : tg.label });
+    }
+    const txt = JSON.stringify(out);
+    if (txt !== p.lastGuide) { p.lastGuide = txt; this.send(p, { t: 'qguide', list: out }); }
   };
   P.questKill = function (p, type) {
     for (const q of QUESTS) {
@@ -218,7 +263,7 @@ module.exports = function install(Game) {
       else if (q.type === 'killany') e.n++;
       else continue;
       this.send(p, { t: 'qprog', id: q.id, n: e.n, need: q.n, title: q.title });
-      if (e.n >= q.n) this.msgC(p, `📜 Misión lista para entregar: ${q.title}.`, '#ffd96a');
+      if (e.n >= q.n) { this.msgC(p, `📜 Misión lista para entregar: ${q.title}.`, '#ffd96a'); this.questGuide(p); }
     }
   };
 
@@ -227,7 +272,7 @@ module.exports = function install(Game) {
   P.addBuff = function (p, k, m, secs, extra) { p.buffs[k] = Object.assign({ m, until: this.now + secs * 1000 }, extra || {}); this.sendBuffs(p); };
   P.sendBuffs = function (p) {
     const now = this.now, b = {};
-    for (const [k, v] of Object.entries(p.buffs)) if (v.until > now && (k !== 'shield' || v.hp > 0)) b[k] = { s: Math.ceil((v.until - now) / 1000), m: v.m, hp: v.hp };
+    for (const [k, v] of Object.entries(p.buffs)) if (v && v.until > now && (k !== 'shield' || v.hp > 0)) b[k] = { s: Math.ceil((v.until - now) / 1000), m: v.m, hp: v.hp };
     const txt = JSON.stringify(b);
     p.lastBuffTxt = txt;
     this.send(p, { t: 'buffs', b });
@@ -238,6 +283,8 @@ module.exports = function install(Game) {
   };
   P.defOf = function (p) { return Math.round(G0.defOf.call(this, p) * this.buffMult(p, 'def')); };
   P.hurtPlayer = function (p, raw, src, now, srcName) {
+    if (src && src.kind === 'mo' && src.def && src.def.boss) raw = Math.round(raw * BOSS_DMG * (src.def.dmgK || 1));       // los jefes pegan más fuerte
+    if (src && src.kind === 'mo') { const a = zoneAt(src.x, src.y), b = zoneAt(p.x, p.y); if (a !== b && (a.kind === 'dungeon' || b.kind === 'dungeon')) return 0; }
     const sh = p.buffs && p.buffs.shield;
     if (sh && sh.until > now && sh.hp > 0) {
       const a = Math.min(sh.hp, raw); sh.hp -= a; raw -= a;
@@ -245,7 +292,12 @@ module.exports = function install(Game) {
       if (sh.hp <= 0) this.sendBuffs(p);
       if (raw <= 0) return 0;
     }
-    return G0.hurtPlayer.call(this, p, raw, src, now, srcName);
+    const dmg = G0.hurtPlayer.call(this, p, raw, src, now, srcName);
+    if (p.autoRet && p.hp > 0 && src && src !== p && src.id != null && !src.dead && (src.kind === 'mo' || (src.kind === 'pl' && this.canPvp(p, src)))) {      // auto golpe: responde a quien me pega
+      const cur = p.target ? this.ents.get(p.target) : null;
+      if (!cur || cur.dead || cur.hp <= 0) p.target = src.id;
+    }
+    return dmg;
   };
   P.gainXp = function (p, xp) {
     const m = this.buffMult(p, 'xp');
@@ -260,7 +312,7 @@ module.exports = function install(Game) {
   /** Daño base de un golpe del jugador (igual que el ataque normal). */
   P.baseDmg = function (p, w) {
     const skill = skillFromXp(p.sxp[w.style]);
-    return Math.max(1, Math.round(w.atk * (0.55 + Math.random() * 0.45) * (1 + 0.05 * (skill - 1)) * (1 + 0.015 * (p.level - 1))));
+    return Math.max(1, Math.round(w.atk * (0.55 + Math.random() * 0.45) * skillMult(skill) * (1 + 0.010 * (p.level - 1))));
   };
   /** Aplica daño de una habilidad a un objetivo (monstruo o jugador). */
   P.skillHit = function (p, t, dmg, now) {
@@ -276,7 +328,10 @@ module.exports = function install(Game) {
   P.useSkill = function (p, idx) {
     const now = this.now;
     if (now < p.nextSkill) return;
-    const w = this.weaponOf(p), style = w.style, list = X.SKILLS[style], sk = list && list[idx | 0];
+    const w = this.weaponOf(p), style = w.style, list = X.SKILLS[style];
+    const WS = require('./especiales').WSPEC;
+    const wsp = [...((p.eq.weapon && WS[p.eq.weapon.id]) || []), ...((p.eq.shield && WS[p.eq.shield.id]) || [])];
+    const sk = (idx | 0) < 3 ? (list && list[idx | 0]) : wsp[(idx | 0) - 3];       // 4, 5 y 6: especiales del arma de jefe; después, el del escudo
     if (!sk) return;
     const sl = skillFromXp(p.sxp[style]);
     if (sl < sk.lv) { this.msgThrottle(p, 'sklv', `${sk.name}: requiere habilidad ${sk.lv} de ${style === 'melee' ? 'combate cuerpo a cuerpo' : style === 'ranged' ? 'distancia' : 'magia'}.`); return; }
@@ -295,17 +350,19 @@ module.exports = function install(Game) {
         if (d > (range === 1 ? 1.5 : range + 0.2)) { this.msgThrottle(p, 'far', 'El objetivo está demasiado lejos.'); return; }
       }
     }
-    p.mana -= sk.mana; p.skcd[sk.id] = now + sk.cd; p.nextSkill = now + 700;
-    this.send(p, { t: 'skcd', id: sk.id, ms: sk.cd });
+    const scd = Math.round(sk.cd * (1 - ((p.tn && p.tn.fight) ? 0 : (this.gbOf(p).cdr || 0))));      // Rodocrosita (sin efecto en el torneo)
+    p.mana -= sk.mana; p.skcd[sk.id] = now + scd; p.nextSkill = now + 700;
+    this.send(p, { t: 'skcd', id: sk.id, ms: scd });
     p.dirty.stats = true;
     this.addSkillXp(p, style, 4);
+    if (sk.kind) { this.wspecial(p, sk, t, w, sl, now); return; }
     if (sk.buff) {
       for (const [k, m] of Object.entries(sk.buff)) this.addBuff(p, k, m, sk.secs);
       this.fx.push({ k: 'sk', id: sk.id, x: p.x, y: p.y, i: p.id });
       return;
     }
     if (sk.shield) {
-      const hp = Math.round(50 + p.level * 6 + sl * 5);
+      const hp = Math.round((50 + p.level * 6 + sl * 5) * (sk.shm || 1));
       p.buffs.shield = { m: 1, hp, until: now + sk.secs * 1000 }; this.sendBuffs(p);
       this.fx.push({ k: 'sk', id: sk.id, x: p.x, y: p.y, i: p.id });
       return;
@@ -389,7 +446,7 @@ module.exports = function install(Game) {
       const on = this.players.get(k);
       const e = on ? on.ext : acc.data && acc.data.ext;
       if (!e || !e.guild || e.guild.toLowerCase() !== low) continue;
-      out.push({ n: acc.name, l: on ? on.level : levelFromXp((acc.data && acc.data.xp) || 0), r: e.grole === 'lider' ? 'lider' : 'miembro', on: on && on.ws ? 1 : 0 });
+      out.push({ n: acc.name, l: on ? (on.rl || on.level) : raceLevel((acc.data && acc.data.xp) || 0), r: e.grole === 'lider' ? 'lider' : 'miembro', on: on && on.ws ? 1 : 0 });
     }
     return out.sort((a, b) => (b.r === 'lider') - (a.r === 'lider') || b.l - a.l);
   };
@@ -513,7 +570,7 @@ module.exports = function install(Game) {
       rows.push({ n: acc.name, xp: on ? on.xp : acc.data.xp | 0, kt: e.kt | 0, pvp: e.pvp | 0, bosses: e.bosses | 0, g: e.guild || '' });
     }
     const top = (key, fn) => rows.slice().sort((a, b) => b[key] - a[key]).filter((r) => r[key] > 0).slice(0, 10).map((r) => [r.n, fn ? fn(r) : r[key], r.g]);
-    const v = { lvl: top('xp', (r) => levelFromXp(r.xp)), kills: top('kt'), pvp: top('pvp'), boss: top('bosses') };
+    const v = { lvl: top('xp', (r) => raceLevel(r.xp)), kills: top('kt'), pvp: top('pvp'), boss: top('bosses') };
     this.rankCache = { t: now, v };
     return v;
   };
@@ -530,7 +587,7 @@ module.exports = function install(Game) {
   P.marketSend = function (p, filter) {
     const m = this.market(), now = Date.now(), f = filter || {};
     const q = String(f.q || '').toLowerCase().slice(0, 30);
-    const kinds = { weapon: ['weapon'], armor: ['head', 'body', 'shield', 'belt', 'gloves', 'legs', 'boots'], jewel: ['ring', 'amulet'], other: null };
+    const kinds = { weapon: ['weapon'], armor: ['head', 'body', 'shield', 'belt', 'gloves', 'legs', 'boots', 'cape'], jewel: ['ring', 'amulet'], other: null };
     let list = m.list.filter((l) => {
       const d = ITEMS[l.it.id]; if (!d) return false;
       if (q && !d.name.toLowerCase().includes(q)) return false;
@@ -590,17 +647,31 @@ module.exports = function install(Game) {
     const it = p.inv[slot | 0]; const d = it && ITEMS[it.id];
     if (d && d.type === 'pet') {
       p.ext.pet = p.ext.pet === it.id ? '' : it.id; if (p.ext.pet) p.ext.hadPet = 1;
-      this.msg(p, p.ext.pet ? `${d.name} te acompañará.` : `${d.name} descansa.`, 's'); this.checkAch(p); return;
+      this.msg(p, p.ext.pet ? `${d.name} te acompañará.` : `${d.name} descansa.`, 's'); this.recalc(p); p.dirty.stats = true; this.checkAch(p); return;
     }
     if (d && d.type === 'mount') {
       if ((d.minLevel || 1) > p.level) { this.msg(p, `Necesitas nivel ${d.minLevel} para montar ${d.name}.`, 's'); return; }
       p.ext.mount = p.ext.mount === it.id ? '' : it.id; if (p.ext.mount) p.ext.hadMount = 1;
-      this.msg(p, p.ext.mount ? `Montas ${d.name}.` : 'Desmontas.', 's'); this.checkAch(p); return;
+      this.msg(p, p.ext.mount ? `Montas ${d.name}.` : 'Desmontas.', 's'); this.recalc(p); p.dirty.stats = true; this.checkAch(p); return;
+    }
+    if (d && d.type === 'tablet') {                                 // teletransporte de un solo uso
+      if (this.now < p.pvpLock) { this.msg(p, '¡Estás en combate! No puedes usar la tableta todavía.', 's'); return; }
+      const [tx, ty] = d.dest; const ox = p.x, oy = p.y;
+      const spots = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [2, 0], [-2, 0]]
+        .map(([dx, dy]) => [tx + dx, ty + dy]).filter(([x, y]) => world.isWalkable(x, y) && !this.pgrid.has(kxy(x, y)) && !this.mgrid.has(kxy(x, y)));
+      if (!spots.length) { this.msg(p, 'El destino está ocupado, inténtalo de nuevo.', 's'); return; }
+      this.fx.push({ k: 'tpo', x: ox, y: oy });
+      this.pgrid.delete(kxy(ox, oy)); p.x = spots[0][0]; p.y = spots[0][1]; this.pgrid.set(kxy(p.x, p.y), p);
+      p.tpSeq++; p.target = null; p.pend = null;
+      this.fx.push({ k: 'tpi', x: p.x, y: p.y });
+      it.qty--; if (it.qty <= 0) p.inv[slot | 0] = null; p.dirty.inv = true;
+      this.msg(p, `Te teletransportas: ${zoneAt(p.x, p.y).name}.`, 's'); return;
     }
     if (d && d.buff) {
       if ((d.minLevel || 1) > p.level) { this.msg(p, `Necesitas nivel ${d.minLevel} para usar ${d.name}.`, 's'); return; }
       if (this.now < p.nextPotion) return;
       for (const [k, m] of Object.entries(d.buff)) this.addBuff(p, k, m, d.secs);
+      if (d.cure && this.cleanse) this.cleanse(p);
       this.msg(p, `${d.name}: ${d.desc}`, 's');
       p.nextPotion = this.now + 1000; it.qty--; if (it.qty <= 0) p.inv[slot | 0] = null; p.dirty.inv = true; return;
     }
@@ -609,8 +680,10 @@ module.exports = function install(Game) {
   // si el objeto ya no está en la mochila, la mascota/montura deja de ser válida solo al soltarlo/venderlo: se comprueba aquí
   P.petCheck = function (p) {
     const has = (id) => p.inv.some((i) => i && i.id === id) || (p.bank || []).some((i) => i && i.id === id);
+    const had = p.ext.pet + '|' + p.ext.mount;
     if (p.ext.pet && !has(p.ext.pet)) p.ext.pet = '';
     if (p.ext.mount && !has(p.ext.mount)) p.ext.mount = '';
+    if (had !== p.ext.pet + '|' + p.ext.mount) { this.recalc(p); p.dirty.stats = true; }
   };
 
   /* ============================ RECOLECCIÓN Y FABRICACIÓN ============================ */
@@ -627,7 +700,7 @@ module.exports = function install(Game) {
         if (!world.reach[kxy(x, y)] || !zoneAt(x, y) || !nd.zones.includes(zoneAt(x, y).id)) continue;
         const t = world.tiles[kxy(x, y)];
         if (t === T.PORTAL || t === T.ROAD || t === T.WATER || t === T.WALL) continue;
-        if (zoneAt(x, y).kind === 'town') continue;
+        if (zoneAt(x, y).kind === 'town' && zoneAt(x, y).id !== 'gremio_minero' && zoneAt(x, y).id !== 'gremio_minero2') continue;
         cands.push([x, y]);
       }
       for (let i = cands.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [cands[i], cands[j]] = [cands[j], cands[i]]; }
@@ -650,6 +723,7 @@ module.exports = function install(Game) {
     const n = this.nodeById.get(id | 0), now = this.now;
     if (!n || now < n.at || now < p.nextGather || cheb(p.x, p.y, n.x, n.y) > 1) return;
     const nd = X.NODES[n.type];
+    if (nd.rock) return this.mineRock(p, n, nd);
     p.nextGather = now + 1100; n.at = now + nd.respawn * (0.8 + Math.random() * 0.4);
     const cl = craftLevel(p.ext.cxp);
     for (const [iid, a, b] of nd.give) {
@@ -683,41 +757,47 @@ module.exports = function install(Game) {
   };
 
   /* ============================ JEFE DE EVENTO ============================ */
-  P.initEvent = function () {
-    const zone = world.zoneById ? world.zoneById('colinas') : null;
+  P.findArena = function (cx, cy) {
     let best = null, bd = 1e9;
-    for (let y = 96; y <= 119; y++) for (let x = 60; x <= 139; x++) {
-      if (!world.reach[kxy(x, y)]) continue;
+    for (let y = Math.max(1, cy - 40); y <= cy + 40; y++) for (let x = Math.max(1, cx - 40); x <= cx + 40; x++) {
+      if (x >= world.W || y >= world.H || !world.reach[kxy(x, y)]) continue;
       const t = world.tiles[kxy(x, y)]; if (t === T.PORTAL || t === T.ROAD) continue;
-      const d = Math.hypot(x - 100, y - 107); if (d < bd) { bd = d; best = [x, y]; }
+      const d = Math.hypot(x - cx, y - cy); if (d < bd) { bd = d; best = [x, y]; }
     }
-    this.arena = best || [100, 107];
-    this.event = { state: 'idle', next: Date.now() + (parseFloat(process.env.EVENT_FIRST_MIN) || 6) * 60000, boss: null, ends: 0 };
+    return best || [cx, cy];
   };
+  P.initEvent = function () {
+    this.sched = [];
+    this.arenas = {}; for (const b of X.BOSSES) this.arenas[b.type] = this.findArena(b.arena[0], b.arena[1]);
+    this.event = { state: 'idle', i: 0, cur: X.BOSSES[0], next: Date.now() + (parseFloat(process.env.EVENT_FIRST_MIN) || 6) * 60000, boss: null, ends: 0 };
+  };
+  P.later = function (ms, fn) { this.sched.push({ at: this.now + ms, fn }); };
+  const evDone = (ev, now) => { ev.state = 'idle'; ev.next = now + EVENT_EVERY; ev.i++; ev.cur = X.BOSSES[ev.i % X.BOSSES.length]; };
   P.eventTick = function (now) {
     const ev = this.event; if (!ev) return;
     const online = [...this.players.values()].filter((q) => q.ws);
+    const B = ev.cur, name = B.def.name, ar = this.arenas[B.type];
     if (ev.state === 'idle' && now >= ev.next) {
       if (!online.length) { ev.next = now + 3 * 60000; return; }
-      ev.state = 'warn'; ev.spawnAt = now + 60000;
-      const zn = zoneAt(this.arena[0], this.arena[1]).name;
-      this.broadcastChat(`⚠️ ¡El Coloso Ancestral despertará en 60 segundos en ${zn}! Reúne a tu grupo.`, 'k');
-      for (const q of online) this.send(q, { t: 'event', k: 'warn', secs: 60, x: this.arena[0], y: this.arena[1], text: `El Coloso Ancestral despierta en 60 s (${zn}).` });
+      ev.state = 'warn'; ev.spawnAt = now + 60000; this.arena = ar;
+      const zn = zoneAt(ar[0], ar[1]).name;
+      this.broadcastChat(`⚠️ ¡${name} despertará en 60 segundos en ${zn}! Reúne a tu grupo.`, 'k');
+      for (const q of online) this.send(q, { t: 'event', k: 'warn', secs: 60, x: ar[0], y: ar[1], text: `${name} despierta en 60 s (${zn}).` });
     } else if (ev.state === 'warn' && now >= ev.spawnAt) {
       const n = Math.max(1, online.length);
-      const m = this.spawnMonster(X.BOSS.type, this.arena[0], this.arena[1]);
-      m.maxHp = m.hp = Math.round(X.BOSS.def.hp * (1 + 0.35 * (n - 1))); m.event = true; m.noRespawn = true; m.sx = m.x; m.sy = m.y;
-      ev.boss = m; ev.state = 'active'; ev.ends = now + 12 * 60000;
+      const m = this.spawnMonster(B.type, ar[0], ar[1]);
+      m.maxHp = m.hp = Math.round(B.def.hp * (1 + 0.35 * (n - 1))); m.event = true; m.noRespawn = true; m.sx = m.x; m.sy = m.y;
+      ev.boss = m; ev.state = 'active'; ev.ends = now + B.mins * 60000;
       const zn = zoneAt(m.x, m.y).name;
-      this.broadcastChat(`🗿 ¡El Coloso Ancestral ha despertado en ${zn}! Tenéis 12 minutos para derrotarlo.`, 'k');
-      for (const q of online) this.send(q, { t: 'event', k: 'start', x: m.x, y: m.y, text: `¡El Coloso Ancestral ha despertado en ${zn}!` });
+      this.broadcastChat(`${B.icon} ¡${name} ha despertado en ${zn}! Tenéis ${B.mins} minutos para derrotarlo.`, 'k');
+      for (const q of online) this.send(q, { t: 'event', k: 'start', x: m.x, y: m.y, text: `¡${name} ha despertado en ${zn}!` });
     } else if (ev.state === 'active') {
       const m = ev.boss;
-      if (!m || m.dead) { this.removeEventBoss(); ev.state = 'idle'; ev.next = now + EVENT_EVERY; }
+      if (!m || m.dead) { this.removeEventBoss(); evDone(ev, now); }
       else if (now >= ev.ends) {
-        this.removeEventBoss(); ev.state = 'idle'; ev.next = now + EVENT_EVERY;
-        this.broadcastChat('El Coloso Ancestral se desvaneció entre la niebla… volverá.', 'k');
-        for (const q of online) this.send(q, { t: 'event', k: 'end', text: 'El Coloso Ancestral se desvaneció.' });
+        this.removeEventBoss(); evDone(ev, now);
+        this.broadcastChat(`${name} se desvaneció entre la niebla… volverá.`, 'k');
+        for (const q of online) this.send(q, { t: 'event', k: 'end', text: `${name} se desvaneció.` });
       }
     }
   };
@@ -725,6 +805,314 @@ module.exports = function install(Game) {
     const m = this.event.boss; if (!m) return;
     this.mgrid.delete(kxy(m.x, m.y));
     this.monsters = this.monsters.filter((q) => q !== m); this.ents.delete(m.id); this.event.boss = null;
+  };
+
+  /* ============================ DRAGÓN DE LAS SOMBRAS: 3 ataques ============================ */
+  // 1) cuerpo a cuerpo (el normal), 2) aliento de fuego negro a distancia, 3) pisotón que rompe el suelo y abre grietas.
+  const inTownP = (q) => zoneAt(q.x, q.y).kind === 'town';
+  const hitPlayers = function (self, now, m, test, lo, hi, tag) {
+    for (const q of self.players.values()) {
+      if (q.hp <= 0 || inTownP(q) || !test(q)) continue;
+      self.hurtPlayer(q, rnd(lo, hi), m, now, tag || m.def.name);
+    }
+  };
+  P.dragonAI = function (m, now) {
+    if (now < (m.nextSp || 0)) return;
+    const t = m.target ? this.ents.get(m.target) : null; if (!t || t.kind !== 'pl' || t.hp <= 0) return;
+    const d = Math.hypot(t.x - m.x, t.y - m.y);
+    const near = [...this.players.values()].some((q) => q.hp > 0 && !inTownP(q) && Math.hypot(q.x - m.x, q.y - m.y) <= 6);
+    const order = ['breath', 'slam', 'breath', 'slam', 'slam', 'breath'];
+    let kind = order[(m.spN || 0) % order.length];
+    if (kind === 'breath' && !(d >= 2 && d <= 12)) kind = near ? 'slam' : null;
+    else if (kind === 'slam' && !near) kind = d >= 2 && d <= 12 ? 'breath' : null;
+    if (!kind) { m.nextSp = now + 1000; return; }
+    m.spN = (m.spN || 0) + 1; m.nextSp = now + 5500 + Math.random() * 3000;
+    m.nextMove = Math.max(m.nextMove, now + 1700); m.nextAtk = Math.max(m.nextAtk, now + 1700);
+    const alive = () => !m.dead && this.monsters.includes(m);
+    if (kind === 'breath') {                                   // aliento de fuego negro (se esquiva moviéndose)
+      let dx = t.x - m.x, dy = t.y - m.y; const L = Math.hypot(dx, dy) || 1; dx /= L; dy /= L;
+      const ex = m.x + dx * 12, ey = m.y + dy * 12, ox = m.x, oy = m.y;
+      this.fx.push({ k: 'dkw', x1: ox, y1: oy, x2: ex, y2: ey });
+      this.later(1000, () => {
+        if (!alive()) return; const nw = this.now;
+        this.fx.push({ k: 'dk', x1: ox, y1: oy, x2: ex, y2: ey });
+        const inLine = (q) => { const rx = q.x - ox, ry = q.y - oy, s = rx * dx + ry * dy, perp = Math.abs(rx * dy - ry * dx); return s >= 0.5 && s <= 12.5 && perp <= 1.6; };
+        const hit = [];
+        for (const q of this.players.values()) if (q.hp > 0 && !inTownP(q) && inLine(q)) hit.push(q);
+        for (const q of hit) this.hurtPlayer(q, rnd(380, 560), m, nw, m.def.name);
+        for (let i = 1; i <= 3; i++) this.later(900 * i, () => {            // fuego negro: quemadura 3 s
+          if (!alive()) return;
+          for (const q of hit) if (q.hp > 0 && this.players.get(q.key) === q) { this.fx.push({ k: 'burn', x: q.x, y: q.y }); this.hurtPlayer(q, rnd(50, 85), m, this.now, 'Fuego negro'); }
+        });
+      });
+    } else {                                                   // pisotón: rompe el suelo
+      const R = 5.5, cx = m.x, cy = m.y;
+      this.fx.push({ k: 'slw', x: cx, y: cy, r: R });
+      this.later(1100, () => {
+        if (!alive()) return;
+        this.fx.push({ k: 'sl', x: cx, y: cy, r: R });
+        hitPlayers(this, this.now, m, (q) => Math.hypot(q.x - cx, q.y - cy) <= R, 520, 760);
+        const spots = []; const tgt = [...this.players.values()].filter((q) => q.hp > 0 && !inTownP(q) && Math.hypot(q.x - cx, q.y - cy) <= 14);
+        const n = Math.min(7, 2 + tgt.length);
+        for (let i = 0; i < n; i++) {                           // grietas: una sobre cada jugador cercano y otras al azar
+          const q = tgt[i]; const x = q ? q.x : Math.round(cx + (Math.random() - 0.5) * 14), y = q ? q.y : Math.round(cy + (Math.random() - 0.5) * 14);
+          spots.push([x, y]);
+        }
+        this.later(250, () => { if (alive()) for (const [x, y] of spots) this.fx.push({ k: 'fiw', x, y, r: 1.5 }); });
+        this.later(1250, () => {
+          if (!alive()) return;
+          for (const [x, y] of spots) { this.fx.push({ k: 'fi', x, y }); hitPlayers(this, this.now, m, (q) => Math.hypot(q.x - x, q.y - y) <= 1.5, 320, 460, 'Grieta de lava'); }
+        });
+      });
+    }
+  };
+  // Hidra de Jade: lluvia ácida, fuego amarillo por las bocas y golpe al suelo con caída de piedras
+  P.hydraAI = function (m, now) {
+    if (now < (m.nextSp || 0)) return;
+    const t = m.target ? this.ents.get(m.target) : null; if (!t || t.kind !== 'pl' || t.hp <= 0) return;
+    const d = Math.hypot(t.x - m.x, t.y - m.y);
+    const near = [...this.players.values()].some((q) => q.hp > 0 && !inTownP(q) && Math.hypot(q.x - m.x, q.y - m.y) <= 6);
+    const order = ['acid', 'fire', 'stomp', 'acid', 'stomp', 'fire'];
+    let kind = order[(m.spN || 0) % order.length];
+    if (kind === 'fire' && !(d >= 2 && d <= 12)) kind = near ? 'stomp' : 'acid';
+    else if (kind === 'stomp' && !near) kind = d >= 2 && d <= 12 ? 'fire' : 'acid';
+    m.spN = (m.spN || 0) + 1; m.nextSp = now + 5500 + Math.random() * 3000;
+    m.nextMove = Math.max(m.nextMove, now + 1700); m.nextAtk = Math.max(m.nextAtk, now + 1700);
+    const alive = () => !m.dead && this.monsters.includes(m);
+    const near14 = (cx, cy, r) => [...this.players.values()].filter((q) => q.hp > 0 && !inTownP(q) && Math.hypot(q.x - cx, q.y - cy) <= r);
+    const rain = (cx, cy, R, warnK, hitK, n, lo, hi, tag, delay) => {       // círculos de aviso y luego impacto (se esquivan caminando)
+      const spots = [], tg = near14(cx, cy, R + 4);
+      for (let i = 0; i < n; i++) { const q = tg[i]; spots.push(q ? [q.x, q.y] : [Math.round(cx + (Math.random() - 0.5) * 2 * R), Math.round(cy + (Math.random() - 0.5) * 2 * R)]); }
+      for (const [x, y] of spots) this.fx.push({ k: warnK, x, y, r: 1.5 });
+      this.later(delay, () => {
+        if (!alive()) return;
+        for (const [x, y] of spots) { this.fx.push({ k: hitK, x, y }); hitPlayers(this, this.now, m, (q) => Math.hypot(q.x - x, q.y - y) <= 1.5, lo, hi, tag); }
+      });
+    };
+    if (kind === 'fire') {                                      // aliento de fuego amarillo
+      let dx = t.x - m.x, dy = t.y - m.y; const L = Math.hypot(dx, dy) || 1; dx /= L; dy /= L;
+      const ex = m.x + dx * 12, ey = m.y + dy * 12, ox = m.x, oy = m.y;
+      this.fx.push({ k: 'ykw', x1: ox, y1: oy, x2: ex, y2: ey });
+      this.later(1000, () => {
+        if (!alive()) return; const nw = this.now;
+        this.fx.push({ k: 'yk', x1: ox, y1: oy, x2: ex, y2: ey });
+        const hit = [];
+        for (const q of this.players.values()) { const rx = q.x - ox, ry = q.y - oy, s = rx * dx + ry * dy, perp = Math.abs(rx * dy - ry * dx); if (q.hp > 0 && !inTownP(q) && s >= 0.5 && s <= 12.5 && perp <= 1.8) hit.push(q); }
+        for (const q of hit) this.hurtPlayer(q, rnd(400, 580), m, nw, m.def.name);
+        for (let i = 1; i <= 3; i++) this.later(900 * i, () => { if (!alive()) return; for (const q of hit) if (q.hp > 0 && this.players.get(q.key) === q) { this.fx.push({ k: 'burn', x: q.x, y: q.y }); this.hurtPlayer(q, rnd(55, 90), m, this.now, 'Fuego amarillo'); } });
+      });
+    } else if (kind === 'acid') {                               // lluvia de ácido: tres oleadas
+      for (let w = 0; w < 3; w++) this.later(w * 1100, () => { if (alive()) rain(m.x, m.y, 10, 'acw', 'ac', 5 + w, 300, 440, 'Lluvia ácida', 900); });
+    } else {                                                    // golpe al suelo: onda y lluvia de piedras
+      const R = 4.5, cx = m.x, cy = m.y;
+      this.fx.push({ k: 'hsw', x: cx, y: cy, r: R });
+      this.later(1100, () => {
+        if (!alive()) return;
+        this.fx.push({ k: 'hs', x: cx, y: cy, r: R });
+        hitPlayers(this, this.now, m, (q) => Math.hypot(q.x - cx, q.y - cy) <= R, 480, 680);
+        rain(cx, cy, 9, 'rcw', 'rc', Math.min(9, 4 + near14(cx, cy, 14).length * 2), 360, 520, 'Piedra', 1100);
+      });
+    }
+  };
+  // Arcángel del Santuario: ráfagas de rayos desde el cielo, tornado perseguidor y nova azul sobre los jugadores cercanos
+  P.angelAI = function (m, now) {
+    if (now < (m.nextSp || 0)) return;
+    const t = m.target ? this.ents.get(m.target) : null; if (!t || t.kind !== 'pl' || t.hp <= 0) return;
+    const order = ['bolt', 'twister', 'nova', 'bolt', 'nova', 'twister'];
+    const kind = order[(m.spN || 0) % order.length];
+    m.spN = (m.spN || 0) + 1; m.nextSp = now + 5500 + Math.random() * 3000;
+    m.nextMove = Math.max(m.nextMove, now + 1700); m.nextAtk = Math.max(m.nextAtk, now + 1700);
+    const alive = () => !m.dead && this.monsters.includes(m);
+    const near = (cx, cy, r) => [...this.players.values()].filter((q) => q.hp > 0 && !inTownP(q) && Math.hypot(q.x - cx, q.y - cy) <= r);
+    if (kind === 'bolt') {                                      // ráfagas de rayos: aviso y caída (se esquivan caminando)
+      for (let w = 0; w < 3; w++) this.later(w * 1100, () => {
+        if (!alive()) return;
+        const tg = near(m.x, m.y, 14), n = 6 + w, spots = [];
+        for (let i = 0; i < n; i++) { const q = tg[i]; spots.push(q ? [q.x, q.y] : [Math.round(m.x + (Math.random() - 0.5) * 20), Math.round(m.y + (Math.random() - 0.5) * 20)]); }
+        for (const [x, y] of spots) this.fx.push({ k: 'lgw', x, y, r: 1.5 });
+        this.later(900, () => { if (!alive()) return; for (const [x, y] of spots) { this.fx.push({ k: 'lg', x, y }); hitPlayers(this, this.now, m, (q) => Math.hypot(q.x - x, q.y - y) <= 1.5, 330, 480, 'Rayo celestial'); } });
+      });
+    } else if (kind === 'twister') {                            // tornado que persigue al objetivo 5 s
+      let x = m.x, y = m.y; const id = Math.random();
+      for (let i = 0; i < 10; i++) this.later(i * 500, () => {
+        if (!alive()) return;
+        const tg = near(x, y, 16).sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))[0];
+        if (tg) { const dx = tg.x - x, dy = tg.y - y, L = Math.hypot(dx, dy) || 1; x += (dx / L) * Math.min(1.1, L); y += (dy / L) * Math.min(1.1, L); }
+        this.fx.push({ k: 'tn', x, y, id });
+        hitPlayers(this, this.now, m, (q) => Math.hypot(q.x - x, q.y - y) <= 1.8, 150, 240, 'Tornado');
+      });
+    } else {                                                    // nova azul: potente hechizo sobre los jugadores cercanos
+      const tg = near(m.x, m.y, 12), spots = tg.map((q) => [q.x, q.y]); if (!spots.length) spots.push([t.x, t.y]);
+      for (const [x, y] of spots) this.fx.push({ k: 'nvw', x, y, r: 2.4 });
+      this.later(1300, () => { if (!alive()) return; for (const [x, y] of spots) { this.fx.push({ k: 'nv', x, y, r: 2.4 }); hitPlayers(this, this.now, m, (q) => Math.hypot(q.x - x, q.y - y) <= 2.4, 560, 780, 'Nova celestial'); } });
+    }
+  };
+  // Coloso Ancestral (jefe de evento): lluvia de fuego y terremoto con daño en área
+  P.titanAI = function (m, now) {
+    if (now < (m.nextSp || 0)) return;
+    const t = m.target ? this.ents.get(m.target) : null; if (!t || t.kind !== 'pl' || t.hp <= 0) return;
+    const kind = ['fire', 'quake', 'fire', 'quake', 'quake', 'fire'][(m.spN || 0) % 6];
+    m.spN = (m.spN || 0) + 1; m.nextSp = now + 6000 + Math.random() * 3000;
+    m.nextMove = Math.max(m.nextMove, now + 1700); m.nextAtk = Math.max(m.nextAtk, now + 1700);
+    const alive = () => !m.dead && this.monsters.includes(m);
+    const near = (cx, cy, r) => [...this.players.values()].filter((q) => q.hp > 0 && !inTownP(q) && Math.hypot(q.x - cx, q.y - cy) <= r);
+    if (kind === 'fire') {                                      // lluvia de fuego: 3 oleadas de bolas que caen (se esquivan)
+      for (let w = 0; w < 3; w++) this.later(w * 1000, () => {
+        if (!alive()) return;
+        const tg = near(m.x, m.y, 14), n = 5 + w * 2, spots = [];
+        for (let i = 0; i < n; i++) { const q = tg[i]; spots.push(q ? [q.x, q.y] : [Math.round(m.x + (Math.random() - 0.5) * 20), Math.round(m.y + (Math.random() - 0.5) * 20)]); }
+        for (const [x, y] of spots) this.fx.push({ k: 'frw', x, y, r: 1.6 });
+        this.later(900, () => { if (!alive()) return; for (const [x, y] of spots) { this.fx.push({ k: 'fr', x, y }); hitPlayers(this, this.now, m, (q) => Math.hypot(q.x - x, q.y - y) <= 1.6, 110, 170, 'Lluvia de fuego'); } });
+      });
+    } else {                                                    // terremoto: el suelo tiembla y daña en área
+      const R = 7, cx = m.x, cy = m.y;
+      this.fx.push({ k: 'fqw', x: cx, y: cy, r: R });
+      this.later(1300, () => {
+        if (!alive()) return;
+        this.fx.push({ k: 'fq', x: cx, y: cy, r: R });
+        hitPlayers(this, this.now, m, (q) => Math.hypot(q.x - cx, q.y - cy) <= R, 160, 250, 'Terremoto');
+        this.later(700, () => { if (!alive()) return; this.fx.push({ k: 'fq', x: cx, y: cy, r: R * 0.7 }); hitPlayers(this, this.now, m, (q) => Math.hypot(q.x - cx, q.y - cy) <= R * 0.7, 90, 150, 'Réplica'); });
+      });
+    }
+  };
+  // Aracnídeo Fuego Negro: redes de telaraña de fuego y arañas de fuego invocadas (el tercer ataque es su zarpazo cuerpo a cuerpo)
+  P.spiderAI = function (m, now) {
+    if (now < (m.nextSp || 0)) return;
+    const t = m.target ? this.ents.get(m.target) : null; if (!t || t.kind !== 'pl' || t.hp <= 0) return;
+    const alive = () => !m.dead && this.monsters.includes(m);
+    const near = (cx, cy, r) => [...this.players.values()].filter((q) => q.hp > 0 && !inTownP(q) && Math.hypot(q.x - cx, q.y - cy) <= r);
+    const kids = () => this.monsters.filter((q) => q.parent === m && !q.dead);
+    const kind = ['web', 'summon', 'web', 'summon', 'web'][(m.spN || 0) % 5];
+    m.spN = (m.spN || 0) + 1; m.nextSp = now + 6000 + Math.random() * 3000;
+    m.nextMove = Math.max(m.nextMove, now + 1500); m.nextAtk = Math.max(m.nextAtk, now + 1500);
+    if (kind === 'web') {                                       // redes de fuego: aviso y caída; inmovilizan y queman
+      const tg = near(m.x, m.y, 14), n = Math.min(9, 4 + tg.length), spots = [];
+      for (let i = 0; i < n; i++) { const q = tg[i]; spots.push(q ? [q.x, q.y] : [Math.round(m.x + (Math.random() - 0.5) * 18), Math.round(m.y + (Math.random() - 0.5) * 18)]); }
+      for (const [x, y] of spots) this.fx.push({ k: 'wbw', x, y, r: 2.4 });
+      this.later(1100, () => {
+        if (!alive()) return;
+        for (const [x, y] of spots) {
+          this.fx.push({ k: 'wb', x, y, r: 2.4 });
+          const hit = near(x, y, 2.4);
+          for (const q of hit) {
+            this.hurtPlayer(q, rnd(480, 700), m, this.now, 'Red de fuego');
+            q.nextMove = Math.max(q.nextMove || 0, this.now + 2200);                                  // atrapado en la telaraña
+            for (let i = 1; i <= 3; i++) this.later(800 * i, () => { if (alive() && q.hp > 0 && this.players.get(q.key) === q) { this.fx.push({ k: 'burn', x: q.x, y: q.y }); this.hurtPlayer(q, rnd(85, 130), m, this.now, 'Telaraña ardiente'); } });
+          }
+        }
+      });
+    } else {                                                    // invoca arañas de fuego
+      const room = 8 - kids().length; if (room <= 0) return;
+      const n = Math.min(room, 3 + Math.floor(near(m.x, m.y, 14).length / 2)), MT = require('./data').MONSTERS.arana_fuego;
+      const spots = [];
+      for (let i = 0; i < n * 6 && spots.length < n; i++) { const x = Math.round(m.x + (Math.random() - 0.5) * 10), y = Math.round(m.y + 1 + Math.random() * 5); if (world.isWalkable(x, y) && !this.mgrid.has(y * world.W + x) && !this.pgrid.has(y * world.W + x) && !spots.some((s) => s[0] === x && s[1] === y)) spots.push([x, y]); }
+      for (const [x, y] of spots) this.fx.push({ k: 'spw', x, y });
+      this.later(900, () => {
+        if (!alive()) return;
+        for (const [x, y] of spots) {
+          if (this.mgrid.has(y * world.W + x) || this.pgrid.has(y * world.W + x)) continue;
+          const c = this.spawnMonster('arana_fuego', x, y); c.noRespawn = true; c.respawnAt = Infinity; c.parent = m; c.target = m.target; c.diesAt = this.now + 45000;
+          this.fx.push({ k: 'sp', x, y });
+        }
+        if (!m.sweep) { m.sweep = true; const sweep = () => {                                           // limpieza de arañas muertas o caducadas
+          const bossUp = alive(); const now2 = this.now;
+          for (const q of this.monsters.filter((z) => z.parent === m && (z.dead || !bossUp || now2 >= z.diesAt))) { this.mgrid.delete(q.y * world.W + q.x); this.monsters = this.monsters.filter((z) => z !== q); this.ents.delete(q.id); }
+          if (bossUp || this.monsters.some((z) => z.parent === m)) this.later(2000, sweep); else m.sweep = false;
+        }; this.later(2000, sweep); }
+      });
+    }
+  };
+  // Leviatán Abisal: tornados que se multiplican, olas que barren la cueva, rayo de bolas de agua por la boca y escudo burbuja de 5 s
+  P.leviathanAI = function (m, now) {
+    if (m.lpx !== undefined && m.x !== m.lpx) m.lf = m.x < m.lpx ? -1 : 1;       // hacia dónde mira (igual que el cliente: según el último paso)
+    m.lpx = m.x;
+    if (now < (m.nextSp || 0)) return;
+    const t = m.target ? this.ents.get(m.target) : null; if (!t || t.kind !== 'pl' || t.hp <= 0) return;
+    const order = ['ray', 'tornado', 'wave', 'bubble', 'ray', 'wave', 'tornado'];
+    const kind = order[(m.spN || 0) % order.length];
+    m.spN = (m.spN || 0) + 1; m.nextSp = now + 5500 + Math.random() * 2500;
+    if (kind === 'bubble' && m.shieldUntil > now) return;
+    m.nextMove = Math.max(m.nextMove, now + 1700); m.nextAtk = Math.max(m.nextAtk, now + 1700);
+    const alive = () => !m.dead && this.monsters.includes(m);
+    const near = (cx, cy, r) => [...this.players.values()].filter((q) => q.hp > 0 && !inTownP(q) && Math.hypot(q.x - cx, q.y - cy) <= r);
+    const R = zoneAt(m.x, m.y).rect;                               // la gruta del jefe (la normal o una instancia privada)
+    if (kind === 'ray') {                                       // rayo de bolas de agua disparado por la boca (3 pulsos que re-apuntan)
+      const mouth = () => [m.x + (m.lf || 1) * 3.2, m.y - 2.5];                                       // la boca del leviatán
+      const aim = () => { const tg = this.ents.get(m.target); const tx = tg && tg.kind === 'pl' && tg.hp > 0 ? tg.x : t.x, ty = tg && tg.kind === 'pl' && tg.hp > 0 ? tg.y : t.y; const [ox, oy] = mouth(); let dx = tx - ox, dy = ty - oy; const L = Math.hypot(dx, dy) || 1; return [dx / L, dy / L]; };
+      let [dx, dy] = aim(); { const [ox, oy] = mouth(); this.fx.push({ k: 'bmw', x1: ox, y1: oy, x2: ox + dx * 18, y2: oy + dy * 18, fc: m.lf || 1 }); }
+      for (let i = 0; i < 3; i++) this.later(1000 + i * 520, () => {
+        if (!alive()) return; [dx, dy] = aim(); const [ox, oy] = mouth(), nw = this.now;
+        this.fx.push({ k: 'bm', x1: ox, y1: oy, x2: ox + dx * 18, y2: oy + dy * 18 });
+        for (const q of this.players.values()) { const rx = q.x - ox, ry = q.y - oy, sd = rx * dx + ry * dy, perp = Math.abs(rx * dy - ry * dx); if (q.hp > 0 && !inTownP(q) && sd >= 0.5 && sd <= 18.5 && perp <= 1.5) this.hurtPlayer(q, rnd(250, 370), m, nw, 'Rayo de agua'); }
+      });
+    } else if (kind === 'wave') {                               // olas: franjas de agua que cruzan la cueva (aviso y barrido)
+      for (let round = 0; round < 2; round++) this.later(round * 2600, () => {
+        if (!alive()) return;
+        const dir = Math.random() < 0.5 ? 1 : -1, x0 = dir > 0 ? R[0] + 1 : R[2] - 1, x1 = dir > 0 ? R[2] - 1 : R[0] + 1, rows = [];
+        const tg = near(m.x, m.y, 20), want = 3 + (tg.length > 2 ? 1 : 0);
+        if (tg[0]) rows.push(tg[0].y);
+        for (let k = 0; k < 40 && rows.length < want; k++) { const y = rnd(R[1] + 5, R[3] - 2); if (rows.every((r) => Math.abs(r - y) >= 4)) rows.push(y); }
+        for (const y of rows) this.fx.push({ k: 'olw', x1: x0, x2: x1, y, h: 3 });
+        this.later(1100, () => {
+          const hit = new Set(); const n = Math.abs(x1 - x0);
+          for (let st = 0; st <= n; st += 1.4) this.later((st / 1.4) * 100, () => {
+            if (!alive()) return; const wx = x0 + dir * st;
+            for (const y of rows) {
+              this.fx.push({ k: 'ol', x: wx, y, h: 3, d: dir });
+              for (const q of this.players.values()) if (q.hp > 0 && !inTownP(q) && !hit.has(q.key + ':' + y) && Math.abs(q.y - y) <= 1.6 && Math.abs(q.x - wx) <= 1.6) { hit.add(q.key + ':' + y); this.hurtPlayer(q, rnd(200, 300), m, this.now, 'Ola'); }
+            }
+          });
+        });
+      });
+    } else if (kind === 'tornado') {                            // tornados que se multiplican y vagan por la cueva 15 s
+      let tn = []; const born = this.now;
+      const spawn = (x, y, a) => tn.push({ x, y, a, id: Math.random() });
+      for (let i = 0; i < 2; i++) { const a = Math.random() * 6.28; spawn(m.x, m.y + 2, a); }
+      for (const q of tn) this.fx.push({ k: 'twn', x: q.x, y: q.y });
+      const lastHit = new Map(); let step = 0;
+      const tick = () => {
+        if (!alive() || step > 37) return; step++; const nw = this.now;
+        if (step > 2 && step % 7 === 0 && tn.length < 18) for (const q of tn.slice()) { if (tn.length >= 18) break; spawn(q.x, q.y, q.a + Math.PI * (0.6 + Math.random() * 0.8)); }   // se multiplican
+        for (const q of tn) {
+          q.a += (Math.random() - 0.5) * 0.9;
+          const nx = q.x + Math.cos(q.a) * 1.15, ny = q.y + Math.sin(q.a) * 1.15, ix = Math.round(nx), iy = Math.round(ny);
+          if (ix > R[0] && ix < R[2] && iy > R[1] && iy < R[3] && world.isWalkable(ix, iy)) { q.x = nx; q.y = ny; } else q.a += Math.PI * (0.5 + Math.random());
+          this.fx.push({ k: 'wtn', x: q.x, y: q.y, id: q.id });
+          for (const pl of this.players.values()) if (pl.hp > 0 && !inTownP(pl) && Math.hypot(pl.x - q.x, pl.y - q.y) <= 1.5 && nw - (lastHit.get(pl.key) || 0) > 700) { lastHit.set(pl.key, nw); this.hurtPlayer(pl, rnd(75, 120), m, nw, 'Tornado marino'); }
+        }
+        this.later(400, tick);
+      };
+      this.later(700, tick);
+    } else {                                                    // escudo burbuja: inmune 5 s
+      m.shieldUntil = now + 5000;
+      for (let i = 0; i < 10; i++) this.later(i * 500, () => { if (alive()) this.fx.push({ k: 'bub', x: m.x, y: m.y }); });
+      this.later(5000, () => { if (alive()) { this.fx.push({ k: 'bubx', x: m.x, y: m.y }); m.shieldUntil = 0; } });
+    }
+  };
+  G0.hurtMonster = P.hurtMonster;
+  P.hurtMonster = function (m, dmg, p, now) {
+    if (m.shieldUntil > now) { if (!(m.shMsg > now)) { m.shMsg = now + 600; this.fx.push({ k: 'd', x: m.x, y: m.y, v: '🛡️ ¡Inmune!', c: 'x' }); } return; }
+    return G0.hurtMonster.call(this, m, dmg, p, now);
+  };
+  G0.updateMonster = P.updateMonster;
+  P.updateMonster = function (m, now) {
+    G0.updateMonster.call(this, m, now);
+    if (m.def.special === 'dragon' && !m.dead) this.dragonAI(m, now);
+    else if (m.def.special === 'hydra' && !m.dead) this.hydraAI(m, now);
+    else if (m.def.special === 'angel' && !m.dead) this.angelAI(m, now);
+    else if (m.def.special === 'titan' && !m.dead) this.titanAI(m, now);
+    else if (m.def.special === 'spider' && !m.dead) this.spiderAI(m, now);
+    else if (m.def.special === 'leviathan' && !m.dead) this.leviathanAI(m, now);
+    else if (m.def.special === 'magma' && !m.dead) this.magmaAI(m, now);
+    else if (m.def.special === 'anubis' && !m.dead) this.anubisAI(m, now);
+    else if (m.def.special === 'hades' && !m.dead) this.hadesAI(m, now);
+    else if (m.def.special === 'medusa' && !m.dead) this.medusaAI(m, now);
+    else if (m.def.special === 'cerbero' && !m.dead) this.cerberoAI(m, now);
+    else if (m.def.special === 'e2' && !m.dead) this.e2AI(m, now);
+    else if (m.def.special === 'rdr' && !m.dead) this.rdrAI(m, now);
+    else if (m.def.special === 'zeus' && !m.dead) this.zeusAI(m, now);
+    else if (m.def.special === 'raid' && !m.dead) this.raidAI(m, now);
+    else if (m.def.special === 'halloween' && !m.dead) this.hwAI(m, now);
   };
 
   /* ============================ ENGANCHES DE COMBATE ============================ */
@@ -797,12 +1185,17 @@ module.exports = function install(Game) {
       }
     }
   };
+  P.logDrop = function (p, boss, id) { const c = p.ext.col[boss] || (p.ext.col[boss] = {}); const first = !c[id]; c[id] = (c[id] || 0) + 1; if (first) this.send(p, { t: 'colnew', id, boss }); };
+  P.sendCol = function (p) { this.send(p, { t: 'col', v: p.ext.col }); };
+  P.sendGrave = function (p) { const g = p.ext.grave; this.send(p, { t: 'grave', x: g ? g.x : -1, y: g ? g.y : -1 }); };
   P.killPlayer = function (p, src, srcName, now) {
-    const pvp = zoneAt(p.x, p.y).pvp;
+    const zd = zoneAt(p.x, p.y), pvp = zd.pvp, dx = p.x, dy = p.y;
+    if (zd.pvp || zd.kind === 'dungeon') p.ext.grave = { x: dx, y: dy, t: Date.now() };
     G0.killPlayer.call(this, p, src, srcName, now);
     p.ext.deaths++;
     if (src && src.kind === 'pl' && src !== p) { src.ext.pvp++; this.checkAch(src); }
     p.buffs.shield = null; this.checkAch(p);
+    this.sendGrave(p);
   };
   P.removePlayer = function (p) {
     if (p.partyId) this.partyLeave(p, true);
@@ -820,6 +1213,9 @@ module.exports = function install(Game) {
       case 'title': this.setTitle(p, String(msg.id || '')); break;
       case 'xinfo': this.sendXinfo(p, false); break;
       case 'rank': this.send(p, { t: 'rank', v: this.rankings() }); break;
+      case 'col': this.sendCol(p); break;
+      case 'story': if (msg.k === 'ack') this.storyAck && this.storyAck(p); else if (msg.k === 'hold') this.storyHold && this.storyHold(p); else this.sendStory(p); break;
+      case 'autoret': p.autoRet = !!msg.on; break;
       case 'p_inv': this.partyInvite(p, msg.id); break;
       case 'p_acc': this.partyAccept(p, msg.id); break;
       case 'p_leave': this.partyLeave(p); break;
@@ -844,6 +1240,7 @@ module.exports = function install(Game) {
   /* ============================ BUCLE ============================ */
   P.tickExt = function (now) {
     this.eventTick(now);
+    if (this.sched && this.sched.length) { const due = this.sched.filter((e) => e.at <= now); if (due.length) { this.sched = this.sched.filter((e) => e.at > now); for (const e of due) { try { e.fn(); } catch (err) { console.error('sched', err); } } } }
     // veneno
     if (this.dots.length) {
       for (const d of this.dots.slice()) {
@@ -856,6 +1253,7 @@ module.exports = function install(Game) {
       }
     }
     if (this.tickN % 20 === 0) {                    // cada segundo
+      for (const q of this.players.values()) { const g = q.ext && q.ext.grave; if (g && (Date.now() - g.t > 7200000 || (q.hp > 0 && cheb(q.x, q.y, g.x, g.y) <= 1))) { q.ext.grave = null; this.sendGrave(q); } }
       for (const p of this.players.values()) {
         if (!p.ws) continue;
         const txt = JSON.stringify(Object.fromEntries(Object.entries(p.buffs).filter(([k, v]) => v && v.until > now && (k !== 'shield' || v.hp > 0)).map(([k, v]) => [k, Math.ceil((v.until - now) / 1000)])));
@@ -863,6 +1261,7 @@ module.exports = function install(Game) {
         if (sig !== p.lastSig) { p.lastSig = sig; this.sendBuffs(p); }
         if (p.partyInv && Date.now() > p.partyInv.exp) p.partyInv = null;
         this.petCheck(p);
+        if (!p.bot && Object.keys(p.ext.q).length) this.questGuide(p);
       }
       for (const party of this.parties.values()) this.sendParty(party);
     }
