@@ -665,8 +665,3 @@ Nueva cueva de jefe (portal en la playa del Paraíso de Coral, ≈ (419,136), cu
 - **Ballena Abisal**: la invoca (y la vuelve a invocar si la matan); recorre toda la cueva golpeando y tiene 3 especiales: chorros en todas direcciones, embestida en línea recta y géiseres bajo los jugadores. No da botín.
 - **Botín**: corona, coraza, guanteletes, grebas, botas, capa, sello, perla, Arco de las Mareas, Báculo de Poseidón y Tridente de Poseidón (cada arma con 3 especiales), con el mismo reparto por daño que Zeus.
 - Cliente: `public/poseidon.js` (efectos), texturas del santuario y sprites `poseidon`/`ballena` (sprites3.png).
-
-## Vista 3D real (experimental, WebGL propio)
-
-`public/gl3d.js` — botón **🌐 Probar 3D real** (abajo a la izquierda) o `?3d=gl` en la dirección; `?3d=0` la apaga. Sin dependencias: terreno low-poly con relieve (muros, rocas, árboles, palmeras, pinos, cactus; agua que ondula), niebla y luz de día/noche, y personajes, monstruos, PNJ y objetos como figuras de pie con los sprites actuales. Cámara orbital: **Q / E** giran, **rueda** = zoom, **RePág / AvPág** inclinan. Clic para atacar/hablar/caminar y clic derecho para el menú funcionan igual que en 2D (el 2D calcula la casilla con el rayo 3D). El 2D no se toca: el botón vuelve a él y la versión anterior está guardada en `eldoria-2d-respaldo.zip`.
-Limitaciones conocidas: los efectos de jefes (olas, remolinos, rayos), los números de daño, las casas con techo y los mini-edificios aún no se dibujan en 3D; WASD sigue siendo relativo al mapa aunque gires la cámara.
